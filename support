@@ -1,0 +1,12 @@
+# blah
+source("Functions.R");
+obj = ls();
+obj = obj[obj!="GlobalStandardColors"];
+for (i in 1:length(obj)) prompt(name = obj[i]);
+
+{Expression data in a multi-set format (see \code{\link{checkSets}}). A vector of lists, 
+with each list corresponding to one microarray dataset and expression data in the component \code{data},  
+that is \code{expr[[set]]$data[sample, probe]} is the expression of probe \code{probe} in sample 
+\code{sample} in dataset \code{set}. The number of samples can be different between the sets, but the 
+probes must be the same. }
+
