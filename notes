@@ -1,0 +1,7 @@
+Further notes: change powervector->powerVector possibly to just powers?
+
+change AdjacencyMatrix->adjacency
+
+in automaticNetworkScreening: instead of returning NAs, just stop.
+           - output names are a bit long, perhaps change them a bit?
+

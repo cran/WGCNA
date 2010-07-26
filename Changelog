@@ -1,0 +1,510 @@
+Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
+
+
+2010/07/26: 0.92-3
+
+	. Package file cleanup, nothing changed from user perspective
+
+2010/07/14: 0.92-1
+
+	. Bug in compiled calculation of adjacency fixed. This may have
+	  affected calculations of TOM when TOMType = "signed". Apologies if
+	  important results were affected.
+
+2010/06/24: 0.92
+
+	. DIFF: in modulePreservation, by default Zsummary is only calculated
+	  from meanAdj, cor.kIM and cor.Adj.
+	. DIFF: in modulePreservation, a new option includekMEallInSummary (default FALSE)
+	  controls whether cor.kMEall should be included in summary statistis
+	. output of modulePreservation now has names in permutationDetails to facilitate 
+	  detailed studies of permutation results
+
+2010/06/10: 0.91
+
+	. DIFF: in modulePreservation, values of cor.kME, cor.kMEall and
+	  meanSignAwarekME are now stripped of their sign, both in observed
+	  values and in permutations. This is done because the eigengene may
+	  flip sign between data sets, leading to artificially low
+	  preservation scores. 
+	. DIFF: p-values calculated by modulePreservation are now returned as logarithms in base 10
+	  (previously they were returned as natural logarithms). Names of the returned components also
+	  changed slightly to emphasize that the p-values are returned as logarithms.
+	. Additional summarycolumns added to the output of modulePreservation 
+	  for observed and permutation preservation statistics
+	. Function collapseRows now selects a single probe to represent each gene
+
+2010/06/05: 0.90
+
+	. modulePreservation now also returns p-values and optionally the q-values corresponding to the
+	  permutation Z scores
+	. simulateDatExpr now sets (artificial) gene and sample names, for easier integration with some	
+	  analysis functions (notably modulePreservation)
+	. incompatibilities with new versions of R in exportNetworkTo[Visant,Cytoscape] fixed 
+	. new function subsetTOM to efficiently calculate TOM among a subset
+	  of network nodes 
+	. bugs in vectorTOM fixed
+	. DIFF: modulePreservation now limits the size of the gold module to
+	  at most half the total number of genes in the comparison, to make
+	  sampling and permutation calculations meaningful. This may slightly affect
+	  calculated results for the gold module, but will not affect results of
+	  any other modules.
+
+
+2010/05/21: 0.89
+
+	. DIFF: definition of cluster coefficient has been slightly changed,
+	  which affects approximate conformity-based network concepts
+	. new functions rankPvalue and metaZfunction
+	. new function standardScreeningNumericTrait
+	. bug in automatic labeling of axes in verboseBoxplot has been fixed
+	. several help files added and updated
+	. minor changes in standardScreeningBinaryTrait, standardScreeningCensoredTime
+	. scaleFreeFitIndex now does not calculate a log(log(..)) based fit
+	  that often led to errors
+	. new function collapseRows by Jeremy Miller to convert probe-level
+	  expression to gene-level expression
+
+2010/05/07: 0.88-2
+
+	. unnecessary dependence on package fields removed. 
+
+2010/05/07: 0.88-1
+
+	. DIFF: bug in cor(x) and bicor(x) fixed that produced incorrect results
+	  when a column of x was all missing (NA). We aplogize for any incovenience
+	  this error may have caused.
+
+2010/03/17: 0.88
+
+	. new functions corAndPvalue and bicorAndPvalue that calculate (bi)correlation p-values efficiently
+	  for matrices of correlations
+
+
+2010/02/19: 0.87
+
+	. bicor gets a new argument pearsonFallback that lets the user specify 
+	  the handling of cases with zero median absolute deviation that would
+	  normally lead to NA values.
+	. mergeCloseModules (and blockwise[Consensus]Modules) now more robust: 
+	  works also in the case of a single module
+	. DIFF: A bug was fixed that affected bicor(x) calculation with missing data on Windows
+	  (calculations of 2-variable bicor, single-variable bicor without missing data, and any 
+	   calculations where multi-threading is available [most platforms except Windows] were 
+	   not affected by this bug). The bug caused some calculations to be a bit off. 
+	   We apologize for any problems this may have caused.
+
+2010/02/10: 0.86
+
+	. bug in colQuantileC fixed.
+	. EXPERIMENTAL: a major addition to modulePreservation now allows
+	  module preservation calculations based on general adjacency matrices. 
+	. bugfix in labelPoints fixes a warning message
+
+2009/12/26: 0.85
+
+	. DIFF: in modulePreservation, separability now correctly works for
+	signed and signed hybrid networks.
+	. modulePreservation gains argument to specify correlation function
+
+2009/12/05: 0.84
+
+	. new function spaste
+	. addtions and corrections to help files
+	. bugfix in standardScreeningCensoredTime
+	. bugfix in blockwiseModules: module colors are now not scrambled when
+	  some genes are excluded because they don't pass goodSamplesGenes
+	. improved labelPoints: more consistent label offsets and fixed
+	  meaning of 'offs' in help file
+
+2009/11/24: 0.83-1
+
+	. help cleaned up
+	. Windows package now compatible with R-2.10
+
+2009/11/22: 0.83
+
+	. new function modulePreservation calculates module preservation
+	  statistics between independent data sets
+	. new dependence on package splines
+	. new function labelPoints to semi-inteligently label points in a
+	  scatterplot.
+	. extended functions pickSoftThreshold, pickHardThreshold
+	. minor bugfix in scaleFreePlot
+	. new function standardScreeningCensoredTime
+	. new function scaleFreeFitIndex
+
+2009/11/17: 0.82-1
+
+	. bugfix in plotEigengeneNetworks (thanks to Ronnie Alves for pointing it out)
+	. bugfix in heatmapWithLegend when used with mixed color and text labels
+
+2009/11/10: 0.82
+
+	. new function standardScreeningBinaryTrait
+	. bugfix in verboseBarplot: the function now passes the ... arguments to barplot
+	. verboseScatterplot gets argument sample for better handling of large vectors
+	. labeledHeatmap gets arguments xColorWidth and yColorWidth that control the witdth 
+	  of the color labels
+
+2009/10/29: 0.81-2
+
+	. bugfix in blockwise[Consensus]Modules: function now works when number of modules 
+	  exceeds number of available colors
+	. bugfix in exportNetworkToCytoscape: all nodes are now included in
+	  the node file (thanks to Tim Gernat for pointing it out and suggesting
+	  the fix)
+
+2009/10/22: 0.81-1
+
+	. addTraitToMEs now works with colnames instead of names
+	. bugfix in bicor(x): when x has missing data, bicor now does not crash
+	. minor bugfix in plotEigengeneNetworks: printAdjacency is now respected
+
+2009/10/19: 0.81
+
+	. several functions from the now defunct package sma were added, mainly
+	  to allow our users to run all tutorials smoothly. Note that if 
+	  sma package is used concurrently, identical copies of the duplicated 
+	  functions will be available. Warning messages about this fact can be 
+	  disregarded safely.
+	. labeledHeatmap re-written to use an internal heatmapWithLegend
+	  function. This means labeledHeatmap now works also in complicated
+	  sectionings using layout(), which was not the case before.
+
+2009/09/18: 0.80-1
+
+	. crash in blockwise[Consensus]Modules and TOM calculations when using
+	  bicor fixed; blockwise[Consensus]Modules and TOM calculations using
+	  compiled code get a new argument maxPOutliers corresponding to the
+	  bicor argument of the same name (see news in 0.80).
+
+2009/09/13: 0.80
+
+	. new functions conformityBasedNetworkConcepts and fundamentalNetworkConcepts
+	  calculate network concepts (indices)
+	. bicor gains the argument maxPOutliers specifying the maximum
+	  fraction of data that can be considered outliers
+	. new function verboseBarplot to produce annotated barplots
+	. verboseBarplot, verboseBoxplot and verboseScatterplot now have
+	  complete help files
+
+2009/09/01: 0.79-4
+
+	. bug in networkConcepts fixed
+	. goodGenesMS and goodSamplesMS now a bit more robust
+	. new function vectorizeMatrix to turn a matrix into a vector of non-redundant components
+	. orderMEs now works also on the single set output of moduleEigengenes.
+	. plotColorUnderTree, plotDendroAndColors, and plotClusterTreeSamples
+	  are now capable of displaying text labels that identify the
+	  displayed colors by name.
+	. overlapTable now works when the arguments are 1xn or nx1 matrices.
+
+2009/08/07: 0.79-3
+
+	. GOenrichmentAnalysis now works for yeast data as well. Yeast GO
+	  mappings are given in a slightly different database (ORF identifiers
+	  instead of Entrez) and previous versions of the function did not
+	  handle this difference (thanks to Maryam Anwar for pointing this out).
+
+2009/08/05: 0.79-2
+
+	. Default color in addGuideLines now darker ((grey30 instead of grey70).
+	. Default color in addGrid now darker (grey30 instead of grey70).
+	. Error in bicor help file corrected.
+	. moduleEigengenes gets the option to turn off scaling expression data
+	  before calculating the singular value decomposition. This should only
+	  be used to speed up calculation if the data has been scaled
+	  previously.
+	. Bugfix in simulateMultiExpr: the function now works when leaveOut=NULL
+	. Minor changes to diagnostic messages in TOM calculations
+	. Minor changes to printed values in verboseBoxplot
+	. GOenrichmentAnalysis a bit more stable
+	. GOenrichmentAnalysis can now analyze several sets of labels at the same time;
+	  the idea is to give the user the option to quickly calculate enrichments
+	  for a collection of competing module assignments. 
+	. Enrichment calculations can optionally be restricted to a subset of modules
+
+2009/06/05: 0.79-1
+
+	. GOenrichmentAnalysis now faster and a bug in returned genePositions fixed.
+	. function plotEigengeneNetworks gained two additional arguments controling the printing of
+	  numerical values into the adjacency heatmaps.
+
+2009/06/01: 0.79
+
+	. Added (experimental) function GOenrichmentAnalysis for automatic GO enrichment
+	  analysis 
+
+2009/05/26: 0.78
+
+	. Package qvalue becomes optional. If it is not installed, q values
+	  will not be calculated in the network screening functions.
+
+2009/05/18: 0.77-1
+
+	. Hubgene calculation in moduleEigengenes now works even if only
+	  one gene has valid data.
+	. Bug in labeledBarplot fixed that crashed the function if no error bars were given.
+
+2009/05/05: 0.77
+
+	. DIFF: reverting to default TOM denominator method "min"
+	. Bug fix in .clustOrder affecting consensusOrderMEs and
+	  mergeCloseModules when there is only one proper module present.
+
+2009/04/02: 0.76
+
+	. Display of p-value in verboseScatterplot improved: small p values now shown more accurately
+	. Spurious warning message in matchLabels is now suppressed
+	. additional TOM option added: use mean denominator instead of minimum	
+	. DIFF: default TOM denominator method is mean. Use TOMDenom = "min" where necessary to reproduce
+	  older results
+	. help files for [unsigned]adjacency corrected
+
+2009/03/18: 0.75
+
+	. fixed a bug in matchLabels that caused unrelated modules to be
+	  matched
+	. faster correlation calculations are now implemented both for [bi]cor(x)
+	  as wellas [bi]cor(x,y). On platforms where POSIX threads are
+	  available, certain parts of the [bi]cor calculations are threaded
+	. functions [bi]cor, blockwise[Consensus]Modules, TOMsimilarityFromExpr
+	  now have additional parameters providing control over threading and
+	  over the tradeoff between speed and precision in handling missing data
+	  in the correlation calculations
+	. fixed a bug in bicor(x,y) that was present when any of the columns
+	  consisted of only missing data and that caused incorrect NAs and 0s
+	  in the result.
+	. DIFF: softConnectivity now subtracts 1 from the sum of adjacencies to remove 
+	  the adjacency of a gene with itself.
+	. DIFF: order of parameters in softConnectivity has changed.
+	. DIFF: default number of centers in [consensus]projectiveKMeans is
+	  now an attempt to fully utilize resources estimated from preferredSize.
+	. softConnectivity now accepts parameter 'type' that can specify the
+	  network type to be used;
+	. fixed a bug in function adjacency that would crash the function in
+	  certain circumstances.
+
+2009/03/04: 0.73
+
+	. default p value threshold in matchLables relaxed to 5e-2
+	. DIFF: [consensus]ProjectiveKMeans now default to a much higher number
+	  since that seems to lead to better results.
+	. Faster versions of correlation and bicorrelation implemented. Fast correlation available 
+	  for general use in function cor1.
+	. bugfix in labeledHeatmap: xLabels and xSymbols do not overlap anymore
+	. goodGenes, goodGenesMS, etc now resistant to whole gene profiles containing only NAs
+	. minor changes in verbosity of [consensus]projectiveKMeans
+
+2009/02/18: 0.72
+
+	. corPvalueStudent now correctly returns small values instead of zero
+	. minor changes in default sectioning in plotDendroAndColors
+	. plotDendroAndColors and plotColorUnderTree now plot colors top to bottom
+	  (previously was bottom to top)
+	. faster median calculation in C implementation of bicor
+	. added function overlapTable for computing significance of module overlaps
+	. added function matchLabels for relabeling modules in a source partition 
+	  to best approximate module labels in a given reference partition
+
+2009/02/06: 0.71-1
+
+	. minor changes in verbosity of TOM calculations
+	. blockwise[Consensus]Modules: random seed is now set only if it is non-NULL; this allows the
+	  user to force the functions to run without setting a seed, which was not possible before.
+
+2009/02/05: 0.71
+
+	. package flashClust that implements fast hierarchical clustering is now required and used
+	  throughut.
+
+2009/01/29: 0.70
+
+	. adapted for dynamicTreeCut-1.20: PAM stage in the dynamic tree cut
+	  used in blockwise module detection functions can now optionally
+	  respect the dendrogram  in the sense an object can be PAM-assigned
+	  only to clusters that lie below it on the branch that the object is
+	  merged into. Note that this requires dynamicTreeCut 1.20 or higher.
+	. TOM calculation: "Rough guide to max array..." now respects verbose parameter
+
+2009/01/25: 0.67-2
+
+	. bug in recutBlockwiseTrees fixed (only visible if some genes or samples were bad)
+	. bug in clusterCoef fixed
+	. typos in help files fixed (cutreeStatic[Color])
+	. drawing of color label rectangles slightly modified in labeledHeatmap to
+	prevent excessively large rectangles 
+
+2008/12/23: 0.67-1
+
+	. help file for intramodularConnectivity corrected
+	. corPvalueFisher corrected when twoSided=TRUE: used to give p-values inflated by a factor of 2
+
+2008/12/09: 0.67
+
+	. addTraitToMEs now works also when the multiMEs only contain the eigengenes but no average 
+	  expression
+	. labeledBarplot now accepts xLabelsAngle
+	. fixed interpretation of grey name in orderMEs, consensusOrderMEs
+	. scaleTOMs in consensusBlockwiseModules now actually has an effect
+
+2008/12/04: 0.66
+
+	. new function exportNetworkToCytoscape
+
+2008/12/04: 0.65-3
+
+	. new function networkConcepts
+	. Bug fix in plotEigengeneNetworks when only one set is given
+	. Minor changes and cleanup in help files and printed diagnostics
+
+2008/11/05: 0.65-2
+
+	. Bugfix in exportNetworkToVisANT: no more spurious errors when probe to gene name translation
+	  table is given.
+
+2008/11/02: 0.65-1
+
+	. Bugfix in reassigning genes between modules when KME difference too significant: 
+	  an empty set of reassign candidates doesn't throw an error anymore.
+	. Several help files added
+
+2008/10/25: 0.65
+
+	. added function preservationNetworkAdjacency 
+
+2008/10/09: 0.64
+
+	. different versions of package impute are now supported.
+	. help files expanded
+	. help files' syntax corrected so all item descriptions are now
+	  displayed properly.
+
+2008/10/01: 0.63-1
+
+	. bug in [consensus]ProjectiveKMeans fixed that would cause a crash if
+	  the center with highest index became empty
+	. numbers2colors resistant to values out of range of the given min and max.
+	. p-value in verboseScaterplot now corresponds to the actual correlation printed instead of
+	  the Pearson correlation value. However, the p-values are always calculated assuming the
+	  correlation value is actually Pearson. 
+
+2008/09/18: 0.63
+
+	. [automaticN|n]etworkScreening now accept option getQValue that can be used to turn off q value 
+	  calculations; they also report counts of module eigengenes with gene
+	  significances in specific intervals.
+
+2008/09/17: 0.62-1
+
+	. C implementation of column quantile (i.e., apply(data, 2, quantile)) giving immense speedup 
+	  of consensus quantile calculations in new function colQuantileC
+
+2008/09/17: 0.62
+
+	. Fixed bugs in blockwiseConsensusModules when disk cache not in use, and when consensusQuantile>0
+	. Added function exportNetworkToVisANT to export a network to VisANT.
+	. Help files for several functions added
+
+2008/09/13: 0.61
+
+	. TOMdist function added, defined simply as 1-TOMsimilarity, for easier migration of older code.
+
+2008/09/10: 0.60-3
+
+	. [consensus]projectiveKMeans now resistant to an svd failure, using a weighted mean if svd
+	  returns an error.
+
+2008/09/05: 0.60-2
+
+	. Bug fix in C implementation of bicor (bad bug!!)
+
+2008/09/04: 0.60-1
+
+	. Big fixes in blockwiseConsensusModules related to TOM sampling
+
+2008/09/02: 0.60
+
+	. minCoreKME default now 0.5 (was 0.7 for Consensus functions, which didn't make much sense)
+	. blockwise functions now complete all blocks even if there is a block
+	  with no modules detected or with an error during ME calculation.
+	. consensusProjectiveKMeans can now optionally use mean as definition
+	  of consensus distance, improving convergence in multiple set situations
+	. several help files added
+	. bicor now implemented consistently in R code and in compiled code:
+	  both call the same set of C functions and treat NAs correctly and
+	  consistently. Functions bicov and bicorNAy are removed. 
+	. pickSoftThreshold now accepts networkType argument
+	. blockwiseConsensusModules can now optionally save samples used for TOM scaling
+
+2008/08/29: 0.55
+
+	. Changes of input arguments and output for blockwise[Consenus]Modules
+	. Errors in pre-clustering and calculation of signed networks fixed
+	. New functions for re-cutting dendrograms produced in blockwise[Consenus]Modules
+	. Bug in the return value of blockwise[Consensus]Modules fixed: blockGenes now correctly refer to
+	  all genes instead of goodGenes; 
+	. New function numbers2colors
+
+2008/08/26: 0.50-2
+
+	. Fixed bugs in blockwiseConsensusModules causing a crash when module eigengene calculation fails
+
+2008/08/20: 0.50-1
+
+	. fixed bug in compiled code bicor1 function that used quick calculation whenever at least one of
+	  the x,y had the correct NAs instead of both.  
+	. fixed crash in consensusBlockwiseModules when data not checked for missing entries
+	. added info printing when merging clusters in consensusProjectiveKMeans
+
+2008/08/15: 0.50
+
+	. [consensus]projectiveKMeans improved: no crash when some clusters become empty, faster
+	. blockwise[Consensus]Modules: additional parameter checkMissingData can optionally turn off
+	  checking for missing data when it's not necessary.
+	. a few help files added
+
+2008/08/05
+
+	. Added random seed setting to blockwise[Consensus]Modules and [consensus]ProjectiveKMeans 
+	  for repeatability
+
+	. Lowered reassignThreshold to 1e-6 to prevent too many reassigned genes.
+
+2008/08/03: 0.42-2
+
+	. Fixed bug causing a crash when no modules are detected.
+
+2008/08/02: 0.42-1
+
+	. More complete help pages, bug in blockwiseModules fixed (reported by Anatole Ghazalpour)
+
+2008/07/23: 0.41
+
+	. Many enhancements, improvements and bugfixes
+
+2008/06/02: 
+
+	. Changes to TOMplot to make the dendrograms on the side more informative
+
+	. Changes to scaleFreePlot to pass more of ... to the plotting
+	function (removed separate title() command).
+
+2008/05/29: 0.12
+
+	. Performance improvements, extra parameters in blockwiseConsensusModules
+
+2008/05/16: 0.11-1
+
+	. nearestNeighborConnectivity (and softConnectivity) now work even when there is 1 gene in the
+	  last block
+	. More bug fixes.
+
+2008/05/15: 0.11-0
+
+	. Numerous bug fixes
+	. blockwise[Consensus]Modules fixed (ub-broken) from the change of batch to block.
+	. blockwise[Consensus]Modules get an option to choose the TOM function.
+
+0.1.0: Basic functions in place.

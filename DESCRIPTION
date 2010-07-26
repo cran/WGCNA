@@ -1,0 +1,19 @@
+Package: WGCNA
+Version: 0.92-3
+Date: 2010-07-26
+Title: Weighted Gene Co-Expression Network Analysis
+Author: Peter Langfelder <Peter.Langfelder@gmail.com> and Steve Horvath
+        <SHorvath@mednet.ucla.edu>
+Maintainer: Peter Langfelder <Peter.Langfelder@gmail.com>
+Depends: R (>= 2.3.0), stats, impute, grDevices, dynamicTreeCut (>=
+        1.20), utils, flashClust, qvalue, Hmisc, splines
+Suggests: GO.db, org.Hs.eg.db, org.Mm.eg.db, AnnotationDbi
+ZipData: no
+License: GPL (>= 2)
+Description: Functions necessary to perform Weighted Gene Co-Expression
+        Network Analysis
+URL:
+        http://www.genetics.ucla.edu/labs/horvath/CoexpressionNetwork/BranchCutting/
+Packaged: 2010-07-26 16:33:01 UTC; plangfelder
+Repository: CRAN
+Date/Publication: 2010-07-26 17:08:05

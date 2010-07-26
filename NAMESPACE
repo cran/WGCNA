@@ -1,0 +1,4 @@
+useDynLib(WGCNA)
+
+exportPattern("^[^\\.]")
+import(grDevices, impute, dynamicTreeCut)
