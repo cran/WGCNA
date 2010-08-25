@@ -1,5 +1,13 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
+2010/08/25: 0.93
+
+	. modulePreservation now also calculates density and connectivity
+	  statistics based on clustering coefficient and maximum adjacency
+	  ratio.
+	. New functions mutualInfoAdjacency and AUV2predicted provide basic
+	  interfacing between mutual information methods and weighted networks
+	. Minor cleanup of help files
 
 2010/07/26: 0.92-3
 
