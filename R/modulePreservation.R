@@ -4,6 +4,11 @@
 # 
 # Changelog:
 
+# 2010/08/04: 
+#   . Adding clusterCoeff and MAR to density preservation statistics
+#   . Adding cor.clusterCoeff and cor.MAR to connectivity preservation statistics
+#   . Adding silhuette width to separability statistics
+
 # Adding p-values to output. For each Z score can add a corresponding p-value, bonferoni corrected p-value,
 # and q value (local FDR)
 
@@ -344,7 +349,7 @@ modulePreservation = function(
                                 "Hit Ctrl-C (Esc in Windows) to stop the calculation."));
    }
 
-   nRegStats = 14;
+   nRegStats = 20;
    nFixStats = 3;
    
    if (!psLoaded)
@@ -561,9 +566,9 @@ modulePreservation = function(
 
    invalidFit = "invalidFit";
      
-   LogIndex = c(rep(c(1, 0, 0, 0, 0), 2), 0, 0, 0, 0)
-   dfMean = c( rep(c(2, 2, 2, 1, 1), 2), 3, 3, 3, 2)
-   dfSD = c( rep(c(2, 2, 2, 2, 2), 2), 2, 2, 2, 2)
+   LogIndex = c(rep(c(1, 0, 0, 0, 0, 0, 0), 2), 0, 0, 0, 0, 0, 0)
+   dfMean = c( rep(c(2, 2, 2, 1, 1, 1, 1), 2), 3, 3, 3, 2, 2, 2)
+   dfSD = c( rep(c(2, 2, 2, 2, 2, 2, 2), 2), 2, 2, 2, 2, 2, 2)
 
    epsilon=0.00001
    meanLM=list()
@@ -673,7 +678,7 @@ modulePreservation = function(
    Z.referenceSeparability = list();
    Z.testSeparability = list();
    Z.accuracy = list();
-   interpolationStat = c(rep(TRUE, 10), FALSE, FALSE, FALSE, rep(TRUE, 4));
+   interpolationStat = c(rep(TRUE, 14), FALSE, FALSE, FALSE, rep(TRUE, 6));
    for(iref in 1:nRefNets)
    {
      observedQuality[[iref]] = list();
@@ -730,12 +735,12 @@ modulePreservation = function(
        {
          if (includekMEallInSummary)
          {
-            connSummaryInd = c(5:8)
+            connSummaryInd = c(7:10)
          } else {
-            connSummaryInd = c(5,7,8);
+            connSummaryInd = c(7,9,10);
          }
        } else {
-         connSummaryInd = c(5,8) # in this case only cor.kIM and cor.Adj which sits in the cor.cor slot
+         connSummaryInd = c(7,10) # in this case only cor.kIM and cor.Adj which sits in the cor.cor slot
        }
        ranksConnectivity = apply(-preservation[, connSummaryInd], 2, rank, na.last = "keep");
        medRankConnectivity = apply(ranksConnectivity, 1, median, na.rm = TRUE);
@@ -987,6 +992,9 @@ modulePreservation = function(
 
 # Calculate module preservation scores for a given multi-expression data set.
 
+
+# color vector present?
+
 .cvPresent = function(cv)
 {
   if (is.null(cv)) return(FALSE);
@@ -1041,7 +1049,6 @@ modulePreservation = function(
    }
    list(accuracy = accuracy, overlapTable = overlap);
 }
-    
 
 #=================================================================================================
 #
@@ -1342,16 +1349,16 @@ modulePreservation = function(
           if (dataIsExpr)
           {
             stats = .coreCalcForExpr(datRef, datRefP, datTest, colorRef_2, opt);
-            interPresNames = spaste(corFnc, c(".kIM", ".kME", ".kMEall", spaste(".", corFnc)));
+            interPresNames = spaste(corFnc, c(".kIM", ".kME", ".kMEall", 
+                                             spaste(".", corFnc), ".clusterCoeff", ".MAR"));
             measureNames = c("propVarExplained", "meanSignAwareKME", "separability", 
-                             "meanSignAwareCorDat", "meanAdj");
+                             "meanSignAwareCorDat", "meanAdj", "meanClusterCoeff", "meanMAR");
  
           } else {
             stats = .coreCalcForAdj(datRef, datRefP, datTest, colorRef_2, opt);
-            interPresNames = spaste(corFnc, c(".kIM", ".kME", ".kIMall", ".adj"));
+            interPresNames = spaste(corFnc, c(".kIM", ".kME", ".kIMall", ".adj", ".clusterCoeff", ".MAR"));
             measureNames = c("propVarExplained", "meanKIM", "separability", 
-                             "meanSignAwareCorDat", "meanAdj");
- 
+                             "meanSignAwareCorDat", "meanAdj", "meanClusterCoeff", "meanMAR");
           }
 
           name1=paste(setNames[[ref]],"_vs_",setNames[[tnet]],sep="")  
@@ -1359,11 +1366,13 @@ modulePreservation = function(
                                   stats$proVar[, 1], 
                                   if (dataIsExpr) stats$meanSignAwareKME[, 1] else stats$meankIM[, 1],
                                   stats$Separability[, 1], stats$MeanSignAwareCorDat[,1],
-                                  stats$MeanAdj[, 1]);
+                                  stats$MeanAdj[, 1], stats$meanClusterCoeff[, 1], 
+                                  stats$meanMAR[, 1]);
           intraPres[[tnet]]=cbind(stats$proVar[, 2], 
                                   if (dataIsExpr) stats$meanSignAwareKME[, 2] else stats$meankIM[, 2],
                                   stats$Separability[, 2], stats$MeanSignAwareCorDat[, 2], 
-                                  stats$MeanAdj[, 2])
+                                  stats$MeanAdj[, 2], stats$meanClusterCoeff[, 2],
+                                  stats$meanMAR[, 2])
           #colnames(quality[[tnet]]) = paste(c("moduleSize", measureNames), setNames[ref], sep = "_");
           #colnames(intraPres[[tnet]]) = paste(measureNames, name1, sep = "_");
           colnames(quality[[tnet]]) = c("moduleSize", paste(measureNames, "qual", sep="."));
@@ -1373,10 +1382,8 @@ modulePreservation = function(
           names(intraPres)[tnet]=paste(name1,sep="")
           quality[[tnet]] = as.data.frame(quality[[tnet]]);
           intraPres[[tnet]] = as.data.frame(intraPres[[tnet]]);
-          #interPres[[tnet]]= as.data.frame(cbind(corkME, covkME, #corkMEall2, 
-          #                                       meanProductkME, corkMEall,
-          #                                       ICORdat, ICOVdat, spdat, ICOVadj, spadj))
-          interPres[[tnet]]= as.data.frame(cbind(stats$corkIM, stats$corkME, stats$corkMEall, stats$ICORdat))
+          interPres[[tnet]]= as.data.frame(cbind(stats$corkIM, stats$corkME, stats$corkMEall, stats$ICORdat,
+                                                 stats$corCC, stats$corMAR))
           colnames(interPres[[tnet]])=interPresNames;
           rownames(interPres[[tnet]])=colorLevels
           names(interPres)[[tnet]]=paste(name1,sep="")
@@ -1441,6 +1448,39 @@ modulePreservation = function(
   comb;
 }
 
+
+# This function is basically copied from the file networkConcepts.R
+
+.computeLinksInNeighbors = function(x, imatrix){x %*% imatrix %*% x}
+.computeSqDiagSum = function(x, vec) { sum(x^2 * vec) };
+
+.clusterCoeff = function(adjmat1)
+{
+  # diag(adjmat1)=0
+  no.nodes=dim(adjmat1)[[1]]
+  nolinksNeighbors <- c(rep(-666,no.nodes))
+  total.edge <- c(rep(-666,no.nodes))
+  maxh1=max(as.dist(adjmat1) ); minh1=min(as.dist(adjmat1) );
+  nolinksNeighbors <- apply(adjmat1, 1, .computeLinksInNeighbors, imatrix=adjmat1)
+  subTerm = apply(adjmat1, 1, .computeSqDiagSum, vec = diag(adjmat1));
+  plainsum  <- apply(adjmat1, 1, sum)
+  squaresum <- apply(adjmat1^2, 1, sum)
+  total.edge = plainsum^2 - squaresum
+  #CChelp=rep(-666, no.nodes)
+  CChelp=ifelse(total.edge==0,0, (nolinksNeighbors-subTerm)/total.edge)
+  CChelp
+} 
+
+# This function assumes that the diagonal of the adjacency matrix is 1
+.MAR = function(adjacency)
+{
+  denom = apply(adjacency, 2, sum)-1;
+  mar = (apply(adjacency^2, 2, sum) - 1)/denom;
+  mar[denom==0] = NA;
+  mar;
+}
+
+    
 
 #=======================================================================================
 #
@@ -1557,7 +1597,11 @@ modulePreservation = function(
   MeanSignAwareCorDat=matrix(NA,nMods ,2)
   ICORdat=rep(NA,nMods)
   corkIM = rep(NA, nMods);
-  MeanAdj=matrix(NA,nMods ,2)
+  corCC = rep(NA, nMods);
+  corMAR = rep(NA, nMods);
+  MeanAdj = matrix(NA,nMods ,2)
+  meanCC = matrix(NA,nMods ,2)
+  meanMAR = matrix(NA,nMods ,2)
   for(j in 1:nMods ) if(act[j])
   {
      if (!opt$densityOnly) 
@@ -1634,12 +1678,26 @@ modulePreservation = function(
         adjacency3 = ModuleCorData3^6;
         adjacency3[ModuleCorData3 < 0] = 0;
      }
+     ccRef = .clusterCoeff(adjacency1);
+     ccRefP = .clusterCoeff(adjacency2);
+     ccTest = .clusterCoeff(adjacency3);
+     marRef = .MAR(adjacency1);
+     marRefP = .MAR(adjacency2);
+     marTest = .MAR(adjacency3);
+     meanCC[j, 1] = mean(ccRefP);
+     meanCC[j, 2] = mean(ccTest);
+     meanMAR[j, 1] = mean(marRefP);
+     meanMAR[j, 2] = mean(marTest);
      if (!opt$densityOnly)
      {
        kIMref = apply(adjacency1, 2, sum, na.rm = TRUE)
        kIMtest = apply(adjacency3, 2, sum, na.rm = TRUE)
        corExpr = parse(text=paste(opt$corFnc, "(kIMref, kIMtest, ", opt$corOptions, ")"));
        corkIM[j] = eval(corExpr);
+       corExpr = parse(text=paste(opt$corFnc, "(ccRef, ccTest, ", opt$corOptions, ")"));
+       corCC[j] = eval(corExpr);
+       corExpr = parse(text=paste(opt$corFnc, "(marRef, marTest, ", opt$corOptions, ")"));
+       corMAR[j] = eval(corExpr);
      }
 
      MeanAdj[j,1]=mean(as.dist(adjacency2), na.rm=TRUE)
@@ -1649,7 +1707,7 @@ modulePreservation = function(
        corkIM = corkIM, corkME = corkME, corkMEall = corkMEall, 
        proVar = proVar, meanSignAwareKME = meanSignAwareKME,
        Separability = Separability, MeanSignAwareCorDat = MeanSignAwareCorDat, ICORdat = ICORdat,
-       MeanAdj = MeanAdj)
+       MeanAdj = MeanAdj, meanClusterCoeff = meanCC, meanMAR = meanMAR, corCC = corCC, corMAR = corMAR)
 }
 
 #===================================================================================================
@@ -1819,13 +1877,35 @@ modulePreservation = function(
   # if (verbose > 1) printFlush(paste(spaces, "....calculating separability..."));
   MeanAdj = matrix(NA, nMods, 2);
   sepMat = array(NA, dim = c(nMods, nMods, 2));
+  corCC = rep(NA, nMods);
+  corMAR = rep(NA, nMods);
+  meanCC = matrix(NA,nMods ,2)
+  meanMAR = matrix(NA,nMods ,2)
   for (m in 1:nMods) if (act[m])
   {
     modAdj = datRefP[modGenes[[m]], modGenes[[m]]];
+    ccRef = .clusterCoeff(datRef);
+    meanCC[m, 1] = mean(modAdj);
+    marRef = .MAR(modAdj);
+    meanMAR[m, 1] = mean(marRef);
     MeanAdj[m,1]=mean(as.dist(modAdj), na.rm = TRUE);
+
+    modAdj = datRef[modGenes[[m]], modGenes[[m]]];
+    ccRef = .clusterCoeff(modAdj);
+    marRef = .MAR(modAdj);
   
     modAdj = datTest[modGenes[[m]], modGenes[[m]]];
+    ccTest = .clusterCoeff(modAdj);
+    marTest = .MAR(modAdj);
     MeanAdj[m,2] = mean(as.dist(modAdj), na.rm = TRUE);
+
+    meanCC[m, 2] = mean(ccTest);
+    meanMAR[m, 2] = mean(marTest);
+
+    corExpr = parse(text=paste(opt$corFnc, "(ccRef, ccTest, ", opt$corOptions, ")"));
+    corCC[m] = eval(corExpr);
+    corExpr = parse(text=paste(opt$corFnc, "(marRef, marTest, ", opt$corOptions, ")"));
+    corMAR[m] = eval(corExpr);
 
     if ((m > 1) && (colorLevels[m]!=gold))
     {
@@ -1852,5 +1932,5 @@ modulePreservation = function(
        meanSignAwareKME = meanSignAwareKME,
        meankIM = meankIM,
        Separability = Separability, MeanSignAwareCorDat = MeanSignAwareCorDat, ICORdat = ICORdat,
-       MeanAdj = MeanAdj)
+       MeanAdj = MeanAdj, meanClusterCoeff = meanCC, meanMAR = meanMAR, corCC = corCC, corMAR = corMAR)
 }

@@ -13,11 +13,11 @@ also be used for general association networks specified by a symmetric adjacency
 \details{
 \tabular{ll}{
 Package: \tab WGCNA\cr
-Version: \tab 0.92-3\cr
-Date: \tab 2010-07-26\cr
-Depends: \tab R (>= 2.3.0), stats, fields, impute, grDevices, dynamicTreeCut (>= 1.20), flashClust, qvalue,
+Version: \tab 0.93\cr
+Date: \tab 2010-08-25\cr
+Depends: \tab R (>= 2.3.0), stats, impute, grDevices, dynamicTreeCut (>= 1.20), utils, flashClust, qvalue,
 Hmisc, splines \cr
-Suggests: qvalue, AnnotationDbi, GO.db, org.*.eg.db 
+Suggests: AnnotationDbi, GO.db, org.*.eg.db, infotheo, entropy, minet
 ZipData: \tab no\cr
 License: \tab GPL (>= 2)\cr
 URL: \tab http://www.genetics.ucla.edu/labs/horvath/CoexpressionNetwork/Rpackages/WGCNA/\cr
@@ -39,10 +39,11 @@ addTraitToMEs           Add trait information to multi-set module
 adjacency               Calculate network adjacency
 alignExpr               Align expression data with given vector
 automaticNetworkScreening
-                        ~~function to do ... ~~
+                        One-step automatic network gene screening
 automaticNetworkScreeningGS
                         One-step automatic network gene screening with
                         external gene significance
+AUV2predicted           Prediction of weighted mutual information adjacency matrix by correlation
 bicor                   Biweight Midcorrelation
 bicorAndPvalue          Biweight Midcorrelation and the associated p-value
 blockwiseConsensusModules
@@ -113,6 +114,7 @@ moduleEigengenes        Calculate module eigengenes
 moduleNumber            Fixed-height cut of a dendrogram
 modulePreservation	Calculation of module preservation statistics
 multiSetMEs             Calculate module eigengenes
+mutualInfoAdjacency     Calculate weighted adjacency matrices based on mutual information
 nPresent                Number of present data entries
 nearestNeighborConnectivity
                         Connectivity to a constant number of nearest neighbors
@@ -120,8 +122,8 @@ nearestNeighborConnectivityMS
                         Connectivity to a constant number of nearest
                         neighbors across multiple data sets
 networkConcepts         Calculations of network concepts
-networkScreening        ~~function to do ... ~~
-networkScreeningGS      ~~function to do ... ~~
+networkScreening        Network screening 
+networkScreeningGS      Network screening with external gene significance
 normalizeLabels         Transform numerical labels into normal order
 numbers2colors          Color representation for a numeric variable
 orderMEs                Put close eigenvectors next to each other
@@ -152,7 +154,7 @@ recutConsensusTrees     Repeat blockwise consensus module detection
                         from pre-calculated data
 redWhiteGreen           Red-white-green color sequence
 relativeCorPredictionSuccess
-                        ~~function to do ... ~~
+                        Compare prediction success
 removeGreyME            Removes the grey eigengene from a given
                         collection of eigengenes.
 scaleFreeFitIndex	Calculation of fitting statistics for evaluating scale free topology fit.
@@ -191,7 +193,7 @@ verboseScatterplot      Scatterplot annotated by regression line and p-value
 }
 \author{
 Peter Langfelder <Peter.Langfelder@gmail.com> and Steve Horvath <SHorvath@mednet.ucla.edu>, with
-contributions by Jun Dong, Jeremy Miller, Andy Yip, and Bin Zhang. 
+contributions by Jun Dong, Jeremy Miller, Lin Song, Andy Yip, and Bin Zhang
 
 Maintainer: Peter Langfelder <Peter.Langfelder@gmail.com>
 }

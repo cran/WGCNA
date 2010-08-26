@@ -76,8 +76,7 @@ the range of the x and y axis. }
 
   \item{plotLegend}{ logical: should a color legend be plotted? }
 
-  \item{\dots}{ other arguments to functions \code{\link[fields]{image.plot}} 
-(for \code{plotLegend==TRUE}) or \code{\link{heatmap}} (for \code{plotLegend==FALSE}). }
+  \item{\dots}{ other arguments to function \code{\link{heatmap}}. }
 }
 \details{
   The function basically plots a standard heatmap plot of the given \code{Matrix} and embellishes it with
