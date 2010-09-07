@@ -1,5 +1,12 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
+2010/08/25: 0.94
+
+	. DIFF: big fixed in modulePreservation that put incorrect input into
+	  Zconnectivity.preservation which also affected Zsummary. We apologize
+	  for this error.
+	. Bug fixes in function collapseRows
+
 2010/08/25: 0.93
 
 	. modulePreservation now also calculates density and connectivity
