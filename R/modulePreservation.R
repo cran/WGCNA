@@ -737,7 +737,7 @@ modulePreservation = function(
          {
             connSummaryInd = c(7:10)
          } else {
-            connSummaryInd = c(7,9,10);
+            connSummaryInd = c(7,8,10);
          }
        } else {
          connSummaryInd = c(7,10) # in this case only cor.kIM and cor.Adj which sits in the cor.cor slot
