@@ -102,7 +102,7 @@ annotation in the \code{xSymbols} and \code{ySymbols} arguments.
   None.
 }
 \author{ Peter Langfelder}
-\seealso{ \code{\link[fields]{image.plot}}, \code{\link{heatmap}}, \code{\link{colors}} }
+\seealso{ \code{\link{heatmap}}, \code{\link{colors}} }
 
 \examples{
 

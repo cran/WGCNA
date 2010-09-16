@@ -1,6 +1,13 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
-2010/08/25: 0.94
+
+2010/09/16: 0.95
+
+	. More changes to function collapseRows: renamed arguments, changed defaults, 
+	  code cleaned up and bugs fixed. The function collapseRows should still be
+	  considered experimental.
+
+2010/09/05: 0.94
 
 	. DIFF: big fixed in modulePreservation that put incorrect input into
 	  Zconnectivity.preservation which also affected Zsummary. We apologize
