@@ -90,7 +90,7 @@ Allowed values are (unique abbreviations of)  \code{"standard"}, \code{"hyperbol
 
   \item{cex.preservation}{ character expansion factor for preservation display. }
 
-  \item{\dots}{ other graphical arguments to function \code{link[fields]{image.plot}}. }
+  \item{\dots}{ other graphical arguments to function \code{\link{labeledHeatmap}}. }
 }
 \details{
 
