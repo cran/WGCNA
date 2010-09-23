@@ -31,6 +31,7 @@ bicor = function(x, y = NULL, robustX = TRUE, robustY = TRUE, use = 'all.obs', m
   if (nThreads < 0) stop("nThreads must be non-negative.");
 
   x = as.matrix(x);
+  if (prod(dim(x))==0) stop("'x' has a zero dimension."); 
   nNA = 0;
   err = 0;
   if (is.null(y))
@@ -53,6 +54,7 @@ bicor = function(x, y = NULL, robustX = TRUE, robustY = TRUE, use = 'all.obs', m
     if (!is.null(dimnames(x)[[2]])) dimnames(res$res) = list(dimnames(x)[[2]],  dimnames(x)[[2]] );
   } else {
     y = as.matrix(y);
+    if (prod(dim(y))==0) stop("'y' has a zero dimension."); 
     if (nrow(x)!=nrow(y))
       stop("'x' and 'y' have incompatible dimensions (unequal numbers of rows).");
     bi = matrix(0, ncol(x), ncol(y));
@@ -113,6 +115,7 @@ cor = function(x, y = NULL, use = "all.obs", method = c("pearson", "kendall", "s
       if (nThreads < 0) stop("nThreads must be non-negative.");
     
       x = as.matrix(x);
+      if (prod(dim(x))==0) stop("'x' has a zero dimension."); 
       nNA = 0;
       err = 0;
       if (is.null(y))
@@ -127,6 +130,7 @@ cor = function(x, y = NULL, use = "all.obs", method = c("pearson", "kendall", "s
          if (!is.null(dimnames(x)[[2]])) dimnames(res$res) = list(dimnames(x)[[2]],  dimnames(x)[[2]] );
       } else {
          y = as.matrix(y);
+         if (prod(dim(y))==0) stop("'y' has a zero dimension."); 
          if (nrow(x)!=nrow(y))
             stop("'x' and 'y' have incompatible dimensions (unequal numbers of rows).");
          bi = matrix(0, ncol(x), ncol(y));

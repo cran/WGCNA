@@ -1,6 +1,13 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
 
+2010/09/23: 0.96
+
+	. New functions pquantile, pmean, pmedian for calculation of
+	  "parallel" quantiles, means, and medians.
+	. Functions cor and bicor now give a more descriptive error description when 
+	  an argument with one dimension equal zero is passed to the functions.
+
 2010/09/16: 0.95
 
 	. More changes to function collapseRows: renamed arguments, changed defaults, 
