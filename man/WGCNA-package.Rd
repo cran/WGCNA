@@ -13,8 +13,8 @@ also be used for general association networks specified by a symmetric adjacency
 \details{
 \tabular{ll}{
 Package: \tab WGCNA\cr
-Version: \tab 0.95\cr
-Date: \tab 2010-09-16\cr
+Version: \tab 0.96\cr
+Date: \tab 2010-09-23\cr
 Depends: \tab R (>= 2.3.0), stats, impute, grDevices, dynamicTreeCut (>= 1.20), utils, flashClust, qvalue,
 Hmisc, splines \cr
 Suggests: AnnotationDbi, GO.db, org.*.eg.db, infotheo, entropy, minet
@@ -141,6 +141,9 @@ plotMEpairs             Pairwise scatterplots of eigengenes
 plotModuleSignificance
                         Barplot of module significance
 plotNetworkHeatmap      Network heatmap plot
+pmean                   Parallel mean
+pmedian                 Parallel median
+pquantile               Parallel quantile
 preservationNetworkConnectivity
                         Network preservation calculations
 projectiveKMeans        Projective K-means (pre-)clustering of
