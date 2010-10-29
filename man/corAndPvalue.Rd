@@ -41,6 +41,7 @@ The output is not as full-featured as \code{\link{cor.test}}, but can work with 
 A list with the following components
  \item{cor}{the calculated correlations}
  \item{p}{the Student p-values corresponding to the calculated correlations}
+ \item{Z}{Fisher transform of the calculated correlations}
 }
 \author{
 %%  ~~who you are~~

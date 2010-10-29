@@ -1,6 +1,19 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
 
+2010/10/29: 0.97
+
+	. Functions [bi]corAndPvalue now also return the Fisher Z statistics.
+	. Function adjacency can now calculate distance-based networks as well, 
+	  via type="distance". Various distance functions and options can be used.
+	. Functions signedKME and networkScreening now accept arguments cor
+	  and corOptions that can be used to specify the correlation function
+	  to be used in the calculations.
+	. Argument 'y' in [bi]corAndPvalue now has a default value NULL
+	. DIFF: displayed value of correlation p-value in function
+	  verboseScatterplot is now based on Student distribution instead of
+	  Fisher normal approximation. This change only affects plots.
+
 2010/09/23: 0.96
 
 	. New functions pquantile, pmean, pmedian for calculation of

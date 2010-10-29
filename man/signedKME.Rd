@@ -5,7 +5,7 @@
   Calculation of (signed) eigengene-based connectivity, also known as module membership.
 }
 \usage{
-signedKME(datExpr, datME, outputColumnName = "kME")
+signedKME(datExpr, datME, outputColumnName = "kME", corFnc = "cor", corOptions = "use = 'p'")
 }
 \arguments{
   \item{datExpr}{ a data frame containing the gene expression data. Rows correspond to samples and
@@ -15,6 +15,13 @@ columns to genes. Missing values are allowed and will be ignored. }
 module eigengenes. }
 
   \item{outputColumnName}{ a character string specifying the prefix of column names of the output. }
+
+  \item{corFnc}{ character string specifying the function to be used to calculate co-expression
+similarity. Defaults to Pearson correlation. Any function returning values between -1 and 1 can be used. }
+
+  \item{corOptions}{ character string specifying additional arguments to be passed to the function given
+by \code{corFnc}. Use \code{"use = 'p', method = 'Spearman'"} to obtain Spearman correlation.   }
+
 }
 \details{
   Signed eigengene-based connectivity of a gene in a module is defined as the correlation of the gene

@@ -15,6 +15,7 @@
 .largestBlockSize = 1e7;
 
 .networkTypes = c("unsigned", "signed", "signed hybrid");
+.adjacencyTypes = c(.networkTypes, "distance");
 .TOMTypes = c("none", "unsigned", "signed");
 
 #==========================================================================================
@@ -650,31 +651,44 @@ subsetTOM = function(datExpr, subset,
 # Caution: no checking of selectCols validity is performed.
 # The probability method is removed as it's not used.
  
-adjacency = function(datExpr, selectCols=NULL, power = 6, type = "unsigned",
-                     corFnc = "cor", corOptions = "use = 'p'")
+adjacency = function(datExpr, selectCols=NULL, type = "unsigned", power = if (type=="distance") 1 else 6,
+                     corFnc = "cor", corOptions = "use = 'p'",
+                     distFnc = "dist", distOptions = "method = 'euclidean'")
 {
-  intType = charmatch(type, .networkTypes)
+  intType = charmatch(type, .adjacencyTypes)
   if (is.na(intType))
     stop(paste("Unrecognized 'type'. Recognized values are", paste(.networkTypes, collapse = ", ")));
 
-  if (is.null(selectCols))
+  if (intType < 4)
   {
-    corExpr = parse(text = paste(corFnc, "(datExpr, ", corOptions, ")"));
-    # cor_mat = cor(datExpr, use = "p");
-    cor_mat = eval(corExpr);
+    if (is.null(selectCols))
+    {
+      corExpr = parse(text = paste(corFnc, "(datExpr, ", corOptions, ")"));
+      # cor_mat = cor(datExpr, use = "p");
+      cor_mat = eval(corExpr);
+    } else {
+      corExpr = parse(text = paste(corFnc, "(datExpr, datExpr[, selectCols], ", corOptions, ")"));
+      #cor_mat = cor(datExpr, datExpr[, selectCols], use="p");
+      cor_mat = eval(corExpr);
+    }
   } else {
-    corExpr = parse(text = paste(corFnc, "(datExpr, datExpr[, selectCols], ", corOptions, ")"));
-    #cor_mat = cor(datExpr, datExpr[, selectCols], use="p");
-    cor_mat = eval(corExpr);
+    if (!is.null(selectCols)) 
+      stop("The argument 'selectCols' cannot be used for distance adjacency.");
+    corExpr = parse(text = paste(distFnc, "(t(datExpr), ", distOptions, ")"));
+    # cor_mat = cor(datExpr, use = "p");
+    d = eval(corExpr);
+    if (any(d<0)) 
+      warning("Function WGCNA::adjacency: Distance function returned (some) negative values.");
+    cor_mat = 1-as.matrix( (d/max(d, na.rm = TRUE))^2 );
   }
+
   if (intType==1)
   { cor_mat = abs(cor_mat); 
   } else if (intType==2)
   { cor_mat = (1+cor_mat)/2; 
   } else if (intType==3)
   { cor_mat[cor_mat < 0] = 0; 
-  } else 
-     stop("Unrecognized type argument. Recognized values are 'unsigned', 'signed', and 'signed hybrid'."); 
+  }
   cor_mat^power;
 }
 
@@ -1056,7 +1070,8 @@ checkAdjMat = function(adjMat, min = 0, max = 1)
 # tens of thousands of gene expression data. 
 # If there are many eigengenes (say hundreds) consider decreasing the block size.
 
-signedKME = function(datExpr, datME, outputColumnName="kME") 
+signedKME = function(datExpr, datME, outputColumnName="kME",
+                     corFnc = "cor", corOptions = "use = 'p'") 
 {
   datExpr=data.frame(datExpr)
   datME=data.frame(datME)
@@ -1074,7 +1089,11 @@ signedKME = function(datExpr, datME, outputColumnName="kME")
   if (min(no.presentdatExpr)<..minNSamples ) 
     warning(paste("Some gene expressions have fewer than 4 observations.\n",
             "    Hint: consider removing genes with too many missing values or collect more arrays."))
-  output=data.frame(cor(datExpr, datME, use="p"))
+
+  #output=data.frame(cor(datExpr, datME, use="p"))
+  corExpr = parse(text = paste("data.frame(", corFnc, "(datExpr, datME, ", corOptions, "))" ));
+  output = eval(corExpr);
+
   output[no.presentdatExpr<..minNSamples, ]=NA
   names(output)=paste(outputColumnName, substring(names(datME), first=3, last=100), sep="")  
   dimnames(output)[[1]] = names(datExpr) 
@@ -1266,7 +1285,7 @@ verboseScatterplot = function(x, y,
   corExpr = parse(text = paste(corFnc, "(x, y, ", corOptions, ")"));
   #cor=signif(cor(x,y,use="p",method=correlationmethod),2)
   cor=signif(eval(corExpr),2)
-  corp = signif(corPvalueFisher(cor, sum(is.finite(x) & is.finite(y))), 2);
+  corp = signif(corPvalueStudent(cor, sum(is.finite(x) & is.finite(y))), 2);
   #corpExpr = parse(text = paste("cor.test(x, y, ", corOptions, ")"));
   #corp=signif(cor.test(x,y,use="p",method=correlationmethod)$p.value,2)
   #corp=signif(eval(corpExpr)$p.value,2)
@@ -2775,6 +2794,7 @@ networkScreeningGS = function(datExpr , datME, GS ,
 
 networkScreening = function(
                y, datME, datExpr, 
+               corFnc = "cor", corOptions = "use = 'p'",
                oddPower = 3,
                blockSize = 1000,
                minimumSampleSize = ..minNSamples,
@@ -2790,18 +2810,32 @@ networkScreening = function(
   if (nGenes>nMEs & addMEy) {   datME=data.frame(y,datME)  }
   nMEs=dim(as.matrix(datME))[[2]]
   RawCor.Weighted=rep(0,nGenes)
-  Cor.Standard= as.numeric(cor(y,datExpr,use= "p") )
+  #Cor.Standard= as.numeric(cor(y,datExpr,use= "p") )
+  corExpr = parse(text = paste("as.numeric( ", corFnc, "(y,datExpr, ", corOptions, "))")); 
+  Cor.Standard= eval(corExpr)
+
   NoAvailable=apply(!is.na(datExpr), 2,sum)
   Cor.Standard[NoAvailable< minimumSampleSize]=NA
-  if (nGenes==1) RawCor.Weighted=as.numeric(cor(y,datExpr,use= "p") )
-  nBlocks=as.integer(nMEs/blockSize)
-  if (nBlocks>0) for (i in 1:nBlocks) 
+  if (nGenes==1) 
   {
-    printFlush(paste("block number = ", i))
-    index1=c(1:blockSize)+(i-1)* blockSize
+    #RawCor.Weighted=as.numeric(cor(y,datExpr,use= "p") )
+    corExpr = parse(text = paste("as.numeric(" , corFnc, "(y,datExpr, ", corOptions, "))"));
+    RawCor.Weighted = eval(corExpr);
+  }
+  start = 1; i = 1; 
+  while (start <= nMEs)
+  {
+    end = min(start + blockSize -1, nMEs);
+    if (i>1 || end < nMEs) printFlush(paste("block number = ", i))
+    index1=c(start:end)
     datMEBatch= datME[,index1]
-    datKMEBatch=as.matrix(signedKME(datExpr,datMEBatch, outputColumnName="MM."))
-    ES.CorBatch= as.vector(cor(  as.numeric(as.character(y))  ,datMEBatch, use="p"))
+    datKMEBatch=as.matrix(signedKME(datExpr,datMEBatch, outputColumnName="MM.", 
+                                    corFnc = corFnc, corOptions = corOptions))
+    # ES.CorBatch= as.vector(cor(  as.numeric(as.character(y))  ,datMEBatch, use="p"))
+    corExpr = parse(text = paste("as.vector( ", corFnc, "(  as.numeric(as.character(y))  ,datMEBatch,",
+                                  corOptions, "))" ));
+    ES.CorBatch = eval(corExpr);
+
     #weightESy
     ES.CorBatch[ES.CorBatch>.999]= weightESy*1+ (1- weightESy)* 
                                     max(abs(ES.CorBatch[ES.CorBatch <.999 ]),na.rm=T)
@@ -2815,27 +2849,8 @@ networkScreening = function(
     } # end of if
     RawCor.WeightedBatch= as.matrix(datKMEBatch)^oddPower %*%  as.matrix(ES.CorBatch^oddPower)
     RawCor.Weighted=RawCor.Weighted+RawCor.WeightedBatch
-  } # end of for (i in 1:nBlocks
-  if (nMEs-nBlocks*blockSize>0 ) 
-  {
-    restindex=c((nBlocks*blockSize+1):nMEs)
-    datMEBatch= datME[,restindex]
-    datKMEBatch=as.matrix(signedKME(datExpr,datMEBatch, outputColumnName="MM."))
-    ES.CorBatch= as.vector(cor(  as.numeric(as.character(y))  ,datMEBatch, use="p"))
-    #weightESy
-    ES.CorBatch[ES.CorBatch>.999]= weightESy*1+ (1- weightESy)* 
-                                    max(abs(ES.CorBatch[ES.CorBatch <.999 ]),na.rm=T)
-    # the following omits the diagonal when datME=datExpr
-    if (nGenes==nMEs & removeDiag) {diag(datKMEBatch[restindex,])=0}
-    if (nGenes==nMEs )
-    {
-      # missing values will not be used 
-      datKMEBatch[is.na(datKMEBatch)]=0
-      ES.CorBatch[is.na(ES.CorBatch)]=0
-    } # end of if
-    RawCor.WeightedBatch= as.matrix(datKMEBatch)^oddPower %*% ES.CorBatch^oddPower
-    RawCor.Weighted=RawCor.Weighted+RawCor.WeightedBatch
-  } # end of if (nMEs-nBlocks*blockSize>0 )
+    start = end + 1;
+  } # end of while (start <= nMEs)
   RawCor.Weighted=RawCor.Weighted/nMEs
   RawCor.Weighted[NoAvailable< minimumSampleSize]=NA
   #to avoid dividing by zero we scale it as follows
@@ -2892,6 +2907,7 @@ networkScreening = function(
 
   datout=data.frame(p.Weighted, q.Weighted, Cor.Weighted, Z.Weighted,
                     p.Standard, q.Standard, Cor.Standard, Z.Standard)
+  names(datout) = sub("Cor", corFnc, names(datout), fixed = TRUE);
   datout
 } # end of function
 
