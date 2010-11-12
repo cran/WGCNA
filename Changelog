@@ -1,6 +1,15 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
 
+2010/11/12: 0.98
+
+	. Bugfix in functions [bi]corAndPvalue that gave incorrect p-values
+	  when input y = NULL
+	. Functions [bi]corAndPvalue now also return the Student t statistic
+	  from which the p-values are calculated. 
+	. Function standardScreeningNumericTrait now accepts arguments corFnc
+	  and corOptions
+
 2010/10/29: 0.97
 
 	. Functions [bi]corAndPvalue now also return the Fisher Z statistics.

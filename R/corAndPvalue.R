@@ -12,7 +12,7 @@ corAndPvalue = function(x, y = NULL,
   finMat = !is.na(x)
   if (is.null(y))
   {
-    np = t(finMat) %*% is.na(finMat);
+    np = t(finMat) %*% finMat;
   } else {
     y = as.matrix(y);
     np = t(finMat) %*% (!is.na(y));
@@ -32,7 +32,7 @@ corAndPvalue = function(x, y = NULL,
     p = pt(T, np - 2, lower.tail = FALSE)
   }
 
-  list(cor = cor, p = p, Z = Z);
+  list(cor = cor, p = p, Z = Z, t = T);
 }
 
 bicorAndPvalue = function(x, y = NULL, use = "pairwise.complete.obs", 
@@ -45,7 +45,7 @@ bicorAndPvalue = function(x, y = NULL, use = "pairwise.complete.obs",
   finMat = !is.na(x)
   if (is.null(y))
   {
-    np = t(finMat) %*% is.na(finMat);
+    np = t(finMat) %*% finMat;
   } else {
     y = as.matrix(y);
     np = t(finMat) %*% (!is.na(y));
@@ -66,7 +66,7 @@ bicorAndPvalue = function(x, y = NULL, use = "pairwise.complete.obs",
     p = pt(T, np - 2, lower.tail = FALSE)
   }
 
-  list(bicor = cor, p = p, Z = Z);
+  list(bicor = cor, p = p, Z = Z, t = T);
 }
 
 

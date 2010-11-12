@@ -4498,7 +4498,7 @@ if (!qValues) {
 #
 #================================================================================
 
-standardScreeningNumericTrait= function (datExpr, yNumeric) 
+standardScreeningNumericTrait= function (datExpr, yNumeric, corFnc = "cor", corOptions = "use = 'p'") 
 { 
 datExpr=data.frame(datExpr)
     if (length(yNumeric) != dim(datExpr)[[1]]) 
@@ -4507,17 +4507,19 @@ datExpr=data.frame(datExpr)
     pvalueStudent = rep(NA, dim(datExpr)[[2]])
     AreaUnderROC = rep(NA, dim(datExpr)[[2]])
        
+  corExpr = parse(text = paste("as.numeric(", corFnc, "(yNumeric, datExpr[,i],", corOptions, "))"));
   for (i in 1:dim(datExpr)[[2]]) {
-        corPearson[i] = as.numeric(cor(yNumeric, datExpr[,i], use = "p"))
+        #corPearson[i] = as.numeric(cor(yNumeric, datExpr[,i], use = "p"))
+        corPearson[i] = eval(corExpr);
         no.present=  sum( ! is.na(datExpr[,i])  & ! is.na(yNumeric)   )
         pvalueStudent[i] = corPvalueStudent(corPearson[i], no.present )
-AreaUnderROC[i] = rcorr.cens(datExpr[, i], yNumeric, 
+        AreaUnderROC[i] = rcorr.cens(datExpr[, i], yNumeric, 
             outx = T)[[1]]
     }
     q.Student=rep(NA, length(pvalueStudent) )
           rest1= ! is.na(pvalueStudent) 
     q.Student[rest1] = qvalue(pvalueStudent[rest1])$qvalues
-    output = data.frame(ID = dimnames(datExpr)[[2]], corPearson = corPearson, 
+    output = data.frame(ID = dimnames(datExpr)[[2]], cor = corPearson, 
         pvalueStudent = pvalueStudent, qvalueStudent = q.Student, 
 AreaUnderROC = AreaUnderROC)
     output
