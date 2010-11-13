@@ -44,6 +44,7 @@ A list with the following components
  \item{bicor}{the calculated correlations}
  \item{p}{the Student p-values corresponding to the calculated correlations}
  \item{Z}{Fisher transform of the calculated correlations}
+ \item{t}{Student t statistics of the calculated correlations}
 }
 \author{
 %%  ~~who you are~~
