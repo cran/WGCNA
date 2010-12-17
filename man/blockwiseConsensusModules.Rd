@@ -43,6 +43,7 @@ blockwiseConsensusModules(
   maxPOutliers = 1,
   quickCor = 0,
   pearsonFallback = "individual",
+  cosineCorrelation = FALSE,
   nThreads = 0,
   verbose = 2, indent = 0)
 }
@@ -210,6 +211,9 @@ If set to \code{"individual"}, Pearson calculation will be used only for columns
 If set to \code{"all"}, the presence of a single zero mad will cause the whole variable to be treated in
 Pearson correlation manner (as if the corresponding \code{robust} option was set to \code{FALSE}). Has no
 effect for Pearson correlation. See \code{\link{bicor}}.}
+
+  \item{cosineCorrelation}{logical: should the cosine version of the correlation calculation be used? The 
+cosine calculation differs from the standard one in that it does not subtract the mean. }
 
   \item{nThreads}{ non-negative integer specifying the number of parallel threads to be used by certain
 parts of correlation calculations. This option only has an effect on systems on which a POSIX thread

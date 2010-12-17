@@ -11,6 +11,9 @@ bicor(x, y = NULL,
       maxPOutliers = 1,
       quick = 0,
       pearsonFallback = "individual",
+      cosine = FALSE, 
+      cosineX = cosine,
+      cosineY = cosine,
       nThreads = 0, 
       verbose = 0, indent = 0)
 }
@@ -38,12 +41,6 @@ not equal to) Pearson correlation. }
   \item{quick}{ real number between 0 and 1 that controls the handling of missing data in the
 calculation of correlations. See details. }
 
-  \item{nThreads}{ non-negative integer specifying the number of parallel threads to be used by certain
-parts of correlation calculations. This option only has an effect on systems on which a POSIX thread
-library is available (which currently includes Linux and Mac OSX, but excludes Windows).
-If zero, the number of online processors will be used if it can be determined dynamically, otherwise
-correlation calculations will use 2 threads. }
-
   \item{pearsonFallback}{Specifies whether the bicor calculation should revert to Pearson when median
 absolute deviation (mad) is zero. Recongnized values are (abbreviations of) 
 \code{"none", "individual", "all"}. If set to
@@ -51,6 +48,22 @@ absolute deviation (mad) is zero. Recongnized values are (abbreviations of)
 If set to \code{"individual"}, Pearson calculation will be used only for columns that have zero mad.
 If set to \code{"all"}, the presence of a single zero mad will cause the whole variable to be treated in
 Pearson correlation manner (as if the corresponding \code{robust} option was set to \code{FALSE}). }
+
+  \item{cosine}{ logical: calculate cosine biweight midcorrelation? 
+Cosine bicorrelation is similar to standard bicorrelation but the median subtraction is not performed. }
+
+  \item{cosineX}{ logical: use the cosine calculation for \code{x}? This setting does not affect \code{y} 
+and can be used to give a hybrid cosine-standard bicorrelation. }
+
+  \item{cosineY}{ logical: use the cosine calculation for \code{y}? This setting does not affect \code{x}
+and can be used to give a hybrid cosine-standard bicorrelation. }
+
+  \item{nThreads}{ non-negative integer specifying the number of parallel threads to be used by certain
+parts of correlation calculations. This option only has an effect on systems on which a POSIX thread
+library is available (which currently includes Linux and Mac OSX, but excludes Windows).
+If zero, the number of online processors will be used if it can be determined dynamically, otherwise
+correlation calculations will use 2 threads. }
+
 
   \item{verbose}{ if non-zero, the underlying C function will print some diagnostics.}
 

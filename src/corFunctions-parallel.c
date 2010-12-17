@@ -123,6 +123,7 @@ typedef struct
    double maxPOutliers;
    double quick;
    int robust, fallback;
+   int cosine;
    int id;
 }  cor1ThreadData;
 
@@ -188,6 +189,7 @@ void * threadPrepColBicor(void * par)
                          x->nr, 
                          x->maxPOutliers, 
                          x->fallback, 
+                         x->cosine,
                          x->multMat + col * x->nr,
                          x->nNAentries + col,
                          x->NAme + col,
@@ -229,6 +231,7 @@ void * threadPrepColCor(void * par)
  
          prepareColCor(x->x + col * x->nr, 
                        x->nr, 
+                       x->cosine,
                        x->multMat + col * x->nr,
                        x->nNAentries + col,
                        x->NAme + col);
@@ -308,6 +311,7 @@ void * threadSlowCalcBicor(void * par)
   double * multMat = td->x->multMat;
   double * result = td->x->result;
   int fbx = td->x->fallback;
+  int cosine = td->x->cosine;
   int nc = td->x->nc, nc1 = nc-1, nr = td->x->nr;
   int * NAmean = td->x->NAme;
   int * nNAentries = td->x->nNAentries;
@@ -369,11 +373,11 @@ void * threadSlowCalcBicor(void * par)
             // must recalculate the auxiliary variables for both columns
             int temp = 0, zeroMAD = 0;
             if (nNAx - nNAentries[i] > maxDiffNA)
-                  prepareColBicor(xx, nr, maxPOutliers, fbx, xxx, &temp, &NAx, &zeroMAD, xx2, yy2);
+                  prepareColBicor(xx, nr, maxPOutliers, fbx, cosine, xxx, &temp, &NAx, &zeroMAD, xx2, yy2);
                else
                   memcpy((void *) xxx, (void *) (multMat + i * nr),  nr * sizeof(double));
             if (nNAy-nNAentries[j] > maxDiffNA)
-                  prepareColBicor(yy, nr, maxPOutliers, fbx, yyy, &temp, &NAy, &zeroMAD, xx2, yy2);
+                  prepareColBicor(yy, nr, maxPOutliers, fbx, cosine, yyy, &temp, &NAy, &zeroMAD, xx2, yy2);
                else
                   memcpy((void *) yyy, (void *) (multMat + j * nr),  nr * sizeof(double));
             if (NAx + NAy==0)
@@ -427,6 +431,7 @@ void * threadSlowCalcCor(void * par)
   double * x = td->x->x;
   double * result = td->x->result;
   int nc = td->x->nc, nc1 = nc-1, nr = td->x->nr;
+  int cosine = td->x->cosine;
   int * NAmean = td->x->NAme;
   int * nNAentries = td->x->nNAentries;
   progressCounter * pci = td->pci, * pcj = td->pcj;
@@ -490,7 +495,10 @@ void * threadSlowCalcCor(void * par)
             result[i*nc + j] = NA_REAL; 
             (*nNA)++;
         } else {
-            result[i*nc + j] = (double) ( (sumxy - sumx * sumy/count)/
+            if (cosine) 
+               result[i*nc + j] = (double) ( (sumxy)/ sqrtl(sumxs * sumys) );
+            else
+               result[i*nc + j] = (double) ( (sumxy - sumx * sumy/count)/
                                 sqrtl( (sumxs - sumx*sumx/count) * (sumys - sumy*sumy/count) ) );
         }
         // result[j*nc + i] = result[i*nc + j];
@@ -511,7 +519,9 @@ void * threadSlowCalcCor(void * par)
 //===================================================================================================
 
 
-void cor1Fast(double * x, int * nrow, int * ncol, double * quick, double * result, int *nNA, int * err, 
+void cor1Fast(double * x, int * nrow, int * ncol, double * quick, 
+          int * cosine, 
+          double * result, int *nNA, int * err, 
           int * nThreads,
           int * verbose, int * indent)
 {
@@ -599,6 +609,7 @@ void cor1Fast(double * x, int * nrow, int * ncol, double * quick, double * resul
      thrdInfo[t].nNAentries = nNAentries;
      thrdInfo[t].NAme = NAmean;
      thrdInfo[t].quick = *quick;
+     thrdInfo[t].cosine = *cosine;
      thrdInfo[t].id = t;
   }
 
@@ -719,7 +730,7 @@ void cor1Fast(double * x, int * nrow, int * ncol, double * quick, double * resul
 
 
 void bicor1Fast(double * x, int * nrow, int * ncol, double * maxPOutliers, 
-            double * quick, int * fallback,
+            double * quick, int * fallback, int * cosine,
             double * result, int *nNA, int * err, 
             int * nThreads,
             int * verbose, int * indent)
@@ -813,6 +824,7 @@ void bicor1Fast(double * x, int * nrow, int * ncol, double * maxPOutliers,
      thrdInfo[t].robust = 0;
      thrdInfo[t].fallback = *fallback;
      thrdInfo[t].quick = *quick;
+     thrdInfo[t].cosine = *cosine;
      thrdInfo[t].maxPOutliers = *maxPOutliers;
      thrdInfo[t].id = t;
   }
@@ -1066,6 +1078,7 @@ void * threadSlowCalcBicor2(void * par)
   int * nNAentriesX = td->x->x->nNAentries;
   int robustX = td->x->x->robust;
   int fbx = td->x->x->fallback;
+  int cosineX = td->x->x->cosine;
 
   double * y = td->x->y->x;
   double * multMatY = td->x->y->multMat;
@@ -1074,6 +1087,7 @@ void * threadSlowCalcBicor2(void * par)
   int * nNAentriesY = td->x->y->nNAentries;
   int robustY = td->x->y->robust;
   int fby = td->x->y->fallback;
+  int cosineY = td->x->y->cosine;
 
   double maxPOutliers = td->x->x->maxPOutliers;
 
@@ -1150,7 +1164,7 @@ void * threadSlowCalcBicor2(void * par)
             {
                // Rprintf("...Recalculating row... \n");
                //if (robustX && (fbx!=4))
-                  prepareColBicor(xx, nr, maxPOutliers, fbx, xxx, &temp, &NAx, &zeroMAD, xx2, yy2);
+                  prepareColBicor(xx, nr, maxPOutliers, fbx, cosineX, xxx, &temp, &NAx, &zeroMAD, xx2, yy2);
                //else
                //   prepareColCor(xx, nr, xxx, &temp, &NAx);
                xx3 = xxx;
@@ -1160,7 +1174,7 @@ void * threadSlowCalcBicor2(void * par)
             {
                // Rprintf("...Recalculating column... \n");
                //if (robustY && (fby!=4))
-                  prepareColBicor(yy, nr, maxPOutliers, fby, yyy, &temp, &NAy, &zeroMAD, xx2, yy2);
+                  prepareColBicor(yy, nr, maxPOutliers, fby, cosineY, yyy, &temp, &NAy, &zeroMAD, xx2, yy2);
                //else
                //   prepareColCor(yy, nr, yyy, &temp, &NAy);
                yy3 = yyy;
@@ -1213,6 +1227,7 @@ void * threadSlowCalcBicor2(void * par)
 void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
            int * robustX, int * robustY, double *maxPOutliers, 
            double * quick, int * fallback,
+           int * cosineX, int * cosineY, 
            double * result, int *nNA, int * err,
            int * nThreads,
            int * verbose, int * indent)
@@ -1317,6 +1332,7 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
      thrdInfoX[t].fallback = *fallback;
      thrdInfoX[t].maxPOutliers = *maxPOutliers;
      thrdInfoX[t].quick = *quick;
+     thrdInfoX[t].cosine = *cosineX;
      thrdInfoX[t].id = t;
 
    
@@ -1332,6 +1348,7 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
      thrdInfoY[t].fallback = *fallback;
      thrdInfoY[t].maxPOutliers = *maxPOutliers;
      thrdInfoY[t].quick = *quick;
+     thrdInfoY[t].cosine = *cosineY;
      thrdInfoY[t].id = t;
 
      thrdInfo[t].x = thrdInfoX + t;
@@ -1567,12 +1584,14 @@ void * threadSlowCalcCor2(void * par)
   int ncx = td->x->x->nc, nr = td->x->x->nr;
   int * NAmeanX = td->x->x->NAme;
   int * nNAentriesX = td->x->x->nNAentries;
+  int cosineX = td->x->x->cosine;
 
   double * y = td->x->y->x;
   double * multMatY = td->x->y->multMat;
   int ncy = td->x->y->nc;
   int * NAmeanY = td->x->y->NAme;
   int * nNAentriesY = td->x->y->nNAentries;
+  int cosineY = td->x->y->cosine;
 
   int maxDiffNA = (int) (td->x->x->quick * nr);
 
@@ -1611,7 +1630,8 @@ void * threadSlowCalcCor2(void * par)
  
      if ((i < ncx) && (j < ncy))
      {
-        // Rprintf("Recalculating row %d and column %d, column size %d\n", i, j, nr);
+        // Rprintf("Recalculating row %d and column %d, column size %d; cosineX: %d, cosineY: %d\n", 
+        //         i, j, nr, cosineX, cosineY);
         xx = x + i * nr; yy = y + j * nr;
         LDOUBLE sumxy = 0, sumx = 0, sumy = 0, sumxs = 0, sumys = 0;
         int count = 0;
@@ -1635,6 +1655,8 @@ void * threadSlowCalcCor2(void * par)
             result[i + j*ncx] = NA_REAL; 
             (*nNA)++;
         } else {
+            if (cosineX) sumx = 0;
+            if (cosineY) sumy = 0;
             result[i + j*ncx] = (double) ( (sumxy - sumx * sumy/count)/
                                 sqrtl( (sumxs - sumx*sumx/count) * (sumys - sumy*sumy/count) ) );
         }
@@ -1653,7 +1675,9 @@ void * threadSlowCalcCor2(void * par)
 //===================================================================================================
 
 void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
-           double * quick, double * result, int *nNA, int * err,
+           double * quick, 
+           int * cosineX, int * cosineY, 
+           double * result, int *nNA, int * err,
            int * nThreads,
            int * verbose, int * indent)
 {
@@ -1739,6 +1763,7 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
      thrdInfoX[t].nNAentries = nNAentriesX;
      thrdInfoX[t].NAme = NAmeanX;
      thrdInfoX[t].quick = *quick;
+     thrdInfoX[t].cosine = *cosineX;
      thrdInfoX[t].maxPOutliers = 1;
      thrdInfoX[t].id = t;
    
@@ -1750,6 +1775,7 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
      thrdInfoY[t].nNAentries = nNAentriesY;
      thrdInfoY[t].NAme = NAmeanY;
      thrdInfoY[t].quick = *quick;
+     thrdInfoY[t].cosine = *cosineY;
      thrdInfoY[t].maxPOutliers = 1;
      thrdInfoY[t].id = t;
 

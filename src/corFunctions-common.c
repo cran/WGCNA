@@ -177,6 +177,7 @@ void testQuantile(double *x, int *n, double *q, double *res)
 // In this case: Pearson pre-calculation entails normalizing columns by mean and variance. 
 
 void prepareColBicor(double * col, int nr, double maxPOutliers, int fallback,
+                     int cosine,
                      double * res, int * nNAentries, 
                      int * NAmed, int * zeroMAD,
                      double * aux, double * aux2)
@@ -187,7 +188,7 @@ void prepareColBicor(double * col, int nr, double maxPOutliers, int fallback,
 
   if (fallback==4)
   {
-    prepareColCor(col, nr, res, nNAentries, NAmed);
+    prepareColCor(col, nr, cosine, res, nNAentries, NAmed);
     return;
   }
 
@@ -197,6 +198,10 @@ void prepareColBicor(double * col, int nr, double maxPOutliers, int fallback,
 
   memcpy((void *)res, (void *)col, nr * sizeof(double));
   double med = median(res, nr, 0, &err);
+
+  // Create a conditional copy of the median
+  double medX;
+  if (cosine) medX = 0; else medX = med;
 
   *zeroMAD = 0;
   // calculate absolute deviations from the median
@@ -215,12 +220,11 @@ void prepareColBicor(double * col, int nr, double maxPOutliers, int fallback,
         res[k] = NA_REAL;
         aux[k] = NA_REAL;
       } else {
-        res[k] = col[k] - med;
-        aux[k] = fabs(res[k]);
+        res[k] = col[k] - medX;
+        aux[k] = fabs(col[k] - med);
       }
 
     // calculate mad, i.e. median absolute deviation
-    // double mad = asymptCorr * median(aux, nr, 0, &err);
     double mad = median(aux, nr, 0, &err);
 
     // If mad is zero, value of fallback decides what is it we will do.
@@ -239,20 +243,21 @@ void prepareColBicor(double * col, int nr, double maxPOutliers, int fallback,
           case 2: 
              // Switch to Pearson correlation and return
              // Rprintf("mad is zero in a column. Switching to Pearson for this column.\n");
-             prepareColCor(col, nr, res, nNAentries, NAmed);
+             prepareColCor(col, nr, cosine, res, nNAentries, NAmed);
           case 3: 
              // Do nothing: the setting of *zeroMAD above is enough.
              return;
        }
     } 
 
-    // We now re-use aux to store a copy of the weights ux
+    // We now re-use aux to store a copy of the weights ux. To calculate them, first get (x-med)/(9*mad).
 
-    //double denom = 9.0 * qnorm75 * mad;
+    // Rprintf("median: %6.4f, mad: %6.4f, cosine: %d\n", med, mad, cosine);
+
     double denom = 9.0 * mad;
     for (int k=0; k<nr; k++)
-      if (!ISNAN(res[k]))
-        aux[k] = res[k] / denom;
+      if (!ISNAN(col[k]))
+        aux[k] = (col[k] - med) / denom;
       else
         aux[k] = NA_REAL;
 
@@ -271,9 +276,9 @@ void prepareColBicor(double * col, int nr, double maxPOutliers, int fallback,
     if (hiQ < RefUX) hiQ = RefUX;
     lowQ = fabs(lowQ);
 
-    for (int k=0; k<nr; k++) if (!ISNAN(res[k]))
+    for (int k=0; k<nr; k++) if (!ISNAN(aux[k]))
     {
-      if (res[k] < 0)
+      if (aux[k] < 0)
         aux[k] = aux[k] * RefUX / lowQ;
       else
         aux[k] = aux[k] * RefUX / hiQ;
@@ -288,7 +293,7 @@ void prepareColBicor(double * col, int nr, double maxPOutliers, int fallback,
         double ux = aux[k];
         if (fabs(ux) > 1) ux = 1;  // sign of ux doesn't matter.
         ux = 1-ux*ux;
-        res[k] = ux*ux * res[k];
+        res[k] *= ux*ux ;
         sum += res[k]*res[k];
       } else
         res[k] = 0;
@@ -313,8 +318,9 @@ void prepareColBicor(double * col, int nr, double maxPOutliers, int fallback,
 
 // Used for Pearson correlation fallback
 // and when bicor is called with robustsX or robustY = 0
+// if cosine is not zero, the cosine correlation will be calculated.
 
-void prepareColCor(double * x, int nr, double * res, int * nNAentries, int * NAmean)
+void prepareColCor(double * x, int nr, int cosine, double * res, int * nNAentries, int * NAmean)
 {
   *nNAentries = 0;
   int count = 0;
@@ -330,7 +336,7 @@ void prepareColCor(double * x, int nr, double * res, int * nNAentries, int * NAm
   {
     *NAmean = 0;
     *nNAentries = nr-count;
-    mean = mean/count;
+    if (cosine) mean = 0; else mean = mean/count;
     sum = sqrt(sum - count * mean*mean);
     if (sum > 0)
     {

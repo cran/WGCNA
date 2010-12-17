@@ -40,6 +40,7 @@ TOMsimilarityFromExpr = function(datExpr, corType = "pearson", networkType = "un
                                  maxPOutliers = 1,
                                  quickCor = 0, 
                                  pearsonFallback = "individual",
+                                 cosineCorrelation = FALSE, 
                                  nThreads = 0,
                                  verbose = 1, indent = 0)
 {
@@ -85,6 +86,7 @@ TOMsimilarityFromExpr = function(datExpr, corType = "pearson", networkType = "un
         as.double(maxPOutliers),
         as.double(quickCor),
         as.integer(fallback),
+        as.integer(cosineCorrelation),
         tom = as.double(tom), as.integer(nThreads), 
         as.integer(verbose), as.integer(indent), NAOK = TRUE, DUP = FALSE) 
 
@@ -179,6 +181,7 @@ blockwiseModules = function(datExpr, blocks = NULL,
                             maxPOutliers = 1,
                             quickCor = 0,
                             pearsonFallback = "individual",
+                            cosineCorrelation = FALSE,
                             nThreads = 0,
                             verbose = 0, indent = 0)
 {
@@ -308,6 +311,7 @@ blockwiseModules = function(datExpr, blocks = NULL,
         as.double(maxPOutliers),
         as.double(quickCor),
         as.integer(fallback),
+        as.integer(cosineCorrelation),
         tom = as.double(dissTom), as.integer(nThreads),
         as.integer(callVerb), as.integer(callInd), NAOK = TRUE, DUP = FALSE) 
 
@@ -1051,6 +1055,7 @@ blockwiseConsensusModules = function(multiExpr, blocks = NULL,
                             maxPOutliers = 1,
                             quickCor = 0,
                             pearsonFallback = "individual", 
+                            cosineCorrelation = FALSE,
                             nThreads = 0,
                             verbose = 2, indent = 0)
 {
@@ -1280,6 +1285,7 @@ blockwiseConsensusModules = function(multiExpr, blocks = NULL,
           as.double(maxPOutliers), 
           as.double(quickCor),
           as.integer(fallback),
+          as.integer(cosineCorrelation), 
           tom = as.double(tom), as.integer(nThreads),
           as.integer(callVerb), as.integer(callInd), NAOK = TRUE, DUP = FALSE)
   

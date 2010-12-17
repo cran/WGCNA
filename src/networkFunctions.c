@@ -66,7 +66,7 @@ const string 	AdjErrors[] = {"No error. Just a placeholder.",
 //===============================================================================================
 
 void adjacency(double * expr, int nSamples, int nGenes, int corType, int adjType, double power, 
-               double maxPOutliers, double quick, int fallback, 
+               double maxPOutliers, double quick, int fallback, int cosine, 
                double * adj, int * errCode, int * nThreads, int verbose, int indent)
 {
   Rboolean	sd0 = FALSE;
@@ -81,7 +81,7 @@ void adjacency(double * expr, int nSamples, int nGenes, int corType, int adjType
   {
      case CorTypePearson :
         // Rprintf("Calling cor_pairwise1...");
-        cor1Fast(expr, &nSamples, &nGenes, &quick, adj, &nNA, &err, nThreads, &verbose, &indent);
+        cor1Fast(expr, &nSamples, &nGenes, &quick, &cosine, adj, &nNA, &err, nThreads, &verbose, &indent);
         // Rprintf("..done.\n");
         if (sd0)
         {
@@ -92,7 +92,7 @@ void adjacency(double * expr, int nSamples, int nGenes, int corType, int adjType
         break;
      case CorTypeBicor :
         // Rprintf("Calling bicor1...");
-        bicor1Fast(expr, &nSamples, &nGenes, &maxPOutliers, &quick, &fallback, adj, &nNA, &err, 
+        bicor1Fast(expr, &nSamples, &nGenes, &maxPOutliers, &quick, &fallback, &cosine, adj, &nNA, &err, 
                    nThreads, &verbose, &indent);
         // Rprintf("..done.\n");
         if (nNA > 0)
@@ -140,10 +140,12 @@ void adjacency(double * expr, int nSamples, int nGenes, int corType, int adjType
 }
     
 void testAdjacency(double * expr, int * nSamples, int * nGenes, int * corType, int * adjType, 
-                   double * power, double * maxPOutliers, double * quick, int * fallback, double * adj, 
+                   double * power, double * maxPOutliers, double * quick, int * fallback, int * cosine, 
+                   double * adj, 
                    int * errCode, int * nThreads)
 {
- adjacency(expr, * nSamples, * nGenes, * corType, * adjType, * power, *maxPOutliers, *quick, *fallback,
+ adjacency(expr, * nSamples, * nGenes, * corType, * adjType, * power, 
+           *maxPOutliers, *quick, *fallback, *cosine, 
            adj, errCode, nThreads, 1, 0);
 }
 
@@ -163,6 +165,7 @@ void tomSimilarity(double * expr, int * nSamples, int * nGenes,
                    double * maxPOutliers, 
                    double * quick,
                    int * fallback,
+                   int * cosine,
                    double * tom, 
                    int * nThreads,
                    int * verbose, int * indent)
@@ -197,8 +200,8 @@ void tomSimilarity(double * expr, int * nSamples, int * nGenes,
   if (*verbose > 0) Rprintf("%sTOM calculation: adjacency..\n", spaces);
   if (* tomType==TomTypeNone)  // just calculate adjacency.
   {
-    adjacency(expr, ns, ng, *corType, *adjType, *power, *maxPOutliers, *quick, *fallback, tom, &err, nThreads, 
-              *verbose, *indent);
+    adjacency(expr, ns, ng, *corType, *adjType, *power, *maxPOutliers, *quick, *fallback, *cosine, 
+              tom, &err, nThreads, *verbose, *indent);
     if (*verbose > 0) Rprintf("\n");
     if (err) error(AdjErrors[err]);
     return;
@@ -213,8 +216,8 @@ void tomSimilarity(double * expr, int * nSamples, int * nGenes,
   if ((* tomType == TomTypeUnsigned) && (* adjType == AdjTypeUnsignedKeepSign))
     * adjType = AdjTypeUnsigned;
 
-  adjacency(expr, ns, ng, * corType, * adjType, * power, * maxPOutliers, * quick, *fallback, adj, & err, 
-            nThreads, *verbose, *indent);
+  adjacency(expr, ns, ng, * corType, * adjType, * power, * maxPOutliers, * quick, *fallback, *cosine, 
+            adj, & err, nThreads, *verbose, *indent);
 
   // Rprintf("TOM 1\n");
   if (err) 

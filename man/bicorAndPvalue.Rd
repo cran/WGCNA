@@ -9,7 +9,7 @@ midcorrelations, properly taking
 into account the actual number of observations. 
 }
 \usage{
-bicorAndPvalue(x, y, 
+bicorAndPvalue(x, y = NULL, 
              use = "pairwise.complete.obs", 
              alternative = c("two.sided", "less", "greater"),
              ...)
@@ -40,11 +40,12 @@ and the corresponding Student p-values.
 The output is not as full-featured as \code{\link{cor.test}}, but can work with matrices as input.
 }
 \value{
-A list with the following components
+A list with the following components, each a marix:
  \item{bicor}{the calculated correlations}
  \item{p}{the Student p-values corresponding to the calculated correlations}
  \item{Z}{Fisher transform of the calculated correlations}
  \item{t}{Student t statistics of the calculated correlations}
+ \item{nObs}{Numbers of observations for the correlation, p-values etc.}
 }
 \author{
 %%  ~~who you are~~
@@ -54,5 +55,18 @@ Peter Langfelder and Steve Horvath
 \code{\link{bicor}} for calculation of correlations only;
 
 \code{\link{cor.test}} for another function for significance test of correlations
+}
+\examples{
+# generate random data with non-zero correlation
+set.seed(1);
+a = rnorm(100);
+b = rnorm(100) + a;
+x = cbind(a, b);
+# Call the function and display all results
+bicorAndPvalue(x)
+# Set some components to NA
+x[c(1:4), 1] = NA
+corAndPvalue(x)
+# Note that changed number of observations.
 }
 \keyword{ stats }
