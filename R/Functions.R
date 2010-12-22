@@ -657,7 +657,7 @@ adjacency = function(datExpr, selectCols=NULL, type = "unsigned", power = if (ty
 {
   intType = charmatch(type, .adjacencyTypes)
   if (is.na(intType))
-    stop(paste("Unrecognized 'type'. Recognized values are", paste(.networkTypes, collapse = ", ")));
+    stop(paste("Unrecognized 'type'. Recognized values are", paste(.adjacencyTypes, collapse = ", ")));
 
   if (intType < 4)
   {

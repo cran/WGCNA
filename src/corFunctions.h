@@ -19,24 +19,31 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
 
-void cor1Fast(double * x, int * nrow, int * ncol, double * quick, double * result, int *nNA, int * err, 
+void cor1Fast(double * x, int * nrow, int * ncol, double * quick, 
+          int * cosine,
+          double * result, int *nNA, int * err, 
           int * nThreads,
           int * verbose, int * indent);
 
 void bicor1Fast(double * x, int * nrow, int * ncol, 
             double * maxPOutliers, double * quick, 
-            int * fallback, double * result, int *nNA, int * err, 
+            int * fallback, int * cosine,
+            double * result, int *nNA, int * err, 
             int * nThreads,
             int * verbose, int * indent);
 
 void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
            int * robustX, int * robustY, 
            double * maxPOutliers, double * quick, 
-           int * fallback, double * result, int *nNA, int * err,
+           int * fallback, 
+           int * cosineX, int * cosineY, 
+           double * result, int *nNA, int * err,
            int * nThreads,
            int * verbose, int * indent);
 
 void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
-           double * quick, double * result, int *nNA, int * err,
+           double * quick, 
+           int * cosine, 
+           double * result, int *nNA, int * err,
            int * nThreads,
            int * verbose, int * indent);

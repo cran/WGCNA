@@ -1,5 +1,15 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
+2010/12/17: 0.99
+
+	. Functions [bi]cor gain the ability to calculate cosine [bi]correlations, 
+	  invoked using the argument cosine = TRUE. Similar functionality added 
+	  to blockwise[Consensus]Modules and TOMsimilarityFromExpr. 
+	  For most other functions using correlations, the argument corOptions can be 
+	  used to request cosine correlations.
+	. Corrected error message in function adjacency
+	. Functions [bi]corAndPvalue now also return the number of
+	  observations for each p-value
 
 2010/11/12: 0.98
 

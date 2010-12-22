@@ -52,7 +52,9 @@ int uselessFunction1()
 //===================================================================================================
 
 
-void cor1Fast(double * x, int * nrow, int * ncol, double * quick, double * result, int *nNA, int * err, 
+void cor1Fast(double * x, int * nrow, int * ncol, 
+          double * quick, int * cosine, 
+          double * result, int *nNA, int * err, 
           int * nThreads,
           int * verbose, int * indent)
 {
@@ -110,7 +112,7 @@ void cor1Fast(double * x, int * nrow, int * ncol, double * quick, double * resul
 
   for (int i = 0; i < nc; i++)
   {
-    prepareColCor(x + i*nr, nr, multMatX + i*nr, nNAentries + i, NAmean + i);
+    prepareColCor(x + i*nr, nr, *cosine, multMatX + i*nr, nNAentries + i, NAmean + i);
   //  if (NAmean[i]) Rprintf("have a NA mean in column %d.\n", i);
   }
 
@@ -161,8 +163,11 @@ void cor1Fast(double * x, int * nrow, int * ncol, double * quick, double * resul
             result[i*nc + j] = NA_REAL;
             (*nNA)++;
         } else {
-            result[i*nc + j] = (double) ( (sumxy - sumx * sumy/count)/
-                                sqrtl( (sumxs - sumx*sumx/count) * (sumys - sumy*sumy/count) ) );
+            if (*cosine)
+              result[i*nc + j] = (double) ( sumxy / sqrtl(sumxs * sumys) );
+            else
+              result[i*nc + j] = (double) ( (sumxy - sumx * sumy/count)/
+                                  sqrtl( (sumxs - sumx*sumx/count) * (sumys - sumy*sumy/count) ) );
         }
         // result[j*nc + i] = result[i*nc + j];
         nSlow++;
@@ -211,7 +216,9 @@ void cor1Fast(double * x, int * nrow, int * ncol, double * quick, double * resul
 //===================================================================================================
 
 void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
-           double * quick, double * result, int *nNA, int * err,
+           double * quick, 
+           int * cosineX, int * cosineY,
+           double * result, int *nNA, int * err,
            int * nThreads,
            int * verbose, int * indent)
 {
@@ -285,7 +292,7 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
   int NAmed = 0;
   for (int i = 0; i < ncx; i++)
   {
-    prepareColCor(x + i*nr,  nr, multMatX + i*nr, nNAentriesX + i, &NAmed);
+    prepareColCor(x + i*nr,  nr, *cosineX, multMatX + i*nr, nNAentriesX + i, &NAmed);
     // if (NAmed) Rprintf("median is NA in column %d of x\n", i);
     NAmeanX[i] = NAmed;
   }
@@ -294,7 +301,7 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
 
   for (int j = 0; j < ncy; j++)
   {
-    prepareColCor(y + j*nr,  nr, multMatY + j*nr, nNAentriesY + j, &NAmed);
+    prepareColCor(y + j*nr,  nr, *cosineY, multMatY + j*nr, nNAentriesY + j, &NAmed);
     // if (NAmed) Rprintf("median is NA in column %d of y\n", j);
     NAmeanY[j] = NAmed;
   }
@@ -340,6 +347,8 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
                *resx = NA_REAL;
                (*nNA)++;
            } else {
+               if (*cosineX) sumx = 0;
+               if (*cosineY) sumy = 0;
                *resx = (double) ( (sumxy - sumx * sumy/count)/
                                    sqrtl( (sumxs - sumx*sumx/count) * (sumys - sumy*sumy/count) ) );
            }
@@ -374,7 +383,8 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
 
 
 void bicor1Fast(double * x, int * nrow, int * ncol, double * maxPOutliers, 
-            double * quick, int * fallback, double * result, int *nNA, int * err, 
+            double * quick, int * fallback, int * cosine, 
+            double * result, int *nNA, int * err, 
             int * nThreads,
             int * verbose, int * indent)
 {
@@ -453,13 +463,13 @@ void bicor1Fast(double * x, int * nrow, int * ncol, double * maxPOutliers,
   if (*fallback < 3)
   {
     for (int i = 0; i < nc; i++)
-      prepareColBicor(x + i*nr, nr, *maxPOutliers, *fallback, multMat + i*nr, 
+      prepareColBicor(x + i*nr, nr, *maxPOutliers, *fallback, *cosine, multMat + i*nr, 
                       nNAentries + i, NAmed + i, &zeroMAD, xx, xxx);
   } else {
     int doFallback = 0;
     for (int i = 0; i < nc; i++)
     {
-      prepareColBicor(x + i*nr, nr, *maxPOutliers, *fallback, multMat + i*nr, 
+      prepareColBicor(x + i*nr, nr, *maxPOutliers, *fallback, *cosine, multMat + i*nr, 
                       nNAentries + i, NAmed + i, &zeroMAD, xx, xxx);
       if (zeroMAD > 0) { doFallback = i+1; i = nc; }
     }
@@ -470,7 +480,7 @@ void bicor1Fast(double * x, int * nrow, int * ncol, double * maxPOutliers,
                 "         Switching to Pearson correlation for variable x.\n\n");
       pearson = 1;
       for (int i = 0; i < nc; i++)
-        prepareColCor(x + i*nr, nr, multMat + i*nr, nNAentries + i, NAmed + i);
+        prepareColCor(x + i*nr, nr, *cosine, multMat + i*nr, nNAentries + i, NAmed + i);
     }
   }
 
@@ -523,14 +533,14 @@ void bicor1Fast(double * x, int * nrow, int * ncol, double * maxPOutliers,
             // must recalculate the auxiliary variables for both columns
             if (nNAx - nNAentries[i] > maxDiffNA)
                {
-                  prepareColBicor(xx, nr, *maxPOutliers, fbx, xxx, &temp, &NAx, &zeroMAD, xx2, yy2);
+                  prepareColBicor(xx, nr, *maxPOutliers, fbx, *cosine, xxx, &temp, &NAx, &zeroMAD, xx2, yy2);
                   xx3 = xxx;
                }
                else
                   xx3 = multMat + i * nr;
             if (nNAy-nNAentries[j] > maxDiffNA)
                {    
-                  prepareColBicor(yy, nr, *maxPOutliers, fbx, yyy, &temp, &NAy, &zeroMAD, xx2, yy2);
+                  prepareColBicor(yy, nr, *maxPOutliers, fbx, *cosine, yyy, &temp, &NAy, &zeroMAD, xx2, yy2);
                   yy3 = yyy;
                }
                else
@@ -612,7 +622,9 @@ void bicor1Fast(double * x, int * nrow, int * ncol, double * maxPOutliers,
 
 void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
            int * robustX, int * robustY, double * maxPOutliers, 
-           double * quick, int * fallback, double * result, int *nNA, int * err, 
+           double * quick, int * fallback, 
+           int * cosineX, int * cosineY, 
+           double * result, int *nNA, int * err, 
            int * nThreads,
            int * verbose, int * indent)
 {
@@ -710,13 +722,15 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
     if (*fallback < 3)
     {
       for (int i = 0; i < ncx; i++)
-        prepareColBicor(x + i*nr, nr, *maxPOutliers, *fallback, multMatX + i*nr, nNAentriesX + i, NAmeanX + i, 
+        prepareColBicor(x + i*nr, nr, *maxPOutliers, *fallback, *cosineX, 
+                        multMatX + i*nr, nNAentriesX + i, NAmeanX + i, 
                         &zeroMAD, xx, xxx);
     } else {
       int doFallback = 0;
       for (int i = 0; i < ncx; i++)
       {
-        prepareColBicor(x + i*nr, nr, *maxPOutliers, *fallback, multMatX + i*nr, nNAentriesX + i, NAmeanX + i, 
+        prepareColBicor(x + i*nr, nr, *maxPOutliers, *fallback, *cosineX, 
+                        multMatX + i*nr, nNAentriesX + i, NAmeanX + i, 
                         &zeroMAD, xx, xxx);
         if (zeroMAD > 0) { doFallback = i+1; i=ncx; }
       }
@@ -728,12 +742,12 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
         pearsonX = 1;
         *robustX = 0;
         for (int i = 0; i < ncx; i++)
-          prepareColCor(x + i*nr, nr, multMatX + i*nr, nNAentriesX + i, NAmeanX + i);
+          prepareColCor(x + i*nr, nr, *cosineX, multMatX + i*nr, nNAentriesX + i, NAmeanX + i);
       }
     }   
   } else {
     for (int i = 0; i < ncx; i++)
-      prepareColCor(x + i*nr,  nr, multMatX + i*nr, nNAentriesX + i, NAmeanX + i);
+      prepareColCor(x + i*nr,  nr, *cosineX, multMatX + i*nr, nNAentriesX + i, NAmeanX + i);
   }
 
   if (*robustY)
@@ -741,13 +755,15 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
     if (*fallback < 3)
     {
       for (int i = 0; i < ncy; i++)
-        prepareColBicor(y + i*nr, nr, *maxPOutliers, *fallback, multMatY + i*nr, nNAentriesY + i, NAmeanY + i, 
+        prepareColBicor(y + i*nr, nr, *maxPOutliers, *fallback, *cosineY,
+                        multMatY + i*nr, nNAentriesY + i, NAmeanY + i, 
                         &zeroMAD, xx, xxx);
     } else {
       int doFallback = 0;
       for (int i = 0; i < ncy; i++)
       {
-        prepareColBicor(y + i*nr, nr, *maxPOutliers, *fallback, multMatY + i*nr, nNAentriesY + i, NAmeanY + i, 
+        prepareColBicor(y + i*nr, nr, *maxPOutliers, *fallback, *cosineY,
+                        multMatY + i*nr, nNAentriesY + i, NAmeanY + i, 
                         &zeroMAD, xx, xxx);
         if (zeroMAD > 0) { doFallback = i+1; i = ncy;}
       }
@@ -759,12 +775,12 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
         pearsonY = 1;
         *robustY = 0;
         for (int i = 0; i < ncy; i++)
-          prepareColCor(y + i*nr, nr, multMatY + i*nr, nNAentriesY + i, NAmeanY + i);
+          prepareColCor(y + i*nr, nr, *cosineY, multMatY + i*nr, nNAentriesY + i, NAmeanY + i);
       }
     }   
   } else {
     for (int i = 0; i < ncy; i++)
-      prepareColCor(y + i*nr,  nr, multMatY + i*nr, nNAentriesY + i, NAmeanY + i);
+      prepareColCor(y + i*nr,  nr, *cosineY, multMatY + i*nr, nNAentriesY + i, NAmeanY + i);
   }
 
   // Rprintf("NAmeanX: %d\n", NAmeanX[0])
@@ -827,7 +843,8 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
                {
                   // Rprintf("...Recalculating row... \n");
                   // if (robustX && (pearsonX==0))
-                     prepareColBicor(xx, nr, *maxPOutliers, fbx, xxx, &temp, &NAx, &zeroMAD, xx2, yy2);
+                     prepareColBicor(xx, nr, *maxPOutliers, fbx, *cosineX, 
+                                     xxx, &temp, &NAx, &zeroMAD, xx2, yy2);
                   // else
                     //  prepareColCor(xx, nr, xxx, &temp, &NAx);
                   xx3 = xxx;
@@ -837,7 +854,8 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
                {
                   // Rprintf("...Recalculating column... \n");
                   // if (robustY && (pearsonY==0))
-                     prepareColBicor(yy, nr, *maxPOutliers, fby, yyy, &temp, &NAy, &zeroMAD, yy2, xx2);
+                     prepareColBicor(yy, nr, *maxPOutliers, fby, *cosineY, 
+                                     yyy, &temp, &NAy, &zeroMAD, yy2, xx2);
                   // else
                      // prepareColCor(yy, nr, yyy, &temp, &NAy);
                   yy3 = yyy;

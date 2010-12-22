@@ -14,7 +14,11 @@ missing data are numerous, the speedup will be smaller but still present.
 cor(x, y = NULL, 
     use = "all.obs", 
     method = c("pearson", "kendall", "spearman"),
-    quick = 0, nThreads = 0, 
+    quick = 0, 
+    cosine = FALSE, 
+    cosineX = cosine,
+    cosineY = cosine, 
+    nThreads = 0, 
     verbose = 0, indent = 0)
 
 corFast(x, y = NULL, 
@@ -40,6 +44,16 @@ available only for \code{"pearson"}. }
 
   \item{quick}{ real number between 0 and 1 that controls the precision of handling of missing data in the
 calculation of correlations. See details. }
+
+  \item{cosine}{ logical: calculate cosine correlation? Only valid for \code{method="pearson"}.
+Cosine correlation is similar to Pearson correlation but the mean subtraction is not performed. The result
+is the cosine of the angle(s) between (the columns of) \code{x} and \code{y}. }
+
+  \item{cosineX}{ logical: use the cosine calculation for \code{x}? This setting does not affect \code{y}
+and can be used to give a hybrid cosine-standard correlation. }
+
+  \item{cosineY}{ logical: use the cosine calculation for \code{y}? This setting does not affect \code{x}
+and can be used to give a hybrid cosine-standard correlation. }
 
   \item{nThreads}{ non-negative integer specifying the number of parallel threads to be used by certain
 parts of correlation calculations. This option only has an effect on systems on which a POSIX thread

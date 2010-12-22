@@ -3,8 +3,10 @@
 .pearsonFallbacks = c("none", "individual", "all");
 
 bicor = function(x, y = NULL, robustX = TRUE, robustY = TRUE, use = 'all.obs', maxPOutliers = 1, quick = 0,
-                      pearsonFallback = "individual",
-                      nThreads = 0, verbose = 0, indent = 0)
+                 pearsonFallback = "individual", 
+                 cosine = FALSE,
+                 cosineX = cosine, cosineY = cosine,
+                 nThreads = 0, verbose = 0, indent = 0)
 {
   Cerrors = c("Memory allocation error")
   nKnownErrors = length(Cerrors);
@@ -45,6 +47,7 @@ bicor = function(x, y = NULL, robustX = TRUE, robustY = TRUE, use = 'all.obs', m
                maxPOutliers = as.double(maxPOutliers), 
                quick = as.double(quick), 
                fallback = as.integer(fallback),
+               cosine = as.integer(cosineX), 
                res = as.double(bi), nNA = as.integer(nNA),
                err = as.integer(err), nThreads = as.integer(nThreads),
                verbose = as.integer(verbose), indent = as.integer(indent),
@@ -64,6 +67,8 @@ bicor = function(x, y = NULL, robustX = TRUE, robustY = TRUE, use = 'all.obs', m
              maxPOutliers = as.double(maxPOutliers), 
              quick = as.double(quick), 
              fallback = as.integer(fallback),
+             cosineX = as.integer(cosineX),
+             cosineY = as.integer(cosineY),
              res = as.double(bi), nNA = as.integer(nNA), err = as.integer(err),
              nThreads = as.integer(nThreads),
              verbose = as.integer(verbose), indent = as.integer(indent), DUP = FALSE, NAOK = TRUE);
@@ -91,7 +96,10 @@ bicor = function(x, y = NULL, robustX = TRUE, robustY = TRUE, use = 'all.obs', m
 # Code to call my implementation of correlation
 
 cor = function(x, y = NULL, use = "all.obs", method = c("pearson", "kendall", "spearman"),
-                quick = 0, nThreads = 0, verbose = 0, indent = 0)
+               quick = 0, 
+               cosine = FALSE, 
+               cosineX = cosine, cosineY = cosine,
+               nThreads = 0, verbose = 0, indent = 0)
 {
     na.method <- pmatch(use, c("all.obs", "complete.obs", "pairwise.complete.obs", 
         "everything", "na.or.complete"), nomatch = 0)
@@ -122,7 +130,9 @@ cor = function(x, y = NULL, use = "all.obs", method = c("pearson", "kendall", "s
       {
          bi = matrix(0, ncol(x), ncol(x));
          res = .C("cor1Fast", x = as.double(x), nrow = as.integer(nrow(x)), ncol = as.integer(ncol(x)),
-                   quick = as.double(quick), res = as.double(bi), nNA = as.integer(nNA),
+                   quick = as.double(quick), 
+                   cosine = as.integer(cosineX), 
+                   res = as.double(bi), nNA = as.integer(nNA),
                    err = as.integer(err), nThreads = as.integer(nThreads), 
                    verbose = as.integer(verbose), indent = as.integer(indent),
                    DUP = FALSE, NAOK = TRUE);
@@ -136,7 +146,10 @@ cor = function(x, y = NULL, use = "all.obs", method = c("pearson", "kendall", "s
          bi = matrix(0, ncol(x), ncol(y));
          res = .C("corFast", x = as.double(x), nrow = as.integer(nrow(x)), ncolx = as.integer(ncol(x)),
                  y = as.double(y), ncoly = as.integer(ncol(y)),
-                 quick = as.double(quick), res = as.double(bi), nNA = as.integer(nNA), err = as.integer(err),
+                 quick = as.double(quick), 
+                 cosineX = as.integer(cosineX), 
+                 cosineY = as.integer(cosineY),
+                 res = as.double(bi), nNA = as.integer(nNA), err = as.integer(err),
                  nThreads = as.integer(nThreads),
                  verbose = as.integer(verbose), indent = as.integer(indent), DUP = FALSE, NAOK = TRUE);
          dim(res$res) = dim(bi);
@@ -163,12 +176,12 @@ cor = function(x, y = NULL, use = "all.obs", method = c("pearson", "kendall", "s
     }
 }
 
+# Wrappers for compatibility with older scripts
+
 cor1 = function(x, use = "all.obs", verbose = 0, indent = 0) 
 {
    cor(x, use = use, verbose = verbose, indent = indent);
 }
-
-# Wrapper for compatibility with older scripts
 
 corFast = function(x, y = NULL, use = "all.obs",
                 quick = 0, nThreads = 0, verbose = 0, indent = 0)
