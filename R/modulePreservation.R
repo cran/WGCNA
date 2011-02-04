@@ -1536,12 +1536,12 @@ modulePreservation = function(
         names1=substring(colnames(kME[[1]]),4)
         j1=which(names1==colorLevels[j])
         #corkME[j]=cor(kME[[1]][loc,j1],kME[[3]][loc,j1], use = "p")
-        corExpr = parse(text=paste(opt$corFnc, "(kME[[1]][modGenes[[j]],j1],kME[[3]][modGenes[[j]],j1],", 
-                                   opt$corOptions, ")"));
+        corExpr = parse(text=paste(opt$corFnc, "(kME[[1]][modGenes[[j]],j1],kME[[3]][modGenes[[j]],j1]", 
+                                   prepComma(opt$corOptions), ")"));
         corkME[j] = abs(eval(corExpr));
 
         #corkMEall[j]=cor(kME[[1]][,j1],kME[[3]][,j1], use = "p")
-        corExpr = parse(text=paste(opt$corFnc, "(kME[[1]][,j1],kME[[3]][,j1], ", opt$corOptions, ")"));
+        corExpr = parse(text=paste(opt$corFnc, "(kME[[1]][,j1],kME[[3]][,j1] ", prepComma(opt$corOptions), ")"));
         corkMEall[j] = abs(eval(corExpr));
    #     covkME[j]=cov(kME[[1]][loc,j1],kME[[3]][loc,j1], use = "p")
    #     meanProductkME[j] = scalarProduct(kME[[1]][loc,j1],kME[[3]][loc,j1])
@@ -1584,7 +1584,7 @@ modulePreservation = function(
   {
      Gold=which(colnames(ME[[k+1]]) %in% c(opt$MEgold, opt$MEgrey))
      #corME=cor(ME[[k+1]],use="p")
-     corExpr = parse(text=paste(opt$corFnc, "(ME[[k+1]],", opt$corOptions, ")"));
+     corExpr = parse(text=paste(opt$corFnc, "(ME[[k+1]]", prepComma(opt$corOptions), ")"));
      corME= eval(corExpr);
      if (opt$nType==0) corME = abs(corME);
      diag(corME) = 0;
@@ -1607,21 +1607,21 @@ modulePreservation = function(
      if (!opt$densityOnly) 
      {
         #ModuleCorData1=cor(datRef[,modGenes[[j]]],use="p", quick = as.numeric(opt$quickCor))
-        corExpr = parse(text=paste(opt$corFnc, "(datRef[,modGenes[[j]]],", opt$corOptions, 
+        corExpr = parse(text=paste(opt$corFnc, "(datRef[,modGenes[[j]]]", prepComma(opt$corOptions), 
                                            ", quick = as.numeric(opt$quickCor))"));
         ModuleCorData1=eval(corExpr);
      }
      if (opt$calculatePermutation | opt$densityOnly)
      {
         #ModuleCorData2=cor(datRefP[,modGenes[[j]]],use="p", quick = as.numeric(opt$quickCor))
-        corExpr = parse(text=paste(opt$corFnc, "(datRefP[,modGenes[[j]]],", opt$corOptions, 
+        corExpr = parse(text=paste(opt$corFnc, "(datRefP[,modGenes[[j]]]", prepComma(opt$corOptions), 
                                            ", quick = as.numeric(opt$quickCor))"));
         ModuleCorData2 = eval(corExpr);
      } else 
         ModuleCorData2 = ModuleCorData1;
 
      #ModuleCorData3=cor(datTest[,modGenes[[j]]],use="p", quick = as.numeric(opt$quickCor))
-     corExpr = parse(text=paste(opt$corFnc, "(datTest[,modGenes[[j]]],", opt$corOptions,
+     corExpr = parse(text=paste(opt$corFnc, "(datTest[,modGenes[[j]]]", prepComma(opt$corOptions),
                                            ", quick = as.numeric(opt$quickCor))"));
      ModuleCorData3 = eval(corExpr);
      if (opt$nType==1)
@@ -1641,8 +1641,8 @@ modulePreservation = function(
      {
         #ICORdat[j]=cor(c(as.dist(ModuleCorData1)),c(as.dist(ModuleCorData3)),use="p")
         corExpr = parse(text=paste(opt$corFnc,
-                                   "(c(as.dist(ModuleCorData1)),c(as.dist(ModuleCorData3)),",
-                                   opt$corOptions, ")"));
+                                   "(c(as.dist(ModuleCorData1)),c(as.dist(ModuleCorData3))",
+                                   prepComma(opt$corOptions), ")"));
         ICORdat[j] = eval(corExpr);
   #      ICOVdat[j]=cov(c(as.dist(ModuleCorData1)),c(as.dist(ModuleCorData3)),use="p")
   #      spdat[j]=scalarProduct(c(as.dist(ModuleCorData1)),c(as.dist(ModuleCorData3)))
@@ -1692,11 +1692,11 @@ modulePreservation = function(
      {
        kIMref = apply(adjacency1, 2, sum, na.rm = TRUE)
        kIMtest = apply(adjacency3, 2, sum, na.rm = TRUE)
-       corExpr = parse(text=paste(opt$corFnc, "(kIMref, kIMtest, ", opt$corOptions, ")"));
+       corExpr = parse(text=paste(opt$corFnc, "(kIMref, kIMtest ", prepComma(opt$corOptions), ")"));
        corkIM[j] = eval(corExpr);
-       corExpr = parse(text=paste(opt$corFnc, "(ccRef, ccTest, ", opt$corOptions, ")"));
+       corExpr = parse(text=paste(opt$corFnc, "(ccRef, ccTest ", prepComma(opt$corOptions), ")"));
        corCC[j] = eval(corExpr);
-       corExpr = parse(text=paste(opt$corFnc, "(marRef, marTest, ", opt$corOptions, ")"));
+       corExpr = parse(text=paste(opt$corFnc, "(marRef, marTest ", prepComma(opt$corOptions), ")"));
        corMAR[j] = eval(corExpr);
      }
 
@@ -1831,23 +1831,25 @@ modulePreservation = function(
      for(m in 1:nMods ) if(act[m])
      {
         nModGenes=modSizes[m];
-        corExpr = parse(text=paste(opt$corFnc, "(svds[[1]][[m]]$u,svds[[3]][[m]]$u,", opt$corOptions, ")"));
+        corExpr = parse(text=paste(opt$corFnc, "(svds[[1]][[m]]$u,svds[[3]][[m]]$u",
+                                                prepComma(opt$corOptions), ")"));
         corkME[m] = abs(eval(corExpr));
 
         if (opt$calculateCor.kIMall)
         {
-          corExpr = parse(text=paste(opt$corFnc, "(kIM[[1]][,m],kIM[[3]][,m], ", opt$corOptions, ")"));
+          corExpr = parse(text=paste(opt$corFnc, "(kIM[[1]][,m],kIM[[3]][,m] ", 
+                                                prepComma(opt$corOptions), ")"));
           corkMEall[m] = eval(corExpr);
         }
 
-        corExpr = parse(text=paste(opt$corFnc, "(kIM[[1]][modGenes[[m]],m],kIM[[3]][modGenes[[m]],m], ", 
-                                   opt$corOptions, ")"));
+        corExpr = parse(text=paste(opt$corFnc, "(kIM[[1]][modGenes[[m]],m],kIM[[3]][modGenes[[m]],m] ", 
+                                   prepComma(opt$corOptions), ")"));
         corkIM[m] = eval(corExpr);
 
         adj1 = datRef[modGenes[[m]], modGenes[[m]]];
         adj2 = datTest[modGenes[[m]], modGenes[[m]]];
-        corExpr = parse(text=paste(opt$corFnc, "(c(as.dist(adj1)), c(as.dist(adj2)), ",
-                                   opt$corOptions, ")"));
+        corExpr = parse(text=paste(opt$corFnc, "(c(as.dist(adj1)), c(as.dist(adj2))",
+                                   prepComma(opt$corOptions), ")"));
         ICORdat[m] = eval(corExpr);
      }
   }
@@ -1902,9 +1904,9 @@ modulePreservation = function(
     meanCC[m, 2] = mean(ccTest);
     meanMAR[m, 2] = mean(marTest);
 
-    corExpr = parse(text=paste(opt$corFnc, "(ccRef, ccTest, ", opt$corOptions, ")"));
+    corExpr = parse(text=paste(opt$corFnc, "(ccRef, ccTest ", prepComma(opt$corOptions), ")"));
     corCC[m] = eval(corExpr);
-    corExpr = parse(text=paste(opt$corFnc, "(marRef, marTest, ", opt$corOptions, ")"));
+    corExpr = parse(text=paste(opt$corFnc, "(marRef, marTest ", prepComma(opt$corOptions), ")"));
     corMAR[m] = eval(corExpr);
 
     if ((m > 1) && (colorLevels[m]!=gold))

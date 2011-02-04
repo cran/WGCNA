@@ -1,8 +1,9 @@
 \name{softConnectivity}
 \alias{softConnectivity}
+\alias{softConnectivity.fromSimilarity}
 \title{ Calculates connectivity of a weighted network. }
 \description{
-  Given expression data, the function constructs the adjacency matrix and for each
+  Given expression data or a similarity, the function constructs the adjacency matrix and for each
 node calculates its connectivity, that is the sum of the adjacency to the other nodes.
 }
 \usage{
@@ -14,10 +15,20 @@ softConnectivity(
   blockSize = 1500, 
   minNSamples = NULL, 
   verbose = 2, indent = 0)
+
+softConnectivity.fromSimilarity(
+  similarity, 
+  type = "unsigned",
+  power = if (type == "signed") 15 else 6,
+  blockSize = 1500, 
+  verbose = 2, indent = 0)
+
 }
 \arguments{
   \item{datExpr}{ a data frame containing the expression data, with rows corresponding to samples and
 columns to genes. }
+
+  \item{similarity}{ a similarity matrix: a square symmetric matrix with entries between -1 and 1. }
 
   \item{corFnc}{ character string giving the correlation function to be used for the adjacency
 calculation. Recommended choices are \code{"cor"} and \code{"bicor"}, but other functions can be used as

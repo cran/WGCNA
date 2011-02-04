@@ -1,5 +1,6 @@
 \name{pickHardThreshold}
 \alias{pickHardThreshold}
+\alias{pickHardThreshold.fromSimilarity}
 \title{ Analysis of scale free topology for hard-thresholding. }
 
 \description{
@@ -14,11 +15,19 @@ pickHardThreshold(
   moreNetworkConcepts = FALSE,
   removeFirst = FALSE, nBreaks = 10, 
   corFnc = "cor", corOptions = "use = 'p'")
+
+pickHardThreshold.fromSimilarity(
+    similarity,
+    RsquaredCut = 0.85, 
+    cutVector = seq(0.1, 0.9, by = 0.05),
+    moreNetworkConcepts=FALSE, 
+    removeFirst = FALSE, nBreaks = 10)
 }
-%- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{datExpr}{ expression data in a matrix or data frame. Rows correspond to samples and columns to
 genes. }
+
+  \item{similarity}{ similarity matrix: a symmetric matrix with entries between -1 and 1 and unit diagonal.}
 
   \item{RsquaredCut}{ desired minimum scale free topology fitting index \eqn{R^2}. }
 

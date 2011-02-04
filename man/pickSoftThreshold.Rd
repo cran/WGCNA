@@ -1,5 +1,6 @@
 \name{pickSoftThreshold}
 \alias{pickSoftThreshold}
+\alias{pickSoftThreshold.fromSimilarity}
 \title{ Analysis of scale free topology for soft-thresholding }
 \description{
   Analysis of scale free topology for multiple soft thresholding powers. The aim is to help the user pick
@@ -15,10 +16,19 @@ pickSoftThreshold(
   networkType = "unsigned",
   moreNetworkConcepts = FALSE,
   verbose = 0, indent = 0)
+
+pickSoftThreshold.fromSimilarity(
+    similarity,
+    RsquaredCut = 0.85, powerVector = c(seq(1, 10, by = 1), seq(12, 20, by = 2)),
+    removeFirst = FALSE, nBreaks = 10, blockSize = 1000,
+    networkType = "unsigned", moreNetworkConcepts=FALSE, verbose = 0, indent = 0)
+
 }
 \arguments{
   \item{datExpr}{ expression data in a matrix or data frame. Rows correspond to samples and columns to
 genes. }
+
+  \item{similarity}{ a symmetric matrix with entries between -1 and 1 and unit diagonal.}
 
   \item{RsquaredCut}{ desired minimum scale free topology fitting index \eqn{R^2}. }
 
@@ -51,7 +61,9 @@ progressively more and more verbose. }
 two spaces. }
 }
 \details{
-  The function calculates unsigned networks by raising the absolute value of the correlation matrix to
+  The function calculates a weighted network of the type specified by \code{networkType} either from the
+correlation matrix of
+\code{datExpr} or from the similarity matrix \code{similarity} to
 the powers given in \code{powerVector}. For each power the scale free topology fit index is calculated
 and returned along with other information on connectivity. 
 }
@@ -59,8 +71,8 @@ and returned along with other information on connectivity.
   A list with the following components:
 
   \item{powerEstimate}{ estimate of an appropriate soft-thresholding power: the lowest power for which
-the scale free topology fit \eqn{R^2} exceeds \code{RsquaredCut}. If \eqn{R^2} is below \code{RsquaredCut} for all
-powers, \code{NA} is returned. }
+the scale free topology fit \eqn{R^2} exceeds \code{RsquaredCut}. If \eqn{R^2} is below \code{RsquaredCut} 
+for all powers, \code{NA} is returned. }
 
   \item{fitIndices}{ a data frame containing the fit indices for scale free topology. The columns
 contain the soft-thresholding power, adjusted \eqn{R^2} for the linear fit, the linear coefficient, adjusted
