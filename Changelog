@@ -1,5 +1,11 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
+2011/02/05: 1.00
+
+	. The ubiquitous corOptions argument can now take the value of an empty string ("")
+	. New utility function prepComma
+
+
 2010/12/17: 0.99
 
 	. Functions [bi]cor gain the ability to calculate cosine [bi]correlations, 

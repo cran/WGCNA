@@ -432,8 +432,8 @@ blockwiseModules = function(datExpr, blocks = NULL,
     for (mod in 1:ncol(propMEs))
     {
       modGenes = (blockLabels==blockLabelIndex[mod]);
-      corEval = parse(text = paste(.corFnc[intCorType], "(selExpr[, modGenes], propMEs[, mod],", 
-                                   .corOptions[intCorType], ")"));
+      corEval = parse(text = paste(.corFnc[intCorType], "(selExpr[, modGenes], propMEs[, mod]", 
+                                   prepComma(.corOptions[intCorType]), ")"));
       KME = as.vector(eval(corEval));
       if (intNetworkType==1) KME = abs(KME);
       if (sum(KME>minCoreKME) < minCoreKMESize) 
@@ -540,8 +540,8 @@ blockwiseModules = function(datExpr, blocks = NULL,
   {
      propLabels = goodLabels[goodLabels!=0];
      assGenes = c(1:nGenes)[gsg$goodGenes[goodLabels!=0]];
-     corEval = parse(text = paste(.corFnc[intCorType], "(datExpr[, goodLabels!=0], AllMEs,", 
-                                  .corOptions[intCorType], ")"));
+     corEval = parse(text = paste(.corFnc[intCorType], "(datExpr[, goodLabels!=0], AllMEs", 
+                                  prepComma(.corOptions[intCorType]), ")"));
      KME = eval(corEval);
      if (intNetworkType == 1) KME = abs(KME)
      nMods = ncol(AllMEs);
@@ -823,8 +823,8 @@ recutBlockwiseTrees = function(datExpr,
     for (mod in 1:ncol(propMEs))
     {
       modGenes = (blockLabels==blockLabelIndex[mod]);
-      corEval = parse(text = paste(.corFnc[intCorType], "(selExpr[, modGenes], propMEs[, mod],", 
-                                   .corOptions[intCorType], ")"));
+      corEval = parse(text = paste(.corFnc[intCorType], "(selExpr[, modGenes], propMEs[, mod]", 
+                                   prepComma(.corOptions[intCorType]), ")"));
       KME = as.vector(eval(corEval));
       if (intNetworkType==1) KME = abs(KME);
       if (sum(KME>minCoreKME) < minCoreKMESize) 
@@ -906,8 +906,8 @@ recutBlockwiseTrees = function(datExpr,
   {
      propLabels = goodLabels[goodLabels!=0];
      assGenes = c(1:nGenes)[gsg$goodGenes[goodLabels!=0]];
-     corEval = parse(text = paste(.corFnc[intCorType], "(datExpr[, goodLabels!=0], AllMEs,", 
-                                  .corOptions[intCorType], ")"));
+     corEval = parse(text = paste(.corFnc[intCorType], "(datExpr[, goodLabels!=0], AllMEs", 
+                                  prepComma(.corOptions[intCorType]), ")"));
      KME = eval(corEval);
      if (intNetworkType == 1) KME = abs(KME)
      nMods = ncol(AllMEs);
@@ -1505,8 +1505,8 @@ blockwiseConsensusModules = function(multiExpr, blocks = NULL,
       modGenes = (blockLabels==blockLabelIndex[mod]);
       KME = matrix(0, nrow = sum(modGenes), ncol = nSets);
       corEval = parse(text = paste(.corFnc[intCorType], 
-                       "( selExpr[[set]]$data[, modGenes], blockConsMEs[[set]]$data[, mod],", 
-                      .corOptions[intCorType], ")"))
+                       "( selExpr[[set]]$data[, modGenes], blockConsMEs[[set]]$data[, mod]", 
+                      prepComma(.corOptions[intCorType]), ")"))
       for (set in 1:nSets) KME[, set] = as.vector(eval(corEval));
       if (intNetworkType==1) KME = abs(KME);
       consKME = apply(KME, 1, min, na.rm = TRUE);
@@ -1596,8 +1596,8 @@ blockwiseConsensusModules = function(multiExpr, blocks = NULL,
      propLabels = goodLabels[goodLabels!=0];
      assGenes = c(1:nGenes)[gsg$goodGenes[goodLabels!=0]]
      corEval = parse(text = paste(.corFnc[intCorType], 
-                                  "(multiExpr[[set]]$data[, goodLabels!=0], consMEs[[set]]$data,",
-                                  .corOptions[intCorType], ")"));
+                                  "(multiExpr[[set]]$data[, goodLabels!=0], consMEs[[set]]$data",
+                                  prepComma(.corOptions[intCorType]), ")"));
      nMods = ncol(consMEs[[1]]$data);
      lpValues = array(0, dim = c(length(propLabels), nMods, nSets));
      sumSign = array(0, dim = c(length(propLabels), nMods));
@@ -1955,8 +1955,8 @@ recutConsensusTrees = function(multiExpr,
       modGenes = (blockLabels==blockLabelIndex[mod]);
       KME = matrix(0, nrow = sum(modGenes), ncol = nSets);
       corEval = parse(text = paste(.corFnc[intCorType], 
-                       "( selExpr[[set]]$data[, modGenes], blockConsMEs[[set]]$data[, mod],", 
-                      .corOptions[intCorType], ")"))
+                       "( selExpr[[set]]$data[, modGenes], blockConsMEs[[set]]$data[, mod]", 
+                      prepComma(.corOptions[intCorType]), ")"))
       for (set in 1:nSets) KME[, set] = as.vector(eval(corEval));
       if (intNetworkType==1) KME = abs(KME);
       consKME = apply(KME, 1, min, na.rm = TRUE);
@@ -2046,8 +2046,8 @@ recutConsensusTrees = function(multiExpr,
      propLabels = goodLabels[goodLabels!=0];
      assGenes = c(1:nGenes)[gsg$goodGenes[goodLabels!=0]]
      corEval = parse(text = paste(.corFnc[intCorType], 
-                                  "(multiExpr[[set]]$data[, goodLabels!=0], consMEs[[set]]$data,",
-                                  .corOptions[intCorType], ")"));
+                                  "(multiExpr[[set]]$data[, goodLabels!=0], consMEs[[set]]$data",
+                                  prepComma(.corOptions[intCorType]), ")"));
      nMods = ncol(consMEs[[1]]$data);
      lpValues = array(0, dim = c(length(propLabels), nMods, nSets));
      sumSign = array(0, dim = c(length(propLabels), nMods));

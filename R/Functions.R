@@ -161,8 +161,8 @@ colname1=c(colname1,"Density", "Centralization", "Heterogeneity")
     if (exists("fun1")) 
         rm(fun1)
     fun1 = function(x) {
-        corExpr = parse(text = paste(corFnc, "(x, datExpr,", 
-            corOptions, ")"))
+        corExpr = parse(text = paste(corFnc, "(x, datExpr", 
+            prepComma(corOptions), ")"))
         corx = abs(eval(corExpr))
         out1 = rep(NA, length(cutVector))
         for (j in c(1:length(cutVector))) {
@@ -250,8 +250,8 @@ pickSoftThreshold = function (datExpr, RsquaredCut = 0.85,
         if (verbose > 1) 
             printFlush(paste(spaces, "  ..working on genes", 
                 startG, "through", endG, "of ", nGenes))
-        corEval = parse(text = paste(corFnc, "(datExpr, datExpr[, c(startG:endG)],", 
-            corOptions, ")"))
+        corEval = parse(text = paste(corFnc, "(datExpr, datExpr[, c(startG:endG)]", 
+            prepComma(corOptions), ")"))
         corx = eval(corEval)
         if (intType == 1) {
             corx = abs(corx)
@@ -529,7 +529,7 @@ vectorTOM = function(datExpr, vect, subtract1 = FALSE, blockSize = 2000,
                "If you are certain you want to try anyway, increase 'blockSize' to at least",
                "the number of columns in 'vect'."));
 
-  corEval = parse(text = paste(corFnc, "(datExpr, vect, ", corOptions, ")"));
+  corEval = parse(text = paste(corFnc, "(datExpr, vect ", prepComma(corOptions), ")"));
   corVE = eval(corEval);
   if (intType==1)
   { corVE = abs(corVE);
@@ -557,7 +557,7 @@ vectorTOM = function(datExpr, vect, subtract1 = FALSE, blockSize = 2000,
   {
     end = min(start + blockSize-1, nGenes); 
     blockInd = c(start:end);
-    corEval = parse(text = paste(corFnc, "(datExpr[, blockInd], datExpr, ", corOptions, ")"));
+    corEval = parse(text = paste(corFnc, "(datExpr[, blockInd], datExpr ", prepComma(corOptions), ")"));
     corEE = eval(corEval);
     if (intType==1)
     { corEE = abs(corEE);
@@ -663,18 +663,18 @@ adjacency = function(datExpr, selectCols=NULL, type = "unsigned", power = if (ty
   {
     if (is.null(selectCols))
     {
-      corExpr = parse(text = paste(corFnc, "(datExpr, ", corOptions, ")"));
+      corExpr = parse(text = paste(corFnc, "(datExpr ", prepComma(corOptions), ")"));
       # cor_mat = cor(datExpr, use = "p");
       cor_mat = eval(corExpr);
     } else {
-      corExpr = parse(text = paste(corFnc, "(datExpr, datExpr[, selectCols], ", corOptions, ")"));
+      corExpr = parse(text = paste(corFnc, "(datExpr, datExpr[, selectCols] ", prepComma(corOptions), ")"));
       #cor_mat = cor(datExpr, datExpr[, selectCols], use="p");
       cor_mat = eval(corExpr);
     }
   } else {
     if (!is.null(selectCols)) 
       stop("The argument 'selectCols' cannot be used for distance adjacency.");
-    corExpr = parse(text = paste(distFnc, "(t(datExpr), ", distOptions, ")"));
+    corExpr = parse(text = paste(distFnc, "(t(datExpr) ", prepComma(distOptions), ")"));
     # cor_mat = cor(datExpr, use = "p");
     d = eval(corExpr);
     if (any(d<0)) 
@@ -697,7 +697,7 @@ adjacency = function(datExpr, selectCols=NULL, type = "unsigned", power = if (ty
 unsignedAdjacency = function(datExpr, datExpr2 = NULL, power = 6,
                              corFnc = "cor", corOptions = "use = 'p'")
 {
-  corExpr = parse(text = paste(corFnc, "(datExpr, datExpr2, ", corOptions, ")"));
+  corExpr = parse(text = paste(corFnc, "(datExpr, datExpr2 ", prepComma(corOptions), ")"));
   # abs(cor(datExpr, datExpr2, use="p"))^power;
   abs(eval(corExpr))^power;
 }
@@ -1091,7 +1091,7 @@ signedKME = function(datExpr, datME, outputColumnName="kME",
             "    Hint: consider removing genes with too many missing values or collect more arrays."))
 
   #output=data.frame(cor(datExpr, datME, use="p"))
-  corExpr = parse(text = paste("data.frame(", corFnc, "(datExpr, datME, ", corOptions, "))" ));
+  corExpr = parse(text = paste("data.frame(", corFnc, "(datExpr, datME ", prepComma(corOptions), "))" ));
   output = eval(corExpr);
 
   output[no.presentdatExpr<..minNSamples, ]=NA
@@ -1282,7 +1282,7 @@ verboseScatterplot = function(x, y,
   if ( is.na(ylab) ) ylab= as.character(match.call(expand.dots = FALSE)$y)
   x= as.numeric(as.character(x))
   y= as.numeric(as.character(y))
-  corExpr = parse(text = paste(corFnc, "(x, y, ", corOptions, ")"));
+  corExpr = parse(text = paste(corFnc, "(x, y ", prepComma(corOptions), ")"));
   #cor=signif(cor(x,y,use="p",method=correlationmethod),2)
   cor=signif(eval(corExpr),2)
   corp = signif(corPvalueStudent(cor, sum(is.finite(x) & is.finite(y))), 2);
@@ -1443,8 +1443,8 @@ propVarExplained = function(datExpr, colors, MEs, corFnc = "cor", corOptions = "
   for (mod in 1:nMods)
   {
     modGenes = c(1:nGenes)[as.character(colors)==mods[mod]];
-    corExpr = parse(text = paste(corFnc, "(datExpr[, modGenes], MEs[, col2MEs[mod]],",
-                                 corOptions, ")"));
+    corExpr = parse(text = paste(corFnc, "(datExpr[, modGenes], MEs[, col2MEs[mod]]",
+                                 prepComma(corOptions), ")"));
     PVE[mod] = mean(as.vector(eval(corExpr)^2));
   }
 
@@ -1605,9 +1605,9 @@ nearestNeighborConnectivity = function(datExpr, nNeighbors = 50, power = 6,
   start = 1;
   if (sampleLinks)
   {
-    corEval = parse(text = paste(corFnc, "(poolExpr, datExpr[, blockIndex], ", corOptions, ")"))
+    corEval = parse(text = paste(corFnc, "(poolExpr, datExpr[, blockIndex] ", prepComma(corOptions), ")"))
   } else {
-    corEval = parse(text = paste(corFnc, "(datExpr, datExpr[, blockIndex], ", corOptions, ")"))
+    corEval = parse(text = paste(corFnc, "(datExpr, datExpr[, blockIndex] ", prepComma(corOptions), ")"))
   }
 
   while (start <= nGenes)
@@ -1713,10 +1713,11 @@ nearestNeighborConnectivityMS = function(multiExpr, nNeighbors = 50, power=6,
   if (sampleLinks)
   {
     corEval = parse(text = paste(corFnc, 
-          "(multiExpr[[set]]$data[, samplePool], multiExpr[[set]]$data[, blockIndex], ", corOptions, ")"))
+          "(multiExpr[[set]]$data[, samplePool], multiExpr[[set]]$data[, blockIndex] ",
+                    prepComma(corOptions), ")"))
   } else {
-    corEval = parse(text = paste(corFnc, "(multiExpr[[set]]$data, multiExpr[[set]]$data[, blockIndex], ", 
-                                 corOptions, ")"))
+    corEval = parse(text = paste(corFnc, "(multiExpr[[set]]$data, multiExpr[[set]]$data[, blockIndex] ", 
+                                 prepComma(corOptions), ")"))
   }
 
 
@@ -2811,7 +2812,7 @@ networkScreening = function(
   nMEs=dim(as.matrix(datME))[[2]]
   RawCor.Weighted=rep(0,nGenes)
   #Cor.Standard= as.numeric(cor(y,datExpr,use= "p") )
-  corExpr = parse(text = paste("as.numeric( ", corFnc, "(y,datExpr, ", corOptions, "))")); 
+  corExpr = parse(text = paste("as.numeric( ", corFnc, "(y,datExpr ", prepComma(corOptions), "))")); 
   Cor.Standard= eval(corExpr)
 
   NoAvailable=apply(!is.na(datExpr), 2,sum)
@@ -2819,7 +2820,7 @@ networkScreening = function(
   if (nGenes==1) 
   {
     #RawCor.Weighted=as.numeric(cor(y,datExpr,use= "p") )
-    corExpr = parse(text = paste("as.numeric(" , corFnc, "(y,datExpr, ", corOptions, "))"));
+    corExpr = parse(text = paste("as.numeric(" , corFnc, "(y,datExpr ", prepComma(corOptions), "))"));
     RawCor.Weighted = eval(corExpr);
   }
   start = 1; i = 1; 
@@ -2832,8 +2833,8 @@ networkScreening = function(
     datKMEBatch=as.matrix(signedKME(datExpr,datMEBatch, outputColumnName="MM.", 
                                     corFnc = corFnc, corOptions = corOptions))
     # ES.CorBatch= as.vector(cor(  as.numeric(as.character(y))  ,datMEBatch, use="p"))
-    corExpr = parse(text = paste("as.vector( ", corFnc, "(  as.numeric(as.character(y))  ,datMEBatch,",
-                                  corOptions, "))" ));
+    corExpr = parse(text = paste("as.vector( ", corFnc, "(  as.numeric(as.character(y))  ,datMEBatch",
+                                  prepComma(corOptions), "))" ));
     ES.CorBatch = eval(corExpr);
 
     #weightESy
@@ -3492,11 +3493,12 @@ preservationNetworkConnectivity = function(
   if (sampleLinks)
   {
     corEval = parse(text = paste(corFnc, 
-                       "(multiExpr[[set]]$data[, samplePool], multiExpr[[set]]$data[, blockIndex], ", 
-                       corOptions, ")"))
+                       "(multiExpr[[set]]$data[, samplePool], multiExpr[[set]]$data[, blockIndex] ", 
+                       prepComma(corOptions), ")"))
   } else {
     corEval = parse(text = paste(corFnc, 
-                       "(multiExpr[[set]]$data, multiExpr[[set]]$data[, blockIndex], ", corOptions, ")"))
+                       "(multiExpr[[set]]$data, multiExpr[[set]]$data[, blockIndex] ", 
+                        prepComma(corOptions), ")"))
   }
 
   while (start <= nGenes)
@@ -4507,7 +4509,7 @@ datExpr=data.frame(datExpr)
     pvalueStudent = rep(NA, dim(datExpr)[[2]])
     AreaUnderROC = rep(NA, dim(datExpr)[[2]])
        
-  corExpr = parse(text = paste("as.numeric(", corFnc, "(yNumeric, datExpr[,i],", corOptions, "))"));
+  corExpr = parse(text = paste("as.numeric(", corFnc, "(yNumeric, datExpr[,i]", prepComma(corOptions), "))"));
   for (i in 1:dim(datExpr)[[2]]) {
         #corPearson[i] = as.numeric(cor(yNumeric, datExpr[,i], use = "p"))
         corPearson[i] = eval(corExpr);
@@ -4650,4 +4652,17 @@ rankPvalue=function(datS, columnweights=NULL,
   if (pValueMethod != "rank" & pValueMethod != "scale" ) datout=data.frame(datoutrank, datoutscale)
   datout
 } # end of function
+
+
+#========================================================================================================
+#
+# utility function: add a comma to string if the string is non-empty
+#
+#========================================================================================================
+
+prepComma = function(s)
+{
+  if (s=="") return (s);
+  paste(",", s);
+}
 

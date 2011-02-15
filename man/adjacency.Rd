@@ -1,18 +1,24 @@
 \name{adjacency}
 \alias{adjacency}
+\alias{adjacency.fromSimilarity}
 \title{ Calculate network adjacency }
 \description{
-  Calculates (correlation or distance) network adjacency from given expression data.
+  Calculates (correlation or distance) network adjacency from given expression data or from a similarity.
 }
 \usage{
 adjacency(datExpr, selectCols = NULL, 
           type = "unsigned", power = if (type=="distance") 1 else 6,
           corFnc = "cor", corOptions = "use = 'p'",
           distFnc = "dist", distOptions = "method = 'euclidean'")
+
+adjacency.fromSimilarity(similarity, type = "unsigned", power = if (type=="distance") 1 else 6)
+
 }
 \arguments{
   \item{datExpr}{ data frame containing expression data. Columns correspond to genes and rows to
 samples.}
+
+  \item{similarity}{a (signed) similarity matrix: square, symmetric matrix with entries between -1 and 1. }
 
   \item{selectCols}{ for correlation networks only (see below); 
 can be used to select genes whose adjacencies will be calculated. Should be either a
@@ -59,15 +65,18 @@ for \code{type = "signed"}, adjacency = (0.5 * (1+cor) )^power; for \code{type =
 = cor^power if cor>0 and 0 otherwise; and for \code{type = "distance"}, adjacency =
 (1-(dist/max(dist))^2)^power.
 
+The function \code{adjacency.fromSimilarity} inputs a similarity matrix, that is it skips the correlation
+calculation step but is otherwise identical.
 
 }
 \value{
-  Adjacency matrix of dimensions \code{ncol(datExpr)} times \code{ncol(datExpr)}. If \code{selectCols} was
+  Adjacency matrix of dimensions \code{ncol(datExpr)} times \code{ncol(datExpr)} (or the same dimensions 
+as \code{similarity}). If \code{selectCols} was
 given, the number of columns will be the length (if numeric) or sum (if boolean) of \code{selectCols}.
 }
 
-\note{The network is always calculated among the columns of datExpr irrespective of whether a correlation or
-a distance network is requested. }
+\note{When calculated from the \code{datExpr}, the network is always calculated among the columns of 
+\code{datExpr} irrespective of whether a correlation or a distance network is requested. }
 
 \references{
 Bin Zhang and Steve Horvath (2005) A General Framework for Weighted Gene Co-Expression
