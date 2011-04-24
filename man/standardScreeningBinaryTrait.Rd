@@ -14,7 +14,8 @@ option KruskalTest is set to TRUE, it also computes the Kruskal Wallist test p-v
 q-value. The Kruskal Wallis test is a non-parametric, rank-based group comparison test.
 }
 \usage{
-standardScreeningBinaryTrait(datExpr, y, kruskalTest = FALSE)
+standardScreeningBinaryTrait(datExpr, y, kruskalTest = FALSE, qValues = FALSE,
+var.equal=TRUE, na.action="na.exclude")
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -27,6 +28,20 @@ standardScreeningBinaryTrait(datExpr, y, kruskalTest = FALSE)
   \item{kruskalTest}{
     logical: should the Kruskal test be performed?
 }
+  \item{qValues}{
+    logical: should the q-values be calculated?
+}
+  \item{var.equal}{
+    logical input parameter for the Student t-test. It indicates whether to treat the two variances
+(corresponding to the binary grouping) are being equal. If TRUE then the pooled variance is used to estimate
+the variance otherwise the Welch (or Satterthwaite) approximation to the degrees of freedom is used.
+Warning: here the default value is TRUE which is different from the default value of t.test. Type help(t.test)
+for more details. }
+\item{na.action}{
+    character string for the Student t-test: indicates what should happen when the data contain missing values NAs. 
+
+}
+
 }
 \value{
   A data frame whose rows correspond to the columns of datE and whose
@@ -35,18 +50,21 @@ columns report
   \item{corPearson}{pearson correlation with a binary numeric version of the input variable. The numeric
 variable equals 1 for level 1 and 2 for level 2. The levels are given by levels(factor(y)).}
   \item{pvalueStudent}{two-sided Student t-test p-value.}
-  \item{qvalueStudent}{q-value (local false discovery rate) based on the Student T-test p-value (Storey
-et al 2004).}
+  \item{qvalueStudent}{(if input \code{qValues==TRUE}) 
+q-value (local false discovery rate) based on the Student T-test p-value (Storey et al 2004).}
   \item{foldChange}{a (signed) ratio of mean values. If the mean in the first group (corresponding to
 level 1) is larger than that of the second group, it equals meanFirstGroup/meanSecondGroup.
 But if the mean of the second group is larger than that of the first group it equals
 -meanSecondGroup/meanFirstGroup (notice the minus sign).}
   \item{meanFirstGroup}{means of columns in input \code{datExpr} across samples in the first group.}
   \item{meanSecondGroup}{means of columns in input \code{datExpr} across samples in the second group.}
+
+  \item{SE.FirstGroup}{standard errors of columns in input \code{datExpr} across samples in the first group. Recall that SE(x)=sqrt(var(x)/n) where n is the number of non-missing values of x. }
+  \item{SE.SecondGroup}{standard errors of columns in input \code{datExpr} across samples in the second group.}
   \item{areaUnderROC}{the area under the ROC, also known as the concordance index or C.index. This is a
 measure of discriminatory power. The measure lies between 0 and 1 where 0.5 indicates no discriminatory
 power. 0 indicates that the "opposite" predictor has perfect discriminatory power. To compute it we use
-the function rcorr.cens with outx=T (from Frank Harrel's package Hmisc).}
+the function rcorr.cens with outx=TRUE (from Frank Harrel's package Hmisc).}
 }
 \references{
 Storey JD, Taylor JE, and Siegmund D. (2004) Strong control, conservative point estimation, and
@@ -56,4 +74,28 @@ Statistical Society, Series B, 66: 187-205.
 \author{
 Steve Horvath
 }
+
+\examples{
+m=50
+y=sample(c(1,2),m,replace=TRUE)
+datExprSignal=simulateModule(scale(y),100)
+datExprNoise=simulateModule(rnorm(m),500)
+datExpr=data.frame(datExprSignal,datExprNoise)
+
+Result1=standardScreeningBinaryTrait(datExpr,y)
+Result1[1:5,]
+
+
+
+# use unequal variances and calculate q-values
+Result2=standardScreeningBinaryTrait(datExpr,y, var.equal=FALSE,qValue=TRUE)
+Result2[1:5,]
+
+# calculate Kruskal Wallis test and q-values
+Result3=standardScreeningBinaryTrait(datExpr,y,kruskalTest=TRUE,qValue=TRUE)
+Result3[1:5,]
+
+}
+
 \keyword{ misc }% __ONLY ONE__ keyword per line
+

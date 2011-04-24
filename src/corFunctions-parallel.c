@@ -97,8 +97,6 @@ int nProcessors()
 
 #define MxThreads      128
 
-#define AllowedPropNAChange	0.01
-
 typedef struct 
 {
    volatile int i, n;

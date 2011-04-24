@@ -94,6 +94,8 @@ bicor = function(x, y = NULL, robustX = TRUE, robustY = TRUE, use = 'all.obs', m
 }
 
 # Code to call my implementation of correlation
+# For less than 100 correlations, use stats::cor since that is usually faster, particularly when no missing
+# data are present, likely due to the complicated threading I do in the WGCNA correlations.  
 
 cor = function(x, y = NULL, use = "all.obs", method = c("pearson", "kendall", "spearman"),
                quick = 0, 
@@ -105,7 +107,15 @@ cor = function(x, y = NULL, use = "all.obs", method = c("pearson", "kendall", "s
         "everything", "na.or.complete"), nomatch = 0)
     method <- match.arg(method)
 
-    if ((method=="pearson") && ( (na.method==1) || (na.method==3) ) )
+    x = as.matrix(x);
+    nx = ncol(x);
+    if (!is.null(y)) 
+    {
+      y = as.matrix(y);
+      ny = ncol(y);
+    } else ny = nx;
+
+    if ((method=="pearson") && ( (na.method==1) || (na.method==3) ) && (nx*ny>100))
     {
       Cerrors = c("Memory allocation error")
       nKnownErrors = length(Cerrors);
@@ -122,7 +132,6 @@ cor = function(x, y = NULL, use = "all.obs", method = c("pearson", "kendall", "s
       if (quick < 0) stop("quick must be non-negative.");
       if (nThreads < 0) stop("nThreads must be non-negative.");
     
-      x = as.matrix(x);
       if (prod(dim(x))==0) stop("'x' has a zero dimension."); 
       nNA = 0;
       err = 0;

@@ -11,7 +11,8 @@ verboseScatterplot(x, y,
                    corFnc = "cor", corOptions = "use = 'p'", 
                    main = "", xlab = NA, ylab = NA, 
                    cex = 1, cex.axis = 1.5, cex.lab = 1.5, cex.main = 1.5, 
-                   abline = FALSE, corLabel = corFnc, ...)
+                   abline = FALSE, abline.color = 1, abline.lty = 1,
+                   corLabel = corFnc, ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -46,6 +47,10 @@ be determined from the full vectors \code{x} and \code{y}.}
   \item{cex.main}{ character expansion factor for the main title. }
 
   \item{abline}{ logical: should the linear regression fit line be plotted? }
+
+  \item{abline.color}{ color specification for the fit line.}
+
+  \item{abline.lty}{ line type for the fit line.}
 
   \item{corLabel}{ character string to be used as the label for the correlation value printed in the main
 title. }
