@@ -1,12 +1,12 @@
-\name{AUV2predicted}
-\alias{AUV2predicted}
+\name{AFcorMI}
+\alias{AFcorMI}
 \title{Prediction of Weighted Mutual Information Adjacency Matrix by Correlation
 }
 \description{
-AUV2predicted computes a predicted weighted mutual information adjacency matrix from a given
+AFcorMI computes a predicted weighted mutual information adjacency matrix from a given
 correlation matrix.}
 \usage{
-AUV2predicted(r, m)
+AFcorMI(r, m)
 }
 \arguments{
   \item{r}{
@@ -45,7 +45,7 @@ r=.3; x5=r*x4+sqrt(1-r^2)*rnorm(m)
 datE=data.frame(x1,x2,x3,x4,x5)
 #calculate predicted AUV2
 cor.data=cor(datE, use="p")
-AUV2=AUV2predicted(r=cor.data, m=nrow(datE))
+AUV2=AFcorMI(r=cor.data, m=nrow(datE))
 
 }
 \keyword{ misc }

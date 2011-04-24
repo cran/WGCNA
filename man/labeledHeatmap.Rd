@@ -22,6 +22,10 @@ labeledHeatmap(
   colors = NULL, 
   textMatrix = NULL, 
   cex.text = NULL, cex.lab = NULL, 
+  cex.lab.x = cex.lab,
+  cex.lab.y = cex.lab,
+  colors.lab.x = 1,
+  colors.lab.y = 1,
   plotLegend = TRUE, ...)
 }
 \arguments{
@@ -72,7 +76,17 @@ the range of the x and y axis. }
 
   \item{cex.text}{ character expansion factor for \code{textMatrix}. }
 
-  \item{cex.lab}{ character expansion factor for text labels labeling the axes }
+  \item{cex.lab}{ character expansion factor for text labels labeling the axes. }
+
+  \item{cex.lab.x}{ character expansion factor for text labels labeling the x axis. Overrides \code{cex.lab}
+above. }
+
+  \item{cex.lab.y}{ character expansion factor for text labels labeling the y axis. Overrides \code{cex.lab}  
+above. }
+
+  \item{colors.lab.x}{colors for character labels or symbols along x axis.} 
+
+  \item{colors.lab.y}{colors for character labels or symbols along y axis.} 
 
   \item{plotLegend}{ logical: should a color legend be plotted? }
 

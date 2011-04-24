@@ -20,7 +20,7 @@ module eigengenes. }
 similarity. Defaults to Pearson correlation. Any function returning values between -1 and 1 can be used. }
 
   \item{corOptions}{ character string specifying additional arguments to be passed to the function given
-by \code{corFnc}. Use \code{"use = 'p', method = 'Spearman'"} to obtain Spearman correlation.   }
+by \code{corFnc}. Use \code{"use = 'p', method = 'spearman'"} to obtain Spearman correlation.   }
 
 }
 \details{

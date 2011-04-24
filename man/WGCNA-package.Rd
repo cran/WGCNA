@@ -13,8 +13,8 @@ also be used for general association networks specified by a symmetric adjacency
 \details{
 \tabular{ll}{
 Package: \tab WGCNA\cr
-Version: \tab 1.00\cr
-Date: \tab 2011-02-05\cr
+Version: \tab 1.10-2\cr
+Date: \tab 2011-04-24\cr
 Depends: \tab R (>= 2.3.0), stats, impute, grDevices, dynamicTreeCut (>= 1.20), utils, flashClust, qvalue,
 Hmisc, splines \cr
 Suggests: AnnotationDbi, GO.db, org.*.eg.db, infotheo, entropy, minet
@@ -31,34 +31,56 @@ TOMplot                 Graphical representation of the Topological Overlap Matr
 TOMsimilarity           Topological overlap matrix similarity
 TOMsimilarityFromExpr   Topological overlap matrix similarity
 WGCNA-package           Weighted Gene Co-Expression Network Analysis
+accuracyMeasures        Accuracy measures for a 2x2 confusion matrix
 addErrorBars            Add error bars to a barplot.
 addGrid                 Add grid lines to an existing plot.
 addGuideLines           Add vertical "guide lines" to a dendrogram plot
 addTraitToMEs           Add trait information to multi-set module
                         eigengene structure
 adjacency               Calculate network adjacency
+adjacency.fromSimilarity
+                        Calculate network adjacency from a similarity matrix
+adjacency.polyReg       Adjacency based on polynomial regression
+adjacency.splineReg     Adjacency based on natural cubic spline regression
 alignExpr               Align expression data with given vector
 automaticNetworkScreening
                         One-step automatic network gene screening
 automaticNetworkScreeningGS
                         One-step automatic network gene screening with
                         external gene significance
-AUV2predicted           Prediction of weighted mutual information adjacency matrix by correlation
+AFcorMI                 Prediction of weighted mutual information adjacency matrix 
+                        by correlation
 bicor                   Biweight Midcorrelation
 bicorAndPvalue          Biweight Midcorrelation and the associated p-value
 blockwiseConsensusModules
                         Find consensus modules across several datasets.
 blockwiseModules        Automatic network construction and module
                         detection
+BloodLists              (data) Gene sets for user enrichment analysis 
+BrainLists              (data) Gene sets for user enrichment analysis 
 checkAdjMat             Check adjacency matrix
 checkSets               Check structure and retrieve sizes of a group
                         of datasets
+checkSimilarity         Check a similarity matrix
+chooseOneHubInEachModule
+                        Choose a hub gene in each module
+chooseTopHubInEachModule
+                        Choose the top hub gene in each module
 clusterCoef             Clustering coefficient calculation
+coClustering            Cluster preservation based on co-clustering
+coClustering.permutationTest
+                        Permutation test for co-clustering 
 collapseRows            Collapse Rows in Numeric Matrix
+collapseRowsUsingKME    Selects one representative row per group based on kM
 collectGarbage          Iterative garbage collection
 colQuantileC            Fast colunm-wise quantile of a matrix
 conformityBasedNetworkConcepts
                         Calculation of conformity-based network concepts
+conformityDecomposition
+                        Conformity vector(s) and factorizability measure(s) 
+                        of a network
+consensusDissTOMandTree
+                        Consensus TOM-based dissimilarity and clustering tree
 consensusMEDissimilarity
                         Consensus dissimilarity of module eigengenes.
 consensusOrderMEs       Put close eigenvectors next to each other in
@@ -75,6 +97,8 @@ corPvalueFisher         Fisher's asymptotic p-value for correlation
 corPvalueStudent        Student asymptotic p-value for correlation
 correlationPreservation
                         Preservation of eigengene correlations
+coxRegressionResiduals
+                        Deviance- and martingale residuals from a Cox regression model
 cutreeStatic            Constant height tree cut
 cutreeStaticColor       Constant height tree cut using color labels
 displayColors           Show colors used to label modules
@@ -101,6 +125,8 @@ initProgInd             Inline display of progress
 intramodularConnectivity
                         Calculation of intramodular connectivity
 keepCommonProbes        Keep probes that are shared among given data sets
+kMEcomparisonScatterplot
+                        Scatterplots of eigengene-based connectivity
 labeledBarplot          Barplot with text or color labels
 labeledHeatmap          Produce a labeled heatmap plot
 labelPoints		Attempt to intelligently label points in a scatterplot
@@ -111,6 +137,7 @@ metaZfunction           Meta-analysis Z statistic
 moduleColor.getMEprefix
                         Get the prefix used to label module eigengenes
 moduleEigengenes        Calculate module eigengenes
+moduleMergeUsingKME     Merge modules and reassign genes using kME
 moduleNumber            Fixed-height cut of a dendrogram
 modulePreservation	Calculation of module preservation statistics
 multiSetMEs             Calculate module eigengenes
@@ -121,17 +148,24 @@ nearestNeighborConnectivity
 nearestNeighborConnectivityMS
                         Connectivity to a constant number of nearest
                         neighbors across multiple data sets
+nearestCentroidPredictor
+                        Nearest centroid predictor for two-class problems
 networkConcepts         Calculations of network concepts
 networkScreening        Network screening 
 networkScreeningGS      Network screening with external gene significance
 normalizeLabels         Transform numerical labels into normal order
 numbers2colors          Color representation for a numeric variable
+orderBranchesUsingHubGenes
+                        Optimize dendrogram using branch swaps and reflections
 orderMEs                Put close eigenvectors next to each other
 overlapTable            Overlap counts and Fisher exact tests for two sets of module labels
-pickHardThreshold       Analysis of scale free topology for
-                        hard-thresholding.
-pickSoftThreshold       Analysis of scale free topology for
-                        soft-thresholding
+overlapTableUsingKME    Determines significant overlap between modules in two networks based on kME tables
+pickHardThreshold       Analysis of scale free topology for hard-thresholding
+pickHardThreshold.fromSimilarity
+                        Analysis of scale free topology for hard-thresholding
+pickSoftThreshold       Analysis of scale free topology for soft-thresholding
+pickSoftThreshold.fromSimilarity
+                        Analysis of scale free topology for soft-thresholding
 plotClusterTreeSamples
                         Annotated clustering dendrogram of microarray samples
 plotColorUnderTree      Plot color rows under a dendrogram
@@ -149,6 +183,7 @@ preservationNetworkConnectivity
 projectiveKMeans        Projective K-means (pre-)clustering of
                         expression data
 propVarExplained        Proportion of variance explained by eigengenes
+qvalue                  q-value calculation from package qvalue 
 randIndex               Calculation of (adjusted) Rand index
 rankPvalue              Estimate the p-value for ranking consistently high (or low) on multiple lists
 recutBlockwiseTrees     Repeat blockwise module detection from
@@ -156,12 +191,16 @@ recutBlockwiseTrees     Repeat blockwise module detection from
 recutConsensusTrees     Repeat blockwise consensus module detection
                         from pre-calculated data
 redWhiteGreen           Red-white-green color sequence
+reflectTwoBranches      Reflect branches in a dendrogram
 relativeCorPredictionSuccess
                         Compare prediction success
 removeGreyME            Removes the grey eigengene from a given
                         collection of eigengenes.
+removePrincipalComponents
+                        Remove leading principal components from data
 scaleFreeFitIndex	Calculation of fitting statistics for evaluating scale free topology fit.
 scaleFreePlot           Visual check of scale-free topology
+selectBranch            Find a branch in a dendrogram
 setCorrelationPreservation
                         Summary correlation preservation measure
 sigmoidAdjacencyFunction
@@ -179,6 +218,8 @@ simulateMultiExpr       Simulate multi-set expression data
 simulateSmallLayer      Simulate small modules
 sizeGrWindow            Open a graphics window of given width and height
 softConnectivity        Calculation of soft (weighted) connectevity
+softConnectivity.fromSimilarity
+                        Calculation of soft (weighted) connectevity
 spaste                  Space-less paste
 standardColors          Colors this library uses for labeling modules
 standardScreeningBinaryTrait
@@ -186,12 +227,16 @@ standardScreeningBinaryTrait
 standardScreeningCensoredTime
                         Standard screening with regard to a Censored Time Variable
 stdErr                  Standard error
+stratifiedBarplot	Bar plots of data across two splitting parameters
+swapTwoBranches         Swap branches in a dendrogram
 unsignedAdjacency       Calculation of unsigned adjacency
+userListEnrichment      Measure enrichment between inputted and user-defined lists
 vectorTOM               Topological overlap for a subset of the whole set of genes
 vectorizeMatrix         Turn a matrix into a vector of non-redundant components
 verboseBarplot          Barplot with error bars, annotated by Kruskal-Wallis p-value
 verboseBoxplot          Boxplot annotated by a Kruskal-Wallis p-value
 verboseScatterplot      Scatterplot annotated by regression line and p-value
+votingLinearPredictor   Voting linear predictor
 }
 }
 \author{

@@ -10,14 +10,18 @@ plotDendroAndColors(
   dendro, 
   colors, 
   groupLabels = NULL, 
-  colorText = NULL,
+  rowText = NULL,
+  textPositions = NULL,
   setLayout = TRUE, 
   autoColorHeight = TRUE, 
   colorHeight = 0.2, 
+  rowWidths = NULL, 
   dendroLabels = NULL, 
   addGuide = FALSE, guideAll = FALSE, 
   guideCount = 50, guideHang = 0.2, 
+  addTextGuide = FALSE,
   cex.colorLabels = 0.8, cex.dendroLabels = 0.9, 
+  cex.rowText = 0.8,
   marAll = c(1, 5, 3, 1), saveMar = TRUE, 
   abHeight = NULL, abCol = "red", ...)
 }
@@ -36,9 +40,14 @@ left of the color rows in the plot. If the argument is given, it must be a vecto
 equal to the number of columns in \code{colors}. If not given, \code{names(colors)}
 will be used if available. If not, sequential numbers starting from 1 will be used.}
 
-  \item{colorText}{Optional labels to identify colors in the color rows. 
-If given, must be of the same dimensions as \code{colors}. Each label that occurs will be displayed 
-once.}
+  \item{rowText}{Optional labels to identify colors in the color rows. 
+If given, must be either the same dimensions as \code{colors} or must have the same number of rows and
+\code{textPositions} must be used to specify which columns of \code{colors} each column of \code{rowText}
+corresponds to. Each label that occurs will be displayed 
+once, under the largest continuous block of the corresponding \code{colors}.}
+
+  \item{textPositions}{optional numeric vector of the same length as the number of columns in \code{rowText}
+giving the color rows under which the text rows should appear.} 
 
   \item{setLayout}{ logical: should the plotting device be partitioned into a standard layout?
 If \code{FALSE}, the user is responsible for partitioning. The function expects two regions of the same
@@ -47,8 +56,11 @@ width, the first one immediately above the second one. }
   \item{autoColorHeight}{ logical: should the height of the color area below the dendrogram be
 automatically adjusted for the number of traits? Only effective if \code{setLayout} is \code{TRUE}. }
 
-  \item{colorHeight}{ Specifies the height of the color area under dendrogram as a fraction of the
+  \item{colorHeight}{ specifies the height of the color area under dendrogram as a fraction of the
 height of the dendrogram area. Only effective when \code{autoColorHeight} above is \code{FALSE}. }
+
+  \item{rowWidths}{ optional specification of relative row widths for the color and text (if given) rows.
+Need not sum to 1. }
 
   \item{dendroLabels}{ dendrogram labels. Set to \code{FALSE} to disable dendrogram labels altogether;
 set to \code{NULL} to use row labels of \code{datExpr}. }
@@ -66,9 +78,13 @@ it easier to identify color codes with individual samples. }
 the dendrogram merge height. If the guide lines overlap with dendrogram labels, increase \code{guideHang}
 to leave more space for the labels. }
 
+  \item{addTextGuide}{ logical: should guide lines be added for the text rows (if given)? }
+
   \item{cex.colorLabels}{ character expansion factor for trait labels. }
 
   \item{cex.dendroLabels}{ character expansion factor for dendrogram (sample) labels. }
+
+  \item{cex.rowText}{ character expansion factor for text rows (if given). }
 
   \item{marAll}{ a vector of length 4 giving the bottom, left, top and right margins of the combined
 plot. There is no margin between the dendrogram and the color plot underneath. }

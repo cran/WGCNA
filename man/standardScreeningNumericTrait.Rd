@@ -8,7 +8,7 @@ Standard screening for numeric traits based on Pearson correlation.
 }
 \usage{
 standardScreeningNumericTrait(datExpr, yNumeric,
-                              corFnc = "cor", corOptions = "use = 'p'")
+                              corFnc = "cor", corOptions = "use = 'p'", qValues = TRUE)
 }
 \arguments{
   \item{datExpr}{
@@ -23,8 +23,9 @@ similarity for correlation networks.
 Defaults to Pearson correlation. Any function returning values between -1 and 1 can be used. }
 
   \item{corOptions}{ character string specifying additional arguments to be passed to the function given
-by \code{corFnc}. Use \code{"use = 'p', method = 'Spearman'"} to obtain Spearman correlation.   }
+by \code{corFnc}. Use \code{"use = 'p', method = 'spearman'"} to obtain Spearman correlation.   }
 
+  \item{qValues}{ logical: should q-values be calculated?}
 }
 \details{
 The function calculates the correlations, associated p-values, area under the ROC, and q-values
@@ -36,7 +37,7 @@ List with the following components:
  \item{ID }{Gene (or variable) identifiers copied from \code{colnames(datExpr)}}
  \item{cor}{correlations of all genes with the trait}
  \item{pvalueStudent }{Student p-values of the correlations}
- \item{qvalueStudent }{q-values of the correlations calculated from the p-values}
+ \item{qvalueStudent }{(if input \code{qValues==TRUE}) q-values of the correlations calculated from the p-values}
  \item{AreaUnderROC }{area under the ROC}
 
 }

@@ -266,8 +266,7 @@ pickSoftThreshold = function (datExpr, RsquaredCut = 0.85,
             warning(paste("Some correlations are NA in block", 
                 startG, ":", endG, "."))
         for (j in c(1:length(powerVector))) {
-            datk[c(startG:endG), j] = apply(corx^powerVector[j], 
-                2, sum, na.rm = TRUE)
+            datk[c(startG:endG), j] = colSums(corx^powerVector[j], na.rm = TRUE)
         }
         startG = endG + 1
         if (verbose == 1) 
@@ -721,7 +720,17 @@ cutreeStaticColor = function(dendro, cutHeight = 0.9, minSize = 50)
 
  
 
-plotColorUnderTree = function(dendro, colors, rowLabels = NULL, cex.rowLabels = 1, colorText = NULL, ...)
+plotColorUnderTree = function(
+   dendro, 
+   colors, 
+   rowLabels = NULL, 
+   rowWidths = NULL,
+   rowText = NULL, 
+   textPositions = NULL, 
+   addTextGuide = TRUE,
+   cex.rowLabels = 1,
+   cex.rowText = 0.8,
+   ...)
 {
   colors = as.matrix(colors);
   dimC = dim(colors)
@@ -729,11 +738,12 @@ plotColorUnderTree = function(dendro, colors, rowLabels = NULL, cex.rowLabels = 
   if (is.null(rowLabels) & (length(dimnames(colors)[[2]])==dimC[2])) 
      rowLabels = colnames(colors);
 
+
   sAF = options("stringsAsFactors")
   options(stringsAsFactors = FALSE);
   on.exit(options(stringsAsFactors = sAF[[1]]), TRUE)
 
-  nSets = dimC[2];
+  nColorRows = dimC[2];
   if (length(dendro$order) != dimC[1] ) 
     stop("ERROR: length of colors vector not compatible with number of objects in the hierarchical tree.");
   C = colors[dendro$order, , drop = FALSE]; 
@@ -741,25 +751,55 @@ plotColorUnderTree = function(dendro, colors, rowLabels = NULL, cex.rowLabels = 
   #barplot(height=1, col = "white", border=FALSE, space=0, axes=FALSE, ...)
   barplot(height=1, col = "white", border=FALSE, space=0, axes=FALSE)
   charWidth = strwidth("W")/2;
-  if (!is.null(colorText))
+  if (!is.null(rowText))
   {
-     ystep = 1/(2*nSets);
-     jjMult = 2;
+     if (is.null(textPositions)) textPositions = c(1:nColorRows);
+     if (is.logical(textPositions)) textPositions = c(1:nColorRows)[textPositions];
+     nTextRows = length(textPositions);
+  } else 
+     nTextRows = 0;
+  nRows = nColorRows + nTextRows;
+  ystep = 1/nRows;
+  if (is.null(rowWidths)) 
+  { 
+    rowWidths = rep(ystep, nColorRows + nTextRows)
+  } else
+  {
+    if (length(rowWidths)!=nRows) 
+      stop("plotColorUnderTree: Length of 'rowWidths' must equal the total number of rows.")
+    rowWidths = rowWidths/sum(rowWidths);
+  }
+
+  hasText = rep(0, nColorRows);
+  hasText[textPositions] = 1;
+  csPosition = cumsum(c(0, hasText[-nColorRows]));
+  
+  colorRows = c(1:nColorRows) + csPosition;
+  rowType = rep(2, nRows);
+  rowType[colorRows] = 1;
+
+  physicalTextRow = c(1:nRows)[rowType==2];
+
+  yBottom = c(0, cumsum(rowWidths[nRows:1])) ;  # Has one extra entry but that shouldn't hurt
+  yTop = cumsum(rowWidths[nRows:1]) 
+
+  if (!is.null(rowText))
+  {
      charHeight = strheight("W");
-     nCharFit = floor(ystep/charHeight/cex.rowLabels)
-     if (nCharFit==0) stop("Color rows are too marrow to fit text.");
-     colorText = as.matrix(colorText)
-     if (!isTRUE(all.equal(dim(colorText), dim(colors))))
-        stop("Dimensions of 'colors' and 'colorText' must agree.");
+     rowText = as.matrix(rowText)
      textPos = list();
      textPosY = list();
      textLevs = list();
-     for (set in 1:nSets)
+     for (tr in 1:nTextRows) 
      {
+       width1 = rowWidths[ physicalTextRow[tr] ];
+       nCharFit = floor(width1/charHeight/cex.rowText/1.2/par("lheight"))
+       if (nCharFit==0) stop("Rows are too narrow to fit text. Consider decreasing cex.rowText.");
+       set = textPositions[tr];
        colLevs = sort(unique(colors[, set]));
-       textLevs[[set]] = colorText[match(colLevs, colors[, set]), set];
+       textLevs[[tr]] = rowText[match(colLevs, colors[, set]), tr];
        nLevs = length(colLevs);
-       textPos[[set]] = rep(0, nLevs);
+       textPos[[tr]] = rep(0, nLevs);
        for (cl in 1:nLevs)
        {
          ind = C[, set] == colLevs[cl];
@@ -773,51 +813,56 @@ plotColorUnderTree = function(dendro, colors, rowLabels = NULL, cex.rowLabels = 
          if (ends[length(ends)] < starts[length(starts)]) ends = c(ends, length(ind));
          lengths = ends - starts;
          long = which.max(lengths);
-         #textPos[[set]][cl] = (ends[long] + starts[long])/2;
-         textPos[[set]][cl] = starts[long];
+         textPos[[tr]][cl] = starts[long];
        }
        yPos = seq(from = 2, to = 2*nCharFit, by=2) / (2*nCharFit+2);
-       textPosY[[set]] = rep(yPos, ceiling(nLevs/nCharFit)+5)[1:nLevs][rank(textPos[[set]])];
+       textPosY[[tr]] = rep(yPos, ceiling(nLevs/nCharFit)+5)[1:nLevs][rank(textPos[[tr]])];
      }
-  } else {
-     ystep = 1/nSets;
-     jjMult = 1;
-  }
+  } 
         
+  jIndex = nRows;
 
-  for (j in 1:nSets)
+  if (is.null(rowLabels)) rowLabels = c(1:nColorRows);
+  for (j in 1:nColorRows)
   {
-    jj = (nSets - j +1) * jjMult
+    jj = jIndex;
     ind = (1:dimC[1]);
     xl = (ind-1.5) * step; xr = (ind-0.5) * step; 
-    yb = rep(ystep*(jj-1), dimC[1]); yt = rep(ystep * jj, dimC[1]);
+    yb = rep(yBottom[jj], dimC[1]); yt = rep(yTop[jj], dimC[1]);
     if (is.null(dim(C))) {
        rect(xl, yb, xr, yt, col = as.character(C), border = as.character(C));
     } else {
        rect(xl, yb, xr, yt, col = as.character(C[,j]), border = as.character(C[,j]));
     }
-    if (is.null(rowLabels))
+    text(rowLabels[j], pos=2, x= -charWidth -0.5*step, y= (yBottom[jj] + yTop[jj])/2, 
+         cex=cex.rowLabels, xpd = TRUE);
+    textRow = match(j, textPositions);
+    if (is.finite(textRow))
     {
-        text(as.character(j), pos=2, x= -charWidth -0.5*step, y=ystep*(jj-0.5), 
-             cex=cex.rowLabels, xpd = TRUE);
-    } else {
-        text(rowLabels[j], pos=2, x= -charWidth -0.5*step, y=ystep*(jj-0.5), cex=cex.rowLabels, xpd = TRUE);
-    } 
-    if (jjMult ==2)
-    {
-      xt = (textPos[[j]] - 1) * step;
-      yt = ystep*(jj-2 + textPosY[[j]]);
-      text(textLevs[[j]], x = xt, y = yt, adj = c(0, 0.5), xpd = TRUE, cex = cex.rowLabels)
+      jIndex = jIndex - 1;
+      xt = (textPos[[textRow]] - 1) * step;
+      #printFlush(spaste("jIndex: ", jIndex, ", yBottom: ", yBottom[jIndex],
+      #                  ", yTop: ", yTop[jIndex], ", min(textPosY): ", min(textPosY[[textRow]]),
+      #                  ", max(textPosY): ", max(textPosY[[textRow]])));
+      yt = yBottom[jIndex] + (yTop[jIndex]-yBottom[jIndex]) * textPosY[[textRow]];
+      nt = length(textLevs[[textRow]]);
+      # Add guide lines
+      if (addTextGuide)
+        for (l in 1:nt) lines(c(xt[l], xt[l]), c(yt[l], yTop[jIndex]), col = "grey70", lty = 3);
+      text(textLevs[[textRow]], x = xt, y = yt, adj = c(0, 0.5), xpd = TRUE, cex = cex.rowText)
+      # printFlush("ok");
     }
+    jIndex = jIndex - 1;
   }
-  for (j in 0:nSets) lines(x=c(0,1), y=c(ystep*j*jjMult,ystep*j*jjMult));
+  for (j in 0:(nColorRows + nTextRows)) lines(x=c(0,1), y=c(yBottom[j+1], yBottom[j+1]));
 }
+
+#========================================================================================================
 # This function can be used to create an average linkage hierarchical
 # clustering tree
 # or the microarray samples. The rows of datExpr correspond to the samples and
 # the columns to the genes
 # You can optionally input a quantitative microarray sample trait.
-
 
 plotClusterTreeSamples=function(datExpr, y = NULL, traitLabels = NULL, yLabels = NULL, 
          main = if (is.null(y)) "Sample dendrogram" else "Sample dendrogram and trait indicator",
@@ -857,7 +902,7 @@ plotClusterTreeSamples=function(datExpr, y = NULL, traitLabels = NULL, yLabels =
     } else {
       y = (y>=median(y, na.rm=T)) + 1;
     }
-    plotDendroAndColors(dendro, colors = y, groupLabels = traitLabels, colorText = yLabels, 
+    plotDendroAndColors(dendro, colors = y, groupLabels = traitLabels, rowText = yLabels, 
                         setLayout = setLayout, 
                         autoColorHeight = autoColorHeight, colorHeight = colorHeight,
                         addGuide = addGuide, guideAll = guideAll, guideCount = guideCount, 
@@ -1276,6 +1321,7 @@ verboseScatterplot = function(x, y,
                              corFnc = "cor", corOptions = "use = 'p'",
                              main ="", xlab = NA, ylab = NA, cex=1, cex.axis = 1.5,
                              cex.lab = 1.5, cex.main = 1.5, abline = FALSE, 
+                             abline.color = 1, abline.lty = 1,
                              corLabel = corFnc, ...) 
 {
   if ( is.na(xlab) ) xlab= as.character(match.call(expand.dots = FALSE)$x)
@@ -1310,7 +1356,7 @@ verboseScatterplot = function(x, y,
   if (abline)
   {
     fit = lm(y~x);
-    abline(reg = fit);
+    abline(reg = fit, col = abline.color, lty = abline.lty);
   }
   invisible(sample);
 }
@@ -1798,12 +1844,15 @@ updateProgInd = function(newFrac, progInd, quiet = !interactive())
 # =====================================================================================================
 #
 
-plotDendroAndColors = function(dendro, colors, groupLabels = NULL, colorText = NULL, 
+plotDendroAndColors = function(dendro, colors, groupLabels = NULL, rowText = NULL, 
+                               textPositions = NULL,
                                setLayout = TRUE, autoColorHeight = TRUE, colorHeight = 0.2,
+                               rowWidths = NULL,
                                dendroLabels = NULL, 
                                addGuide = FALSE, guideAll = FALSE, guideCount = 50, 
-                               guideHang = 0.20,
-                               cex.colorLabels = 0.8, cex.dendroLabels = 0.9,  marAll = c(1,5,3,1),
+                               guideHang = 0.20, addTextGuide = FALSE,
+                               cex.colorLabels = 0.8, cex.dendroLabels = 0.9,  
+                               cex.rowText = 0.8, marAll = c(1,5,3,1),
                                saveMar = TRUE, 
                                abHeight = NULL, abCol = "red", ...)
 {
@@ -1812,7 +1861,7 @@ plotDendroAndColors = function(dendro, colors, groupLabels = NULL, colorText = N
   {
     nRows = dim(colors)[2];
   } else nRows = 1;
-  if (!is.null(colorText)) nRows = 2*nRows;
+  if (!is.null(rowText)) nRows = nRows + if (is.null(textPositions)) nRows else length(textPositions);
   if (autoColorHeight) colorHeight = 0.2 + 0.3 * (1-exp(-(nRows-1)/6))
   if (setLayout) layout(matrix(c(1:2), 2, 1), heights = c(1-colorHeight, colorHeight));
   par(mar = c(0, marAll[2], marAll[3], marAll[4]));
@@ -1821,7 +1870,9 @@ plotDendroAndColors = function(dendro, colors, groupLabels = NULL, colorText = N
     addGuideLines(dendro, count = ifelse(guideAll, length(dendro$height)+1, guideCount), hang = guideHang);
   if (!is.null(abHeight)) abline(h=abHeight, col = abCol);
   par(mar = c(marAll[1], marAll[2], 0, marAll[4]));
-  plotColorUnderTree(dendro, colors, groupLabels, cex.rowLabels = cex.colorLabels, colorText = colorText)
+  plotColorUnderTree(dendro, colors, groupLabels, cex.rowLabels = cex.colorLabels, rowText = rowText,
+                     textPositions = textPositions, cex.rowText = cex.rowText, rowWidths = rowWidths,
+                     addTextGuide = addTextGuide)
   if (saveMar) par(mar = oldMar);
 }
 
@@ -2869,7 +2920,7 @@ networkScreening = function(
   p.Weighted=as.numeric(2*(1-pt(abs(Z.Weighted),NoAvailable-2)))
   p.Standard=2*(1-pt(abs(Z.Standard),NoAvailable-2))
 
-  if (getQValues & require(qvalue, quietly = TRUE))
+  if (getQValues)
   {
     # since the function qvalue cannot handle missing data, we set missing p-values to 1.
     p.Weighted2=p.Weighted
@@ -2877,8 +2928,8 @@ networkScreening = function(
     p.Weighted2[is.na(p.Weighted)]=1
     p.Standard2[is.na(p.Standard)]=1
     
-    q.Weighted=try(qvalue::qvalue(p.Weighted2)$qvalues, silent = TRUE)
-    q.Standard=try(qvalue::qvalue(p.Standard2)$qvalues, silent = TRUE)
+    q.Weighted=try(qvalue(p.Weighted2)$qvalues, silent = TRUE)
+    q.Standard=try(qvalue(p.Standard2)$qvalues, silent = TRUE)
   
     if (class(q.Weighted)=="try-error") 
     {
@@ -2975,6 +3026,10 @@ labeledHeatmap = function (Matrix, xLabels, yLabels = NULL,
                            yColorWidth = 0.05,
                            colors = NULL, 
                            textMatrix = NULL, cex.text = NULL, cex.lab = NULL, 
+                           cex.lab.x = cex.lab,
+                           cex.lab.y = cex.lab,
+                           colors.lab.x = 1,
+                           colors.lab.y = 1,
                            plotLegend = TRUE, ... ) 
 {
   if (!is.null(colorLabels)) {xColorLabels = colorLabels; yColorLabels = colorLabels; }
@@ -3040,7 +3095,7 @@ labeledHeatmap = function (Matrix, xLabels, yLabels = NULL,
     xLabYPos = ifelse(xLabPos==1, ymin - offsety, ymax + offsety)
     if (is.null(cex.lab)) cex.lab = 1;
     text(labPos$xMid[xTextLabInd] , xLabYPos, srt = xLabelsAngle, 
-          adj = xLabelsAdj, labels = xLabels[xTextLabInd], xpd = TRUE, cex = cex.lab)
+          adj = xLabelsAdj, labels = xLabels[xTextLabInd], xpd = TRUE, cex = cex.lab.x, col = colors.lab.x)
   }
   if (sum(xValidColors)>0)
   {
@@ -3053,13 +3108,13 @@ labeledHeatmap = function (Matrix, xLabels, yLabels = NULL,
     if (!is.null(xSymbols))
       text ( labPos$xMid[xColorLabInd], baseY - sign(deltaY)* offsety, xSymbols[xColorLabInd], 
              adj = xLabelsAdj, 
-             xpd = TRUE, srt = xLabelsAngle, cex = cex.lab);
+             xpd = TRUE, srt = xLabelsAngle, cex = cex.lab.x, col = colors.lab.x);
   }
   if (sum(!yValidColors)>0)
   {
     if (is.null(cex.lab)) cex.lab = 1;
     text(xmin - offsetx, labPos$yMid[yTextLabInd], srt = 0, 
-         adj = c(1, 0.5), labels = yLabels[yTextLabInd], xpd = TRUE, cex = cex.lab )
+         adj = c(1, 0.5), labels = yLabels[yTextLabInd], xpd = TRUE, cex = cex.lab.y, col = colors.lab.y )
   } 
   if (sum(yValidColors)>0)
   {
@@ -3070,7 +3125,7 @@ labeledHeatmap = function (Matrix, xLabels, yLabels = NULL,
     if (!is.null(ySymbols))
       text (xmin- yColW - 2*offsetx, 
             labPos$yMid[yColorLabInd], ySymbols[yColorLabInd], 
-            adj = c(1, 0.5), xpd = TRUE, cex = cex.lab);
+            adj = c(1, 0.5), xpd = TRUE, cex = cex.lab.y, col = colors.lab.y);
   }
 
   if (!is.null(textMatrix))
@@ -3119,7 +3174,7 @@ labeledBarplot = function ( Matrix, labels, colorLabels = FALSE, colored = TRUE,
 
   colors[!ValidColors] = "grey";
   
-  mp = barplot(Matrix, col = colors, xaxt = "n", xlab="", yaxt="n", ylab="", ...)
+  mp = barplot(Matrix, col = colors, xaxt = "n", xlab="", yaxt="n", ...)
 
   if (length(dim(Matrix))==2) {
      means = apply(Matrix, 2, sum);
@@ -4500,7 +4555,8 @@ if (!qValues) {
 #
 #================================================================================
 
-standardScreeningNumericTrait= function (datExpr, yNumeric, corFnc = "cor", corOptions = "use = 'p'") 
+standardScreeningNumericTrait= function (datExpr, yNumeric, corFnc = "cor", corOptions = "use = 'p'",
+                                         qValues = TRUE) 
 { 
 datExpr=data.frame(datExpr)
     if (length(yNumeric) != dim(datExpr)[[1]]) 
@@ -4517,14 +4573,20 @@ datExpr=data.frame(datExpr)
         pvalueStudent[i] = corPvalueStudent(corPearson[i], no.present )
         AreaUnderROC[i] = rcorr.cens(datExpr[, i], yNumeric, 
             outx = T)[[1]]
-    }
-    q.Student=rep(NA, length(pvalueStudent) )
-          rest1= ! is.na(pvalueStudent) 
-    q.Student[rest1] = qvalue(pvalueStudent[rest1])$qvalues
-    output = data.frame(ID = dimnames(datExpr)[[2]], cor = corPearson, 
-        pvalueStudent = pvalueStudent, qvalueStudent = q.Student, 
-AreaUnderROC = AreaUnderROC)
-    output
+  }
+  q.Student=rep(NA, length(pvalueStudent) )
+  rest1= ! is.na(pvalueStudent) 
+  if (qValues)
+  {
+    x = try({ q.Student[rest1] = qvalue(pvalueStudent[rest1])$qvalues }, silent = TRUE)
+    if (inherits(x, "try-error"))
+      printFlush(paste("Warning in standardScreeningNumericTrait: function qvalue returned an error.\n",
+                       "The returned qvalues will be invalid. The qvalue error: ", x, "\n"));
+  }
+  output = data.frame(ID = dimnames(datExpr)[[2]], cor = corPearson, 
+                      pvalueStudent = pvalueStudent, qvalueStudent = if (qValues) q.Student else NULL,
+                      AreaUnderROC = AreaUnderROC)
+  output
 }
 
 
@@ -4665,4 +4727,5 @@ prepComma = function(s)
   if (s=="") return (s);
   paste(",", s);
 }
+
 

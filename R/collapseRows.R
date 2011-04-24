@@ -92,6 +92,10 @@
 	return(as.numeric(datIn[keep,]))
 }
 
+.Average <- function(datIn){
+	return(as.numeric(colMeans(datIn)))
+}
+
 .selectFewestMissing <- function(datET, rowID, rowGroup, omitGroups, omitPercent=90){
 ## For each gene, select the gene with the fewest missing probes, and return the results.
 #   If there is a tie, keep all probes involved in the tie.
@@ -129,26 +133,30 @@ collapseRows <- function(datET, rowGroup, rowID, method="MaxMean", connectivityB
 	methodFunction=NULL, connectivityPower=1, selectFewestMissing=TRUE, thresholdCombine=NA)
 {
 
-   # datET = as.matrix(as.data.frame(datET));
-   if (sum(rowGroup == "",na.rm=T) > 0) {
-      warning(paste("rowGroup contains blanks. It is strongly recommended that you remove",
+	# datET = as.matrix(as.data.frame(datET));
+	methodAverage = FALSE
+	if (method=="Average") methodAverage = TRUE   # Required for later
+	if (method!="function") methodFunction = NULL # Required for later
+
+	if ( sum(rowGroup=="",na.rm=TRUE)>0 ){
+	   warning(paste("rowGroup contains blanks. It is strongly recommended that you remove",
                     "these rows before calling the function.\n",
                     "   But for your convenience, the collapseRow function will remove these rows"));
-      rowGroup[rowGroup==""]=NA
-   }
+	   rowGroup[rowGroup==""]=NA
+	}
 
-   # datET is a numeric matrix whose rows correspond to variables
-   # e.g. probes of a microarray and whose columns to observations
-   # e.g. microarrays 
+	# datET is a numeric matrix whose rows correspond to variables
+	# e.g. probes of a microarray and whose columns to observations
+	# e.g. microarrays 
 
-   if ( sum(is.na(rowGroup))>0 ){
+	if ( sum(is.na(rowGroup))>0 ){
        warning(paste("The argument rowGroup contains missing data. It is strongly recommended\n",
               "   that you remove these rows before calling the function. Or redefine rowGroup\n",
-              "   so that it has no missing data. But for convenience, we remove these data."))
-   }	
+			  "   so that it has no missing data. But for convenience, we remove these data."))
+	}	
 	
-   ## Test to make sure the variables are the right length.
-   #     if not, fix it if possible, or return 0 if not possible
+    ## Test to make sure the variables are the right length.
+    #     if not, fix it if possible, or return 0 if not possible
 	rowID  = as.character(rowID)
 	rowGroup = as.character(rowGroup)
 	rnDat = rownames(datET)
@@ -224,13 +232,13 @@ collapseRows <- function(datET, rowGroup, rowID, method="MaxMean", connectivityB
 #    Note: methodFunction must be a function that takes a vector of numbers as input and
 #     outputs a single number. This function will return(0) or crash otherwise.
 
-        recMethods = c("function","ME","MaxMean","maxRowVariance","MinMean","absMinMean","absMaxMean");
+        recMethods = c("function","ME","MaxMean","maxRowVariance","MinMean","absMinMean","absMaxMean","Average");
         imethod = pmatch(method, recMethods);
         
 	if (is.na(imethod)) {
 		printFlush("Error: entered method is not a legal option. Recognized options are *maxRowVariance*,");
 		printFlush("       *maxRowVariance*, *MaxMean*, *MinMean*, *absMaxMean*, *absMinMean*, *ME*,");
-		printFlush("       or *function* for a user-defined function.")
+		printFlush("       *Average* or *function* for a user-defined function.")
 		return(0)
 	}
         if (imethod > 2) method = spaste(".", method);
@@ -301,7 +309,11 @@ collapseRows <- function(datET, rowGroup, rowID, method="MaxMean", connectivityB
 		datETOut = t(moduleEigengenes(t(datET),genes)$eigengenes)
 		colnames(datETOut) = colnames(datET)
 		rownames(datETOut) = substr(rownames(datETOut),3,nchar(rownames(datETOut)))
-		return(list(datETcollapsed = datETOut, group2row = NULL, selectedRow = NULL))		
+		out2 = cbind(rownames(datETOut),paste("ME",rownames(datETOut),sep="."))
+		colnames(out2) = c("group","selectedRowID")
+		out3 = is.element(rownames(datET_in),"@#$%^&*")
+		names(out3) = rownames(datET_in)
+		return(list(datETcollapsed = datETOut, group2row = out2, selectedRow = out3))		
 	}
 	
 # Actually run the collapse now!!!
@@ -344,9 +356,21 @@ collapseRows <- function(datET, rowGroup, rowID, method="MaxMean", connectivityB
 
 		
 # Retreive the information about which probes were saved, and include that information
-#   as part of the output
-	if (!is.function(method)) if(method=="function")
-		return(list(datETcollapsed = datETOut, group2row = NULL, selectedRow = NULL))
+#   as part of the output.  If method="function" or "Average" output placeholder values.
+	if (!is.null(methodFunction)) {
+		out2 = cbind(rownames(datETOut),paste("function",rownames(datETOut),sep="."))
+		colnames(out2) = c("group","selectedRowID")
+		out3 = is.element(rownames(datET_in),"@#$%^&*")
+		names(out3) = rownames(datET_in)		
+		return(list(datETcollapsed = datETOut, group2row = out2, selectedRow = out3))
+	}
+	if (methodAverage) {
+		out2 = cbind(rownames(datETOut),paste("Average",rownames(datETOut),sep="."))
+		colnames(out2) = c("group","selectedRowID")
+		out3 = is.element(rownames(datET_in),"@#$%^&*")
+		names(out3) = rownames(datET_in)		
+		return(list(datETcollapsed = datETOut, group2row = out2, selectedRow = out3))
+	}
 	out2 = cbind(rownames(datETOut),rowsOut)
 	colnames(out2) = c("group","selectedRowID")
 	out3 = is.element(rownames(datET_in),rowsOut)

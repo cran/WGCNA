@@ -1,9 +1,44 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
+2011/04/2: 1.10-2
+
+	. Bug in function cor fixed that caused an unncessary slowdown. Results were not affected.
+	. Typos in several help files fixed: use = 'Spearman' is now corrected
+	  to use = 'spearman' (thanks to Eric L. Du for pointing it out).
+
+2011/04/19: 1.10
+
+	. New function accuracyMeasures for summarizing 2x2 confusion tables 
+	. New prediction function votingLinearPredictor and
+	  nearestCentroidPredictor
+	. New functions proportionsInAdmixture.R and populationMeansInAdmixture.R 
+	  for estimating proportions and populations meanspopulations means in
+	  admixtures
+	. Several additional functions by Jeremy Miller: 
+	  chooseOneHubInEachModule, consensusDissTOMandTree, kMEcomparisonScatterplot, 
+	  moduleMergeUsingKME, orderBranchesUsingHubGenes, overlapTableUsingKME,
+	  stratifiedBarplot, swapTwoBranches, reflectBranches, selectBranch, userListEnrichment
+	. New function mutualInfoAdjacency by Lin Song
+	. New functions coClustering and coClustering.permutationTest
+	. Due to excessive problems with Tcl/Tk, we dropped the dependency on
+	  package qvalue and incorporated the necessary R code directly into
+	  WGCNA
+	. plotColorUnderTree and plotDendroAndColors gain additional
+	  flexibility when working with rows of text labels. 
+	. The argument 'colorText' to the above functions has been renamed to
+	  'rowText'. Sorry for any code that becomes broken because of this!
+	. VerboseScatterplot gains arguments to set the regression line color and type.
+	. Colors for text labels in labeledHeatmap can now be set.
+
 2011/02/05: 1.00
 
-	. The ubiquitous corOptions argument can now take the value of an empty string ("")
-	. New utility function prepComma
+	. Functions standardScreeningBinaryTrait and standardScreeningNumericTrait can now optionally turn
+	  off the calculation of q-values as the latter sometimes leads to problems.
+	. Character expansion for axis labels in labeledHeatmap can be set separately 
+	  for x and y axis.
+	. The ubiquitous corOptions argument can now take the value of an empty string ("").
+	. New utility function prepComma.
+	. New set of functions that calculate adjacency from a given similarity matrix.
 
 
 2010/12/17: 0.99

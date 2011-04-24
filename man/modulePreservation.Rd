@@ -61,7 +61,7 @@ similarity. Defaults to Pearson correlation. Another useful choice is \code{\lin
 More generally, any function returning values between -1 and 1 can be used. }
 
   \item{corOptions}{ character string specifying additional arguments to be passed to the function given
-by \code{corFnc}. Use \code{"use = 'p', method = 'Spearman'"} to obtain Spearman correlation.   }
+by \code{corFnc}. Use \code{"use = 'p', method = 'spearman'"} to obtain Spearman correlation.   }
 
   \item{referenceNetworks}{ a vector giving the indices of expression data to be used as reference networks.
 Reference networks must have their module labels given in \code{multiColor}. }

@@ -1,5 +1,53 @@
 # Functions to perform WGCNA from similarity input.
 
+matrixToNetwork = function(mat,
+   symmetrizeMethod = c("average", "min", "max"),
+   signed = TRUE,
+   min = NULL,
+   max = NULL,
+   power = 12,
+   diagEntry = 1)
+{
+  sm = match.arg(symmetrizeMethod);
+  if (is.na(sm)) 
+    stop("Unrecognized or non-unique 'symmetrizeMethod'.");
+
+  mat = as.matrix(mat);
+
+  nd = 0
+  x = try({nd = dim(mat)});
+  if ( (class(x)=='try-error') | (nd!=2) )
+    stop("'mat' appears to have incorrect type; must be a 2-dimensional square matrix.");
+
+  if (ncol(mat)!=nrow(mat))
+    stop("'mat' must be a square matrix.");
+
+  if (!signed) mat = abs(mat);
+
+  if (sm==1) {
+    mat = (mat + t(mat))/2;
+  } else if (sm==2) {
+    mat = pmin(mat, t(mat), na.rm = TRUE);
+  } else
+    mat = pmax(mat, t(mat), na.rm = TRUE);
+ 
+  if (is.null(min)) {
+    min = min(mat, na.rm = TRUE);
+  } else
+    mat[mat < min] = min;
+
+  if (is.null(max)) {
+    max = max(mat, na.rm = TRUE);
+  } else 
+    mat[mat > max] = max;
+
+  adj = ( (mat-min)/(max-min) )^power;
+
+  diag(adj) = diagEntry
+
+  adj;
+}
+
 checkSimilarity = function(similarity, min=-1, max=1)
 {
   checkAdjMat(similarity, min, max);
