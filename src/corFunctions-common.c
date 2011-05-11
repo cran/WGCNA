@@ -179,7 +179,7 @@ void testQuantile(double *x, int *n, double *q, double *res)
 void prepareColBicor(double * col, int nr, double maxPOutliers, int fallback,
                      int cosine,
                      double * res, int * nNAentries, 
-                     int * NAmed, int * zeroMAD,
+                     int * NAmed, volatile int * zeroMAD,
                      double * aux, double * aux2)
 {
   // const double asymptCorr = 1.4826, qnorm75 = 0.6744898;

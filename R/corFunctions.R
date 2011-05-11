@@ -2,6 +2,10 @@
 
 .pearsonFallbacks = c("none", "individual", "all");
 
+.zeroMADWarnings = c("Some results will be NA.", 
+                     "Pearson correlation was used for individual columns with MAD=NA.",
+                     "Pearson correlation was used for entire variable.");
+
 bicor = function(x, y = NULL, robustX = TRUE, robustY = TRUE, use = 'all.obs', maxPOutliers = 1, quick = 0,
                  pearsonFallback = "individual", 
                  cosine = FALSE,
@@ -36,6 +40,8 @@ bicor = function(x, y = NULL, robustX = TRUE, robustY = TRUE, use = 'all.obs', m
   if (prod(dim(x))==0) stop("'x' has a zero dimension."); 
   nNA = 0;
   err = 0;
+  warnX = 0;
+  warnY = 0;
   if (is.null(y))
   {
     if (!robustX)
@@ -49,12 +55,18 @@ bicor = function(x, y = NULL, robustX = TRUE, robustY = TRUE, use = 'all.obs', m
                fallback = as.integer(fallback),
                cosine = as.integer(cosineX), 
                res = as.double(bi), nNA = as.integer(nNA),
-               err = as.integer(err), nThreads = as.integer(nThreads),
+               err = as.integer(err), 
+               warn = as.integer(warnX), nThreads = as.integer(nThreads),
                verbose = as.integer(verbose), indent = as.integer(indent),
                DUP = FALSE, NAOK = TRUE);
     }
     dim(res$res) = dim(bi);
     if (!is.null(dimnames(x)[[2]])) dimnames(res$res) = list(dimnames(x)[[2]],  dimnames(x)[[2]] );
+    if (res$warn > 0)
+    {
+      # For now have only one warning
+      warning(paste("bicor: zero MAD in variable 'x'.", .zeroMADWarnings[fallback]));
+    }
   } else {
     y = as.matrix(y);
     if (prod(dim(y))==0) stop("'y' has a zero dimension."); 
@@ -70,11 +82,17 @@ bicor = function(x, y = NULL, robustX = TRUE, robustY = TRUE, use = 'all.obs', m
              cosineX = as.integer(cosineX),
              cosineY = as.integer(cosineY),
              res = as.double(bi), nNA = as.integer(nNA), err = as.integer(err),
+             warnX = as.integer(warnX), 
+             warnY = as.integer(warnY), 
              nThreads = as.integer(nThreads),
              verbose = as.integer(verbose), indent = as.integer(indent), DUP = FALSE, NAOK = TRUE);
     dim(res$res) = dim(bi);
     if (!is.null(dimnames(x)[[2]]) || !is.null(dimnames(y)[[2]]))
         dimnames(res$res) = list(dimnames(x)[[2]], dimnames(y)[[2]]);
+    if (res$warnX > 0)
+      warning(paste("bicor: zero MAD in variable 'x'.", .zeroMADWarnings[fallback]));
+    if (res$warnY > 0)
+      warning(paste("bicor: zero MAD in variable 'y'.", .zeroMADWarnings[fallback]));
   }
   if (res$err > 0)
   {
@@ -115,7 +133,7 @@ cor = function(x, y = NULL, use = "all.obs", method = c("pearson", "kendall", "s
       ny = ncol(y);
     } else ny = nx;
 
-    if ((method=="pearson") && ( (na.method==1) || (na.method==3) ) && (nx*ny>100))
+    if ((method=="pearson") && ( (na.method==1) || (na.method==3) ))
     {
       Cerrors = c("Memory allocation error")
       nKnownErrors = length(Cerrors);

@@ -336,8 +336,7 @@ collapseRows <- function(datET, rowGroup, rowID, method="MaxMean", connectivityB
 		datETTmp = datET[probes[genes==g],]
 		datETOut[g,] = as.numeric(method(datETTmp))
 		whichTest    = apply(datETTmp,1,whichTestFn)
-		if (!is.function(method)) if (method!="function")
-			rowsOut[g] = (names(whichTest)[whichTest==max(whichTest)])[1]
+		rowsOut[g] = (names(whichTest)[whichTest==max(whichTest)])[1]
 		count = count + 1;
 		if (count %% 1000 == 0) collectGarbage();
 	}
@@ -346,8 +345,7 @@ collapseRows <- function(datET, rowGroup, rowID, method="MaxMean", connectivityB
 		adj = (0.5+0.5*cor(t(datETTmp),use="p"))^connectivityPower
 		datETOut[g,] = as.numeric(datETTmp[which.max(rowSums(adj,na.rm=TRUE)),])
 		whichTest    = apply(datETTmp,1,whichTestFn)
-		if (!is.function(method)) if (method!="function")
-			rowsOut[g] = (names(whichTest)[whichTest==max(whichTest)])[1]
+                rowsOut[g] = (names(whichTest)[whichTest==max(whichTest)])[1]
 		count = count + 1;
 		if (count %% 1000 == 0) collectGarbage();
 	}

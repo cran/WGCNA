@@ -3874,6 +3874,7 @@ numbers2colors = function(x,
                      signed, 
                      centered = signed,
                      lim = NULL, 
+                     commonLim = FALSE,
                      colors = if (signed) greenWhiteRed(100) else greenWhiteRed(100)[50:100],
                      naColor = "grey")
 {
@@ -3889,6 +3890,8 @@ numbers2colors = function(x,
     } else {
       lim = as.matrix(cbind(apply(x, 2, min, na.rm = TRUE),  apply(x, 2, max, na.rm = TRUE)));
     }
+    if (commonLim) 
+      lim = t(as.matrix(c(min(lim[, 1], na.rm = TRUE), max(lim[, 2], na.rm = TRUE))));
   }
   if (is.null(dim(lim)))
   {
@@ -3912,16 +3915,18 @@ numbers2colors = function(x,
   if (sum(xMin==xMax)>0)
     warning("(some columns in) 'x' are constant. Their color will be the color of NA.");
 
+  xx = x;
+  xx[is.na(xx)] = ((xMin+xMax)[is.na(xx)])/2;
   if (sum(x < xMin, na.rm = TRUE) > 0)
   {
     warning("Some values of 'x' are below given minimum and will be truncated to the minimum.");
-    x[x<xMin] = xMin;
+    x[xx<xMin] = xMin[xx<xMin];
   }
 
   if (sum(x > xMax, na.rm = TRUE) > 0)
   {
     warning("Some values of 'x' are above given maximum and will be truncated to the maximum.");
-    x[x>xMax] = xMax;
+    x[xx>xMax] = xMax[xx>xMax];
   }
 
   mmEq = xMin==xMax;

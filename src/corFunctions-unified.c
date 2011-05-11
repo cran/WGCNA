@@ -60,12 +60,73 @@ int uselessFunction2()
   return a;
 }
 
+#include "corFunctions.h"
+#include <stdio.h>
+//#include <stdlib.h>
+
 #ifdef WITH_THREADS
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <pthread.h>
+  #warning Including pthread headers.
+
+  #include <unistd.h>
+  #include <pthread.h>
+
+#else
+
+  // define fake pthread functions so we don't have to put a #ifdef everywhere
+  //
+  // This prevents competing definitions of pthread types to be included
+  #define _BITS_PTHREADTYPES_H
+
+  typedef int pthread_mutex_t;
+  typedef int pthread_t;
+
+  typedef int pthread_attr_t;
+  
+  #define PTHREAD_MUTEX_INITIALIZER 0
+  
+  inline void pthread_mutex_lock ( pthread_mutex_t * lock ) { }
+  inline void pthread_mutex_unlock ( pthread_mutex_t * lock ) { }
+
+  #define pthread_create(p1, p2, fnc, arg)	fnc(arg)
+
+  inline int pthread_join ( pthread_t t, void ** p) { return 0; }
+
+#endif
+
+
+// Conditional pthread routines
+
+inline void pthread_mutex_lock_c( pthread_mutex_t * lock, int threaded)
+{
+  if (threaded) pthread_mutex_lock(lock);
+}
+
+inline void pthread_mutex_unlock_c(pthread_mutex_t * lock, int threaded)
+{
+  if (threaded) pthread_mutex_unlock(lock);
+}
+
+inline int pthread_create_c(pthread_t *thread, const pthread_attr_t *attr,
+    void *(*start_routine)(void*), void *arg, int threaded)
+{
+  #ifdef WITH_THREADS
+  if (threaded)
+    return pthread_create(thread, attr, start_routine, arg);
+  else
+  #endif
+    (*start_routine)(arg);
+  return 0;
+}
+
+inline int pthread_join_c(pthread_t thread, void * * value_ptr, int threaded)
+{
+  if (threaded) return pthread_join(thread, (void * *) value_ptr);
+  return 0;
+}
+  
+  
+
 
 #include <sys/time.h>
 
@@ -87,13 +148,18 @@ int uselessFunction2()
 
 int nProcessors()
 {
+#ifdef WITH_THREADS
 #ifdef _SC_NPROCESSORS_CONF
   long nProcessorsOnline = sysconf(_SC_NPROCESSORS_ONLN);
 #else
   long nProcessorsOnline = 2;
 #endif
+#else
+  long nProcessorsOnline = 1;
+#endif
   return (int) nProcessorsOnline;
 }
+
 
 #define MxThreads      128
 
@@ -118,11 +184,14 @@ typedef struct
    double * aux;
    int *nNAentries, *NAme;
    int zeroMAD;
+   int * warn;
    double maxPOutliers;
    double quick;
    int robust, fallback;
    int cosine;
    int id;
+   int threaded; 	// This flag will be used to indicate whether the calculation really is threaded. 
+			// For small problems it doesn't make sense to use threading.
 }  cor1ThreadData;
 
 // General information for a [bi]cor(x,y) calculation
@@ -168,20 +237,20 @@ typedef struct
 
 void * threadPrepColBicor(void * par)
 {
-  colPrepThreadData * td = (colPrepThreadData *) par;
-  cor1ThreadData * x = td->x;
+  colPrepThreadData volatile * td = (colPrepThreadData *) par;
+  cor1ThreadData volatile * x = td->x;
 
   // Rprintf("Preparing columns: nr = %d, nc = %d\n", x->nr, x->nc);
   while (td->pc->i < td->pc->n)
   {
       // Grab the next column that needs to be done
-      pthread_mutex_lock( td->lock );
+      pthread_mutex_lock_c( td->lock, x->threaded);
       if (td->pc->i < td->pc->n)
       {
          int col = td->pc->i;
-         // Rprintf("...working on column %d\n", col);
+         // Rprintf("...working on column %d in thread %d\n", col, td->x->id);
          td->pc->i++;
-         pthread_mutex_unlock( td->lock );
+         pthread_mutex_unlock_c( td->lock, x->threaded );
  
          prepareColBicor(x->x + col * x->nr, 
                          x->nr, 
@@ -194,10 +263,18 @@ void * threadPrepColBicor(void * par)
                          &(x->zeroMAD),
                          x->aux,
                          x->aux + x->nr);
-         // if (x->zeroMAD > 0) { Rprintf("..mad was zero in column %d.\n", td->pc->i); }
-         if ( (x->zeroMAD > 0) && (x->fallback==3)) { x->zeroMAD = td->pc->i; td->pc->i = td->pc->n; }
+         // if (x->zeroMAD > 0) { Rprintf("threadPrepColBicor: mad was zero in column %d.\n", col); }
+         if (x->zeroMAD > 0) *(x->warn) = warnZeroMAD;
+         if ( (x->zeroMAD > 0) && (x->fallback==3)) 
+         { 
+           pthread_mutex_lock_c( td->lock, x->threaded );
+           // Rprintf("threadPrepColBicor: Moving counter from %d %d to end at %d in thread %d.\n", 
+                   // col, td->pc->i, td->pc->n, x->id);
+           x->zeroMAD = col+1; td->pc->i = td->pc->n; 
+           pthread_mutex_unlock_c( td->lock, x->threaded );
+         }
       } else 
-         pthread_mutex_unlock( td->lock );
+         pthread_mutex_unlock_c( td->lock, x->threaded );
   }
   return NULL;
 } 
@@ -215,17 +292,20 @@ void * threadPrepColBicor(void * par)
 
 void * threadPrepColCor(void * par)
 {
-  colPrepThreadData * td = (colPrepThreadData *) par;
-  cor1ThreadData * x = td->x;
+  colPrepThreadData volatile * td = (colPrepThreadData *) par;
+  cor1ThreadData volatile * x = td->x;
+  //Rprintf("threadPrepColCor: starting in thread %d: counter.i = %d, counter.n = %d, nc = %d.\n", 
+  //         td->x->id, td->pc->i, td->pc->n, td->x->nc);
   while (td->pc->i < td->pc->n)
   {
       // Grab the next column that needs to be done
-      pthread_mutex_lock( td->lock );
+      pthread_mutex_lock_c( td->lock, x->threaded );
       int col = td->pc->i;
       if (col < td->x->nc)
       {
          td->pc->i++;
-         pthread_mutex_unlock( td->lock );
+    //     Rprintf("threadPrepColCor: preparing column %d in thread %d.\n", col, td->x->id);
+         pthread_mutex_unlock_c( td->lock, x->threaded );
  
          prepareColCor(x->x + col * x->nr, 
                        x->nr, 
@@ -234,7 +314,7 @@ void * threadPrepColCor(void * par)
                        x->nNAentries + col,
                        x->NAme + col);
       } else 
-         pthread_mutex_unlock( td->lock );
+         pthread_mutex_unlock_c( td->lock, x->threaded );
   }
   return NULL;
 } 
@@ -330,7 +410,7 @@ void * threadSlowCalcBicor(void * par)
   // Rprintf("starting at %d and %d\n", pci->i, pcj->i);
   while (pci->i < nc1)
   {
-     pthread_mutex_lock( td->lock );
+     pthread_mutex_lock_c( td->lock, td->x->threaded );
      int i = pci->i, ii = i;
      int j = pcj->i, jj = j;
      do
@@ -348,7 +428,7 @@ void * threadSlowCalcBicor(void * par)
                ( (nNAentries[i] <= maxDiffNA) && ( nNAentries[j] <= maxDiffNA))));
      pci->i = ii;
      pcj->i = jj;
-     pthread_mutex_unlock( td->lock );
+     pthread_mutex_unlock_c( td->lock, td->x->threaded );
  
      if ((i < nc1) && (j < nc) )
      {
@@ -371,11 +451,17 @@ void * threadSlowCalcBicor(void * par)
             // must recalculate the auxiliary variables for both columns
             int temp = 0, zeroMAD = 0;
             if (nNAx - nNAentries[i] > maxDiffNA)
+               {
                   prepareColBicor(xx, nr, maxPOutliers, fbx, cosine, xxx, &temp, &NAx, &zeroMAD, xx2, yy2);
+                  if (zeroMAD) *(td->x->warn) = warnZeroMAD;
+               }
                else
                   memcpy((void *) xxx, (void *) (multMat + i * nr),  nr * sizeof(double));
             if (nNAy-nNAentries[j] > maxDiffNA)
+               {
                   prepareColBicor(yy, nr, maxPOutliers, fbx, cosine, yyy, &temp, &NAy, &zeroMAD, xx2, yy2);
+                  if (zeroMAD) *(td->x->warn) = warnZeroMAD;
+               }
                else
                   memcpy((void *) yyy, (void *) (multMat + j * nr),  nr * sizeof(double));
             if (NAx + NAy==0)
@@ -446,7 +532,7 @@ void * threadSlowCalcCor(void * par)
   // Rprintf("starting at %d and %d\n", pci->i, pcj->i);
   while (pci->i < nc1)
   {
-     pthread_mutex_lock( td->lock );
+     pthread_mutex_lock_c( td->lock, td->x->threaded );
      int i = pci->i, ii = i;
      int j = pcj->i, jj = j;
      do
@@ -465,7 +551,7 @@ void * threadSlowCalcCor(void * par)
 
      pci->i = ii;
      pcj->i = jj;
-     pthread_mutex_unlock( td->lock );
+     pthread_mutex_unlock_c( td->lock, td->x->threaded );
  
      if ((i < nc1) && (j < nc))
      {
@@ -507,6 +593,28 @@ void * threadSlowCalcCor(void * par)
   }
   return NULL;
 }
+
+
+// Function to calculate suitable number of threads to use.
+
+int useNThreads(int n, int nThreadsRequested)
+{
+#ifdef WITH_THREADS
+  int nt = nThreadsRequested;
+  if ((nt < 1) || (nt > MxThreads))
+  {
+    nt = nProcessors();
+    if (nt >MxThreads) nt = MxThreads;
+  }
+  if (n < nt * minSizeForThreading) nt = (n/minSizeForThreading) + 1;
+  return nt;
+#else
+  // Silence "unused argument" warning
+  int a = n + nThreadsRequested;
+  return 1;
+#endif
+}
+  
 
 //===================================================================================================
 
@@ -567,17 +675,16 @@ void cor1Fast(double * x, int * nrow, int * ncol, double * quick,
     return;
   }
 
-  // Calculate multMat = (x - mean(x))/sqrt(sum(x - mean(x)))
-  // Use a threaded calculation for this...
+  // Decide how many threads to use
+  int nt = useNThreads(nc*nc, *nThreads);
   
-  int nt = *nThreads;
-  if ((nt < 1) || (nt > MxThreads))
-  {
-    nt = nProcessors();
-    if (nt >MxThreads) nt = MxThreads;
-  }
   if (*verbose)
+  {
+    if (nt > 1)
       Rprintf("%s..will use %d parallel threads.\n", spaces, nt);
+    else
+      Rprintf("%s..will not use multithreading.\n", spaces, nt);
+  }
 
   // double * aux[MxThreads];
 
@@ -609,6 +716,7 @@ void cor1Fast(double * x, int * nrow, int * ncol, double * quick,
      thrdInfo[t].quick = *quick;
      thrdInfo[t].cosine = *cosine;
      thrdInfo[t].id = t;
+     thrdInfo[t].threaded = (nt > 1);
   }
 
   // Column preparation (calculation of the matrix to be multiplied) in a threaded form.
@@ -629,11 +737,15 @@ void cor1Fast(double * x, int * nrow, int * ncol, double * quick,
     cptd[t].x = &thrdInfo[t];
     cptd[t].pc = &pc;
     cptd[t].lock = &mutex1;
-    status[t] = pthread_create(&thr[t], NULL, threadPrepColCor, (void *) &cptd[t]);
+    status[t] = pthread_create_c(&thr[t], 
+                    NULL, 
+                    threadPrepColCor, 
+                    (void *) &cptd[t], 
+                    thrdInfo[t].threaded);
   }
 
   for (int t=0; t<nt; t++)
-      pthread_join(thr[t], NULL);
+      pthread_join_c(thr[t], NULL, thrdInfo[t].threaded);
 
   // Rprintf("done...\n");
   // Rprintf("NAmean:");
@@ -676,11 +788,11 @@ void cor1Fast(double * x, int * nrow, int * ncol, double * quick,
         sctd[t].nSlow = &nSlow;
         sctd[t].nNA = nNA;
         sctd[t].lock = &mutexSC;
-        status[t] = pthread_create(&thr3[t], NULL, threadSlowCalcCor, (void *) &sctd[t]);
+        status[t] = pthread_create_c(&thr3[t], NULL, threadSlowCalcCor, (void *) &sctd[t], thrdInfo[t].threaded);
       }
     
       for (int t=0; t<nt; t++)
-          pthread_join(thr3[t], NULL);
+          pthread_join_c(thr3[t], NULL, thrdInfo[t].threaded);
     
       // Rprintf("done...\n");
     
@@ -702,11 +814,11 @@ void cor1Fast(double * x, int * nrow, int * ncol, double * quick,
   {
     std[t].x = &thrdInfo[t];
     std[t].pc = &pc;
-    status[t] = pthread_create(&thr2[t], NULL, threadSymmetrize, (void *) &std[t]);
+    status[t] = pthread_create_c(&thr2[t], NULL, threadSymmetrize, (void *) &std[t], thrdInfo[t].threaded);
   }
 
   for (int t=0; t<nt; t++)
-      pthread_join(thr2[t], NULL);
+      pthread_join_c(thr2[t], NULL, thrdInfo[t].threaded);
 
   // Rprintf("done... nt=%d\n", nt);
   // Here I need to recalculate results that have NA's in them.
@@ -730,6 +842,7 @@ void cor1Fast(double * x, int * nrow, int * ncol, double * quick,
 void bicor1Fast(double * x, int * nrow, int * ncol, double * maxPOutliers, 
             double * quick, int * fallback, int * cosine,
             double * result, int *nNA, int * err, 
+            int * warn,
             int * nThreads,
             int * verbose, int * indent)
 {
@@ -741,6 +854,7 @@ void bicor1Fast(double * x, int * nrow, int * ncol, double * maxPOutliers,
   spaces[2* *indent] = '\0';
 
   *nNA = 0;
+  *warn = noWarning;
 
   // Allocate space for various variables
 
@@ -774,18 +888,16 @@ void bicor1Fast(double * x, int * nrow, int * ncol, double * maxPOutliers,
     return;
   }
 
-  // Calculate multMat = (x - mean(x))/sqrt(sum(x - mean(x)))
-  // Use a threaded calculation for this...
+  // Decide how many threads to use
+  int nt = useNThreads(nc*nc, *nThreads);
   
-  int nt = *nThreads;
-  if ((nt < 1) || (nt > MxThreads))
-  {
-    nt = nProcessors();
-    if (nt >MxThreads) nt = MxThreads;
-  }
-
   if (*verbose)
+  {
+    if (nt > 1)
       Rprintf("%s..will use %d parallel threads.\n", spaces, nt);
+    else
+      Rprintf("%s..will not use multithreading.\n", spaces, nt);
+  }
 
   double * aux[MxThreads];
 
@@ -818,6 +930,7 @@ void bicor1Fast(double * x, int * nrow, int * ncol, double * maxPOutliers,
      thrdInfo[t].nNAentries = nNAentries;
      thrdInfo[t].NAme = NAmed;
      thrdInfo[t].zeroMAD = 0; 
+     thrdInfo[t].warn = warn;   // point the pointer 
      thrdInfo[t].aux = aux[t];
      thrdInfo[t].robust = 0;
      thrdInfo[t].fallback = *fallback;
@@ -825,6 +938,7 @@ void bicor1Fast(double * x, int * nrow, int * ncol, double * maxPOutliers,
      thrdInfo[t].cosine = *cosine;
      thrdInfo[t].maxPOutliers = *maxPOutliers;
      thrdInfo[t].id = t;
+     thrdInfo[t].threaded = (nt > 1);
   }
 
   // Column preparation (calculation of the matrix to be multiplied) in a threaded form.
@@ -845,11 +959,11 @@ void bicor1Fast(double * x, int * nrow, int * ncol, double * maxPOutliers,
     cptd[t].x = &thrdInfo[t];
     cptd[t].pc = &pc;
     cptd[t].lock = &mutex1;
-    status[t] = pthread_create(&thr[t], NULL, threadPrepColBicor, (void *) &cptd[t]);
+    status[t] = pthread_create_c(&thr[t], NULL, threadPrepColBicor, (void *) &cptd[t], thrdInfo[t].threaded);
   }
 
   for (int t=0; t<nt; t++)
-      pthread_join(thr[t], NULL);
+      pthread_join_c(thr[t], NULL, thrdInfo[t].threaded);
 
   int pearson = 0;
 
@@ -859,8 +973,8 @@ void bicor1Fast(double * x, int * nrow, int * ncol, double * maxPOutliers,
     { 
       pearson = 1;
       if (*verbose)
-        Rprintf("Warning in bicor(x): MAD is zero in column %d. Switching to Pearson correlation.\n", 
-                 thrdInfo[t].zeroMAD);
+        Rprintf("Warning in bicor(x): Thread %d (of %d) reported zero MAD in column %d. %s",
+                t, nt, thrdInfo[t].zeroMAD, "Switching to Pearson correlation.\n");
     }
     if (pearson==1) // Re-do all column preparations using Pearson preparation.
     { 
@@ -874,9 +988,9 @@ void bicor1Fast(double * x, int * nrow, int * ncol, double * maxPOutliers,
       for (int t=0; t<nt; t++)
       {
         cptd[t].lock = &mutex2;
-        status[t] = pthread_create(&thr[t], NULL, threadPrepColCor, (void *) &cptd[t]);
+        status[t] = pthread_create_c(&thr[t], NULL, threadPrepColCor, (void *) &cptd[t], thrdInfo[t].threaded);
       }
-      for (int t=0; t<nt; t++) pthread_join(thr[t], NULL);
+      for (int t=0; t<nt; t++) pthread_join_c(thr[t], NULL, thrdInfo[t].threaded);
     }
   }
 
@@ -923,11 +1037,12 @@ void bicor1Fast(double * x, int * nrow, int * ncol, double * maxPOutliers,
         sctd[t].nSlow = &nSlow;
         sctd[t].nNA = nNA;
         sctd[t].lock = &mutexSC;
-        status[t] = pthread_create(&thr3[t], NULL, threadSlowCalcBicor, (void *) &sctd[t]);
+        status[t] = pthread_create_c(&thr3[t], NULL, threadSlowCalcBicor, (void *) &sctd[t], 
+                    thrdInfo[t].threaded);
       }
     
       for (int t=0; t<nt; t++)
-          pthread_join(thr3[t], NULL);
+          pthread_join_c(thr3[t], NULL, thrdInfo[t].threaded);
     
       // Rprintf("done...\n");
     
@@ -949,11 +1064,11 @@ void bicor1Fast(double * x, int * nrow, int * ncol, double * maxPOutliers,
   {
     std[t].x = &thrdInfo[t];
     std[t].pc = &pc;
-    status[t] = pthread_create(&thr2[t], NULL, threadSymmetrize, (void *) &std[t]);
+    status[t] = pthread_create_c(&thr2[t], NULL, threadSymmetrize, (void *) &std[t], thrdInfo[t].threaded);
   }
 
   for (int t=0; t<nt; t++)
-      pthread_join(thr2[t], NULL);
+      pthread_join_c(thr2[t], NULL, thrdInfo[t].threaded);
 
   for (int t=nt-1; t >= 0; t--) free(aux[t]); 
   free(NAmed);
@@ -1117,7 +1232,7 @@ void * threadSlowCalcBicor2(void * par)
 
   while (pci->i < ncx)
   {
-     pthread_mutex_lock( td->lock );
+     pthread_mutex_lock_c( td->lock, td->x->x->threaded );
      int i = pci->i, ii = i;
      int j = pcj->i, jj = j;
      do
@@ -1135,7 +1250,7 @@ void * threadSlowCalcBicor2(void * par)
                 ( (nNAentriesX[i] <= maxDiffNA) && ( nNAentriesY[j] <= maxDiffNA))));
      pci->i = ii;
      pcj->i = jj;
-     pthread_mutex_unlock( td->lock );
+     pthread_mutex_unlock_c( td->lock, td->x->x->threaded );
  
      if ((i < ncx) && (j < ncy))
      {
@@ -1163,6 +1278,7 @@ void * threadSlowCalcBicor2(void * par)
                // Rprintf("...Recalculating row... \n");
                //if (robustX && (fbx!=4))
                   prepareColBicor(xx, nr, maxPOutliers, fbx, cosineX, xxx, &temp, &NAx, &zeroMAD, xx2, yy2);
+                  if (zeroMAD) *(td->x->x->warn) = warnZeroMAD;
                //else
                //   prepareColCor(xx, nr, xxx, &temp, &NAx);
                xx3 = xxx;
@@ -1173,6 +1289,7 @@ void * threadSlowCalcBicor2(void * par)
                // Rprintf("...Recalculating column... \n");
                //if (robustY && (fby!=4))
                   prepareColBicor(yy, nr, maxPOutliers, fby, cosineY, yyy, &temp, &NAy, &zeroMAD, xx2, yy2);
+                  if (zeroMAD) *(td->x->y->warn) = warnZeroMAD;
                //else
                //   prepareColCor(yy, nr, yyy, &temp, &NAy);
                yy3 = yyy;
@@ -1227,6 +1344,7 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
            double * quick, int * fallback,
            int * cosineX, int * cosineY, 
            double * result, int *nNA, int * err,
+           int * warnX, int * warnY,
            int * nThreads,
            int * verbose, int * indent)
 {
@@ -1237,6 +1355,8 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
   spaces[2* *indent] = '\0';
 
   *nNA = 0;
+  *warnX = noWarning;
+  *warnY = noWarning;
 
   double * multMatX, * multMatY;
   int * nNAentriesX, * nNAentriesY;
@@ -1289,14 +1409,16 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
     return;
   }
 
-  int nt = *nThreads;
-  if ((nt < 1) || (nt > MxThreads))
-  {
-    nt = nProcessors();
-    if (nt >MxThreads) nt = MxThreads;
-  }
+  // Decide how many threads to use
+  int nt = useNThreads(ncx*ncy, *nThreads);
+  
   if (*verbose)
+  {
+    if (nt > 1)
       Rprintf("%s..will use %d parallel threads.\n", spaces, nt);
+    else
+      Rprintf("%s..will not use multithreading.\n", spaces, nt);
+  }
 
   double * aux[MxThreads];
 
@@ -1325,13 +1447,16 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
      thrdInfoX[t].result = result;
      thrdInfoX[t].nNAentries = nNAentriesX;
      thrdInfoX[t].NAme = NAmedX;
+     thrdInfoX[t].zeroMAD = 0;
      thrdInfoX[t].aux = aux[t];
      thrdInfoX[t].robust = *robustX;
      thrdInfoX[t].fallback = *fallback;
      thrdInfoX[t].maxPOutliers = *maxPOutliers;
      thrdInfoX[t].quick = *quick;
      thrdInfoX[t].cosine = *cosineX;
+     thrdInfoX[t].warn = warnX;
      thrdInfoX[t].id = t;
+     thrdInfoX[t].threaded = (nt > 1);
 
    
      thrdInfoY[t].x = y;
@@ -1341,13 +1466,16 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
      thrdInfoY[t].result = result;
      thrdInfoY[t].nNAentries = nNAentriesY;
      thrdInfoY[t].NAme = NAmedY;
+     thrdInfoY[t].zeroMAD = 0;
      thrdInfoY[t].aux = aux[t] + 3 * nr;
      thrdInfoY[t].robust = *robustY;
      thrdInfoY[t].fallback = *fallback;
      thrdInfoY[t].maxPOutliers = *maxPOutliers;
      thrdInfoY[t].quick = *quick;
      thrdInfoY[t].cosine = *cosineY;
+     thrdInfoY[t].warn = warnY;
      thrdInfoY[t].id = t;
+     thrdInfoY[t].threaded = (nt > 1);
 
      thrdInfo[t].x = thrdInfoX + t;
      thrdInfo[t].y = thrdInfoY + t;
@@ -1376,12 +1504,14 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
     cptd[t].pc = &pcX;
     cptd[t].lock = &mutex1;
     if (* robustX)
-         status[t] = pthread_create(&thr[t], NULL, threadPrepColBicor, (void *) &cptd[t]);
+         status[t] = pthread_create_c(&thr[t], NULL, threadPrepColBicor, (void *) &cptd[t],
+                                      thrdInfoX[t].threaded);
        else
-         status[t] = pthread_create(&thr[t], NULL, threadPrepColCor, (void *) &cptd[t]);
+         status[t] = pthread_create_c(&thr[t], NULL, threadPrepColCor, (void *) &cptd[t],
+                                      thrdInfoX[t].threaded);
   }
   for (int t=0; t<nt; t++)
-      pthread_join(thr[t], NULL);
+      pthread_join_c(thr[t], NULL, thrdInfoX[t].threaded);
 
   // If the fallback method is to re-do everything in Pearson, check whether any columns had zero MAD.
   if (*fallback==3)
@@ -1390,8 +1520,8 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
     { 
       pearsonX = 1;
       if (*verbose)
-        Rprintf("Warning in bicor(x, y): MAD is zero in column %d of x. %s", 
-                thrdInfoX[t].zeroMAD, "Switching to Pearson calculation for x.\n");
+        Rprintf("Warning in bicor(x, y): thread %d of %d reported zero MAD in column %d of x. %s", 
+                t, nt, thrdInfoX[t].zeroMAD, "Switching to Pearson calculation for x.\n");
     }
     if (pearsonX==1) // Re-do all column preparations 
     { 
@@ -1404,9 +1534,10 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
       for (int t=0; t<nt; t++)
       {
         cptd[t].lock = &mutex2;
-        status[t] = pthread_create(&thr[t], NULL, threadPrepColCor, (void *) &cptd[t]);
+        status[t] = pthread_create_c(&thr[t], NULL, threadPrepColCor, (void *) &cptd[t], 
+                                     thrdInfoX[t].threaded);
       }
-      for (int t=0; t<nt; t++) pthread_join(thr[t], NULL);
+      for (int t=0; t<nt; t++) pthread_join_c(thr[t], NULL, thrdInfoX[t].threaded);
     }
   }
 
@@ -1424,13 +1555,15 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
     cptd[t].pc = &pcY;
     cptd[t].lock = &mutex1Y;
     if (* robustY)
-         status[t] = pthread_create(&thr[t], NULL, threadPrepColBicor, (void *) &cptd[t]);
+         status[t] = pthread_create_c(&thr[t], NULL, threadPrepColBicor, (void *) &cptd[t], 
+                                      thrdInfoX[t].threaded);
        else
-         status[t] = pthread_create(&thr[t], NULL, threadPrepColCor, (void *) &cptd[t]);
+         status[t] = pthread_create_c(&thr[t], NULL, threadPrepColCor, (void *) &cptd[t],
+                                     thrdInfoX[t].threaded);
   }
 
   for (int t=0; t<nt; t++)
-      pthread_join(thr[t], NULL);
+      pthread_join_c(thr[t], NULL, thrdInfoX[t].threaded);
 
   // If the fallback method is to re-do everything in Pearson, check whether any columns had zero MAD.
   if (*fallback==3)
@@ -1439,8 +1572,8 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
     { 
       pearsonY = 1;
       if (*verbose)
-        Rprintf("Warning in bicor(x, y): MAD is zero in column %d of x. %s", 
-                thrdInfoY[t].zeroMAD, "Switching to Pearson calculation for x.\n");
+        Rprintf("Warning in bicor(x, y): thread %d of %d reported zero MAD in column %d of y. %s", 
+                t, nt, thrdInfoY[t].zeroMAD, "Switching to Pearson calculation for y.\n");
     }
     if (pearsonY==1) // Re-do all column preparations 
     { 
@@ -1448,14 +1581,15 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
 
       pthread_mutex_t mutex2Y = PTHREAD_MUTEX_INITIALIZER;
       pcY.i = 0;
-      pcY.n = ncx;
+      pcY.n = ncy;
 
       for (int t=0; t<nt; t++)
       {
+      //  Rprintf("Starting pearson re-calculation in thread %d of %d.\n", t, nt);
         cptd[t].lock = &mutex2Y;
-        status[t] = pthread_create(&thr[t], NULL, threadPrepColCor, (void *) &cptd[t]);
+        status[t] = pthread_create_c(&thr[t], NULL, threadPrepColCor, (void *) &cptd[t], thrdInfoX[t].threaded);
       }
-      for (int t=0; t<nt; t++) pthread_join(thr[t], NULL);
+      for (int t=0; t<nt; t++) pthread_join_c(thr[t], NULL, thrdInfoX[t].threaded);
     }
   }
 
@@ -1516,11 +1650,12 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
         sctd[t].nNA = nNA;
         sctd[t].lock = &mutexSC;
         sctd[t].quick = *quick;
-        status[t] = pthread_create(&thr3[t], NULL, threadSlowCalcBicor2, (void *) &sctd[t]);
+        status[t] = pthread_create_c(&thr3[t], NULL, threadSlowCalcBicor2, (void *) &sctd[t], 
+                                     thrdInfoX[t].threaded);
       }
 
       for (int t=0; t<nt; t++)
-          pthread_join(thr3[t], NULL);
+          pthread_join_c(thr3[t], NULL, thrdInfoX[t].threaded);
 
       if (*verbose) Rprintf("%s Fraction of slow calculations: %f\n", spaces,
                              ( (double) nSlow) / (ncx*ncy) );
@@ -1540,11 +1675,11 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
     natd[t].x = &thrdInfo[t];
     natd[t].pci = &pcX;
     natd[t].pcj = &pcY;
-    status[t] = pthread_create(&thr2[t], NULL, threadNAing, (void *) &natd[t]);
+    status[t] = pthread_create_c(&thr2[t], NULL, threadNAing, (void *) &natd[t], thrdInfoX[t].threaded);
   }
 
   for (int t=0; t<nt; t++)
-      pthread_join(thr2[t], NULL);
+      pthread_join_c(thr2[t], NULL, thrdInfoX[t].threaded);
 
   // Clean up
 
@@ -1606,7 +1741,7 @@ void * threadSlowCalcCor2(void * par)
 
   while (pci->i < ncx)
   {
-     pthread_mutex_lock( td->lock );
+     pthread_mutex_lock_c( td->lock, td->x->x->threaded );
      int i = pci->i, ii = i;
      int j = pcj->i, jj = j;
      do
@@ -1624,7 +1759,7 @@ void * threadSlowCalcCor2(void * par)
                 ( (nNAentriesX[i] <= maxDiffNA) && ( nNAentriesY[j] <= maxDiffNA))));
      pci->i = ii;
      pcj->i = jj;
-     pthread_mutex_unlock( td->lock );
+     pthread_mutex_unlock_c( td->lock, td->x->x->threaded );
  
      if ((i < ncx) && (j < ncy))
      {
@@ -1738,14 +1873,16 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
     return;
   }
 
-  int nt = *nThreads;
-  if ((nt < 1) || (nt > MxThreads))
-  {
-    nt = nProcessors();
-    if (nt >MxThreads) nt = MxThreads;
-  }
+  // Decide how many threads to use
+  int nt = useNThreads(ncx*ncy, *nThreads);
+  
   if (*verbose)
+  {
+    if (nt > 1)
       Rprintf("%s..will use %d parallel threads.\n", spaces, nt);
+    else
+      Rprintf("%s..will not use multithreading.\n", spaces, nt);
+  }
 
   cor1ThreadData thrdInfoX[MxThreads];
   cor1ThreadData thrdInfoY[MxThreads];
@@ -1764,6 +1901,7 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
      thrdInfoX[t].cosine = *cosineX;
      thrdInfoX[t].maxPOutliers = 1;
      thrdInfoX[t].id = t;
+     thrdInfoX[t].threaded = (nt > 1);
    
      thrdInfoY[t].x = y;
      thrdInfoY[t].nr = nr;
@@ -1776,6 +1914,7 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
      thrdInfoY[t].cosine = *cosineY;
      thrdInfoY[t].maxPOutliers = 1;
      thrdInfoY[t].id = t;
+     thrdInfoY[t].threaded = (nt > 1);
 
      thrdInfo[t].x = thrdInfoX + t;
      thrdInfo[t].y = thrdInfoY + t;
@@ -1800,10 +1939,10 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
     cptd[t].x = &thrdInfoX[t];
     cptd[t].pc = &pcX;
     cptd[t].lock = &mutex1;
-    status[t] = pthread_create(&thr[t], NULL, threadPrepColCor, (void *) &cptd[t]);
+    status[t] = pthread_create_c(&thr[t], NULL, threadPrepColCor, (void *) &cptd[t], thrdInfoX[t].threaded);
   }
   for (int t=0; t<nt; t++)
-      pthread_join(thr[t], NULL);
+      pthread_join_c(thr[t], NULL, thrdInfoX[t].threaded);
 
   // Prepare columns in Y
  
@@ -1816,11 +1955,11 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
     cptd[t].x = &thrdInfoY[t];
     cptd[t].pc = &pcY;
     cptd[t].lock = &mutex1Y;
-    status[t] = pthread_create(&thr[t], NULL, threadPrepColCor, (void *) &cptd[t]);
+    status[t] = pthread_create_c(&thr[t], NULL, threadPrepColCor, (void *) &cptd[t], thrdInfoX[t].threaded);
   }
 
   for (int t=0; t<nt; t++)
-      pthread_join(thr[t], NULL);
+      pthread_join_c(thr[t], NULL, thrdInfoX[t].threaded);
 
   //Rprintf("multMatX:\n");
   //for (int i=0; i<nr; i++)
@@ -1871,11 +2010,12 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
         sctd[t].nNA = nNA;
         sctd[t].lock = &mutexSC;
         sctd[t].quick = *quick;
-        status[t] = pthread_create(&thr3[t], NULL, threadSlowCalcCor2, (void *) &sctd[t]);
+        status[t] = pthread_create_c(&thr3[t], NULL, threadSlowCalcCor2, (void *) &sctd[t], 
+                                     thrdInfoX[t].threaded);
       }
 
       for (int t=0; t<nt; t++)
-          pthread_join(thr3[t], NULL);
+          pthread_join_c(thr3[t], NULL, thrdInfoX[t].threaded);
 
       if (*verbose) Rprintf("%s Fraction of slow calculations: %f\n", spaces,
                              ( (double) nSlow) / (ncx*ncy) );
@@ -1895,11 +2035,11 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
     natd[t].x = &thrdInfo[t];
     natd[t].pci = &pcX;
     natd[t].pcj = &pcY;
-    status[t] = pthread_create(&thr2[t], NULL, threadNAing, (void *) &natd[t]);
+    status[t] = pthread_create_c(&thr2[t], NULL, threadNAing, (void *) &natd[t], thrdInfoX[t].threaded);
   }
 
   for (int t=0; t<nt; t++)
-      pthread_join(thr2[t], NULL);
+      pthread_join_c(thr2[t], NULL, thrdInfoX[t].threaded);
 
   // clean up and return
 
@@ -1911,5 +2051,3 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
   free(multMatX);
 }
 
-
-#endif

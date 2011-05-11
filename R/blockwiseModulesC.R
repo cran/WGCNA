@@ -77,6 +77,7 @@ TOMsimilarityFromExpr = function(datExpr, corType = "pearson", networkType = "un
   if (length(dimEx)!=2) stop("datExpr has incorrect dimensions.")
   nGenes = dimEx[2];
   nSamples = dimEx[1];
+  warn = 0;
 
   tom = matrix(0, nGenes, nGenes);
 
@@ -87,9 +88,10 @@ TOMsimilarityFromExpr = function(datExpr, corType = "pearson", networkType = "un
         as.double(quickCor),
         as.integer(fallback),
         as.integer(cosineCorrelation),
-        tom = as.double(tom), as.integer(nThreads), 
+        tom = as.double(tom), warn = as.integer(warn), as.integer(nThreads), 
         as.integer(verbose), as.integer(indent), NAOK = TRUE, DUP = FALSE) 
 
+  # FIXME: output warnings if necessary
   tom[,] = tomResult$tom
   diag(tom) = 1;
   rm(tomResult); collectGarbage();
@@ -305,6 +307,7 @@ blockwiseModules = function(datExpr, blocks = NULL,
     CcorType = intCorType - 1;
     CnetworkType = intNetworkType - 1;
     CTOMType = intTOMType - 1;
+    warn = 0;
     tomResult = .C("tomSimilarity", as.double(selExpr), as.integer(nSamples), as.integer(nBlockGenes),
         as.integer(CcorType), as.integer(CnetworkType), as.double(power), as.integer(CTOMType), 
         as.integer(TOMDenomC),
@@ -312,8 +315,10 @@ blockwiseModules = function(datExpr, blocks = NULL,
         as.double(quickCor),
         as.integer(fallback),
         as.integer(cosineCorrelation),
-        tom = as.double(dissTom), as.integer(nThreads),
+        tom = as.double(dissTom), warn = as.integer(warn), as.integer(nThreads),
         as.integer(callVerb), as.integer(callInd), NAOK = TRUE, DUP = FALSE) 
+
+    # FIXME: warn if necessary
 
     dim(tomResult$tom) = c(nBlockGenes, nBlockGenes);
     if (saveTOMs) 
@@ -1269,6 +1274,7 @@ blockwiseConsensusModules = function(multiExpr, blocks = NULL,
       CnetworkType = intNetworkType - 1;
       CTOMType = intTOMType - 1;
       tempExpr = as.double(as.matrix(selExpr[[set]]$data));
+      warn = as.integer(warn);
 
       collectGarbage();
 
@@ -1286,9 +1292,11 @@ blockwiseConsensusModules = function(multiExpr, blocks = NULL,
           as.double(quickCor),
           as.integer(fallback),
           as.integer(cosineCorrelation), 
-          tom = as.double(tom), as.integer(nThreads),
+          tom = as.double(tom), as.integer(warn), as.integer(nThreads),
           as.integer(callVerb), as.integer(callInd), NAOK = TRUE, DUP = FALSE)
   
+      #FIXME: warn if necessary
+
       rm(tom, tempExpr); collectGarbage();
       dim(tomResult$tom) = c(nBlockGenes, nBlockGenes);
       tomDS = as.dist(tomResult$tom);
