@@ -67,7 +67,7 @@ const string 	AdjErrors[] = {"No error. Just a placeholder.",
 
 void adjacency(double * expr, int nSamples, int nGenes, int corType, int adjType, double power, 
                double maxPOutliers, double quick, int fallback, int cosine, 
-               double * adj, int * errCode, int * nThreads, int verbose, int indent)
+               double * adj, int * errCode, int *warn, int * nThreads, int verbose, int indent)
 {
   Rboolean	sd0 = FALSE;
   int 	nElems = nGenes * nGenes;
@@ -92,8 +92,8 @@ void adjacency(double * expr, int nSamples, int nGenes, int corType, int adjType
         break;
      case CorTypeBicor :
         // Rprintf("Calling bicor1...");
-        bicor1Fast(expr, &nSamples, &nGenes, &maxPOutliers, &quick, &fallback, &cosine, adj, &nNA, &err, 
-                   nThreads, &verbose, &indent);
+        bicor1Fast(expr, &nSamples, &nGenes, &maxPOutliers, &quick, &fallback, &cosine, adj, &nNA, &err,
+                   warn, nThreads, &verbose, &indent);
         // Rprintf("..done.\n");
         if (nNA > 0)
         {
@@ -142,11 +142,11 @@ void adjacency(double * expr, int nSamples, int nGenes, int corType, int adjType
 void testAdjacency(double * expr, int * nSamples, int * nGenes, int * corType, int * adjType, 
                    double * power, double * maxPOutliers, double * quick, int * fallback, int * cosine, 
                    double * adj, 
-                   int * errCode, int * nThreads)
+                   int * errCode, int * warn, int * nThreads)
 {
  adjacency(expr, * nSamples, * nGenes, * corType, * adjType, * power, 
            *maxPOutliers, *quick, *fallback, *cosine, 
-           adj, errCode, nThreads, 1, 0);
+           adj, errCode, warn, nThreads, 1, 0);
 }
 
 
@@ -167,6 +167,7 @@ void tomSimilarity(double * expr, int * nSamples, int * nGenes,
                    int * fallback,
                    int * cosine,
                    double * tom, 
+                   int * warn,
                    int * nThreads,
                    int * verbose, int * indent)
 {
@@ -201,7 +202,7 @@ void tomSimilarity(double * expr, int * nSamples, int * nGenes,
   if (* tomType==TomTypeNone)  // just calculate adjacency.
   {
     adjacency(expr, ns, ng, *corType, *adjType, *power, *maxPOutliers, *quick, *fallback, *cosine, 
-              tom, &err, nThreads, *verbose, *indent);
+              tom, &err, warn, nThreads, *verbose, *indent);
     if (*verbose > 0) Rprintf("\n");
     if (err) error(AdjErrors[err]);
     return;
@@ -217,7 +218,7 @@ void tomSimilarity(double * expr, int * nSamples, int * nGenes,
     * adjType = AdjTypeUnsigned;
 
   adjacency(expr, ns, ng, * corType, * adjType, * power, * maxPOutliers, * quick, *fallback, *cosine, 
-            adj, & err, nThreads, *verbose, *indent);
+            adj, & err, warn, nThreads, *verbose, *indent);
 
   // Rprintf("TOM 1\n");
   if (err) 

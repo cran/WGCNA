@@ -10,6 +10,7 @@ numbers2colors(
    signed, 
    centered = signed, 
    lim = NULL, 
+   commonLim = FALSE,
    colors = if (signed) greenWhiteRed(100) else greenWhiteRed(100)[50:100], 
    naColor = "grey")
 }
@@ -29,6 +30,9 @@ the color palette will correspond to the average of the minimum and maximum valu
 
   \item{lim}{ optional specification of limits, that is numeric values that should correspond to the
 first and last entry of \code{colors}. }
+  
+  \item{commonLim}{logical: should limits be calculated separately for each column of x, or should the
+limits be the same for all columns? Only applies if \code{lim} is \code{NULL}. }
 
   \item{colors}{ color palette to represent the given numbers. }
   \item{naColor}{ color to represent missing values in \code{x}. }

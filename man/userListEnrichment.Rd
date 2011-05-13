@@ -9,7 +9,7 @@ This function measures list enrichment between inputted lists of genes and files
 }
 \usage{
 userListEnrichment(geneR, labelR, fnIn=NULL, catNmIn = fnIn, nameOut = "enrichment.csv", 
-                   useBrainLists = FALSE, omitCategories = "grey", outputCorrectedPvalues = TRUE) 
+                   useBrainLists = FALSE, useBloodAtlases=FALSE, omitCategories = "grey", outputCorrectedPvalues = TRUE) 
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -30,6 +30,9 @@ Name of the file where the output enrichment information will be written.
 }
   \item{useBrainLists}{
 If TRUE, a pre-made set of brain-derived enrichment lists will be added to any user-defined lists for enrichment comparison.  The default is FALSE.  See references section for related references.
+}
+  \item{useBloodAtlases}{
+If TRUE, a pre-made set of blood-derived enrichment lists will be added to any user-defined lists for enrichment comparison.  The default is FALSE.  See references section for related references.
 }
   \item{omitCategories}{
 Any labelR entries corresponding to these categories will be ignored.  The default ("grey") will ignore unassigned genes in a standard WGCNA network.

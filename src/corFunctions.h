@@ -18,6 +18,12 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 */
 
+#ifndef __corFunctions_h__
+
+#define __corFunctions_h__
+
+#define minSizeForThreading	100
+
 
 void cor1Fast(double * x, int * nrow, int * ncol, double * quick, 
           int * cosine,
@@ -29,6 +35,7 @@ void bicor1Fast(double * x, int * nrow, int * ncol,
             double * maxPOutliers, double * quick, 
             int * fallback, int * cosine,
             double * result, int *nNA, int * err, 
+            int * warn,
             int * nThreads,
             int * verbose, int * indent);
 
@@ -38,12 +45,14 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
            int * fallback, 
            int * cosineX, int * cosineY, 
            double * result, int *nNA, int * err,
+           int * warnX, int * warnY,
            int * nThreads,
            int * verbose, int * indent);
 
 void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
-           double * quick, 
-           int * cosine, 
+           double * quick,
+           int * cosineX, int * cosineY,
            double * result, int *nNA, int * err,
            int * nThreads,
            int * verbose, int * indent);
+#endif

@@ -1,5 +1,22 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
+
+2011/05/11: 1.11
+
+	. bugfix in conformityDecomposition: calculation corrected
+	. bugfix in userListEnrichment: internal data sets are now used
+	  correctly
+	. bugfix in collapseRows that affected the group2row component in the returned value.
+	  The bug caused some of the returned representative rows to be incorrect but had
+	  no effect on the collapsed data.
+	. bicor now issues a warning when any of the input variables 
+	  (or their columns) have zero MAD.
+	. numbers2colors gains the argument commonLim to specify whether
+	  limits should be column-specific or universal
+	. bug fix in numbers2colors: having missing data and out of range data
+	  at the same time will not cause an error anymore
+
+
 2011/04/2: 1.10-2
 
 	. Bug in function cor fixed that caused an unncessary slowdown. Results were not affected.
