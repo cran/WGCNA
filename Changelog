@@ -1,6 +1,11 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
 
+2011/05/31: 1.11-1
+
+	. bugfix in modulePreservation fixes internal errors that appeared under certain circumstances
+	. small changes in compiled code should make the code compatible with older gcc versions
+ 
 2011/05/11: 1.11
 
 	. bugfix in conformityDecomposition: calculation corrected

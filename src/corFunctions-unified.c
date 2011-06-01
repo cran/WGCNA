@@ -85,29 +85,29 @@ int uselessFunction2()
   
   #define PTHREAD_MUTEX_INITIALIZER 0
   
-  inline void pthread_mutex_lock ( pthread_mutex_t * lock ) { }
-  inline void pthread_mutex_unlock ( pthread_mutex_t * lock ) { }
+  static inline void pthread_mutex_lock ( pthread_mutex_t * lock ) { }
+  static inline void pthread_mutex_unlock ( pthread_mutex_t * lock ) { }
 
   #define pthread_create(p1, p2, fnc, arg)	fnc(arg)
 
-  inline int pthread_join ( pthread_t t, void ** p) { return 0; }
+  static inline int pthread_join ( pthread_t t, void ** p) { return 0; }
 
 #endif
 
 
 // Conditional pthread routines
 
-inline void pthread_mutex_lock_c( pthread_mutex_t * lock, int threaded)
+static inline void pthread_mutex_lock_c( pthread_mutex_t * lock, int threaded)
 {
   if (threaded) pthread_mutex_lock(lock);
 }
 
-inline void pthread_mutex_unlock_c(pthread_mutex_t * lock, int threaded)
+static inline void pthread_mutex_unlock_c(pthread_mutex_t * lock, int threaded)
 {
   if (threaded) pthread_mutex_unlock(lock);
 }
 
-inline int pthread_create_c(pthread_t *thread, const pthread_attr_t *attr,
+static inline int pthread_create_c(pthread_t *thread, const pthread_attr_t *attr,
     void *(*start_routine)(void*), void *arg, int threaded)
 {
   #ifdef WITH_THREADS
@@ -119,7 +119,7 @@ inline int pthread_create_c(pthread_t *thread, const pthread_attr_t *attr,
   return 0;
 }
 
-inline int pthread_join_c(pthread_t thread, void * * value_ptr, int threaded)
+static inline int pthread_join_c(pthread_t thread, void * * value_ptr, int threaded)
 {
   if (threaded) return pthread_join(thread, (void * *) value_ptr);
   return 0;

@@ -1,6 +1,6 @@
 Package: WGCNA
-Version: 1.11
-Date: 2011-05-11
+Version: 1.11-1
+Date: 2011-05-31
 Title: Weighted Gene Co-Expression Network Analysis
 Author: Peter Langfelder <Peter.Langfelder@gmail.com> and Steve Horvath
         <SHorvath@mednet.ucla.edu> with contributions by Jun Dong,
@@ -16,6 +16,6 @@ Description: Functions necessary to perform Weighted Gene Co-Expression
         Network Analysis
 URL:
         http://www.genetics.ucla.edu/labs/horvath/CoexpressionNetwork/BranchCutting/
-Packaged: 2011-05-12 03:56:21 UTC; plangfelder
+Packaged: 2011-06-01 00:12:46 UTC; plangfelder
 Repository: CRAN
-Date/Publication: 2011-05-13 06:58:06
+Date/Publication: 2011-06-01 04:32:17

@@ -51,7 +51,7 @@
            pnames = sub("Z", "log.p", Znames, fixed= TRUE);
         if (!is.null(summaryCols)) for (c in 1:length(summaryCols))
         {
-          medians = apply(p[[ref]][[test]][, summaryInd[[c]]], 1, median, na.rm = TRUE)
+          medians = apply(p[[ref]][[test]][, summaryInd[[c]], drop = FALSE], 1, median, na.rm = TRUE)
           p[[ref]][[test]][,summaryCols[c]] = medians
         }
         colnames(p[[ref]][[test]])[range] = pnames;
@@ -104,7 +104,7 @@
         colnames(q[[ref]][[test]])[range] = sub("log.p", "q", names[range], fixed= TRUE);
         if (!is.null(summaryCols)) for (c in 1:length(summaryCols))
         {
-          xx = log10(as.matrix(q[[ref]][[test]][, summaryInd[[c]]]));
+          xx = log10(as.matrix(q[[ref]][[test]][, summaryInd[[c]], drop = FALSE]));
           # Restrict all -logs > 1000 to 1000:
           xx[!is.na(xx) & !is.finite(xx)] = -1000;
           xx[!is.na(xx) & (xx < -1000)] = -1000;
@@ -588,8 +588,10 @@ modulePreservation = function(
          logName=matrix("", sum(NotGold), 1) 
          for (stat in 1:nRegStats)
          {
-            means = c(apply(permOut[[iref]][[tnet]]$regStats[NotGold, stat, ], 1, mean, na.rm=TRUE));
-            SD=try( c(apply(permOut[[iref]][[tnet]]$regStats[NotGold, stat, ], 1, sd, na.rm = TRUE)),
+            means = c(apply(permOut[[iref]][[tnet]]$regStats[NotGold, stat, , drop = FALSE], 1, 
+                         mean, na.rm=TRUE));
+            SD=try( c(apply(permOut[[iref]][[tnet]]$regStats[NotGold, stat, , drop = FALSE], 1, 
+                         sd, na.rm = TRUE)),
                     silent = TRUE);
             if (class(SD)=='try-error') SD = NA;
             if (any(is.na(c(means, SD))) )
@@ -742,7 +744,7 @@ modulePreservation = function(
        } else {
          connSummaryInd = c(7,10) # in this case only cor.kIM and cor.Adj which sits in the cor.cor slot
        }
-       ranksConnectivity = apply(-preservation[, connSummaryInd], 2, rank, na.last = "keep");
+       ranksConnectivity = apply(-preservation[, connSummaryInd, drop = FALSE], 2, rank, na.last = "keep");
        medRankConnectivity = apply(ranksConnectivity, 1, median, na.rm = TRUE);
        medRank = apply(cbind(ranksDensity, ranksConnectivity), 1, median, na.rm = TRUE);
        observedPreservation[[iref]][[tnet]] = cbind(moduleSize = modSizes, 
@@ -790,8 +792,8 @@ modulePreservation = function(
                  zAll[goldRowObs, stat] = (allObsStats[goldRowObs, stat] - goldMean)/goldSD
               }
            } else {
-              means = apply(permOut[[iref]][[tnet]]$regStats[, regInd, ], 1, mean, na.rm = TRUE);
-              SDs = apply(permOut[[iref]][[tnet]]$regStats[, regInd, ], 1, sd, na.rm = TRUE);
+              means = apply(permOut[[iref]][[tnet]]$regStats[, regInd, , drop = FALSE], 1, mean, na.rm = TRUE);
+              SDs = apply(permOut[[iref]][[tnet]]$regStats[, regInd, , drop = FALSE], 1, sd, na.rm = TRUE);
               z = ( allObsStats[, stat] - means) / SDs;
               if (any(is.finite(z)))
               {
@@ -805,8 +807,8 @@ modulePreservation = function(
          } else {
             if (.cvPresent(multiColor[[tnet]]) )
             {
-               means = apply(permOut[[iref]][[tnet]]$fixStats[, fixInd, ], 1, mean, na.rm = TRUE);
-               SDs = apply(permOut[[iref]][[tnet]]$fixStats[, fixInd, ], 1, sd, na.rm = TRUE);
+               means = apply(permOut[[iref]][[tnet]]$fixStats[, fixInd, , drop = FALSE], 1, mean, na.rm = TRUE);
+               SDs = apply(permOut[[iref]][[tnet]]$fixStats[, fixInd, , drop = FALSE], 1, sd, na.rm = TRUE);
                z = ( allObsStats[a2i, stat] - means) / SDs;
                if (any(is.finite(z)))
                {
@@ -822,7 +824,7 @@ modulePreservation = function(
        sepCol = match("Z.separability.qual", colnames(zAll)[1:nQualiStats]);
        zQual = zAll[, c(1:nQualiStats)][ , -sepCol];
        summaryColsQuality = rankColsQuality -1 # quality also contains module sizes, Z does not
-       summZ = apply(zQual[, summaryColsQuality], 1, median, na.rm = TRUE); 
+       summZ = apply(zQual[, summaryColsQuality, drop = FALSE], 1, median, na.rm = TRUE); 
        Z.quality[[iref]][[tnet]] = data.frame(cbind(moduleSize = modSizes, Zsummary.qual = summZ, 
                                                     zQual));
        Z.referenceSeparability[[iref]][[tnet]] = 
@@ -1588,7 +1590,7 @@ modulePreservation = function(
      corME= eval(corExpr);
      if (opt$nType==0) corME = abs(corME);
      diag(corME) = 0;
-     Separability[,k]=1-apply(corME[, -Gold], 1, max, na.rm = TRUE)                        
+     Separability[,k]=1-apply(corME[, -Gold, drop = FALSE], 1, max, na.rm = TRUE)                        
   }
 
   #mean signed correlation&inter array correlation
@@ -1751,14 +1753,14 @@ modulePreservation = function(
      for (m in 1:nMods)
      {
        modGenes = colors==colorLevels[m];
-       kIM[, m] = apply(adj[, modGenes], 1, sum, na.rm = TRUE);
+       kIM[, m] = apply(adj[, modGenes, drop = FALSE], 1, sum, na.rm = TRUE);
        kIM[modGenes, m] = kIM[modGenes, m] - 1;
      }
   } else {
      for (m in 1:nMods)
      {
        modGenes = colors==colorLevels[m];
-       kIM[modGenes, m] = apply(adj[modGenes, modGenes], 1, sum, na.rm = TRUE) - 1;
+       kIM[modGenes, m] = apply(adj[modGenes, modGenes, drop = FALSE], 1, sum, na.rm = TRUE) - 1;
      }
   }
   kIM;
@@ -1925,7 +1927,7 @@ modulePreservation = function(
   Separability=matrix(NA, nMods ,2)
   notGold = colorLevels!=gold;
   for(k in 1:2)
-     Separability[notGold, k]=1-apply(sepMat[notGold, notGold, k], 1, max, na.rm = TRUE)                        
+     Separability[notGold, k]=1-apply(sepMat[notGold, notGold, k, drop = FALSE], 1, max, na.rm = TRUE)                        
 
   MeanSignAwareCorDat=matrix(NA,nMods ,2)
   list(modSizes = modSizes, 
