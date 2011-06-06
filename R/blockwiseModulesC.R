@@ -1274,7 +1274,7 @@ blockwiseConsensusModules = function(multiExpr, blocks = NULL,
       CnetworkType = intNetworkType - 1;
       CTOMType = intTOMType - 1;
       tempExpr = as.double(as.matrix(selExpr[[set]]$data));
-      warn = as.integer(warn);
+      warn = 0;
 
       collectGarbage();
 
