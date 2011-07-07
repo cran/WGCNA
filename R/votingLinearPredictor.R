@@ -195,11 +195,20 @@ votingLinearPredictor = function(x, y, xtest = NULL,
     stop("Number of observations in x and y must equal.");
 
   xSD = sd(x, na.rm = TRUE);
+
+  validFeatures = xSD > 0;
+
   xMean = apply(x, 2, mean, na.rm = TRUE);
   x = scale(x);
   if (doTest) 
      xtest = (xtest - matrix(xMean, nTestSamples, nVars, byrow = TRUE) ) / 
                matrix(xSD, nTestSamples, nVars, byrow = TRUE);
+
+  # This prevents NA's generated from zero xSD to contaminate the results
+  xtest[, !validFeatures] = 0
+  x[, !validFeatures] = 0
+
+  xSD[!validFeatures] = 1;
 
   obsMean = apply(y, 2, mean, na.rm = TRUE);
   obsSD = apply(y, 2, sd, na.rm = TRUE);
@@ -328,7 +337,7 @@ votingLinearPredictor = function(x, y, xtest = NULL,
 
   out = list(predicted = trafo(predictMat, drop = dropUnusedDimensions), 
              weightBase = abs(r), 
-             varImportance = varImportance)
+             variableImportance = varImportance)
   if (doTest) out$predictedTest = trafo(predictTestMat, drop = dropUnusedDimensions)
   if (CVfold > 0)
   {

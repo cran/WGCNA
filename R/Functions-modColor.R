@@ -33,7 +33,7 @@ moduleEigengenes = function(expr, colors, impute = TRUE, nPC = 1, align = "along
   spaces = indentSpaces(indent);
 
   if (verbose==1) 
-     printFlush(paste(spaces, "moduleEigengenes: Calculting", nlevels(as.factor(colors)), 
+     printFlush(paste(spaces, "moduleEigengenes: Calculating", nlevels(as.factor(colors)), 
                               "module eigengenes in given set."));
   if (is.null(expr))
   {  

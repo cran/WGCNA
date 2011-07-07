@@ -588,9 +588,9 @@ modulePreservation = function(
          logName=matrix("", sum(NotGold), 1) 
          for (stat in 1:nRegStats)
          {
-            means = c(apply(permOut[[iref]][[tnet]]$regStats[NotGold, stat, , drop = FALSE], 1, 
+            means = c(apply(permOut[[iref]][[tnet]]$regStats[NotGold, stat, , drop = FALSE], c(1:2), 
                          mean, na.rm=TRUE));
-            SD=try( c(apply(permOut[[iref]][[tnet]]$regStats[NotGold, stat, , drop = FALSE], 1, 
+            SD=try( c(apply(permOut[[iref]][[tnet]]$regStats[NotGold, stat, , drop = FALSE], c(1:2), 
                          sd, na.rm = TRUE)),
                     silent = TRUE);
             if (class(SD)=='try-error') SD = NA;
@@ -745,7 +745,7 @@ modulePreservation = function(
          connSummaryInd = c(7,10) # in this case only cor.kIM and cor.Adj which sits in the cor.cor slot
        }
        ranksConnectivity = apply(-preservation[, connSummaryInd, drop = FALSE], 2, rank, na.last = "keep");
-       medRankConnectivity = apply(ranksConnectivity, 1, median, na.rm = TRUE);
+       medRankConnectivity = apply(as.matrix(ranksConnectivity), 1, median, na.rm = TRUE);
        medRank = apply(cbind(ranksDensity, ranksConnectivity), 1, median, na.rm = TRUE);
        observedPreservation[[iref]][[tnet]] = cbind(moduleSize = modSizes, 
                                                     medianRank.pres = medRank,
@@ -792,8 +792,10 @@ modulePreservation = function(
                  zAll[goldRowObs, stat] = (allObsStats[goldRowObs, stat] - goldMean)/goldSD
               }
            } else {
-              means = apply(permOut[[iref]][[tnet]]$regStats[, regInd, , drop = FALSE], 1, mean, na.rm = TRUE);
-              SDs = apply(permOut[[iref]][[tnet]]$regStats[, regInd, , drop = FALSE], 1, sd, na.rm = TRUE);
+              means = c(apply(permOut[[iref]][[tnet]]$regStats[, regInd, , drop = FALSE], 
+                        c(1:2), mean, na.rm = TRUE));
+              SDs = c(apply(permOut[[iref]][[tnet]]$regStats[, regInd, , drop = FALSE], 
+                        c(1:2), sd, na.rm = TRUE));
               z = ( allObsStats[, stat] - means) / SDs;
               if (any(is.finite(z)))
               {
@@ -807,8 +809,10 @@ modulePreservation = function(
          } else {
             if (.cvPresent(multiColor[[tnet]]) )
             {
-               means = apply(permOut[[iref]][[tnet]]$fixStats[, fixInd, , drop = FALSE], 1, mean, na.rm = TRUE);
-               SDs = apply(permOut[[iref]][[tnet]]$fixStats[, fixInd, , drop = FALSE], 1, sd, na.rm = TRUE);
+               means = c(apply(permOut[[iref]][[tnet]]$fixStats[, fixInd, , drop = FALSE], 
+                              c(1:2), mean, na.rm = TRUE));
+               SDs = c(apply(permOut[[iref]][[tnet]]$fixStats[, fixInd, , drop = FALSE], 
+                              c(1:2), sd, na.rm = TRUE));
                z = ( allObsStats[a2i, stat] - means) / SDs;
                if (any(is.finite(z)))
                {
@@ -1916,10 +1920,18 @@ modulePreservation = function(
        for (m2 in 1:(m-1)) if (colorLevels[m2]!=gold)
        {
           interAdj = datRefP[modGenes[[m]], modGenes[[m2]]];
-          sepMat[m, m2, 1] = mean(interAdj, na.rm = TRUE)/sqrt(MeanAdj[m, 1] * MeanAdj[m2, 1]);
+          tmp = mean(interAdj, na.rm = TRUE);
+          if (tmp!=0) {
+            sepMat[m, m2, 1] = mean(interAdj, na.rm = TRUE)/sqrt(MeanAdj[m, 1] * MeanAdj[m2, 1]);
+          } else 
+            sepMat[m, m2, 1] = 0;
           sepMat[m2, m, 1] = sepMat[m, m2, 1];
           interAdj = datTest[modGenes[[m]], modGenes[[m2]]];
-          sepMat[m, m2, 2] = mean(interAdj, na.rm = TRUE)/sqrt(MeanAdj[m, 2] * MeanAdj[m2, 2]);
+          tmp = mean(interAdj, na.rm = TRUE);
+          if (tmp!=0) {
+            sepMat[m, m2, 2] = mean(interAdj, na.rm = TRUE)/sqrt(MeanAdj[m, 2] * MeanAdj[m2, 2]);
+          } else
+            sepMat[m, m2, 2] = 0;
           sepMat[m2, m, 2] = sepMat[m, m2, 2];
        }
     }

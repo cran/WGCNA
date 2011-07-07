@@ -115,17 +115,15 @@ are dropped unless \code{dropUnusedDimensions = FALSE}.}
 
 \item{variableImportance}{The weight of each feature in the prediction (including the sign).}
 
-If input \code{xtest} is non-NULL, 
-\item{predictedTest}{The predicted test response, in format analogous to \code{predicted} above.}
+\item{predictedTest}{If input \code{xtest} is non-NULL, the predicted test response, in format analogous to \code{predicted} above.}
 
-If input \code{CVfold} is non-zero,
-\item{CVpredicted}{Cross-validation prediction on the training data.}
+\item{CVpredicted}{If input \code{CVfold} is non-zero, cross-validation prediction on the training data.}
 }
 \author{
 Peter Langfelder
 }
 \note{
-It makes little practical sense to supply neither code{xtest} nor \code{CVfold} since the prediction
+It makes little practical sense to supply neither \code{xtest} nor \code{CVfold} since the prediction
 accuracy on training data will be highly biased.
 }
 
