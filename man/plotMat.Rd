@@ -1,6 +1,6 @@
-\name{plot.mat}
+\name{plotMat}
 
-\alias{plot.mat}
+\alias{plotMat}
 
 \title{Red and Green Color Image of Data Matrix}
 
@@ -11,7 +11,7 @@ are represented with greens of increasing intensity.
 }
 
 \usage{
-plot.mat(x, nrgcols=50, rlabels=FALSE, clabels=FALSE, rcols=1, ccols=1, title="",...)
+plotMat(x, nrgcols=50, rlabels=FALSE, clabels=FALSE, rcols=1, ccols=1, title="",...)
 }
 
 %- maybe also `usage' for other objects documented here.
@@ -46,7 +46,7 @@ plot.mat(x, nrgcols=50, rlabels=FALSE, clabels=FALSE, rcols=1, ccols=1, title=""
   Sandrine Dudoit, \email{sandrine@stat.berkeley.edu}
 }
 
-\seealso{\code{\link{plot.cor}}, \code{\link{rgcolors.func}},
+\seealso{\code{\link{plotCor}}, \code{\link{rgcolors.func}},
 \code{\link{cor.na}}, \code{\link{cor}}, \code{\link{image}},
 \code{\link{rgb}}.} 
 

@@ -559,7 +559,7 @@ modulePreservation = function(
    if (any(interpolationUsed, na.rm = TRUE))
    {
       if (verbose > 0) printFlush(paste(spaces, "..Calculating interpolation approximations.."));
-      if (plotInterpolation) pdf(file = interpolationPlotFile, w = 12, h = 6)
+      if (plotInterpolation) pdf(file = interpolationPlotFile, width = 12, height = 6)
    }
 
    # Define a "class" indicating that no valid fit was obtained

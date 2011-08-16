@@ -335,8 +335,8 @@ void CLASS_NAME::colMWM(CLASS_NAME & minVal, INT_CLASS & which)
 
   if (colLen==0)
     throw(Exception(string("colMWM: Column length is zero in variable") + name()));
-  int col; 
-  for (int i=0, col=0; i<totLen; i+=colLen, col++)
+  int col = 0; 
+  for (int i=0; i<totLen; i+=colLen, col++)
   {
     TYPE cmin = linValue(i);
     int wmin = 0;
@@ -371,7 +371,7 @@ void CLASS_NAME::colQuantile(double q, CLASS_NAME & quantile)
 
   double index = q * (colLen-1);
   double i1 = floor(index), i2 = ceil(index);
-  int ii1 = (int) i1, ii2 = (int) i2, col;
+  int ii1 = (int) i1, ii2 = (int) i2;
   // cout << "Quantile: q = " << q << ", ii1: " << ii1 << ", ii2: " << ii2 << ", index: "<< index << endl;
   for (int i=0, col=0; i<totLen; i+=colLen, col++)
   {

@@ -34,7 +34,7 @@ hexadecimal digits giving a value in the range 00 to FF.
   Jane Fridlyand, \email{janef@stat.berkeley.edu}
 }
 
-\seealso{\code{\link{plot.cor}}, \code{\link{plot.mat}},
+\seealso{\code{\link{plotCor}}, \code{\link{plotMat}},
 \code{\link{colors}}, \code{\link{rgb}}, \code{\link{image}}.} 
 
 \examples{

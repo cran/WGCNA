@@ -54,7 +54,7 @@
 #   Jane Fridlyand, \email{janef@stat.berkeley.edu}
 # }
 # 
-# \seealso{\code{\link{plot.cor}}, \code{\link{plot.mat}},
+# \seealso{\code{\link{plotCor}}, \code{\link{plotMat}},
 # \code{\link{colors}}, \code{\link{rgb}}, \code{\link{image}}.} 
 # 
 # \examples{
@@ -80,9 +80,9 @@ rgcolors.func<-function(n = 50)
 #                Images of data matrices and correlation matrices
 ##########################################################################
 ########################################################################/**
-# \name{plot.cor}
+# \name{plotCor}
 # 
-# \alias{plot.cor}
+# \alias{plotCor}
 # 
 # \title{Red and Green Color Image of Correlation Matrix}
 # 
@@ -95,7 +95,7 @@ rgcolors.func<-function(n = 50)
 # }
 # 
 # \usage{
-# plot.cor(X, new=F, nrgcols=50, labels=FALSE, labcols=1, title="", ...)
+# plotCor(X, new=F, nrgcols=50, labels=FALSE, labcols=1, title="", ...)
 # }
 # 
 # \arguments{
@@ -124,7 +124,7 @@ rgcolors.func<-function(n = 50)
 #   Sandrine Dudoit, \email{sandrine@stat.berkeley.edu}
 # }
 # 
-# \seealso{\code{\link{plot.mat}},\code{\link{rgcolors.func}},
+# \seealso{\code{\link{plotMat}},\code{\link{rgcolors.func}},
 # \code{\link{cor.na}}, \code{\link{cor}}, \code{\link{image}},
 # \code{\link{rgb}}.} 
 # 
@@ -134,7 +134,7 @@ rgcolors.func<-function(n = 50)
 # 
 #*/#######################################################################
 
- plot.cor<-function(x, new=FALSE, nrgcols=50, labels=FALSE, labcols=1, title="", ...)
+ plotCor<-function(x, new=FALSE, nrgcols=50, labels=FALSE, labcols=1, title="", ...)
  {
 #   X <- x
    n<-ncol(x)
@@ -164,9 +164,9 @@ rgcolors.func<-function(n = 50)
 }
 
 ########################################################################/**
-# \name{plot.mat}
+# \name{plotMat}
 # 
-# \alias{plot.mat}
+# \alias{plotMat}
 # 
 # \title{Red and Green Color Image of Data Matrix}
 # 
@@ -177,7 +177,7 @@ rgcolors.func<-function(n = 50)
 # }
 # 
 # \usage{
-# plot.mat(X, nrgcols=50, rlabels=FALSE, clabels=FALSE, rcols=1, ccols=1, title="",...)
+# plotMat(X, nrgcols=50, rlabels=FALSE, clabels=FALSE, rcols=1, ccols=1, title="",...)
 # }
 # 
 # %- maybe also `usage' for other objects documented here.
@@ -212,7 +212,7 @@ rgcolors.func<-function(n = 50)
 #   Sandrine Dudoit, \email{sandrine@stat.berkeley.edu}
 # }
 # 
-# \seealso{\code{\link{plot.cor}}, \code{\link{rgcolors.func}},
+# \seealso{\code{\link{plotCor}}, \code{\link{rgcolors.func}},
 # \code{\link{cor.na}}, \code{\link{cor}}, \code{\link{image}},
 # \code{\link{rgb}}.} 
 # 
@@ -223,7 +223,7 @@ rgcolors.func<-function(n = 50)
 # mouse.lratio <- stat.ma(mouse.data, mouse.setup)
 # 
 # ## Looking at log ratios of mouse1
-# plot.mat(spatial.func(mouse.lratio$M[,1], mouse.setup))
+# plotMat(spatial.func(mouse.lratio$M[,1], mouse.setup))
 # }
 # 
 # \keyword{Microarray, image of data matrix.} 
@@ -231,7 +231,7 @@ rgcolors.func<-function(n = 50)
 # 
 #*/#######################################################################
 
-plot.mat<-function(x, nrgcols=50, rlabels=FALSE, clabels=FALSE, rcols=1, ccols=1, title="", ...)
+plotMat<-function(x, nrgcols=50, rlabels=FALSE, clabels=FALSE, rcols=1, ccols=1, title="", ...)
 {
 #  X <-x
   n<-nrow(x)
