@@ -1,5 +1,10 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
+2011/08/17: 1.13
+
+	. Multi-threading is now disabled by default but can be enabled by
+	  setting the environment variable ALLOW_WGCNA_THREADS=<number_of_threads>
+	  or using the function allowWGCNAThreads(). 
 
 2011/08/16: 1.12
 

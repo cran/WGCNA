@@ -1,5 +1,5 @@
-a3c0c212d23262af9311aecfaf66c542 *Changelog
-73d27ba49d1648de06fdb1e46db7fc95 *DESCRIPTION
+2e753024920cac51ec43212d25800b9c *Changelog
+8a42de37d749722b1b2b30412308ead3 *DESCRIPTION
 970fd32521fb5ab965eeec686834d06b *NAMESPACE
 2640fb7286cab45b6de425c01109f80e *R/AFcorMI.R
 6f73acb75aca74a3d6c95a1b664a6374 *R/Functions-fromSimilarity.R
@@ -9,14 +9,14 @@ a3c0c212d23262af9311aecfaf66c542 *Changelog
 2a1f986b7c1bf20183d68dccc81350ca *R/accuracyMeasures.R
 6694f89a89e904eb1bc90d28cf28fc37 *R/adjacency.polyReg.R
 3cc995eb826b701ba4d3a7bf6ad64a3a *R/adjacency.splineReg.R
-66efffc0db6c2f6e15d44d9e0270692a *R/blockwiseModulesC.R
+76ea8deeca756bdbb96604c592d4a4af *R/blockwiseModulesC.R
 0e00b2ceadc5cc9973c375e3ce27c1ae *R/coClustering.R
 ceee787204a986fedae3e8b3ce86d121 *R/collapseRows.R
 93b1234770b325950074537bc2aad873 *R/collapseRowsUsingKME.R
 46a73fe3580e01ceab1bdcb55c316c3c *R/conformityDecomposition.R
 d887bfad537c09ba5eabba80eaa03b30 *R/consensusDissTOMandTree.R
 d6d27a97d406143ba2903727a829f7dc *R/corAndPvalue.R
-ad8e8640978e780e7fe928ba519a70d0 *R/corFunctions.R
+ef41352d0c0b93098763376e22d39bb1 *R/corFunctions.R
 334215568f66db3ee3a0a623a2d760fa *R/coxRegressionResiduals.R
 aa9c7ff1a228742079e2cbd4a1f4c28e *R/dendrogramAdjustmentFunctions.R
 a8d6c9153283aef82a2f791dff6cb521 *R/exportFunctions.R
@@ -39,9 +39,10 @@ ccc79bd4eb6ee39d21d38293b67c0287 *R/smaFunctions-Rna.R
 f87924d7f12e5bc286821069abd5101e *R/smaFunctions.R
 0b381e2bd42c233bf0df16b84c035226 *R/standardScreeningBinaryTrait.R
 f20cae9009e6bca9e4f19328f17a229f *R/stratifiedBarplot.R
+48a5eb35078054cab71c2ae60c63d95a *R/useNThreads.R
 4adf56cd51410428cfc755ff7be3443b *R/userListEnrichment.R
 93b1609a2871bf1d90dedbcab7c62c6c *R/votingLinearPredictor.R
-23fd5fee52ee9ae162e2542a92ded8f0 *R/zzz.R
+3766a58b305426c767dc9b9f41523e8f *R/zzz.R
 84c8312bbac8720eeaa5b428e6002d1d *data/BloodLists.rda
 7f47e3bbdf013bb38f2690891be12794 *data/BrainLists.rda
 1395f9a0fa5ae4ae4d33450dd978bf20 *man/AFcorMI.Rd
@@ -52,7 +53,7 @@ c14de92cb72ff91090a7ba478308fd72 *man/BloodLists.Rd
 358a7693a58846c2f047764271b189b1 *man/TOMplot.Rd
 d95a6e779cb6edf6b40206b52e3215a7 *man/TOMsimilarity.Rd
 502131e33c1e9b1c66d48d90aba59b22 *man/TOMsimilarityFromExpr.Rd
-2a316485bcdae0afc2aa5a405ec35448 *man/WGCNA-package.Rd
+9f0550057196bb819e251048e12a4359 *man/WGCNA-package.Rd
 f0b54cdf61c930c852e6360e5cd69963 *man/accuracyMeasures.Rd
 051b9a0b6e3d224367101ae392fdee22 *man/addErrorBars.Rd
 2703e1c680bae62e4c5aaecdcfbbd424 *man/addGrid.Rd
@@ -62,6 +63,7 @@ af4570cc2dbba58b5f68c94d3cb9037d *man/adjacency.Rd
 22ebaa71cc81ca241be7d6f03727dc59 *man/adjacency.polyReg.Rd
 38ea5c131e4d95e078d4bb3a44cd5976 *man/adjacency.splineReg.Rd
 c7e701229b5800c1413850f3adf86a3c *man/alignExpr.Rd
+8854659d08daa71228cc8195a47d0d5f *man/allowWGCNAThreads.Rd
 e2049beb0af65861c3012a25bfc411b4 *man/automaticNetworkScreening.Rd
 37f7ceee377056bc41dfc56146e44c22 *man/automaticNetworkScreeningGS.Rd
 7d1125b681f75862a681278f61f7b74c *man/bicor.Rd
@@ -85,7 +87,7 @@ f02e1252a1f127594ba501f14727ad6d *man/conformityDecomposition.Rd
 b7894dd42a2601088dca9dea50eff843 *man/consensusMEDissimilarity.Rd
 171634ec94492cd2a68a284c88329b68 *man/consensusOrderMEs.Rd
 dab0f9668d35ff557fb59dadb7f3b3fe *man/consensusProjectiveKMeans.Rd
-2bb471f3b6f6b37b2b1c6330250d32da *man/cor.Rd
+b9485e39df23f4ab7353ba212c5db091 *man/cor.Rd
 128359fd7ff1b72d74698461f42ae06a *man/corAndPvalue.Rd
 19cd6ac7f5c9891b6f6be8fd4034f484 *man/corPredictionSuccess.Rd
 ddd90d6b54aac459bd8af75db5f5e8a6 *man/corPvalueFisher.Rd
@@ -210,7 +212,7 @@ bd5ccb4b932a9b3e3dbf391ae64f2e1e *src/arrayGeneric.h
 9325eb75f2dbcd496f707012da9a7451 *src/compiling.h
 da8325a366e08e9550fc94a0098e263f *src/corFunctions-common.c
 dc75dbffa9eb5cc4cab09d05c4d3e8d7 *src/corFunctions-common.h
-13c6bafcf47d65d6c91cd43bad664732 *src/corFunctions-unified.c
+14d38760f9a76372af4828dca0f2321f *src/corFunctions-unified.c
 8cdd38cea04502f7d414ed5de15745ba *src/corFunctions.h
 5ce06b070466f09b11f2745166ab226a *src/exceptions.h
 67eb83866191c51fc8890d11772eb6d8 *src/networkFunctions.c

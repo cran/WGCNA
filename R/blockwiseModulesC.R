@@ -66,6 +66,7 @@ TOMsimilarityFromExpr = function(datExpr, corType = "pearson", networkType = "un
            paste(.pearsonFallbacks, collapse = ", ")))
 
   if (nThreads < 0) stop("nThreads must be positive.");
+  if (is.null(nThreads) || (nThreads==0)) nThreads = .useNThreads();
 
   if ( (power<1) | (power>30) ) stop("power must be between 1 and 30.");
 
@@ -217,6 +218,7 @@ blockwiseModules = function(datExpr, blocks = NULL,
   if ( (maxPOutliers < 0) | (maxPOutliers > 1)) stop("maxPOutliers must be between 0 and 1.");
   if (quickCor < 0) stop("quickCor must be positive.");
   if (nThreads < 0) stop("nThreads must be positive.");
+  if (is.null(nThreads) || (nThreads==0)) nThreads = .useNThreads();
 
   if ( (power<1) | (power>30) ) stop("power must be between 1 and 30.");
   if ( (minKMEtoJoin >1) | (minKMEtoJoin  <0) ) stop("minKMEtoJoin  must be between 0 and 1.");
@@ -1139,6 +1141,7 @@ blockwiseConsensusModules = function(multiExpr, blocks = NULL,
            paste(.pearsonFallbacks, collapse = ", ")))
 
   if (nThreads < 0) stop("nThreads must be positive.");
+  if (is.null(nThreads) || (nThreads==0)) nThreads = .useNThreads();
 
   nSamples = dataSize$nSamples;
   
