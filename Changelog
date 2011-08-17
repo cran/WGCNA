@@ -1,6 +1,15 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
 
+2011/08/16: 1.12
+
+	. Code cleanup to satisfy CRAN package check
+	. Functions plot.cor and plot.mat renamed to plotCor and plotMat to avoid 
+	  confusion with methods for the plot generic
+	. Function userListEnrichment now returns a slightly more informative
+	  output in which the type of the refrence category is also indicated.
+
+
 2011/07/06: 1.11-3
 
 	. bugfix in modulePreservation fixes an additional bug that was introduced in 1.11-1 

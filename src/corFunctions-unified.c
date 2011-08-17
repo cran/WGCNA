@@ -66,7 +66,7 @@ int uselessFunction2()
 
 #ifdef WITH_THREADS
 
-  #warning Including pthread headers.
+  // #warning Including pthread headers.
 
   #include <unistd.h>
   #include <pthread.h>
@@ -638,6 +638,7 @@ void cor1Fast(double * x, int * nrow, int * ncol, double * quick,
   for (int i=0; i<2* *indent; i++) spaces[i] = ' ';
   spaces[2* *indent] = '\0';
 
+  *err = 0;
   *nNA = 0;
 
   // Allocate space for various variables
@@ -742,10 +743,16 @@ void cor1Fast(double * x, int * nrow, int * ncol, double * quick,
                     threadPrepColCor, 
                     (void *) &cptd[t], 
                     thrdInfo[t].threaded);
+    if (status[t]!=0)
+    {
+      Rprintf("Error in cor(x): thread %d could not be started successfully. Error code: %d.\n%s",
+              t, status[t], "*** WARNING: RETURNED RESULTS WILL BE INCORRECT. ***");
+      *err = 2;
+    }
   }
 
   for (int t=0; t<nt; t++)
-      pthread_join_c(thr[t], NULL, thrdInfo[t].threaded);
+      if (status[t]==0) pthread_join_c(thr[t], NULL, thrdInfo[t].threaded);
 
   // Rprintf("done...\n");
   // Rprintf("NAmean:");
@@ -789,10 +796,16 @@ void cor1Fast(double * x, int * nrow, int * ncol, double * quick,
         sctd[t].nNA = nNA;
         sctd[t].lock = &mutexSC;
         status[t] = pthread_create_c(&thr3[t], NULL, threadSlowCalcCor, (void *) &sctd[t], thrdInfo[t].threaded);
+        if (status[t]!=0)
+        {
+          Rprintf("Error in cor(x): thread %d could not be started successfully. Error code: %d.\n%s",
+                  t, status[t], "*** WARNING: RETURNED RESULTS WILL BE INCORRECT. ***");
+          *err = 2;
+        }
       }
     
       for (int t=0; t<nt; t++)
-          pthread_join_c(thr3[t], NULL, thrdInfo[t].threaded);
+         if (status[t]==0) pthread_join_c(thr3[t], NULL, thrdInfo[t].threaded);
     
       // Rprintf("done...\n");
     
@@ -815,10 +828,16 @@ void cor1Fast(double * x, int * nrow, int * ncol, double * quick,
     std[t].x = &thrdInfo[t];
     std[t].pc = &pc;
     status[t] = pthread_create_c(&thr2[t], NULL, threadSymmetrize, (void *) &std[t], thrdInfo[t].threaded);
+    if (status[t]!=0)
+    {
+      Rprintf("Error in cor(x): thread %d could not be started successfully. Error code: %d.\n%s",
+              t, status[t], "*** WARNING: RETURNED RESULTS WILL BE INCORRECT. ***");
+          *err = 2;
+    }
   }
 
   for (int t=0; t<nt; t++)
-      pthread_join_c(thr2[t], NULL, thrdInfo[t].threaded);
+     if (status[t]==0) pthread_join_c(thr2[t], NULL, thrdInfo[t].threaded);
 
   // Rprintf("done... nt=%d\n", nt);
   // Here I need to recalculate results that have NA's in them.
@@ -855,6 +874,7 @@ void bicor1Fast(double * x, int * nrow, int * ncol, double * maxPOutliers,
 
   *nNA = 0;
   *warn = noWarning;
+  *err = 0;
 
   // Allocate space for various variables
 
@@ -901,8 +921,6 @@ void bicor1Fast(double * x, int * nrow, int * ncol, double * maxPOutliers,
 
   double * aux[MxThreads];
 
-  double * aux1[MxThreads];
-
   for (int t=0; t < nt; t++)
   {
      if ( (aux[t] = malloc(6*nr * sizeof(double)))==NULL)
@@ -913,7 +931,6 @@ void bicor1Fast(double * x, int * nrow, int * ncol, double * maxPOutliers,
        free(NAmed); free(nNAentries); free(multMat);
        return;
      }
-     aux1[t] = aux[t];
   }
 
   // Put the general data of the correlation calculation into a structure that can be passed on to
@@ -960,10 +977,17 @@ void bicor1Fast(double * x, int * nrow, int * ncol, double * maxPOutliers,
     cptd[t].pc = &pc;
     cptd[t].lock = &mutex1;
     status[t] = pthread_create_c(&thr[t], NULL, threadPrepColBicor, (void *) &cptd[t], thrdInfo[t].threaded);
+    if (status[t]!=0)
+    {
+      Rprintf("Error in bicor(x): thread %d could not be started successfully. Error code: %d.\n%s",
+              t, status[t], "WARNING: RETURNED RESULTS WILL BE INCORRECT.");
+          *err = 2;
+    }
+             
   }
 
   for (int t=0; t<nt; t++)
-      pthread_join_c(thr[t], NULL, thrdInfo[t].threaded);
+      if (status[t]==0) pthread_join_c(thr[t], NULL, thrdInfo[t].threaded);
 
   int pearson = 0;
 
@@ -989,8 +1013,15 @@ void bicor1Fast(double * x, int * nrow, int * ncol, double * maxPOutliers,
       {
         cptd[t].lock = &mutex2;
         status[t] = pthread_create_c(&thr[t], NULL, threadPrepColCor, (void *) &cptd[t], thrdInfo[t].threaded);
+        if (status[t]!=0)
+        {
+          Rprintf("Error in bicor(x): thread %d could not be started successfully. Error code: %d.\n%s",
+                  t, status[t], "*** WARNING: RETURNED RESULTS WILL BE INCORRECT. ***");
+          *err = 2;
+        }
       }
-      for (int t=0; t<nt; t++) pthread_join_c(thr[t], NULL, thrdInfo[t].threaded);
+      for (int t=0; t<nt; t++) 
+         if (status[t]==0) pthread_join_c(thr[t], NULL, thrdInfo[t].threaded);
     }
   }
 
@@ -1039,10 +1070,16 @@ void bicor1Fast(double * x, int * nrow, int * ncol, double * maxPOutliers,
         sctd[t].lock = &mutexSC;
         status[t] = pthread_create_c(&thr3[t], NULL, threadSlowCalcBicor, (void *) &sctd[t], 
                     thrdInfo[t].threaded);
+        if (status[t]!=0)
+        {
+          Rprintf("Error in bicor(x): thread %d could not be started successfully. Error code: %d.\n%s",
+                  t, status[t], "*** WARNING: RETURNED RESULTS WILL BE INCORRECT. ***");
+          *err = 2;
+        }
       }
     
       for (int t=0; t<nt; t++)
-          pthread_join_c(thr3[t], NULL, thrdInfo[t].threaded);
+         if (status[t]==0) pthread_join_c(thr3[t], NULL, thrdInfo[t].threaded);
     
       // Rprintf("done...\n");
     
@@ -1065,10 +1102,16 @@ void bicor1Fast(double * x, int * nrow, int * ncol, double * maxPOutliers,
     std[t].x = &thrdInfo[t];
     std[t].pc = &pc;
     status[t] = pthread_create_c(&thr2[t], NULL, threadSymmetrize, (void *) &std[t], thrdInfo[t].threaded);
+    if (status[t]!=0)
+    {
+       Rprintf("Error in bicor(x): thread %d could not be started successfully. Error code: %d.\n%s",
+               t, status[t], "*** WARNING: RETURNED RESULTS WILL BE INCORRECT. ***");
+          *err = 2;
+    }
   }
 
   for (int t=0; t<nt; t++)
-      pthread_join_c(thr2[t], NULL, thrdInfo[t].threaded);
+      if (status[t]==0) pthread_join_c(thr2[t], NULL, thrdInfo[t].threaded);
 
   for (int t=nt-1; t >= 0; t--) free(aux[t]); 
   free(NAmed);
@@ -1218,8 +1261,6 @@ void * threadSlowCalcBicor2(void * par)
 
   int maxDiffNA = (int) (td->x->x->quick * nr);
 
-  int temp = 0;
-
   if (fbx==3) fbx = 2;
   if (fby==3) fby = 2;
 
@@ -1357,6 +1398,7 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
   *nNA = 0;
   *warnX = noWarning;
   *warnY = noWarning;
+  *err = 0;
 
   double * multMatX, * multMatY;
   int * nNAentriesX, * nNAentriesY;
@@ -1509,9 +1551,15 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
        else
          status[t] = pthread_create_c(&thr[t], NULL, threadPrepColCor, (void *) &cptd[t],
                                       thrdInfoX[t].threaded);
+    if (status[t]!=0)
+    {
+       Rprintf("Error in bicor(x,y): thread %d could not be started successfully. Error code: %d.\n%s",
+               t, status[t], "*** WARNING: RETURNED RESULTS WILL BE INCORRECT. ***");
+          *err = 2;
+    }
   }
   for (int t=0; t<nt; t++)
-      pthread_join_c(thr[t], NULL, thrdInfoX[t].threaded);
+      if (status[t]==0) pthread_join_c(thr[t], NULL, thrdInfoX[t].threaded);
 
   // If the fallback method is to re-do everything in Pearson, check whether any columns had zero MAD.
   if (*fallback==3)
@@ -1536,8 +1584,14 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
         cptd[t].lock = &mutex2;
         status[t] = pthread_create_c(&thr[t], NULL, threadPrepColCor, (void *) &cptd[t], 
                                      thrdInfoX[t].threaded);
+        if (status[t]!=0)
+        {
+           Rprintf("Error in bicor(x,y): thread %d could not be started successfully. Error code: %d.\n%s",
+                   t, status[t], "*** WARNING: RETURNED RESULTS WILL BE INCORRECT. ***");
+          *err = 2;
+        }
       }
-      for (int t=0; t<nt; t++) pthread_join_c(thr[t], NULL, thrdInfoX[t].threaded);
+      for (int t=0; t<nt; t++) if (status[t]==0) pthread_join_c(thr[t], NULL, thrdInfoX[t].threaded);
     }
   }
 
@@ -1560,10 +1614,16 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
        else
          status[t] = pthread_create_c(&thr[t], NULL, threadPrepColCor, (void *) &cptd[t],
                                      thrdInfoX[t].threaded);
+    if (status[t]!=0)
+    {
+       Rprintf("Error in bicor(x,y): thread %d could not be started successfully. Error code: %d.\n%s",
+               t, status[t], "*** WARNING: RETURNED RESULTS WILL BE INCORRECT. ***");
+          *err = 2;
+    }
   }
 
   for (int t=0; t<nt; t++)
-      pthread_join_c(thr[t], NULL, thrdInfoX[t].threaded);
+    if (status[t]==0)  pthread_join_c(thr[t], NULL, thrdInfoX[t].threaded);
 
   // If the fallback method is to re-do everything in Pearson, check whether any columns had zero MAD.
   if (*fallback==3)
@@ -1588,8 +1648,14 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
       //  Rprintf("Starting pearson re-calculation in thread %d of %d.\n", t, nt);
         cptd[t].lock = &mutex2Y;
         status[t] = pthread_create_c(&thr[t], NULL, threadPrepColCor, (void *) &cptd[t], thrdInfoX[t].threaded);
+        if (status[t]!=0)
+        {
+           Rprintf("Error in bicor(x,y): thread %d could not be started successfully. Error code: %d.\n%s",
+                   t, status[t], "*** WARNING: RETURNED RESULTS WILL BE INCORRECT. ***");
+          *err = 2;
+        }
       }
-      for (int t=0; t<nt; t++) pthread_join_c(thr[t], NULL, thrdInfoX[t].threaded);
+      for (int t=0; t<nt; t++) if (status[t]==0) pthread_join_c(thr[t], NULL, thrdInfoX[t].threaded);
     }
   }
 
@@ -1652,10 +1718,16 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
         sctd[t].quick = *quick;
         status[t] = pthread_create_c(&thr3[t], NULL, threadSlowCalcBicor2, (void *) &sctd[t], 
                                      thrdInfoX[t].threaded);
+        if (status[t]!=0)
+        {
+           Rprintf("Error in bicor(x,y): thread %d could not be started successfully. Error code: %d.\n%s",
+                   t, status[t], "*** WARNING: RETURNED RESULTS WILL BE INCORRECT. ***");
+          *err = 2;
+        }
       }
 
       for (int t=0; t<nt; t++)
-          pthread_join_c(thr3[t], NULL, thrdInfoX[t].threaded);
+        if (status[t]==0)  pthread_join_c(thr3[t], NULL, thrdInfoX[t].threaded);
 
       if (*verbose) Rprintf("%s Fraction of slow calculations: %f\n", spaces,
                              ( (double) nSlow) / (ncx*ncy) );
@@ -1676,10 +1748,16 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
     natd[t].pci = &pcX;
     natd[t].pcj = &pcY;
     status[t] = pthread_create_c(&thr2[t], NULL, threadNAing, (void *) &natd[t], thrdInfoX[t].threaded);
+    if (status[t]!=0)
+    {
+       Rprintf("Error in bicor(x,y): thread %d could not be started successfully. Error code: %d.\n%s",
+               t, status[t], "*** WARNING: RETURNED RESULTS WILL BE INCORRECT. ***");
+          *err = 2;
+    }
   }
 
   for (int t=0; t<nt; t++)
-      pthread_join_c(thr2[t], NULL, thrdInfoX[t].threaded);
+     if (status[t]==0) pthread_join_c(thr2[t], NULL, thrdInfoX[t].threaded);
 
   // Clean up
 
@@ -1712,7 +1790,7 @@ void * threadSlowCalcCor2(void * par)
   int * nNA = td->nNA;
 
   double * x = td->x->x->x;
-  double * multMatX = td->x->x->multMat;
+//  double * multMatX = td->x->x->multMat;
   double * result = td->x->x->result;
   int ncx = td->x->x->nc, nr = td->x->x->nr;
   int * NAmeanX = td->x->x->NAme;
@@ -1720,7 +1798,7 @@ void * threadSlowCalcCor2(void * par)
   int cosineX = td->x->x->cosine;
 
   double * y = td->x->y->x;
-  double * multMatY = td->x->y->multMat;
+//  double * multMatY = td->x->y->multMat;
   int ncy = td->x->y->nc;
   int * NAmeanY = td->x->y->NAme;
   int * nNAentriesY = td->x->y->nNAentries;
@@ -1821,6 +1899,7 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
   spaces[2* *indent] = '\0';
 
   *nNA = 0;
+  *err = 0;
 
   double * multMatX, * multMatY;
   int * nNAentriesX, * nNAentriesY;
@@ -1829,7 +1908,7 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
   if ( (multMatX = malloc(ncx*nr * sizeof(double)))==NULL )
   {
     *err = 1;
-    Rprintf("bicor: memmory allocation error. If possible, please decrease block size.\n");
+    Rprintf("cor(x,y): memmory allocation error. If possible, please decrease block size.\n");
     return;
   }
 
@@ -1837,7 +1916,7 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
   {
     free(multMatX);
     *err = 1;
-    Rprintf("bicor: memmory allocation error. If possible, please decrease block size.\n");
+    Rprintf("cor(x,y): memmory allocation error. If possible, please decrease block size.\n");
     return;
   }
 
@@ -1845,7 +1924,7 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
   {
     free(multMatY); free(multMatX);
     *err = 1;
-    Rprintf("bicor: memmory allocation error. The needed block is relatively small... suspicious.\n");
+    Rprintf("cor(x,y): memmory allocation error. The needed block is relatively small... suspicious.\n");
     return;
   }
 
@@ -1853,7 +1932,7 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
   {
     free(nNAentriesX); free(multMatY); free(multMatX);
     *err = 1;
-    Rprintf("bicor: memmory allocation error. The needed block is relatively small... suspicious.\n");
+    Rprintf("cor(x,y): memmory allocation error. The needed block is relatively small... suspicious.\n");
     return;
   }
 
@@ -1861,7 +1940,7 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
   {
     free(nNAentriesY); free(nNAentriesX); free(multMatY); free(multMatX);
     *err = 1;
-    Rprintf("bicor: memmory allocation error. The needed block is relatively small... suspicious.\n");
+    Rprintf("cor(x,y): memmory allocation error. The needed block is relatively small... suspicious.\n");
     return;
   }
 
@@ -1869,7 +1948,7 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
   {
     free(NAmeanX); free(nNAentriesY); free(nNAentriesX); free(multMatY); free(multMatX);
     *err = 1;
-    Rprintf("bicor: memmory allocation error. The needed block is relatively small... suspicious.\n");
+    Rprintf("cor(x,y): memmory allocation error. The needed block is relatively small... suspicious.\n");
     return;
   }
 
@@ -1940,9 +2019,15 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
     cptd[t].pc = &pcX;
     cptd[t].lock = &mutex1;
     status[t] = pthread_create_c(&thr[t], NULL, threadPrepColCor, (void *) &cptd[t], thrdInfoX[t].threaded);
+    if (status[t]!=0)
+    {
+       Rprintf("Error in cor(x,y): thread %d could not be started successfully. Error code: %d.\n%s",
+               t, status[t], "*** WARNING: RETURNED RESULTS WILL BE INCORRECT. ***");
+          *err = 2;
+    }
   }
   for (int t=0; t<nt; t++)
-      pthread_join_c(thr[t], NULL, thrdInfoX[t].threaded);
+    if (status[t]==0) pthread_join_c(thr[t], NULL, thrdInfoX[t].threaded);
 
   // Prepare columns in Y
  
@@ -1956,10 +2041,16 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
     cptd[t].pc = &pcY;
     cptd[t].lock = &mutex1Y;
     status[t] = pthread_create_c(&thr[t], NULL, threadPrepColCor, (void *) &cptd[t], thrdInfoX[t].threaded);
+    if (status[t]!=0)
+    {
+       Rprintf("Error in cor(x,y): thread %d could not be started successfully. Error code: %d.\n%s",
+               t, status[t], "*** WARNING: RETURNED RESULTS WILL BE INCORRECT. ***");
+          *err = 2;
+    }
   }
 
   for (int t=0; t<nt; t++)
-      pthread_join_c(thr[t], NULL, thrdInfoX[t].threaded);
+    if (status[t]==0) pthread_join_c(thr[t], NULL, thrdInfoX[t].threaded);
 
   //Rprintf("multMatX:\n");
   //for (int i=0; i<nr; i++)
@@ -2012,10 +2103,16 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
         sctd[t].quick = *quick;
         status[t] = pthread_create_c(&thr3[t], NULL, threadSlowCalcCor2, (void *) &sctd[t], 
                                      thrdInfoX[t].threaded);
+        if (status[t]!=0)
+        {
+           Rprintf("Error in cor(x,y): thread %d could not be started successfully. Error code: %d.\n%s",
+                   t, status[t], "*** WARNING: RETURNED RESULTS WILL BE INCORRECT. ***");
+          *err = 2;
+        }
       }
 
       for (int t=0; t<nt; t++)
-          pthread_join_c(thr3[t], NULL, thrdInfoX[t].threaded);
+          if (status[t]==0) pthread_join_c(thr3[t], NULL, thrdInfoX[t].threaded);
 
       if (*verbose) Rprintf("%s Fraction of slow calculations: %f\n", spaces,
                              ( (double) nSlow) / (ncx*ncy) );
@@ -2036,10 +2133,16 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
     natd[t].pci = &pcX;
     natd[t].pcj = &pcY;
     status[t] = pthread_create_c(&thr2[t], NULL, threadNAing, (void *) &natd[t], thrdInfoX[t].threaded);
+    if (status[t]!=0)
+    {
+       Rprintf("Error in cor(x,y): thread %d could not be started successfully. Error code: %d.\n%s",
+               t, status[t], "*** WARNING: RETURNED RESULTS WILL BE INCORRECT. ***");
+          *err = 2;
+    }
   }
 
   for (int t=0; t<nt; t++)
-      pthread_join_c(thr2[t], NULL, thrdInfoX[t].threaded);
+    if (status[t]==0)  pthread_join_c(thr2[t], NULL, thrdInfoX[t].threaded);
 
   // clean up and return
 

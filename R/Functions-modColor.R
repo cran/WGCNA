@@ -747,7 +747,7 @@ multiSetMEs = function(exprData, colors, universalColors = NULL, useSets = NULL,
         setColors = universalColors; 
       }
       setMEs = moduleEigengenes(expr = exprData[[set]]$data,
-                            color = setColors, impute = impute, nPC = nPC, align = align, 
+                            colors = setColors, impute = impute, nPC = nPC, align = align, 
                             excludeGrey = excludeGrey, grey = grey,
                             trapErrors = trapErrors, subHubs = subHubs,
                             returnValidOnly = FALSE, softPower = softPower,
@@ -779,7 +779,7 @@ multiSetMEs = function(exprData, colors, universalColors = NULL, useSets = NULL,
         setColors = universalColors[useGenes]; 
       }
       setMEs = moduleEigengenes(expr = exprData[[set]]$data[, useGenes],
-                            color = setColors, impute = impute, nPC = nPC, align = align, 
+                            colors = setColors, impute = impute, nPC = nPC, align = align, 
                             excludeGrey = excludeGrey, grey = grey,
                             trapErrors = trapErrors, subHubs = subHubs,
                             returnValidOnly = FALSE, softPower = softPower,

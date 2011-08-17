@@ -1,6 +1,6 @@
-\name{plot.cor}
+\name{plotCor}
 
-\alias{plot.cor}
+\alias{plotCor}
 
 \title{Red and Green Color Image of Correlation Matrix}
 
@@ -13,7 +13,7 @@ increasing intensity.
 }
 
 \usage{
-plot.cor(x, new=FALSE, nrgcols=50, labels=FALSE, labcols=1, title="", ...)
+plotCor(x, new=FALSE, nrgcols=50, labels=FALSE, labcols=1, title="", ...)
 }
 
 \arguments{
@@ -41,7 +41,7 @@ plot.cor(x, new=FALSE, nrgcols=50, labels=FALSE, labcols=1, title="", ...)
   Sandrine Dudoit, \email{sandrine@stat.berkeley.edu}
 }
 
-\seealso{\code{\link{plot.mat}},\code{\link{rgcolors.func}},
+\seealso{\code{\link{plotMat}},\code{\link{rgcolors.func}},
 \code{\link{cor.na}}, \code{\link{cor}}, \code{\link{image}},
 \code{\link{rgb}}.} 
 
