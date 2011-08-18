@@ -136,11 +136,7 @@ data[sample(nrow, 10), 1] = NA;
 
 system.time( {corStd = stats::cor(data, use ='p')} );
 
-\dontrun{system.time( {corFast = cor(data, use = 'p', nThreads = 2)} );}
-
-# For testing purposes we can restrict the number of threads to 2.
-
-system.time( {corFast = cor(data, use = 'p', nThreads = 2)} );
+system.time( {corFast = cor(data, use = 'p')} );
 
 all.equal(corStd, corFast)
 

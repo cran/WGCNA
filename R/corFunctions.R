@@ -35,6 +35,7 @@ bicor = function(x, y = NULL, robustX = TRUE, robustY = TRUE, use = 'all.obs', m
 
   if (quick < 0) stop("quick must be non-negative.");
   if (nThreads < 0) stop("nThreads must be non-negative.");
+  if (is.null(nThreads) || (nThreads==0)) nThreads = .useNThreads();
 
   x = as.matrix(x);
   if (prod(dim(x))==0) stop("'x' has a zero dimension."); 
@@ -149,7 +150,8 @@ cor = function(x, y = NULL, use = "all.obs", method = c("pearson", "kendall", "s
       
       if (quick < 0) stop("quick must be non-negative.");
       if (nThreads < 0) stop("nThreads must be non-negative.");
-    
+      if (is.null(nThreads) || (nThreads==0)) nThreads = .useNThreads();
+ 
       if (prod(dim(x))==0) stop("'x' has a zero dimension."); 
       nNA = 0;
       err = 0;

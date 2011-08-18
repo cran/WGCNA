@@ -54,12 +54,6 @@ Some notes on handling of zero MAD:
 
 */
 
-int uselessFunction2()
-{
-  int a = 2;
-  return a;
-}
-
 #include "corFunctions.h"
 #include <stdio.h>
 //#include <stdlib.h>
@@ -158,6 +152,11 @@ int nProcessors()
   long nProcessorsOnline = 1;
 #endif
   return (int) nProcessorsOnline;
+}
+
+void nProcessorsForR(int * result)
+{
+  *result = nProcessors();
 }
 
 
