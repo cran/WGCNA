@@ -580,18 +580,33 @@ normalizeLabels = function(labels, keepZero = TRUE)
 # the color grey; otherwise presence of labels below 1 will trigger an error.
 # dimensions of labels (if present) are preserved.
 
-labels2colors = function(labels, zeroIsGrey = TRUE, colorSeq = NULL)
+labels2colors = function(labels, zeroIsGrey = TRUE, colorSeq = NULL, naColor = "grey",
+                         commonColorCode = TRUE)
 {
   if (is.null(colorSeq)) colorSeq = standardColors();
-  if (zeroIsGrey) minLabel = 0 else minLabel = 1
 
-  if (sum(is.na(labels)) > 0)
-    stop("'labels' must not contain NA's");
-  if (sum( labels>=minLabel )!= length(labels))
-    stop(paste("Input error: something's wrong with labels. Either they are not a numeric vector,",
-               "or some values are below", minLabel));
-
-  if (max(labels) > length(colorSeq))
+  if (is.numeric(labels))
+  {
+    if (zeroIsGrey) minLabel = 0 else minLabel = 1
+    if (any(labels<0, na.rm = TRUE)) minLabel = min(c(labels), na.rm = TRUE)
+    nLabels = labels;
+  } else {
+    
+    if (commonColorCode)
+    {
+      factors = factor(c(labels))
+      nLabels = as.numeric(factors)
+      dim(nLabels)= dim(labels);
+    } else {
+      labels = as.matrix(labels);
+      factors = list();
+      for (c in 1:ncol(labels))
+        factors[[c]] = factor(labels[, c]);
+      nLabels = sapply(factors, as.numeric)
+    }
+  }
+      
+  if (max(nLabels, na.rm = TRUE) > length(colorSeq))
   {
      nRepeats = as.integer((max(labels)-1)/length(colorSeq)) + 1;
      warning(paste("labels2colors: Number of labels exceeds number of avilable colors.", 
@@ -603,12 +618,14 @@ labels2colors = function(labels, zeroIsGrey = TRUE, colorSeq = NULL)
      nRepeats = 1;
      extColorSeq = colorSeq;
   }
-  colors = rep("grey", length(labels));
-  colors[labels!=0] = extColorSeq[labels[labels!=0]];
+  colors = rep("grey", length(nLabels));
+  fin = !is.na(nLabels);
+  colors[!fin] = naColor;
+  finLabels = nLabels[fin];
+  colors[fin][finLabels!=0] = extColorSeq[finLabels[finLabels!=0]];
   if (!is.null(dim(labels)))
-  {
     dim(colors) = dim(labels);
-  }
+  
   colors;
 }
 

@@ -39,7 +39,7 @@ class CLASS_NAME
     TYPE linValue(int i)
        {
          int max = 1;
-         for (int di=0; di < dims.size(); di++) max *= dims[di];
+         for (unsigned di=0; di < dims.size(); di++) max *= dims[di];
          if (i<max)
             return data_[i];
          else 
@@ -72,7 +72,7 @@ class CLASS_NAME
     void linValue(int i, TYPE r)
        {
          int max = 1;
-         for (int di=0; di < dims.size(); di++) max *= dims[di];
+         for (unsigned di=0; di < dims.size(); di++) max *= dims[di];
          if (i<max)
             data_[i] = r;
          else
@@ -124,7 +124,7 @@ class CLASS_NAME
     int length() 
        { 
           if (dims.size()==0) return 0; 
-          int prod = 1; for (int i=0; i<dims.size(); i++) prod *= dims[i];
+          int prod = 1; for (unsigned i=0; i<dims.size(); i++) prod *= dims[i];
           return prod;
        }
 
@@ -277,7 +277,7 @@ vector <int> CLASS_NAME::table(vector <TYPE> & values)
   for (int i=0; i<length(); i++)
   {
     TYPE v = linValue(i);
-    int j;
+    unsigned j;
     for (j=0; (j<values.size()) && (values[j]!=v); j++)
     if (j==values.size())
     {
@@ -298,12 +298,12 @@ vector <int> CLASS_NAME::table()
 void CLASS_NAME::setDim(vector <int> dims, int start)
 {
   int len = 1;
-  for (int i=start; i<dims.size(); i++) len *= dims[i];
+  for (unsigned i=start; i<dims.size(); i++) len *= dims[i];
   if (len > size())
     throw(Exception(string("setDim: not enough space to accomodate given dimensions.")));
   this->dims.clear();
   this->dims.reserve(dims.size()-start);
-  for (int i=start; i<dims.size(); i++) this->dims.push_back(dims[i]);
+  for (unsigned i=start; i<dims.size(); i++) this->dims.push_back(dims[i]);
 }
   
 

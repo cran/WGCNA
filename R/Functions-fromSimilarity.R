@@ -76,7 +76,7 @@ pickHardThreshold.fromSimilarity=function (similarity,
     moreNetworkConcepts=FALSE , removeFirst = FALSE, nBreaks = 10)
 {
   checkSimilarity(similarity)
-  pickHardThreshold(similarity,  RsquaredCut =  RsquaredCut, cutVector = cutVector,
+  pickHardThreshold(similarity, dataIsExpr = FALSE, RsquaredCut =  RsquaredCut, cutVector = cutVector,
                     moreNetworkConcepts = moreNetworkConcepts, removeFirst = removeFirst,
                     nBreaks = nBreaks, corFnc = "I", corOptions = "");
 }
@@ -87,7 +87,7 @@ pickSoftThreshold.fromSimilarity = function (similarity,
     networkType = "unsigned", moreNetworkConcepts=FALSE, verbose = 0, indent = 0)
 {
   checkSimilarity(similarity)
-  pickSoftThreshold(similarity,  RsquaredCut =  RsquaredCut, powerVector = powerVector,
+  pickSoftThreshold(similarity, dataIsExpr = FALSE, RsquaredCut =  RsquaredCut, powerVector = powerVector,
                     removeFirst = removeFirst, nBreaks = nBreaks, 
                     blockSize = blockSize, networkType = networkType,
                     moreNetworkConcepts = moreNetworkConcepts,

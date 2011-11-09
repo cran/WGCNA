@@ -1,21 +1,18 @@
 Package: WGCNA
-Version: 1.13
-Date: 2011-08-17
+Version: 1.14
+Date: 2011-11-09
 Title: Weighted Gene Co-Expression Network Analysis
-Author: Peter Langfelder <Peter.Langfelder@gmail.com> and Steve Horvath
-        <SHorvath@mednet.ucla.edu> with contributions by Jun Dong,
-        Jeremy Miller, Lin Song, Andy Yip, and Bin Zhang
+Author: Peter Langfelder <Peter.Langfelder@gmail.com> and Steve Horvath <SHorvath@mednet.ucla.edu> with contributions by Jun Dong, Jeremy Miller, Lin Song, Andy Yip, and Bin Zhang
 Maintainer: Peter Langfelder <Peter.Langfelder@gmail.com>
-Depends: R (>= 2.3.0), stats, impute, grDevices, dynamicTreeCut (>=
-        1.20), utils, flashClust, Hmisc, splines, cluster
+Depends: R (>= 2.10.0), stats, impute, grDevices, dynamicTreeCut (>=
+        1.20), utils, flashClust, Hmisc, splines, cluster, reshape
 Suggests: GO.db, org.Hs.eg.db, org.Mm.eg.db, AnnotationDbi, infotheo,
         entropy, minet, survival
 ZipData: no
 License: GPL (>= 2)
-Description: Functions necessary to perform Weighted Gene Co-Expression
-        Network Analysis
+Description: Functions necessary to perform Weighted Gene Co-Expression Network Analysis
 URL:
         http://www.genetics.ucla.edu/labs/horvath/CoexpressionNetwork/Rpackages/WGCNA/
-Packaged: 2011-08-17 20:40:01 UTC; plangfelder
+Packaged: 2011-11-09 20:07:48 UTC; plangfelder
 Repository: CRAN
-Date/Publication: 2011-08-18 05:32:57
+Date/Publication: 2011-11-10 12:58:56

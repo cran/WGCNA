@@ -9,7 +9,8 @@ estimate the cell type specific mean gene expression values based on expression 
 cells. The method is described in Shen-Orr et al (2010) where it was used to estimate cell type specific
 gene expression levels based on a mixture sample. }
 \usage{
-populationMeansInAdmixture(datProportions, datE.Admixture, scaleProportionsTo1 = TRUE, setMissingProportionsToZero = FALSE)
+ populationMeansInAdmixture(datProportions, datE.Admixture, scaleProportionsTo1 = TRUE,
+scaleProportionsInCelltype = TRUE, setMissingProportionsToZero = FALSE)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -22,14 +23,16 @@ populationMeansInAdmixture(datProportions, datE.Admixture, scaleProportionsTo1 =
   \item{scaleProportionsTo1}{logical. If set to TRUE (default) then the proportions in each row of \code{datProportions} are scaled so that they sum to 1, i.e. datProportions[i,]=datProportions[i,]/max(datProportions[i,]).
   In general, we recommend to set it to TRUE.
 }
+ \item{scaleProportionsInCelltype}{
+ logical. If set to TRUE (default) then the proportions in each cell types are recaled and make the mean to
+ 0.
+}
   \item{setMissingProportionsToZero}{logical. Default is FALSE. If set to TRUE then it sets missing values in \code{datProportions} to zero.
 }
 }
 \details{The function outputs a matrix of coefficients resulting from fitting a regression model. If the proportions sum to 1, then i-th row of the output matrix reports the coefficients  of the following model
 \code{lm(datE.Admixture[,i]~.-1,data=datProportions)}. Aside, the minus 1 in the formula indicates that no intercept term will be fit.
 Under certain assumptions, the coefficients can be interpreted as the mean expression values in the sub-populations (Shen-Orr  2010).
-
-
 }
 \value{ a numeric matrix whose rows correspond to the columns of \code{datE.Admixture} (e.g. to genes) and whose columns correspond to the columns of \code{datProportions} (e.g. sub populations or cell types).
 }

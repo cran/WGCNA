@@ -195,7 +195,7 @@ void tomSimilarity(double * expr, int * nSamples, int * nGenes,
 
   size -= 1000;
   if ((*verbose > 0) && success) 
-     printf("%sRough guide to maximum array size: about %d x %d array of doubles..\n", 
+     Rprintf("%sRough guide to maximum array size: about %d x %d array of doubles..\n", 
             spaces, size, size);
 
   if (*verbose > 0) Rprintf("%sTOM calculation: adjacency..\n", spaces);

@@ -9,24 +9,25 @@ This function measures list enrichment between inputted lists of genes and files
 }
 \usage{
 userListEnrichment(geneR, labelR, fnIn=NULL, catNmIn = fnIn, nameOut = "enrichment.csv", 
-                   useBrainLists = FALSE, useBloodAtlases=FALSE, omitCategories = "grey", outputCorrectedPvalues = TRUE) 
+                   useBrainLists = FALSE, useBloodAtlases=FALSE, omitCategories = "grey", 
+                   outputCorrectedPvalues = TRUE, useStemCellLists = FALSE) 
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{geneR}{
-A vector of gene (or other) identifiers.
+A vector of gene (or other) identifiers.  This vector should include ALL genes in your analysis (i.e., the genes correspoding to your labeled lists AND the remaining background reference genes).  
 }
   \item{labelR}{
-A vector of labels (for example, module assignments) corresponding to the geneR list.
+A vector of labels (for example, module assignments) corresponding to the geneR list.  NOTE: For all background reference genes that have no corresponding label, use the label "background" (or any label included in the omitCategories parameter).
 }
   \item{fnIn}{
-A vector of file names containing user-defined lists.  These files must be in one of three specific formats (see details section).  The default (NULL) may only be used if useBrainLists=TRUE.
+A vector of file names containing user-defined lists.  These files must be in one of three specific formats (see details section).  The default (NULL) may only be used if one of the "use_____" parameters is TRUE.
 }
   \item{catNmIn}{
 A vector of category names corresponding to each fnIn.  This name will be appended to each overlap corresponding to that filename.  The default sets the category names as the corresponding file names.
 }
   \item{nameOut}{
-Name of the file where the output enrichment information will be written.
+Name of the file where the output enrichment information will be written.  (Note that this file includes only a subset of what is returned by the function.)
 }
   \item{useBrainLists}{
 If TRUE, a pre-made set of brain-derived enrichment lists will be added to any user-defined lists for enrichment comparison.  The default is FALSE.  See references section for related references.
@@ -39,6 +40,9 @@ Any labelR entries corresponding to these categories will be ignored.  The defau
 }
   \item{outputCorrectedPvalues}{
 If TRUE (default) only pvalues that are significant after correcting for multiple comparisons (using Bonferroni method) will be outputted to nameOut.  Otherwise the uncorrected p-values will be outputted to the file.  Note that both sets of p-values for all comparisons are reported in the returned "pValues" parameter.
+}
+  \item{useStemCellLists}{
+If TRUE, a pre-made set of stem cell (SC)-derived enrichment lists will be added to any user-defined lists for enrichment comparison.  The default is FALSE.  See references section for related references.
 }
 }
 \details{
@@ -63,7 +67,7 @@ PSEN1, AlzheimersDisease
 PSEN2, AlzheimersDisease
 ...
 
-3) Module membership (kME) table in csv format.  Currently, the module assignment is the only thing that is used, so the Gene column is 2nd and the Module column is 3rd, it doesn't matter what is in the other columns.  For example,
+3) Module membership (kME) table in csv format.  Currently, the module assignment is the only thing that is used, so as long as the Gene column is 2nd and the Module column is 3rd, it doesn't matter what is in the other columns.  For example,
 PSID, Gene, Module, <other columns>
 <psid>, RPS4, blue, <other columns>
 <psid>, NDUF1, red, <other columns>
@@ -84,6 +88,11 @@ Identical information that is written to nameOut.  P-values (corrected or uncorr
 }
 }
 \references{
+The primary reference for this function is: Miller JA, Cai C, Langfelder P, Geschwind DH, Kurian SM, Salomon DR, Horvath S. (2011) Strategies for aggregating gene expression data: the collapseRows R function. BMC Bioinformatics 12:322.
+
+If you have any suggestions for lists to add to this function, please e-mail Jeremy Miller at jeremyinla@gmail.com
+
+-------------------------------------
 References for the pre-defined brain lists (useBrainLists=TRUE, in alphabetical order by category descriptor) are as follows:
 
 ABA ==> Cell type markers from: Lein ES, et al. (2007) Genome-wide atlas of gene expression in the adult mouse brain. Nature 445:168-176.
@@ -138,6 +147,9 @@ MouseMeta ==> Modules from the mouse network from: Miller J, Horvath S, Geschwin
 Sugino/Winden ==> Conservative list of genes in modules from the network from: Winden K, Oldham M, Mirnics K, Ebert P, Swan C, Levitt P, Rubenstein J, Horvath S, Geschwind D (2009). The organization of the transcriptional network in specific neuronal classes. Molecular systems biology 5.
 NOTE: Original data came from this neuronal-cell-type-selection experiment in mouse: Sugino K, Hempel C, Miller M, Hattox A, Shapiro P, Wu C, Huang J, Nelson S (2006). Molecular taxonomy of major neuronal classes in the adult mouse forebrain. Nat Neurosci 9:99-107
 
+Voineagu ==> Several Autism-related gene categories from: Voineagu I, Wang X, Johnston P, Lowe JK, Tian Y, Horvath S, Mill J, Cantor RM, Blencowe BJ, Geschwind DH. (2011). Transcriptomic analysis of autistic brain reveals convergent molecular pathology. Nature 474(7351):380-4
+
+-------------------------------------
 References for the pre-defined blood atlases (useBloodAtlases=TRUE, in alphabetical order by category descriptor) are as follows:
 
 Grigoryev ==> Grigoryev YA, Kurian SM, Avnur Z, Borie D, Deng J, et al. (2010).  Deconvoluting post-transplant immunity: cell subset-specific mapping reveals pathways for activation and expansion of memory T, monocytes and B cells.  PLoS One. 5(10):e13358.
@@ -148,6 +160,17 @@ IRIS ==> Abbas AB, Baldwin D, Ma Y, Ouyang W, Gurney A, et al. (2005). Immune re
 
 Willinger ==> Willinger T, Freeman T, Hasegawa H, McMichael AJ, Callan MF (2005). Molecular signatures distinguish human central memory from effector memory CD8 T cell subsets. J Immunol. 175(9):5895-903. 
 
+-------------------------------------
+References for the pre-defined stem cell (SC) lists (useStemCellLists=TRUE, in alphabetical order by category descriptor) are as follows:
+
+Cui ==> genes differentiating erythrocyte precursors (CD36+ cells) from multipotent human primary
+hematopoietic stem cells/progenitor cells (CD133+ cells), from: Cui K, Zang C, Roh TY, Schones DE, Childs
+RW, Peng W, Zhao K. (2009). Chromatin signatures in multipotent human hematopoietic stem cells indicate the
+fate of bivalent genes during differentiation. Cell Stem Cell 4:80-93
+
+Lee ==> gene lists related to Polycomb proteins in human embryonic SCs, from (a highly-cited paper!): Lee
+TI, Jenner RG, Boyer LA, Guenther MG, Levine SS, Kumar RM, Chevalier B, Johnstone SE, Cole MF, Isono K, et
+al. (2006) Control of developmental regulators by polycomb in human embryonic stem cells. Cell 125:301-313
 }
 \author{
 Jeremy Miller

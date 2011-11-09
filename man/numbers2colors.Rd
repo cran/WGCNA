@@ -7,7 +7,7 @@
 \usage{
 numbers2colors(
    x, 
-   signed, 
+   signed = NULL, 
    centered = signed, 
    lim = NULL, 
    commonLim = FALSE,
@@ -22,11 +22,14 @@ value will be a matrix of colors. }
   \item{signed}{ logical: should \code{x} be considered signed? If \code{TRUE}, the default setting is to
 use to use a palette that starts with green for the most negative values, continues with white for
 values around zero and turns red for positive values. If \code{FALSE}, the default palette ranges from 
-white for minimum values to red for maximum values. }
+white for minimum values to red for maximum values. If not given, the behaviour is controlled by values in
+\code{x}: if there are both positive and negative values, \code{signed} will be considered \code{TRUE},
+otherwise \code{FALSE}.}
 
   \item{centered}{ logical. If \code{TRUE} and \code{signed==TRUE}, numeric value zero will
 correspond to the middle of the color palette. If \code{FALSE} or \code{signed==FALSE}, the middle of
-the color palette will correspond to the average of the minimum and maximum value. }
+the color palette will correspond to the average of the minimum and maximum value. If neither \code{signed}
+nor \code{centered} are given, \code{centered} will follow \code{signed} (see above).}
 
   \item{lim}{ optional specification of limits, that is numeric values that should correspond to the
 first and last entry of \code{colors}. }

@@ -1,5 +1,54 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
+
+2011/11/08: 1.14
+
+	. The default value of argument calculateCors.kKIMall in function
+	  modulePreservation is now FALSE to speed up execution.
+
+	. New function consensusKME to calculate "consensus" kME across
+	  several data sets.
+
+	. Function standardScreeningBinaryTrait now takes arguments corFnc and
+	  corOptions.
+
+	. Argument 'signed' to function 'numbers2colors' now has a default
+	  value that is TRUE if the input contains data with both positive and
+	  negative signs.
+
+	. labels2colors now accepts missing data in input, and the input
+	  labels can be non-numeric
+
+	. Bugfix in standardScreeningNumericTrait: setting qvalues=FALSE
+	  now works as intended.
+
+	. Bugfix in votingLinearPredictor: function now works when xTest is
+	  NULL.
+
+	. DIFF bugfix in rankPvalue: function now returns correct values also when
+	  column weights are specified
+
+	. Default value of argument var.equal in function
+	  standardScreeningBinaryTrait has been changed to FALSE to make it
+	  consistent with the defaults of function t.test.
+
+	. Function pickSoftThreshold now alos accepts similarity matrix as
+	  input.
+
+	. Function nearestCentroidPredictor now works also without specifying 
+	  test data (xtest).
+
+	. Function nearestCentroidPredictor lost multiple input arguments that 
+	  related to un-loved sample network options and removal of PCs.
+
+	. Function accuracyMeasures now also outputs the naive accuracy rate.
+
+	. New data set SCsList containing stemm cell marker genes that can be
+	  used with userListEnrichment. 
+
+	. New function metaAnalysis to calculate meta-analysis significance
+	  statistics
+
 2011/08/17: 1.13
 
 	. Multi-threading is now disabled by default but can be enabled by
@@ -47,7 +96,7 @@ Note: as of 2009/03/10, changes that lead to different calculational results are
 	  at the same time will not cause an error anymore
 
 
-2011/04/2: 1.10-2
+2011/04/20: 1.10-2
 
 	. Bug in function cor fixed that caused an unncessary slowdown. Results were not affected.
 	. Typos in several help files fixed: use = 'Spearman' is now corrected

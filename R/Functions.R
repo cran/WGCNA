@@ -138,17 +138,23 @@ softConnectivity=function(datExpr,
 # nBreaks specifies how many intervals used to estimate the frequency p(k) i.e. the no. of points in the 
 # scale free topology plot.
 
-pickHardThreshold=function (datExpr, RsquaredCut = 0.85, cutVector = seq(0.1, 0.9, 
+pickHardThreshold=function (data, dataIsExpr = TRUE, RsquaredCut = 0.85, cutVector = seq(0.1, 0.9, 
     by = 0.05), moreNetworkConcepts=FALSE , removeFirst = FALSE, nBreaks = 10, corFnc = "cor", 
     corOptions = "use = 'p'") 
 {
-    nGenes = dim(datExpr)[[2]]
-    nSamples = dim(datExpr)[[1]]
+    nGenes = dim(data)[[2]]
     colname1 = c("Cut", "p-value", "SFT.R.sq", "slope=", 
         "truncated R^2", "mean(k)", "median(k)", "max(k)")
 if(moreNetworkConcepts) {
 colname1=c(colname1,"Density", "Centralization", "Heterogeneity")
 }
+    if (!dataIsExpr)
+    {
+      checkAdjMat(data);
+      if (any(diag(data)!=1)) diag(data) = 1;
+    } else
+      nSamples = dim(data)[[1]]
+
     datout = data.frame(matrix(NA, nrow = length(cutVector), 
         ncol = length(colname1)))
     names(datout) = colname1
@@ -158,23 +164,26 @@ colname1=c(colname1,"Density", "Centralization", "Heterogeneity")
         datout[i, 2] = 2 * (1 - pt(sqrt(nSamples - 1) * cut1/sqrt(1 - 
             cut1^2), nSamples - 1))
     }
-    if (exists("fun1")) 
-        rm(fun1)
-    fun1 = function(x) {
-        corExpr = parse(text = paste(corFnc, "(x, datExpr", 
-            prepComma(corOptions), ")"))
-        corx = abs(eval(corExpr))
+    if (exists("fun1")) rm(fun1)
+    fun1 = function(x, dataIsExpr) {
+        if (dataIsExpr)
+        {
+          corExpr = parse(text = paste(corFnc, "(x, data", 
+              prepComma(corOptions), ")"))
+          corx = abs(eval(corExpr))
+        } else 
+          corx = x;
         out1 = rep(NA, length(cutVector))
         for (j in c(1:length(cutVector))) {
             out1[j] = sum(corx > cutVector[j])
         }
         out1
     }
-    datk = t(apply(datExpr, 2, fun1))
+    datk = t(apply(data, 2, fun1, dataIsExpr))
     for (i in c(1:length(cutVector))) {
         khelp= datk[, i] - 1
-SFT1=scaleFreeFitIndex(k=khelp,nBreaks=nBreaks,removeFirst=removeFirst)
- datout[i, 3] = SFT1$Rsquared.SFT  
+        SFT1=scaleFreeFitIndex(k=khelp,nBreaks=nBreaks,removeFirst=removeFirst)
+        datout[i, 3] = SFT1$Rsquared.SFT  
         datout[i, 4] = SFT1$slope.SFT 
         datout[i, 5] = SFT1$truncatedExponentialAdjRsquared
         datout[i, 6] = mean(khelp,na.rm=T)
@@ -208,7 +217,7 @@ datout[i, 11] = Heterogeneity
 # SH: more netowkr concepts added.
 
 
-pickSoftThreshold = function (datExpr, RsquaredCut = 0.85, 
+pickSoftThreshold = function (data, dataIsExpr = TRUE, RsquaredCut = 0.85, 
     powerVector = c(seq(1, 10, by = 1), seq(12, 20, by = 2)), removeFirst = FALSE, nBreaks = 10, 
     blockSize = 1000, corFnc = "cor", corOptions = "use = 'p'", 
     networkType = "unsigned", moreNetworkConcepts=FALSE, verbose = 0, indent = 0)
@@ -217,13 +226,18 @@ pickSoftThreshold = function (datExpr, RsquaredCut = 0.85,
     if (is.na(intType)) 
         stop(paste("Unrecognized 'networkType'. Recognized values are", 
             paste(.networkTypes, collapse = ", ")))
-    nGenes = dim(datExpr)[[2]]
+    nGenes = dim(data)[[2]]
     if (nGenes<3) 
     { 
-       stop("The input data datExpr contain fewer than 3 rows (nodes).", 
+       stop("The input data data contain fewer than 3 rows (nodes).", 
             "\nThis would result in a trivial correlation network." )
     }
-    nSamples = dim(datExpr)[[1]]
+    if (!dataIsExpr) 
+    {
+      checkAdjMat(data);
+      if (any(diag(data)!=1)) diag(data) = 1;
+    }
+
     colname1 = c("Power", "SFT.R.sq", "slope", "truncated R.sq", 
                  "mean(k)", "median(k)", "max(k)")
     if(moreNetworkConcepts) 
@@ -250,23 +264,28 @@ pickSoftThreshold = function (datExpr, RsquaredCut = 0.85,
         if (verbose > 1) 
             printFlush(paste(spaces, "  ..working on genes", 
                 startG, "through", endG, "of ", nGenes))
-        corEval = parse(text = paste(corFnc, "(datExpr, datExpr[, c(startG:endG)]", 
-            prepComma(corOptions), ")"))
-        corx = eval(corEval)
-        if (intType == 1) {
-            corx = abs(corx)
+        if (dataIsExpr)
+        {
+          corEval = parse(text = paste(corFnc, "(data, data[, c(startG:endG)]", 
+              prepComma(corOptions), ")"))
+          corx = eval(corEval)
+          if (intType == 1) {
+              corx = abs(corx)
+          }
+          else if (intType == 2) {
+              corx = (1 + corx)/2
+          }
+          else if (intType == 3) {
+              corx[corx < 0] = 0
+          }
+          if (sum(is.na(corx)) != 0) 
+              warning(paste("Some correlations are NA in block", 
+                  startG, ":", endG, "."))
+        } else {
+          corx = data[, c(startG:endG)];
         }
-        else if (intType == 2) {
-            corx = (1 + corx)/2
-        }
-        else if (intType == 3) {
-            corx[corx < 0] = 0
-        }
-        if (sum(is.na(corx)) != 0) 
-            warning(paste("Some correlations are NA in block", 
-                startG, ":", endG, "."))
         for (j in c(1:length(powerVector))) {
-            datk[c(startG:endG), j] = colSums(corx^powerVector[j], na.rm = TRUE)
+            datk[c(startG:endG), j] = colSums(corx^powerVector[j], na.rm = TRUE) - 1;
         }
         startG = endG + 1
         if (verbose == 1) 
@@ -934,7 +953,7 @@ TOMplot = function(dissim, dendro, colors=NULL, colorsLeft = colors, terrainColo
                   "     nNodes != dim(dissim)[[1]] "))
      labeltree = as.character(colors)
      labelrow  = as.character(colorsLeft)
-     labelrow[dendro$order[length(labeltree):1]]=labelrow[dendro$order]
+     #labelrow[dendro$order[length(labeltree):1]]=labelrow[dendro$order]
      options(expressions = 10000)
      dendro$height = (dendro$height - min(dendro$height))/(1.15 *
                                      (max(dendro$height)-min(dendro$height)))
@@ -1621,7 +1640,7 @@ nearestNeighborConnectivity = function(datExpr, nNeighbors = 50, power = 6,
     if (verbose > 0) 
       printFlush(paste(spaces, "nearestNeighborConnectivity: selecting sample pool of size",
                        nLinks, ".."))
-    sd = sd(datExpr, na.rm = TRUE);
+    sd = apply(datExpr, 2, sd, na.rm = TRUE);
     order = order(-sd);
     saved = FALSE;
     if (exists(".Random.seed")) 
@@ -1736,7 +1755,7 @@ nearestNeighborConnectivityMS = function(multiExpr, nNeighbors = 50, power=6,
     if (verbose > 0) 
       printFlush(paste(spaces, "nearestNeighborConnectivityMS: selecting sample pool of size",
                        nLinks, ".."))
-    sd = sd(multiExpr[[1]]$data, na.rm = TRUE);
+    sd = apply(multiExpr[[1]]$data, 2, sd, na.rm = TRUE);
     order = order(-sd);
     saved = FALSE;
     if (exists(".Random.seed")) 
@@ -2172,8 +2191,9 @@ simulateEigengeneNetwork = function(causeMat, anchorIndex, anchorVectors, noise 
 # corPower controls how fast the correlation drops with index i in the module; the curve is roughly
 # x^{1/corPower} with x<1 and x~0 near the "center", so the higher the power, the faster the curve rises.
 
-simulateModule = function(ME, nGenes, nNearGenes = 0, minCor = 0.3, maxCor = 1, corPower = 1,
-                          signed = FALSE, propNegativeCor = 0.3,
+simulateModule = function(ME, nGenes, nNearGenes = 0, minCor = 0.3, maxCor = 1, 
+                          corPower = 1,
+                          signed = FALSE, propNegativeCor = 0.3, geneMeans = NULL, 
                           verbose = 0, indent = 0)
 {
     nSamples = length(ME);
@@ -2220,6 +2240,15 @@ simulateModule = function(ME, nGenes, nNearGenes = 0, minCor = 0.3, maxCor = 1, 
     }
 
     datExpr = scale(datExpr);
+    if (!is.null(geneMeans))
+    {
+      if (any(is.na(geneMeans)))
+        stop("All entries of 'geneMeans' must be finite.");
+      if (length(geneMeans)!=nGenes + nNearGenes)
+        stop("The lenght of 'geneMeans' must equal nGenes + nNearGenes.");
+      datExpr = datExpr + matrix(geneMeans, nSamples, nGenes + nNearGenes, byrow = TRUE);
+    }
+
     attributes(datExpr)$trueKME = trueKME;
 
     datExpr;
@@ -2305,6 +2334,7 @@ simulateDatExpr=function(eigengenes, nGenes, modProportions,
                           minCor = 0.3, maxCor = 1, 
                           corPower = 1, 
                           signed = FALSE, propNegativeCor = 0.3,
+                          geneMeans = NULL,
                           backgroundNoise = 0.1, leaveOut = NULL,
 			  nSubmoduleLayers = 0, nScatteredModuleLayers = 0, 
                           averageNGenesInSubmodule = 10, averageExprInSubmodule = 0.2, 
@@ -2331,7 +2361,14 @@ simulateDatExpr=function(eigengenes, nGenes, modProportions,
   if (dim(eigengenes)[[2]]!=nMods)
      stop(paste("Input error: Number of seed vectors must equal the",
                 "length of modProportions."));
+
+  if (is.null(geneMeans)) geneMeans = rep(0, nGenes);
+  if (length(geneMeans)!=nGenes)
+    stop("Length of 'geneMeans' must equal 'nGenes'.");
  
+  if (any(is.na(geneMeans)))
+    stop("All entries of 'geneMeans' must be finite.");
+       
   grey = 0;
   moduleLabels = c(1:nMods);
 
@@ -2392,14 +2429,16 @@ simulateDatExpr=function(eigengenes, nGenes, modProportions,
        ME = eigengenes[, mod];
        EffMaxCor = maxCor[mod]; 
        EffMinCor = minCor[mod]; 
+       range = (gene.index+1):(gene.index+nModGenes+nNearGenes);
        temp = simulateModule(ME, nModGenes, nNearGenes, minCor[mod], maxCor[mod], 
                          corPower, 
                          signed = signed, propNegativeCor = propNegativeCor,
+                         geneMeans = NULL,
                          verbose = verbose-2, indent = indent+2);
-       datExpr[, (gene.index+1):(gene.index+nModGenes+nNearGenes)] = temp;
+       datExpr[, range] = temp;
        truemodule[(gene.index+1):(gene.index+nModGenes)] = labelOrder[mod];
-       trueKME[(gene.index+1):(gene.index+nModGenes+nNearGenes)] = attributes(temp)$trueKME;
-       trueKME.whichMod[(gene.index+1):(gene.index+nModGenes+nNearGenes)] = mod;
+       trueKME[range] = attributes(temp)$trueKME;
+       trueKME.whichMod[range] = mod;
      } 
      allLabels[(gene.index+1):(gene.index+nModGenes)] = labelOrder[mod];
      gene.index = gene.index + nModGenes + nNearGenes;
@@ -2431,6 +2470,9 @@ simulateDatExpr=function(eigengenes, nGenes, modProportions,
   collectGarbage();
   if (verbose>1) printFlush(paste(spaces, "  Adding background noise with amplitude", backgroundNoise));
   datExpr = datExpr + rnorm(n = nGenes*nSamples, sd = backgroundNoise);
+  means = colMeans(datExpr);
+
+  datExpr = datExpr + matrix(geneMeans - means, nSamples, nGenes, byrow = TRUE);
 
   colnames(datExpr) = spaste("Gene.", c(1:nGenes));
   rownames(datExpr) = spaste("Sample.", c(1:nSamples));
@@ -2456,6 +2498,7 @@ simulateMultiExpr = function(eigengenes, nGenes, modProportions,
                           minCor = 0.5, maxCor = 1, 
                           corPower = 1, backgroundNoise = 0.1, leaveOut = NULL,
                           signed = FALSE, propNegativeCor = 0.3,
+                          geneMeans = NULL,
 			  nSubmoduleLayers = 0, nScatteredModuleLayers = 0, 
                           averageNGenesInSubmodule = 10, averageExprInSubmodule = 0.2, 
                           submoduleSpacing = 2,
@@ -2468,6 +2511,24 @@ simulateMultiExpr = function(eigengenes, nGenes, modProportions,
 
   nAllSamples = sum(nSamples);
 
+  if (is.null(geneMeans))
+  {
+     geneMeans = matrix(0, nGenes, nSets);
+  } else {
+     geneMeans = as.matrix(geneMeans);
+     if (nrow(geneMeans)!=nGenes)
+     {
+       stop("Number of rows (or entries) in 'geneMeans' must equal 'nGenes'.");
+     } else if (ncol(geneMeans)==1)
+     {
+        geneMeans = matrix(geneMeans, nGenes, nSets);
+     } else if (ncol(geneMeans)!=nSets)
+        stop("Number of columns in geneMeans must either equal the number of sets or be 1.");
+  }
+
+  if (any(is.na(geneMeans)))
+    stop("All entries of 'geneMeans' must be finite.");
+       
   d2 = length(modProportions)-1;
   if (d2 != nMods) stop(paste("Incompatible numbers of modules in 'eigengenes' and 'modProportions'"));
   if (is.null(leaveOut))
@@ -3501,7 +3562,7 @@ preservationNetworkConnectivity = function(
     if (verbose > 0) 
       printFlush(paste(spaces, "preservationNetworkConnectivity: selecting sample pool of size",
                        nLinks, ".."))
-    sd = sd(multiExpr[[1]]$data, na.rm = TRUE);
+    sd = apply(multiExpr[[1]]$data, 2, sd, na.rm = TRUE);
     order = order(-sd);
     saved = FALSE;
     if (exists(".Random.seed")) 
@@ -3871,7 +3932,7 @@ plotEigengeneNetworks = function(
 # For discrete variables, consider also labels2colors.
 
 numbers2colors = function(x, 
-                     signed, 
+                     signed = NULL, 
                      centered = signed,
                      lim = NULL, 
                      commonLim = FALSE,
@@ -3881,6 +3942,16 @@ numbers2colors = function(x,
   x = as.matrix(x);
   if (!is.numeric(x))
     stop("'x' must be numeric. For a factor, please use as.numeric(x) in the call.");
+  if (is.null(signed))
+  {
+     if (any(x, na.rm = TRUE)<0 & any(x>0, na.rm = TRUE))
+     {
+       signed = TRUE;
+     } else
+       signed = FALSE;
+  }
+  if (is.null(centered)) centered = signed;
+
   if (is.null(lim))
   {
     if (signed & centered)
@@ -4016,7 +4087,7 @@ goodGenes = function(datExpr, useSamples = NULL, useGenes = NULL,
   nPresent = apply(!is.na(datExpr[useSamples, useGenes]), 2, sum)
   gg = useGenes;
   gg[useGenes][nPresent<..minNSamples] = FALSE;
-  var = sd(datExpr[useSamples, gg], na.rm = TRUE);
+  var = apply(datExpr[useSamples, gg], 2, sd, na.rm = TRUE);
   nNAsGenes = apply(is.na(datExpr[useSamples, gg]), 2, sum);
   gg[gg] = (nNAsGenes < (1-minFraction) * nSamples & var>0 & (nSamples-nNAsGenes >= minNSamples));
   if (sum(gg) < ..minNGenes)
@@ -4089,7 +4160,7 @@ goodGenesMS = function(multiExpr, useSamples = NULL, useGenes = NULL,
     if (sum(useSamples[[set]])==0) next;
     nPresent = apply(!is.na(multiExpr[[set]]$data[useSamples[[set]], goodGenes]), 2, sum)
     goodGenes[goodGenes] = (nPresent >= minNGenes)
-    var = sd(multiExpr[[set]]$data[useSamples[[set]], goodGenes], na.rm = TRUE);
+    var = apply(multiExpr[[set]]$data[useSamples[[set]], goodGenes], 2, sd, na.rm = TRUE);
     nNAsGenes = apply(is.na(multiExpr[[set]]$data[useSamples[[set]], goodGenes]), 2, sum);
     goodGenes[goodGenes][nNAsGenes > (1-minFraction)*nSamples[set] | var==0 | 
                            (nSamples[set]-nNAsGenes < minNSamples)] = FALSE;
@@ -4316,12 +4387,18 @@ goodSamplesGenesMS = function(multiExpr, minFraction = 1/2, minNSamples = ..minN
         print(lmat)
     }
     op <- par(no.readonly = TRUE)
+    if (revC) {
+        iy <- nr:1
+        ddr <- rev(ddr)
+        rowInd.colors = rev(rowInd)
+        x <- x[, iy]
+    } else iy <- 1:nr
     #on.exit(par(op))
-    print(paste("main:", main));
+    # print(paste("main:", main));
     if (setLayout) layout(lmat, widths = lwid, heights = lhei, respect = TRUE)
     if (!missing(RowSideColors)) {
         par(mar = c(margins[1], 0, 0, 0.5))
-        image(rbind(1:nr), col = RowSideColors[rowInd], axes = FALSE)
+        image(rbind(1:nr), col = RowSideColors[rowInd.colors], axes = FALSE)
     }
     if (!missing(ColSideColors)) {
         par(mar = c(0.5, 0, 0, margins[2]))
@@ -4329,11 +4406,6 @@ goodSamplesGenesMS = function(multiExpr, minFraction = 1/2, minNSamples = ..minN
     }
     par(mar = c(margins[1], 0, 0, margins[2]))
     if (!symm || scale != "none") x <- t(x)
-    if (revC) {
-        iy <- nr:1
-        ddr <- rev(ddr)
-        x <- x[, iy]
-    } else iy <- 1:nr
     image(1:nc, 1:nr, x, xlim = 0.5 + c(0, nc), ylim = 0.5 + c(0, nr), axes = FALSE, 
           xlab = "", ylab = "", ...)
     axis(1, 1:nc, labels = labCol, las = 2, line = -0.5, tick = 0, cex.axis = cexCol)
@@ -4560,7 +4632,7 @@ if (!qValues) {
 #
 #================================================================================
 
-standardScreeningNumericTrait= function (datExpr, yNumeric, corFnc = "cor", corOptions = "use = 'p'",
+standardScreeningNumericTrait= function (datExpr, yNumeric, corFnc = cor, corOptions = list("use = 'p'"),
                                          qValues = TRUE) 
 { 
 datExpr=data.frame(datExpr)
@@ -4569,16 +4641,22 @@ datExpr=data.frame(datExpr)
     corPearson = rep(NA, dim(datExpr)[[2]])
     pvalueStudent = rep(NA, dim(datExpr)[[2]])
     AreaUnderROC = rep(NA, dim(datExpr)[[2]])
+    nPresent = Z = rep(NA, dim(datExpr)[[2]])
        
-  corExpr = parse(text = paste("as.numeric(", corFnc, "(yNumeric, datExpr[,i]", prepComma(corOptions), "))"));
+  corFnc = match.fun(corFnc);
+  corOptions$x = yNumeric;
   for (i in 1:dim(datExpr)[[2]]) {
+        corOptions$y = datExpr[,i];
         #corPearson[i] = as.numeric(cor(yNumeric, datExpr[,i], use = "p"))
-        corPearson[i] = eval(corExpr);
+        corPearson[i] = do.call(corFnc, corOptions);
         no.present=  sum( ! is.na(datExpr[,i])  & ! is.na(yNumeric)   )
+        nPresent[i] = no.present;
         pvalueStudent[i] = corPvalueStudent(corPearson[i], no.present )
         AreaUnderROC[i] = rcorr.cens(datExpr[, i], yNumeric, 
             outx = T)[[1]]
   }
+  Z = 0.5 * log( (1+corPearson)/(1-corPearson) ) * sqrt(nPresent -2 );
+
   q.Student=rep(NA, length(pvalueStudent) )
   rest1= ! is.na(pvalueStudent) 
   if (qValues)
@@ -4588,9 +4666,23 @@ datExpr=data.frame(datExpr)
       printFlush(paste("Warning in standardScreeningNumericTrait: function qvalue returned an error.\n",
                        "The returned qvalues will be invalid. The qvalue error: ", x, "\n"));
   }
-  output = data.frame(ID = dimnames(datExpr)[[2]], cor = corPearson, 
-                      pvalueStudent = pvalueStudent, qvalueStudent = if (qValues) q.Student else NULL,
-                      AreaUnderROC = AreaUnderROC)
+  if (is.null(dimnames(datExpr)))
+  {
+     ID = spaste("Variable.", 1:ncol(datExpr));
+  } else
+     ID = dimnames(datExpr)[[2]];
+  if (qValues) 
+  {
+     output = data.frame(ID = ID, cor = corPearson, 
+                      Z = Z, 
+                      pvalueStudent = pvalueStudent, qvalueStudent = q.Student,
+                      AreaUnderROC = AreaUnderROC, nPresentSamples = nPresent)
+  } else
+     output = data.frame(ID = ID, cor = corPearson,
+                      Z = Z,
+                      pvalueStudent = pvalueStudent, 
+                      AreaUnderROC = AreaUnderROC, nPresentSamples = nPresent)
+
   output
 }
 
@@ -4627,99 +4719,119 @@ metaZfunction=function(datZ, columnweights=NULL  )
 #
 #================================================================================
 
-rankPvalue=function(datS, columnweights=NULL,
-                    na.last="keep",
-                    ties.method="average",
-                    calculateQvalue=TRUE, 
-                    pValueMethod="all"  )
+rankPvalue=function(datS, columnweights = NULL, na.last = "keep", ties.method = "average", 
+    calculateQvalue = TRUE, pValueMethod = "all") 
 {
-  no.rows=dim(datS)[[1]]
-  no.cols=dim(datS)[[2]]
+    no.rows = dim(datS)[[1]]
+    no.cols = dim(datS)[[2]]
+    if (!is.null(columnweights) & no.cols != length(columnweights)) 
+        stop("The number of components of the vector columnweights is unequal to the number of columns of datS. Hint: consider transposing datS. ")
 
-  if ( !is.null(columnweights) & no.cols != length(columnweights) ) stop("The number of components of the vector columnweights is unequal to the number of columns of datS. Hint: consider transposing datS. ")
+if (!is.null(columnweights) ) {
+if ( min(columnweights,na.rm=T)<0 )  stop("At least one component of columnweights is negative, which makes no sense. The entries should be positive numbers")
+if ( sum(is.na(columnweights))>0 )  stop("At least one component of columnweights is missing, which makes no sense. The entries should be positive numbers")
+if ( sum( columnweights)!= 1 ) {
+ warning("The entries of columnweights do not sum to 1. Therefore, they will divided by the sum. Then the resulting weights sum to 1.");
+columnweights= columnweights/sum( columnweights)
+}
+}
 
-  if (pValueMethod != "scale" ) {
-    percentilerank1=function(x) {
-      R1=rank(x,ties.method=ties.method, na.last=na.last)
-      R1/max(R1,na.rm=T)
+    if (pValueMethod != "scale") {
+              percentilerank1 = function(x) {
+            R1 = rank(x, ties.method = ties.method, na.last = na.last)
+            (R1-.5)/max(R1, na.rm = T)
+        }
+ 
+        datrankslow = apply(datS, 2, percentilerank1)
+        if (!is.null(columnweights)) {
+            datrankslow = t(t(datrankslow) * columnweights)
+        }
+        datSpresent = !is.na(datS) + 0
+        if (!is.null(columnweights)) {
+            datSpresent = t(t(datSpresent) * columnweights)
+        }
+        expectedsum = apply(datSpresent, 1, sum, na.rm = T) * 
+            0.5
+        varsum = apply(datSpresent^2, 1, sum, na.rm = T) * 1/12
+        observed.sumPercentileslow = as.numeric(apply(datrankslow, 
+            1, sum, na.rm = T))
+        Zstatisticlow = (observed.sumPercentileslow - expectedsum)/sqrt(varsum)
+        datrankshigh = apply(-datS, 2, percentilerank1)
+        if (!is.null(columnweights)) {
+            datrankshigh = t(t(datrankshigh) * columnweights)
+        }
+        observed.sumPercentileshigh = as.numeric(apply(datrankshigh, 
+            1, sum, na.rm = T))
+        Zstatistichigh = (observed.sumPercentileshigh - expectedsum)/sqrt(varsum)
+        pValueLow = pnorm((Zstatisticlow))
+        pValueHigh = pnorm((Zstatistichigh))
+        pValueExtreme = pmin(pValueLow, pValueHigh)
+        datoutrank = data.frame(pValueExtreme, pValueLow, pValueHigh)
+        if (calculateQvalue) {
+            qValueLow = rep(NA, dim(datS)[[1]])
+            qValueHigh = rep(NA, dim(datS)[[1]])
+            qValueExtreme = rep(NA, dim(datS)[[1]])
+            rest1 = !is.na(pValueLow)
+            qValueLow[rest1] = qvalue(pValueLow[rest1])$qvalues
+            rest1 = !is.na(pValueHigh)
+            qValueHigh[rest1] = qvalue(pValueHigh[rest1])$qvalues
+            rest1 = !is.na(pValueExtreme)
+            qValueExtreme = pmin(qValueLow, qValueHigh)
+            datq = data.frame(qValueExtreme, qValueLow, qValueHigh)
+            datoutrank = data.frame(datoutrank, datq)
+            names(datoutrank) = paste(names(datoutrank), "Rank", 
+                sep = "")
+        }
     }
-    datrankslow= apply(datS,2,percentilerank1)
-    if ( ! is.null(columnweights) )  {datrankslow=   t(t(datrankslow)* columnweights)   } 
-    datSpresent= !is.na(datS)+0.0
-    if ( ! is.null(columnweights) )  {datSpresent=   t(t(datSpresent)* columnweights)   } 
-    expectedsum=apply(datSpresent,1,sum,na.rm=T)*0.5
-    varsum= apply(datSpresent^2,1,sum,na.rm=T)*1/12
-    observed.sumPercentileslow = as.numeric(apply(datrankslow,1,sum,na.rm=T))
-    Zstatisticlow= (observed.sumPercentileslow- expectedsum)/sqrt(varsum)
-    datrankshigh=apply(-datS,2,percentilerank1)
-    if ( ! is.null(columnweights) )  {datrankhigh=   t(t(datrankshigh)* columnweights)   } 
-    observed.sumPercentileshigh = as.numeric(apply(datrankshigh,1,sum,na.rm=T))
-  
-    Zstatistichigh= (observed.sumPercentileshigh - expectedsum)/sqrt(varsum)
-    pValueLow=    pnorm(   (Zstatisticlow))
-    pValueHigh=   pnorm( (Zstatistichigh))
-    pValueExtreme= pmin(pValueLow, pValueHigh)
-    datoutrank=data.frame(pValueExtreme , pValueLow, pValueHigh)
-    if( calculateQvalue ) {
-      qValueLow=rep(NA,dim(datS)[[1]] )
-      qValueHigh =rep(NA,dim(datS)[[1]] )
-      qValueExtreme =rep(NA,dim(datS)[[1]] )
-      rest1= ! is.na(pValueLow) 
-      qValueLow[rest1]=qvalue(pValueLow[rest1])$qvalues
-      rest1= ! is.na(pValueHigh) 
-      qValueHigh[rest1]=qvalue(pValueHigh[rest1])$qvalues
-      rest1= ! is.na(pValueExtreme) 
-      qValueExtreme=pmin(qValueLow, qValueHigh)
-      datq= data.frame(qValueExtreme , qValueLow, qValueHigh)
-      datoutrank=data.frame(datoutrank,datq)
-      names(datoutrank)=paste(names(datoutrank), "Rank",sep="")
-    } # of if calculcateQvalue
-    # end of if (pValueMethod != "scale" ) 
-  } 
-
-  if (pValueMethod != "rank" ) {
-    datSpresent= !is.na(datS)+0.0
-    scaled.datS= scale(datS)
-    if ( ! is.null(columnweights) )  {
-      scaled.datS=   t(t(scaled.datS)* columnweights)   
-      datSpresent=   t(t(datSpresent)* columnweights)   
-    } 
-    # expected value of each row of scaled.datS
-    expected.value= rep(0, no.rows) 
-    # variance of each row of scaled.datS
-    varsum= apply(datSpresent^2,1,sum,na.rm=T)*1
-    observed.sumScaleddatS = as.numeric(apply(scaled.datS,1,sum,na.rm=T))
-    Zstatisticlow= (observed.sumScaleddatS- expected.value)/sqrt(varsum)
-    scaled.minusdatS=scale(-datS)
-    if ( ! is.null(columnweights) )  {scaled.minusdatS=   t(t(scaled.minusdatS)* columnweights)   } 
-    observed.sumScaledminusdatS= as.numeric(apply(scaled.minusdatS,1,sum,na.rm=T))
-    Zstatistichigh= (observed.sumScaledminusdatS - expected.value)/sqrt(varsum)
-    pValueLow=    pnorm(   (Zstatisticlow))
-    pValueHigh=   pnorm( (Zstatistichigh))
-    pValueExtreme= 2*pnorm(-abs(Zstatisticlow))
-    datoutscale=data.frame(pValueExtreme , pValueLow, pValueHigh)
-    if( calculateQvalue ) {
-      qValueLow=rep(NA,dim(datS)[[1]] )
-      qValueHigh =rep(NA,dim(datS)[[1]] )
-      qValueExtreme =rep(NA,dim(datS)[[1]] )
-      rest1= ! is.na(pValueLow) 
-      qValueLow[rest1]=qvalue(pValueLow[rest1])$qvalues
-      rest1= ! is.na(pValueHigh) 
-      qValueHigh[rest1]=qvalue(pValueHigh[rest1])$qvalues
-      rest1= ! is.na(pValueExtreme) 
-      qValueExtreme[rest1]= qvalue(pValueExtreme[rest1])$qvalues
-      datq= data.frame(qValueExtreme , qValueLow, qValueHigh)
-      datoutscale=data.frame(datoutscale,datq)
-    } # of if calculcateQvalue
-    names(datoutscale)=paste(names(datoutscale), "Scale",sep="")
-  } # end of if (pValueMethod != "rank" ) 
-
-  if (pValueMethod == "rank" ) { datout=datoutrank} 
-  if (pValueMethod == "scale" ) { datout=datoutscale}
-  if (pValueMethod != "rank" & pValueMethod != "scale" ) datout=data.frame(datoutrank, datoutscale)
-  datout
-} # end of function
-
+    if (pValueMethod != "rank") {
+        datSpresent = !is.na(datS) + 0
+        scaled.datS = scale(datS)
+        if (!is.null(columnweights)) {
+            scaled.datS = t(t(scaled.datS) * columnweights)
+            datSpresent = t(t(datSpresent) * columnweights)
+        }
+        expected.value = rep(0, no.rows)
+        varsum = apply(datSpresent^2, 1, sum, na.rm = T) * 1
+        observed.sumScaleddatS = as.numeric(apply(scaled.datS, 
+            1, sum, na.rm = T))
+        Zstatisticlow = (observed.sumScaleddatS - expected.value)/sqrt(varsum)
+        scaled.minusdatS = scale(-datS)
+        if (!is.null(columnweights)) {
+            scaled.minusdatS = t(t(scaled.minusdatS) * columnweights)
+        }
+        observed.sumScaledminusdatS = as.numeric(apply(scaled.minusdatS, 
+            1, sum, na.rm = T))
+        Zstatistichigh = (observed.sumScaledminusdatS - expected.value)/sqrt(varsum)
+        pValueLow = pnorm((Zstatisticlow))
+        pValueHigh = pnorm((Zstatistichigh))
+        pValueExtreme = 2 * pnorm(-abs(Zstatisticlow))
+        datoutscale = data.frame(pValueExtreme, pValueLow, pValueHigh)
+        if (calculateQvalue) {
+            qValueLow = rep(NA, dim(datS)[[1]])
+            qValueHigh = rep(NA, dim(datS)[[1]])
+            qValueExtreme = rep(NA, dim(datS)[[1]])
+            rest1 = !is.na(pValueLow)
+            qValueLow[rest1] = qvalue(pValueLow[rest1])$qvalues
+            rest1 = !is.na(pValueHigh)
+            qValueHigh[rest1] = qvalue(pValueHigh[rest1])$qvalues
+            rest1 = !is.na(pValueExtreme)
+            qValueExtreme[rest1] = qvalue(pValueExtreme[rest1])$qvalues
+            datq = data.frame(qValueExtreme, qValueLow, qValueHigh)
+            datoutscale = data.frame(datoutscale, datq)
+        }
+        names(datoutscale) = paste(names(datoutscale), "Scale", 
+            sep = "")
+    }
+    if (pValueMethod == "rank") {
+        datout = datoutrank
+    }
+    if (pValueMethod == "scale") {
+        datout = datoutscale
+    }
+    if (pValueMethod != "rank" & pValueMethod != "scale") 
+        datout = data.frame(datoutrank, datoutscale)
+    datout
+} # End of function
 
 #========================================================================================================
 #
@@ -4732,5 +4844,375 @@ prepComma = function(s)
   if (s=="") return (s);
   paste(",", s);
 }
+
+
+#========================================================================================================
+#
+# "restricted" q-value calculation
+#
+#========================================================================================================
+
+qvalue.restricted = function(p, trapErrors = TRUE, ...)
+{
+  fin = is.finite(p);
+  qx = try(qvalue(p[fin], ...)$qvalues, silent = TRUE);
+  q = rep(NA, length(p));
+  if (inherits(qx, "try-error"))
+  {
+    if (!trapErrors) stop(qx);
+  } else 
+    q[fin] = qx;
+  q;
+}
+
+
+#========================================================================================================
+#
+# consensusKME
+#
+#========================================================================================================
+
+consensusKME = function(multiExpr, moduleLabels, multiEigengenes = NULL, consensusQuantile = 0,
+                        signed = TRUE,
+                        useModules = NULL,
+                        countWeightPower = 1, 
+                        corAndPvalueFnc = corAndPvalue, corOptions = list(),
+                        corComponent = "cor", getQvalues = FALSE,
+                        setNames = NULL, excludeGrey = TRUE,
+                        greyLabel = ifelse(is.numeric(moduleLabels), 0, "grey"))
+{
+  corAndPvalueFnc = match.fun(corAndPvalueFnc);
+
+  size = checkSets(multiExpr);
+  nSets = size$nSets;
+  nGenes = size$nGenes;
+  nSamples = size$nSamples;
+
+  if (!is.null(useModules))
+  {
+    if (greyLabel %in% useModules) 
+      stop(paste("Grey module (or module 0) cannot be used with 'useModules'.\n",
+                 "   Use 'excludeGrey = FALSE' to obtain results for the grey module as well. "));
+    keep = moduleLabels %in% useModules;
+    if (sum(keep)==0)
+      stop("Incorrectly specified 'useModules': no such module(s).");
+    moduleLabels [ !keep ] = greyLabel;
+  }
+
+  if (is.null(multiEigengenes))
+    multiEigengenes = multiSetMEs(multiExpr, universalColors = moduleLabels, verbose = 0, 
+                                  excludeGrey = excludeGrey, grey = greyLabel);
+
+  modLevels = substring(colnames(multiEigengenes[[1]]$data), 3);
+  nModules = length(modLevels);
+
+  kME = p = Z = nObs = array(NA, dim = c(nGenes, nModules, nSets));
+
+  corOptions$alternative = c("two.sided", "greater")[signed+1];
+  
+  haveZs = FALSE;
+  for (set in 1:nSets)
+  {
+    corOptions$x = multiExpr[[set]]$data;
+    corOptions$y = multiEigengenes[[set]]$data;
+    cp = do.call(corAndPvalueFnc, arg = corOptions);
+    corComp = grep(corComponent, names(cp));
+    pComp = match("p", names(cp));
+    if (is.na(pComp)) pComp = match("p.value", names(cp));
+    if (is.na(pComp)) stop("Function `corAndPvalueFnc' did not return a p-value.");
+    kME[, , set] = cp[[corComp]]
+    p[, , set] = cp[[pComp]];
+    if (!is.null(cp$Z)) { Z[, , set] = cp$Z; haveZs = TRUE}
+    if (!is.null(cp$nObs)) 
+    {
+       nObs[, , set] = cp$nObs;
+    } else
+       nObs[, , set] = t(is.na(multiExpr[[set]]$data)) %*% (!is.na(multiEigengenes[[set]]$data));
+  }
+
+  if (getQvalues)
+  {
+    q = apply(p, c(2:3), qvalue.restricted);
+  } else q = NULL;
+
+  kME.average = rowMeans(kME, dims = 2);
+  kME.weightedAverage = rowSums( kME * nObs^countWeightPower, dim = 2) / 
+                          rowSums(nObs^countWeightPower, dim = 2)
+  if (any(is.na(kME)))
+  {
+     kME.consensus.1 = apply(kME, c(1,2), quantile, prob = consensusQuantile, na.rm = TRUE);
+     kME.consensus.2 = apply(kME, c(1,2), quantile, prob = 1-consensusQuantile, na.rm = TRUE);
+     kME.median = apply(kME, c(1,2), median, na.rm = TRUE);
+  } else {
+    kME.consensus.1 = matrix( 
+                      colQuantileC(t(matrix(kME, nGenes * nModules, nSets)), p = consensusQuantile),
+                      nGenes, nModules);
+    kME.consensus.2 = matrix( 
+                      colQuantileC(t(matrix(kME, nGenes * nModules, nSets)), p = 1-consensusQuantile),
+                      nGenes, nModules);
+    kME.median = matrix(colQuantileC(t(matrix(kME, nGenes * nModules, nSets)), p = 0.5),
+                        nGenes, nModules);
+  }
+  kME.consensus = ifelse(kME.median > 0, kME.consensus.1, kME.consensus.2);
+
+  kME.consensus[ kME.consensus * kME.median < 0 ] = 0;
+
+  # Prepare identifiers for the variables (genes)
+  if (is.null(colnames(multiExpr[[1]]$data)))
+  {
+     ID = spaste("Variable.", 1:nGenes);
+  } else
+     ID = colnames(multiExpr[[1]]$data);
+
+  # Get meta-Z, -p, -q values
+  if (haveZs)
+  {
+    Z.kME.meta = rowSums( Z * nObs^countWeightPower, dim = 2) / 
+                          sqrt(rowSums(nObs^(2*countWeightPower), dim = 2))
+    if (signed)
+    {
+       p.kME.meta = pnorm(Z.kME.meta, lower.tail = FALSE);
+    } else
+       p.kME.meta = 2*pnorm(abs(Z.kME.meta), lower.tail = FALSE);
+    #colnames(Z.kME.meta) = spaste("meta.Z.kME.", modLevels);
+    #colnames(p.kME.meta) = spaste("meta.p.kME.", modLevels);
+    if (getQvalues)
+    {
+      q.kME.meta = apply(p.kME.meta, 2, qvalue.restricted);
+     # colnames(p.kME.meta) = spaste("meta.q.kME.", modLevels);
+    } else 
+      q.kME.meta = NULL;
+  } else {
+    Z.kME.meta = p.kME.meta = q.kME.meta = NULL;
+  }
+
+  # Format the output... this will entail some rearranging of the individual set results.
+  if (is.null(setNames))
+     setNames = names(multiExpr);
+
+  if (is.null(setNames))
+     setNames = spaste("Set_", c(1:nSets));
+
+  if (!haveZs) Z = NULL;
+
+  keep = c(TRUE, TRUE, getQvalues, haveZs);
+  varNames = c("kME", "p.kME", "q.kME", "Z.kME")[keep];
+  nVars = sum(keep);
+  combined = array(c (kME, p, q, Z), dim = c(nGenes, nModules, nSets, nVars));
+
+  recast = matrix( c(cast(melt(combined), X1~X4~X3~X2)), nGenes, nSets * nModules * nVars);
+  colnames(recast) = spaste( rep(varNames, nSets * nModules),
+                             rep( modLevels, rep(nVars * nSets, nModules)), 
+                             ".", rep( rep(setNames, rep(nVars, nSets)), nModules));
+             
+  #colnames(kME.average) = spaste("average.kME.", modLevels)               
+  #colnames(kME.consensus) = spaste("consensus.kME.", modLevels)               
+  #colnames(kME.weightedAverage) = spaste("weightedAverage.kME.", modLevels)               
+  combinedMeta.0 = rbind(
+             kME.consensus,
+             kME.average, 
+             kME.weightedAverage,
+             Z.kME.meta,
+             p.kME.meta,
+             q.kME.meta);
+
+  combinedMeta = matrix(combinedMeta.0, nGenes, (3 + 2*haveZs + haveZs*getQvalues) * nModules);
+  metaNames = c("consensus.kME.", "average.kME.", "weightedAverage.kME.", "meta.Z.kME.", "meta.p.kME.",
+                "meta.q.kME.")[ c(TRUE, TRUE, TRUE, haveZs, haveZs, haveZs && getQvalues)];
+  nMetaVars = length(metaNames);
+  colnames(combinedMeta) = spaste (rep(metaNames, nModules), 
+                                   rep(modLevels, rep(nMetaVars, nModules)));
+
+  out = data.frame(ID = ID, combinedMeta, recast);
+
+  out
+}
+
+#======================================================================================================
+#
+# Meta-analysis
+#
+#======================================================================================================
+
+.isBinary = function(multiTrait)
+{
+  bin = TRUE;
+  for (set in 1:length(multiTrait))
+    if (length(sort(unique(multiTrait[[set]]$data))) > 2) bin = FALSE;
+
+  bin;
+}
+
+metaAnalysis = function(multiExpr, multiTrait, 
+                        binary = NULL,
+                        #consensusQuantile = 0,
+                        metaAnalysisWeights = NULL,
+                        corFnc = cor, corOptions = list(use = 'p'),
+                        getQvalues = FALSE,
+                        setNames = NULL, 
+                        kruskalTest = FALSE, var.equal = FALSE, 
+                        metaKruskal = kruskalTest,
+                        na.action = "na.exclude")
+{
+
+  size = checkSets(multiExpr);
+  nSets = size$nSets;
+
+  for (set in 1:nSets)
+    multiTrait[[set]] $ data = as.matrix(multiTrait[[set]] $ data);
+
+  tSize = checkSets(multiTrait);
+  if (tSize$nGenes!=1)
+     stop("This function only works for a single trait. ");
+
+  if (size$nSets!=tSize$nSets)
+     stop("The number of sets in 'multiExpr' and 'multiTrait' must be the same.");
+
+  if (!all.equal(size$nSamples, tSize$nSamples))
+     stop("Numbers of samples in each set of 'multiExpr' and 'multiTrait' must be the same.");
+
+  #if (!is.finite(consensusQuantile) || consensusQuantile < 0 || consensusQuantile > 1)
+  #   stop("'consensusQuantile' must be between 0 and 1.");
+
+  if (is.null(setNames))
+     setNames = names(multiExpr);
+
+  if (is.null(setNames))
+     setNames = spaste("Set_", c(1:nSets));
+
+  if (metaKruskal && !kruskalTest) 
+     stop("Kruskal statistic meta-analysis requires kruskal test. Set kruskalTest=TRUE and try again.");
+
+  if (is.null(binary)) binary = .isBinary(multiTrait);
+
+  if (!is.null(metaAnalysisWeights))
+  {
+    if (length(metaAnalysisWeights)!=nSets)
+      stop("Length of 'metaAnalysisWeights' must equal the number of sets in 'multiExpr'.")
+    if (any (!is.finite(metaAnalysisWeights)) || any(metaAnalysisWeights < 0))
+      stop("All weights in 'metaAnalysisWeights' must be positive.");
+  }
+
+  setResults = list();
+
+  
+
+  for (set in 1:size$nSets)
+  {
+    if (binary)
+    {
+      setResults[[set]] = standardScreeningBinaryTrait(multiExpr[[set]]$data,
+                            as.vector(multiTrait[[set]]$data), kruskalTest = kruskalTest, 
+                            qValues = getQvalues, var.equal = var.equal, na.action = na.action,
+                            corFnc = corFnc, corOptions = corOptions);
+      trafo = TRUE;
+      if (metaKruskal) 
+      {
+        metaStat = "stat.Kruskal.signed";
+        metaP = "pvaluekruskal";
+      } else {
+        metaStat = "t.Student";
+        metaP = "pvalueStudent"
+      }
+    } else {
+      setResults[[set]] = standardScreeningNumericTrait(multiExpr[[set]]$data,
+                            as.vector(multiTrait[[set]]$data), qValues = getQvalues, 
+                            corFnc = corFnc, corOptions = corOptions);
+      metaStat = "Z";
+      trafo = FALSE;
+    }
+  }
+
+  comb = NULL;
+  for (set in 1:nSets)
+  {
+    if (set==1) 
+    {
+      comb =  setResults[[set]] [, -1];
+      ID = setResults[[set]] [, 1];
+      colNames= colnames(comb);
+      nColumns = ncol(comb);
+      colnames(comb) = spaste("X", c(1:nColumns));
+    } else {
+      xx = setResults[[set]][, -1];
+      colnames(xx) = spaste("X", c(1:nColumns));
+      comb = rbind(comb, xx);
+    }
+  }
+
+  # Re-arrange comb:
+
+  comb = matrix(as.matrix(as.data.frame(comb)), size$nGenes, nColumns * nSets);
+
+  colnames(comb) = spaste( rep( colNames, rep(nSets, nColumns)), ".", rep(setNames, nColumns));
+
+  # Find the columns from which to do meta-analysis
+  statCols = grep(spaste("^", metaStat), colnames(comb));
+  if (length(statCols)==0) stop("Internal error: no columns for meta-analysis found. Sorry!");
+  setStats = comb[, statCols];
+
+  if (trafo)
+  {
+    # transform p-values to Z statistics
+    # Find the pvalue columns
+    pCols = grep(spaste("^", metaP), colnames(comb));
+    if (length(pCols)==0) stop("Internal error: no columns for meta-analysis found. Sorry!");
+    setP = comb[, pCols];
+    # Caution: I assume here that the returned p-values are two-sided.
+    setZ = sign(setStats) * qnorm(setP/2, lower.tail = FALSE);
+  } else {
+    setZ = setStats;
+  }
+
+  colnames(setZ) = spaste("Z.", setNames);
+  nObsCols = grep("nPresentSamples", colnames(comb));
+  nObs = comb[, nObsCols];
+
+  powers = c(0, 1);
+  nPowers = 2;
+
+  metaNames = c("equalWeights", "DoFWeights")
+  if (is.null(metaAnalysisWeights)) {
+    nMeta = nPowers;
+  } else {
+    nMeta = nPowers + 1;
+    metaNames = c(metaNames, "userWeights");
+  }
+  metaResults = NULL;
+  for (m in 1:nMeta)
+  {
+    if (m<=nPowers) {
+      weights = nObs^powers[m]
+    } else
+      weights = matrix( metaAnalysisWeights, size$nGenes, nSets, byrow = TRUE);
+
+    metaZ = rowSums( setZ * weights) / sqrt(rowSums(weights^2))
+    p.meta = 2*pnorm(abs(metaZ), lower.tail = FALSE);
+    if (getQvalues)
+    {
+      q.meta = qvalue.restricted(p.meta);
+      meta1 = cbind(metaZ, p.meta, q.meta)
+    } else {
+      q.meta = NULL;
+      meta1 = cbind(metaZ, p.meta);
+    }
+    colnames(meta1) = spaste(c("Z.", "p.", "q.")[1:ncol(meta1)],
+                             metaNames[m]);
+    metaResults = cbind(metaResults, meta1);
+  }
+
+  # Put together the output
+
+  out = list(ID = ID,
+             metaResults,
+             comb,
+             if (trafo) setZ else NULL,
+             NULL);   # The last NULL is necessary so the line below works even if nothing else is NULL
+
+  out = as.data.frame(out[ -(which(sapply(out,is.null),arr.ind=TRUE))])
+
+  out;
+}
+             
 
 

@@ -45,7 +45,7 @@ allowWGCNAThreads = function(nThreads = NULL)
   pars = list(nThreads);
   names(pars) = .threadAllowVar;
   do.call(Sys.setenv, pars);
-  nThreads;
+  invisible(nThreads);
 }
 
 disableWGCNAThreads = function()

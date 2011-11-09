@@ -1,6 +1,8 @@
 #include <iostream>
 
 #include "array.h"
+#include <R.h>
+
 
 extern "C" {
 
@@ -24,7 +26,7 @@ void quantileC(double * data, int *nrow, int * ncol, double * q, double * res)
 
   } catch (Exception & err)
   {
-    cout << "Caught exception:" << err.what() << endl;
+    Rprintf("Error in (compiled code) quantileC: %s\n", err.what().c_str());
   }
 
 }

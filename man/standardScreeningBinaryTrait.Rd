@@ -14,8 +14,11 @@ option KruskalTest is set to TRUE, it also computes the Kruskal Wallist test p-v
 q-value. The Kruskal Wallis test is a non-parametric, rank-based group comparison test.
 }
 \usage{
-standardScreeningBinaryTrait(datExpr, y, kruskalTest = FALSE, qValues = FALSE,
-var.equal=TRUE, na.action="na.exclude")
+standardScreeningBinaryTrait(
+     datExpr, y, 
+     corFnc = cor, corOptions = list(use = 'p'),
+     kruskalTest = FALSE, qValues = FALSE,
+     var.equal=FALSE, na.action="na.exclude")
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -25,6 +28,12 @@ var.equal=TRUE, na.action="na.exclude")
   \item{y}{
     a binary vector whose length (number of components) equals the number of rows of datE
 }
+  \item{corFnc}{ correlation function. Defaults to Pearson correlation. 
+}
+  \item{corOptions}{ a list specifying options to corFnc. An empty list must be specified as \code{list()}
+(supplying \code{NULL} instead will trigger an error). 
+}
+
   \item{kruskalTest}{
     logical: should the Kruskal test be performed?
 }
@@ -49,6 +58,7 @@ columns report
   \item{ID}{column names of the input \code{datExpr}.}
   \item{corPearson}{pearson correlation with a binary numeric version of the input variable. The numeric
 variable equals 1 for level 1 and 2 for level 2. The levels are given by levels(factor(y)).}
+  \item{t.Student}{Student's t-test statistic}
   \item{pvalueStudent}{two-sided Student t-test p-value.}
   \item{qvalueStudent}{(if input \code{qValues==TRUE}) 
 q-value (local false discovery rate) based on the Student T-test p-value (Storey et al 2004).}
@@ -64,8 +74,18 @@ But if the mean of the second group is larger than that of the first group it eq
   \item{areaUnderROC}{the area under the ROC, also known as the concordance index or C.index. This is a
 measure of discriminatory power. The measure lies between 0 and 1 where 0.5 indicates no discriminatory
 power. 0 indicates that the "opposite" predictor has perfect discriminatory power. To compute it we use
-the function rcorr.cens with outx=TRUE (from Frank Harrel's package Hmisc).}
+the function \link[Hmisc]{rcorr.cens} with \code{outx=TRUE} (from Frank Harrel's package Hmisc).}
+  \item{nPresentSamples}{number of samples with finite measurements for each gene.}
+
+If input \code{kruskalTest} is \code{TRUE}, the following columns further summarize results of
+Kruskal-Wallis test:
+  \item{stat.Kruskal}{Kruskal-Wallis test statistic.}
+  \item{stat.Kruskal.signed}{(Warning: experimental) Kruskal-Wallis test statistic including a sign that
+indicates whether the average rank is higher in second group (positive) or first group (negative). }
+  \item{pvaluekruskal}{Kruskal-Wallis test p-values.}
+  \item{qkruskal}{q-values corresponding to the Kruskal-Wallis test p-value (if input \code{qValues==TRUE}).}
 }
+
 \references{
 Storey JD, Taylor JE, and Siegmund D. (2004) Strong control, conservative point estimation, and
 simultaneous conservative consistency of false discovery rates: A unified approach. Journal of the Royal

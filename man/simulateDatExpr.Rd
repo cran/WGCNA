@@ -15,6 +15,7 @@ simulateDatExpr(
   corPower = 1, 
   signed = FALSE, 
   propNegativeCor = 0.3, 
+  geneMeans = NULL,
   backgroundNoise = 0.1, 
   leaveOut = NULL, 
   nSubmoduleLayers = 0, 
@@ -48,6 +49,9 @@ absolute values. }
 
   \item{propNegativeCor}{ proportion of genes to be simulated with negative gene-eigengene correlations.
 Only effective if \code{signed} is \code{FALSE}. }
+
+  \item{geneMeans}{ optional vector of length \code{nGenes} giving desired mean expression for each gene. If
+not given, the returned expression profiles will have mean zero. }
  
   \item{backgroundNoise}{ amount of background noise to be added to the simulated expression data. }
 

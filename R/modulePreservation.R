@@ -134,7 +134,7 @@ modulePreservation = function(
    maxGoldModuleSize = 1000, maxModuleSize = 1000, 
    quickCor = 1,
    ccTupletSize = 2,
-   calculateCor.kIMall = TRUE, 
+   calculateCor.kIMall = FALSE, 
    useInterpolation = FALSE,
    checkData = TRUE,
    greyName = NULL,
@@ -788,7 +788,7 @@ modulePreservation = function(
                  zAll[, stat] = (allObsStats[, stat] - predictedMean)/predictedSD
                  # For the gold module : take the direct observations.
                  goldMean = mean(permOut[[iref]][[tnet]]$regStats[goldRowPerm, regInd, ], na.rm = TRUE);
-                 goldSD = sd(permOut[[iref]][[tnet]]$regStats[goldRowPerm, regInd, ], na.rm = TRUE);
+                 goldSD = apply(permOut[[iref]][[tnet]]$regStats[goldRowPerm, regInd, ], 2, sd, na.rm = TRUE);
                  zAll[goldRowObs, stat] = (allObsStats[goldRowObs, stat] - goldMean)/goldSD
               }
            } else {

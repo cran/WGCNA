@@ -11,6 +11,7 @@ simulateModule(
   nNearGenes = 0, 
   minCor = 0.3, maxCor = 1, corPower = 1, 
   signed = FALSE, propNegativeCor = 0.3, 
+  geneMeans = NULL,
   verbose = 0, indent = 0)
 }
 %- maybe also 'usage' for other objects documented here.
@@ -34,6 +35,9 @@ absolute values.  }
 
   \item{propNegativeCor}{ proportion of genes to be simulated with negative gene-eigengene correlations.
 Only effective if \code{signed} is \code{FALSE}. }
+
+  \item{geneMeans}{ optional vector of length \code{nGenes} giving desired mean expression for each gene. If
+not given, the returned expression profiles will have mean zero. }
 
  \item{verbose}{ integer level of verbosity. Zero means silent, higher values make the output
 progressively more and more verbose. }

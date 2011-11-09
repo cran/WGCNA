@@ -16,6 +16,7 @@ simulateMultiExpr(eigengenes,
                   leaveOut = NULL, 
                   signed = FALSE, 
                   propNegativeCor = 0.3, 
+                  geneMeans = NULL,
                   nSubmoduleLayers = 0, 
                   nScatteredModuleLayers = 0, 
                   averageNGenesInSubmodule = 10, 
@@ -56,6 +57,9 @@ absolute values. }
  
   \item{propNegativeCor}{ proportion of genes to be simulated with negative gene-eigengene correlations.
 Only effective if \code{signed} is \code{FALSE}. }
+
+ \item{geneMeans}{ optional vector of length \code{nGenes} giving desired mean expression for each gene. If
+not given, the returned expression profiles will have mean zero. }
 
   \item{nSubmoduleLayers}{ number of layers of ordered submodules to be added. See details. }
 

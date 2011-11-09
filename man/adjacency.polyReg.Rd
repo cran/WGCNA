@@ -31,7 +31,7 @@ A.max(ij)=max(R.squared(ij),R.squared(ji)).
 \value{
 An adjacency matrix of dimensions ncol(datExpr) times ncol(datExpr).}
 \references{
-Song L, Langfelder P, Horvath S (2011) Avoiding mutual information based co-expression measures.
+Song L, Langfelder P, Horvath S Avoiding mutual information based co-expression measures (to appear).
 
 Horvath S (2011) Weighted Network Analysis. Applications in Genomics and Systems Biology. Springer Book. ISBN: 978-1-4419-8818-8
 

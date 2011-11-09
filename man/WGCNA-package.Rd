@@ -13,10 +13,10 @@ also be used for general association networks specified by a symmetric adjacency
 \details{
 \tabular{ll}{
 Package: \tab WGCNA\cr
-Version: \tab 1.13\cr
-Date: \tab 2011-08-17\cr
+Version: \tab 1.14\cr
+Date: \tab 2011-11-08\cr
 Depends: \tab R (>= 2.3.0), stats, impute, grDevices, dynamicTreeCut (>= 1.20), utils, flashClust, qvalue,
-Hmisc, splines \cr
+Hmisc, splines, reshape \cr
 Suggests: AnnotationDbi, GO.db, org.*.eg.db, infotheo, entropy, minet
 ZipData: \tab no\cr
 License: \tab GPL (>= 2)\cr
@@ -81,6 +81,7 @@ conformityDecomposition
                         of a network
 consensusDissTOMandTree
                         Consensus TOM-based dissimilarity and clustering tree
+consensusKME            Consensus eigengene-based connectivity
 consensusMEDissimilarity
                         Consensus dissimilarity of module eigengenes.
 consensusOrderMEs       Put close eigenvectors next to each other in
@@ -133,6 +134,7 @@ labelPoints		Attempt to intelligently label points in a scatterplot
 labels2colors           Convert numerical labels to colors
 matchLabels             Relabel modules to best approximate a reference labeling
 mergeCloseModules       Merge close modules in gene expression data
+metaAnalysis            Meta-analysis significance statistics
 metaZfunction           Meta-analysis Z statistic
 moduleColor.getMEprefix
                         Get the prefix used to label module eigengenes
@@ -177,12 +179,16 @@ plotModuleSignificance
 plotNetworkHeatmap      Network heatmap plot
 pmean                   Parallel mean
 pmedian                 Parallel median
+populationMeansInAdmixture
+                        Estimation of population-specific mean values in an admixed population
 pquantile               Parallel quantile
 preservationNetworkConnectivity
                         Network preservation calculations
 projectiveKMeans        Projective K-means (pre-)clustering of
                         expression data
 propVarExplained        Proportion of variance explained by eigengenes
+proportionsInAdmixture  
+                        Estimation of proportion of pure populations in an admixture
 qvalue                  q-value calculation from package qvalue 
 randIndex               Calculation of (adjusted) Rand index
 rankPvalue              Estimate the p-value for ranking consistently high (or low) on multiple lists
@@ -236,6 +242,7 @@ vectorizeMatrix         Turn a matrix into a vector of non-redundant components
 verboseBarplot          Barplot with error bars, annotated by Kruskal-Wallis p-value
 verboseBoxplot          Boxplot annotated by a Kruskal-Wallis p-value
 verboseScatterplot      Scatterplot annotated by regression line and p-value
+verboseIplot            Scatterplot annotated by regression line, p-value, and color for density
 votingLinearPredictor   Voting linear predictor
 }
 }

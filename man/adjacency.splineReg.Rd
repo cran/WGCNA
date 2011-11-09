@@ -22,7 +22,7 @@ degrees of freedom in generating natural cubic spline. The default is as follows
   \item{symmetrizationMethod}{
   character string (eg "none", "min","max","mean") that specifies the method used to symmetrize the pairwise model fitting index matrix (see details).}
   \item{...}{
-other arguments from function \code{\link{ns}}}
+other arguments from function \code{\link[splines]{ns}}}
 }
 \details{
 A network adjacency matrix is a symmetric matrix whose entries lie between 0 and 1. It is a special case of a similarity matrix.
@@ -42,7 +42,7 @@ For more information about natural cubic spline regression, please refer to func
 \value{
 An adjacency matrix of dimensions ncol(datExpr) times ncol(datExpr).}
 \references{
-Song L, Langfelder P, Horvath S (2011) Avoiding mutual information based co-expression measures.
+Song L, Langfelder P, Horvath S Avoiding mutual information based co-expression measures (to appear).
 
 Horvath S (2011) Weighted Network Analysis. Applications in Genomics and Systems Biology. Springer Book. ISBN: 978-1-4419-8818-8
 }
@@ -51,7 +51,7 @@ Lin Song, Steve Horvath
 }
 
 \seealso{
-\code{\link{ns}}, \code{\link{glm}}
+\code{\link[splines]{ns}}, \code{\link{glm}}
 }
 \examples{
 #Simulate a data frame datE which contains 5 columns and 50 observations

@@ -194,18 +194,20 @@ votingLinearPredictor = function(x, y, xtest = NULL,
   if (nrow(x)!=nrow(y))
     stop("Number of observations in x and y must equal.");
 
-  xSD = sd(x, na.rm = TRUE);
+  xSD = apply(x, 2, sd, na.rm = TRUE);
 
   validFeatures = xSD > 0;
 
   xMean = apply(x, 2, mean, na.rm = TRUE);
   x = scale(x);
   if (doTest) 
+  {
      xtest = (xtest - matrix(xMean, nTestSamples, nVars, byrow = TRUE) ) / 
                matrix(xSD, nTestSamples, nVars, byrow = TRUE);
+     xtest[, !validFeatures] = 0
+  }
 
   # This prevents NA's generated from zero xSD to contaminate the results
-  xtest[, !validFeatures] = 0
   x[, !validFeatures] = 0
 
   xSD[!validFeatures] = 1;
@@ -410,11 +412,12 @@ votingLinearPredictor = function(x, y, xtest = NULL,
   predictedTest;
 }
       
-.quickGeneVotingPredictor.CV = function(x, xtest, predictedIndex, nPredictorGenes = 20, power = 3, CVfold = 10,
+.quickGeneVotingPredictor.CV = function(x, xtest = NULL, predictedIndex, nPredictorGenes = 20, 
+                            power = 3, CVfold = 10,
                             corFnc = "bicor", corOptions = "use = 'p'")
 {
   nSamples = nrow(x)
-  nTestSamples = nrow(xtest);
+  nTestSamples = if (is.null(xtest)) 0 else nrow(xtest);
   nGenes = ncol(x)
   nPredicted = length(predictedIndex);
   
@@ -430,7 +433,7 @@ votingLinearPredictor = function(x, y, xtest = NULL,
   sampleOrder = sample(1:nSamples);
 
   CVpredicted = matrix(NA, nSamples, nPredicted);
-  predictedTest = matrix(0, nTestSamples, nPredicted);
+  if (!is.null(xtest)) predictedTest = matrix(0, nTestSamples, nPredicted) else predictedTest = NULL;
 
   cvStart = 1;
   for (cv in 1:CVfold)
@@ -438,15 +441,15 @@ votingLinearPredictor = function(x, y, xtest = NULL,
     end = cvStart + binSizes[cv] - 1;
     oob = sampleOrder[cvStart:end];
     CVx = x[-oob, , drop = FALSE];
-    CVxTest = rbind( x[oob, , drop = FALSE], xtest);
+    if (is.null(xtest)) CVxTest = x[oob, , drop = FALSE] else CVxTest = rbind( x[oob, , drop = FALSE], xtest);
     pred = .quickGeneVotingPredictor(CVx, CVxTest, predictedIndex, nPredictorGenes, power, corFnc,
                                     corOptions);
     CVpredicted[oob, ] = pred[c(1:binSizes[cv]), ];
-    predictedTest = predictedTest + pred[-c(1:binSizes[cv]), ];
+    if (!is.null(xtest)) predictedTest = predictedTest + pred[-c(1:binSizes[cv]), ];
     cvStart = end + 1;
   }
 
-  predictedTest = predictedTest/CVfold;
+  if (!is.null(xtest)) predictedTest = predictedTest/CVfold;
 
   list(CVpredicted = CVpredicted, predictedTest= predictedTest);
 }
