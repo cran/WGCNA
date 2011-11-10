@@ -47,70 +47,6 @@
   -diff;
 }
 
-.hclust.cutreeDynamic = function(dst, ...)
-{
-  args = list(...);
-  method = "a";
-  if (!is.null(args$method)) 
-  {
-    method = args$method;
-    args$method = NULL;
-  }
-  if (!is.null(args$cutreeMethod))
-  {
-    args$method = args$cutreeMethod;
-    args$cutreeMethod = NULL;
-  }
-  tree = hclust(dst, method = method);
-  args$dendro = tree;
-  args$distM = as.matrix(dst);
-  do.call(cutreeDynamic, args);
-}
-
-.pam.NCP = function(dst, ...)
-{
-  cluster::pam(dst, ...)$clustering;
-}
-
-
-.sampleClusters = function(
-   data, 
-   adjFnc = "cor", adjOptions = "use = 'p'",
-   networkPower = 2,
-   clusteringFnc = ".hclust.cutreeDynamic",
-   clusteringOptions = list(minClusterSize = 4, deepSplit = 2, verbose = 0)
-  )
-{
-  x = try( {
-    if (nrow(data) < 4) return(rep(1, nrow(data)));
-    if (adjFnc == "dist")
-    {
-      # printFlush("Using euclidean adjacency...");
-      dst = as.matrix(dist(data));
-    } else {
-      corr = eval(parse(text = paste(adjFnc, "(t(data), ", adjOptions, ")")));
-      dst =  1 - ((1+corr)/2)^networkPower;
-    }
-    nNA = colSums(is.na(dst))
-    keepSamples = nNA == 0;
-    clusteringOptions$dst = as.dist(dst[keepSamples, keepSamples]);
-    labels = rep(0, nrow(data));
-    labels[keepSamples] = do.call(clusteringFnc, clusteringOptions);
-    if (sum(labels!=0)==0) labels[labels==0] = 1;
-  } );
-  # if (class(x)=="try-error") browser();
-  labels;
-}
-
-
-    #blockwiseModules(t(xx), networkType = "signed", corType = "pearson", TOMType = "none", 
-    #                    power = networkPower,
-    #                    deepSplit = deepSplit, detectCutHeight = NULL, minModuleSize = minClusterSize, 
-    #                    numericLabels = TRUE, mergeCutHeight = 1-maxModuleCor, reassignThreshold = 0,
-    #                    pamRespectsDendro = FALSE, minKMEtoJoin = 1, minCoreKME = 0, 
-    #                    minKMEtoStay = 0)
-  
-
 #=====================================================================================================
 #
 # Main predictor function.
@@ -143,7 +79,8 @@
 
 nearestCentroidPredictor = function(
     # Input training and test data
-    x, y, xtest,
+    x, y, 
+    xtest = NULL,
 
     # Feature weights and selection criteria
     featureSignificance = NULL,
@@ -159,16 +96,6 @@ nearestCentroidPredictor = function(
     useQuantile = NULL,
     sampleWeights = NULL,
     weighSimByPrediction = 0,
-
-    # Data pre-processing
-    nRemovePCs = 0, removePCsAfterScaling = TRUE,
-
-    # Sample network options
-    useSampleNetwork = FALSE,
-    adjFnc = "cor", adjOptions = "use = 'p'",
-    networkPower = 2,
-    clusteringFnc = ".hclust.cutreeDynamic",
-    clusteringOptions = list(minClusterSize = 4, deepSplit = 2, verbose = 0),
 
     # What should be returned
     CVfold = 0, returnFactor = FALSE,
@@ -202,7 +129,19 @@ nearestCentroidPredictor = function(
   #}
 
   x = as.matrix(x);
-  xtest = as.matrix(xtest);
+  doTest = !is.null(xtest)
+
+  if (doTest) 
+  {
+    xtest = as.matrix(xtest);
+    nTestSamples = nrow(xtest);
+    if (ncol(x)!=ncol(xtest))
+      stop("Number of learning and testing predictors (columns of x, xtest) must equal.");
+  } else {
+    if (weighSimByPrediction > 0)
+       stop("weighting similarity by prediction is not possible when xtest = NULL.");
+    nTestSamples = 0;
+  }
 
   numYLevels = sort(unique(y));
 
@@ -210,7 +149,6 @@ nearestCentroidPredictor = function(
   maxY = max(y);
 
   nSamples = length(y);
-  nTestSamples = nrow(xtest);
   nVars = ncol(x);
 
   if (!is.null(assocCut.hi))
@@ -293,15 +231,6 @@ nearestCentroidPredictor = function(
                         useQuantile = useQuantile, 
                         sampleWeights = CVsampleWeights,
 
-                        nRemovePCs = nRemovePCs,
-                        removePCsAfterScaling = removePCsAfterScaling,
-
-                        useSampleNetwork = useSampleNetwork,
-                        adjFnc = adjFnc, adjOptions = adjOptions,
-                        networkPower = networkPower,
-                        clusteringFnc = clusteringFnc,
-                        clusteringOptions = clusteringOptions,
-
                         CVfold = 0, returnFactor = FALSE,
                         randomSeed = randomSeed,
                         centroidMethod = centroidMethod,
@@ -323,44 +252,7 @@ nearestCentroidPredictor = function(
   if (nrow(x)!=length(y))
     stop("Number of observations in x and y must equal.");
 
-  if (ncol(x)!=ncol(xtest))
-    stop("Number of learning and testing predictors (columns of x, xtest) must equal.");
-
-  # Remove PCs if requested
-
-  if (!removePCsAfterScaling && nRemovePCs > 0)
-  {
-    x = removePrincipalComponents(x, nRemovePCs);
-    xtest = removePrincipalComponents(xtest, nRemovePCs);
-  }
-
   # Feature selection:
-
-  passedScale = FALSE;
-  if (removePCsAfterScaling && nRemovePCs > 0)
-  {
-    passedScale = TRUE;
-    if (scaleFeatureMean)
-    {
-      if (scaleFeatureVar)
-      {
-        xSD = sd(x, na.rm = TRUE);
-      } else 
-        xSD = rep(1, nVars);
-      xMean = apply(x, 2, mean, na.rm = TRUE);
-    } else {
-      if (scaleFeatureVar)
-      {
-        xSD = sqrt(apply(x^2, 2, sum, na.rm = TRUE)) / pmax(apply(!is.na(x), 2, sum) - 1, rep(1, nVars));
-      } else
-        xSD = rep(1, nVars);
-      xMean = rep(0, nVars);
-    }
-    x = removePrincipalComponents(scale(x, center = xMean, scale = xSD), n = nRemovePCs);
-    xtest = removePrincipalComponents(scale(xtest, center = xMean, scale = xSD), nRemovePCs);
-  }
-
-    
 
   xWeighted = x * sampleWeights;
   yWeighted = y * sampleWeights;
@@ -407,35 +299,38 @@ nearestCentroidPredictor = function(
        stop(paste("Less than 3 features were selected. Please either relax", 
                   "the selection criteria of use simFnc = 'dist'."));
   }
+
   selectedFeatures = select;
   nSelect = length(select);
 
   xSel = x[, select];
-  xtestSel = xtest[, select];
   selectSignif = featureSignificance[select];
 
-  if (!passedScale)
+  if (scaleFeatureMean)
   {
-    if (scaleFeatureMean)
+    if (scaleFeatureVar)
     {
-      if (scaleFeatureVar)
-      {
-        xSD = sd(xSel, na.rm = TRUE);
-      } else 
-        xSD = rep(1, nSelect);
-      xMean = apply(xSel, 2, mean, na.rm = TRUE);
-    } else {
-      if (scaleFeatureVar)
-      {
-        xSD = sqrt(apply(xSel^2, 2, sum, na.rm = TRUE)) / pmax(apply(!is.na(xSel), 2, sum) - 1, rep(1, nSelect));
-      } else
-        xSD = rep(1, nSelect);
-      xMean = rep(0, nSelect);
-    }
-    xSel = scale(xSel, center = scaleFeatureMean, scale = scaleFeatureVar);
+      xSD = apply(xSel, 2, sd, na.rm = TRUE);
+    } else 
+      xSD = rep(1, nSelect);
+    xMean = apply(xSel, 2, mean, na.rm = TRUE);
+  } else {
+    if (scaleFeatureVar)
+    {
+      xSD = sqrt(apply(xSel^2, 2, sum, na.rm = TRUE)) / pmax(apply(!is.na(xSel), 2, sum) - 1, rep(1, nSelect));
+    } else
+      xSD = rep(1, nSelect);
+    xMean = rep(0, nSelect);
+  }
+  xSel = scale(xSel, center = scaleFeatureMean, scale = scaleFeatureVar);
+  if (doTest)
+  {
+    xtestSel = xtest[, select];
     xtestSel = (xtestSel - matrix(xMean, nTestSamples, nSelect, byrow = TRUE) ) / 
              matrix(xSD, nTestSamples, nSelect, byrow = TRUE);
-  } 
+  } else
+    xtestSel = NULL;
+
   xWeighted = xSel * sampleWeights;
 
   if (weighSimByPrediction > 0)
@@ -449,7 +344,7 @@ nearestCentroidPredictor = function(
   } else
     validationWeight = rep(1, nSelect);
 
-  nTestSamples = nrow(xtest);
+  nTestSamples = if (doTest) nrow(xtest) else 0;
 
   predicted = rep(0, nSamples);
   predictedTest = rep(0, nTestSamples);
@@ -464,7 +359,7 @@ nearestCentroidPredictor = function(
        xImp = t(impute.knn(t(xSel), k = min(10, nSelect - 1))$data);
     } else 
        xImp = xSel;
-    if (sum(is.na(xtestSel))>0)
+    if (doTest && sum(is.na(xtestSel))>0)
     {
        xtestImp = t(impute.knn(t(xtestSel), k = min(10, nSelect - 1))$data);
     } else
@@ -473,34 +368,11 @@ nearestCentroidPredictor = function(
 
   clusterNumbers = rep(1, nLevels);
   sampleModules = list();
-  if (useSampleNetwork)
-  {
-    # Get cluster labels for each class of response in each predictor. This could be made much more
-    # efficient for multi-response prediction since the adjacencies only need to be calculated once.
-    # The following code assumes that there are at least a few samples of each class in each response,
-    # otherwise the network code could fail
-    ind = 0;
-    for (l in 1:nLevels)
-    {
-      sampleModules [[l]] = .sampleClusters(xWeighted[y==levels[l], , drop = FALSE],
-                                     adjFnc = adjFnc, adjOptions = adjOptions,
-                                     networkPower = networkPower, 
-                                     clusteringFnc = clusteringFnc,
-                                     clusteringOptions = clusteringOptions
-                                     );
-      if (all(sampleModules[[l]]==0)) sampleModules[[l]] = rep(1, sum(y==levels[l]));
-      clusterLabels[[l]] = sampleModules[[l]] + ind;
-      clusterLabels[[l]] [sampleModules[[l]] == 0] = 0;
-      cls = unique(clusterLabels[[l]]);
-      clusterNumbers[l] = length(cls[cls!=0]);
-      ind = ind + clusterNumbers[l];
-    }
-  } else { 
-    # Trivial cluster labels: clusters equal case classes
-    for (l in 1:nLevels)
-      clusterLabels[[l]] = rep(l, sum(y==levels[l]))
-    clusterNumbers = rep(1, nLevels);
-  }
+  
+  # Trivial cluster labels: clusters equal case classes
+  for (l in 1:nLevels)
+    clusterLabels[[l]] = rep(l, sum(y==levels[l]))
+  clusterNumbers = rep(1, nLevels);
 
   nClusters = sum(clusterNumbers);
   centroidSimilarities = array(NA, dim = c(nSamples, nClusters));
@@ -534,13 +406,16 @@ nearestCentroidPredictor = function(
       # Back-substitution prediction: 
       wcps = centroidProfiles * featureWeight;
       wxSel = t(xSel) * featureWeight;
-      wxtestSel = t(xtestSel) * featureWeight
       distExpr = spaste( simFnc, "( wcps, wxSel, ", simOptions, ")");
       sample.centroidSim = eval(parse(text = distExpr));
 
       # Actual prediction: for each sample, calculate distances to centroid profiles
-      distExpr = spaste( simFnc, "( wcps, wxtestSel, ", simOptions, ")");
-      testSample.centroidSim = eval(parse(text = distExpr));
+      if (doTest)
+      {
+        wxtestSel = t(xtestSel) * featureWeight
+        distExpr = spaste( simFnc, "( wcps, wxtestSel, ", simOptions, ")");
+        testSample.centroidSim = eval(parse(text = distExpr));
+      }
     } else {
       labelVector = y;
       for (l in 1:nLevels)
@@ -551,7 +426,6 @@ nearestCentroidPredictor = function(
       if (weighFeaturesByAssociation > 0)
         featureWeight = featureWeight * sqrt(abs(selectSignif)^weighFeaturesByAssociation);
       wxSel = t(xSel) * featureWeight;
-      wxtestSel = t(xtestSel) * featureWeight
       wxSel.keepSamples = t(xSel[keepSamples, ]) * featureWeight;
   
       # Back-substitution prediction: 
@@ -559,10 +433,14 @@ nearestCentroidPredictor = function(
       distExpr = spaste( simFnc, "( wxSel.keepSamples, wxSel, ", simOptions, ")");
       dst = eval(parse(text = distExpr));
       # Test prediction:
-      distExpr = spaste( simFnc, "( wxSel.keepSamples, wxtestSel, ", simOptions, ")");
-      dst.test = eval(parse(text = distExpr));
-      sample.centroidSim = matrix(0, nClusters, nSamples);
-      testSample.centroidSim = matrix(0, nClusters, nTestSamples);
+      if (doTest)
+      {
+        wxtestSel = t(xtestSel) * featureWeight
+        distExpr = spaste( simFnc, "( wxSel.keepSamples, wxtestSel, ", simOptions, ")");
+        dst.test = eval(parse(text = distExpr));
+        sample.centroidSim = matrix(0, nClusters, nSamples);
+        testSample.centroidSim = matrix(0, nClusters, nTestSamples);
+      }
       for (l in 1:nClusters)
       {
          #x = try ( {
@@ -573,13 +451,16 @@ nearestCentroidPredictor = function(
          #if (class(x) == 'try-error') browser(text = "zastavka.");
       }
     }
-    centroidSimilarities = t(sample.centroidSim);
-    prediction = cluster2level[apply(sample.centroidSim, 2, which.max)];
-    testCentroidSimilarities = t(testSample.centroidSim);
-    testprediction = cluster2level[apply(testSample.centroidSim, 2, which.max)];
-    # Save predictions
-    predicted = prediction;
-    predictedTest = testprediction;
+   centroidSimilarities = t(sample.centroidSim);
+   prediction = cluster2level[apply(sample.centroidSim, 2, which.max)];
+   # Save predictions
+   predicted = prediction;
+   if (doTest)
+   {
+     testCentroidSimilarities = t(testSample.centroidSim);
+     testprediction = cluster2level[apply(testSample.centroidSim, 2, which.max)];
+     predictedTest = testprediction;
+   }
   #} else 
   #  stop("Prediction for continouos variables is not implemented yet. Sorry!");
 
@@ -588,29 +469,27 @@ nearestCentroidPredictor = function(
   if (returnFactor)
   {
       predicted.out = factor(originalYLevels[[t]][predicted])
-      predictedTest.out = factor(originalYLevels[[t]][predictedTest]);
+      if (doTest) predictedTest.out = factor(originalYLevels[[t]][predictedTest]);
       if (CVfold > 0)
         CVpredicted.out = factor(originalYLevels[[t]][CVpredicted]);
   } else {
     # Turn ordinal predictions into levels of input traits
     predicted.out = originalYLevels[predicted];
-    predictedTest.out = originalYLevels[predictedTest];
+    if (doTest) predictedTest.out = originalYLevels[predictedTest];
     if (CVfold > 0)
       CVpredicted.out = originalYLevels[CVpredicted];
   }
   out = list(predicted = predicted.out,
-             predictedTest = predictedTest.out,
+             predictedTest = if (doTest) predictedTest.out else NULL,
              featureSignificance = featureSignificance, 
              selectedFeatures = selectedFeatures,
              centroidProfiles = if (is.null(useQuantile)) centroidProfiles else NULL,
-             testSample2centroidSimilarities = testCentroidSimilarities,
+             testSample2centroidSimilarities = if (doTest) testCentroidSimilarities else NULL,
              featureValidationWeights = validationWeight
              )
   if (CVfold > 0)
     out$CVpredicted = CVpredicted.out;
 
-  if (useSampleNetwork)
-    out$sampleClusterLabels = clusterLabels;
   out;
 }
 

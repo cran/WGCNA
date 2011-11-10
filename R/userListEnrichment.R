@@ -1,6 +1,7 @@
 #
 userListEnrichment <- function (geneR, labelR, fnIn = NULL, catNmIn = fnIn, nameOut = "enrichment.csv", 
-    useBrainLists = FALSE, useBloodAtlases=FALSE, omitCategories = "grey", outputCorrectedPvalues = TRUE) 
+    useBrainLists = FALSE, useBloodAtlases = FALSE, omitCategories = "grey", 
+    outputCorrectedPvalues = TRUE, useStemCellLists = FALSE) 
 {
     if (length(geneR) != length(labelR)) 
         stop("geneR and labelR must have same number of elements.")
@@ -9,8 +10,8 @@ userListEnrichment <- function (geneR, labelR, fnIn = NULL, catNmIn = fnIn, name
         write("WARNING: not enough category names.  \n\t\t\t   Naming remaining categories with file names.", 
             "")
     }
-    if (is.null(fnIn) & (! (useBrainLists | useBloodAtlases)) ) 
-        stop("Either enter user-defined lists or set useBrainLists or useBloodAtlases = TRUE.")
+    if (is.null(fnIn) & (! (useBrainLists | useBloodAtlases | useStemCellLists)) ) 
+        stop("Either enter user-defined lists or set one of the use_____ parameters to TRUE.")
 
     glIn = NULL
     if (length(fnIn)>0) 
@@ -44,15 +45,22 @@ userListEnrichment <- function (geneR, labelR, fnIn = NULL, catNmIn = fnIn, name
             "")
         glIn = rbind(glIn, cbind(BrainLists, Type = rep("Brain", nrow(BrainLists))))
     }
-    if(useBloodAtlases) { 
+    if (useBloodAtlases) { 
         if (!(exists("BloodLists"))) BloodLists = NULL;
-	 	data("BloodLists",envir=sys.frame(sys.nframe()));
-		write("See help file for details regarding blood atlas references.",
-		"")
-	glIn = rbind(glIn, cbind(BloodLists, Type = rep("Blood", nrow(BloodLists))))
+        data("BloodLists",envir=sys.frame(sys.nframe()));
+        write("See help file for details regarding blood atlas references.",
+		        "")
+	      glIn = rbind(glIn, cbind(BloodLists, Type = rep("Blood", nrow(BloodLists))))
+    }
+    if (useStemCellLists) {
+        if (!(exists("SCsLists"))) SCsLists = NULL;
+        data("SCsLists",envir=sys.frame(sys.nframe()));
+        write("See help file for details regarding stem cell list references.", 
+            "")
+        glIn = rbind(glIn, cbind(SCsLists, Type = rep("StemCells", nrow(SCsLists))))
     }
     removeDups = unique(paste(as.character(glIn[, 1]), as.character(glIn[, 
-        2]), sep = "@#$%"))
+        2]), as.character(glIn[, 3]), sep = "@#$%"))
     if (length(removeDups) < length(glIn[, 1])) 
         glIn = t(as.matrix(as.data.frame(strsplit(removeDups, "@#$%", fixed = TRUE))))
     geneIn = as.character(glIn[, 1])
@@ -62,12 +70,13 @@ userListEnrichment <- function (geneR, labelR, fnIn = NULL, catNmIn = fnIn, name
     geneIn = geneIn[keep]
     labelIn = labelIn[keep]
     catsR = sort(unique(labelR))
+    omitCategories = c(omitCategories, "background")      
     catsR = catsR[!is.element(catsR, omitCategories)]
     catsIn = sort(unique(labelIn))
     typeIn = glIn[keep, ][match(catsIn, labelIn), 3];
     lenAll = length(geneAll)
     results = list(pValues = NULL, ovGenes = list(), sigOverlaps = NULL)
-    namesOv = NULL
+    namesOv = NULL  
     for (r in 1:length(catsR)) for (i in 1:length(catsIn)) {
         gr = geneR[labelR == catsR[r]]
         gi = geneIn[labelIn == catsIn[i]]

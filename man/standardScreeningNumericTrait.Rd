@@ -8,7 +8,7 @@ Standard screening for numeric traits based on Pearson correlation.
 }
 \usage{
 standardScreeningNumericTrait(datExpr, yNumeric,
-                              corFnc = "cor", corOptions = "use = 'p'", qValues = TRUE)
+                              corFnc = cor, corOptions = list("use = 'p'"), qValues = TRUE)
 }
 \arguments{
   \item{datExpr}{
@@ -18,12 +18,11 @@ to samples and columns to genes (variables)
   \item{yNumeric}{
 a numeric vector giving the trait measurements for each sample
 }
-  \item{corFnc}{ character string specifying the function to be used to calculate co-expression
-similarity for correlation networks.
-Defaults to Pearson correlation. Any function returning values between -1 and 1 can be used. }
+  \item{corFnc}{ correlation function. 
+Defaults to Pearson correlation but can also be \code{\link{bicor}}. }
 
-  \item{corOptions}{ character string specifying additional arguments to be passed to the function given
-by \code{corFnc}. Use \code{"use = 'p', method = 'spearman'"} to obtain Spearman correlation.   }
+  \item{corOptions}{ list specifying additional arguments to be passed to the correlation function given
+by \code{corFnc}. }
 
   \item{qValues}{ logical: should q-values be calculated?}
 }
@@ -32,13 +31,15 @@ The function calculates the correlations, associated p-values, area under the RO
 }
 \value{
 
-List with the following components:
+Data frame with the following components:
 
  \item{ID }{Gene (or variable) identifiers copied from \code{colnames(datExpr)}}
  \item{cor}{correlations of all genes with the trait}
+ \item{Z}{Fisher Z statistics corresponding to the correlations}
  \item{pvalueStudent }{Student p-values of the correlations}
  \item{qvalueStudent }{(if input \code{qValues==TRUE}) q-values of the correlations calculated from the p-values}
  \item{AreaUnderROC }{area under the ROC}
+ \item{nPresentSamples}{number of samples present for the calculation of each association. }
 
 }
 \author{

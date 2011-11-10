@@ -37,7 +37,7 @@ coClustering.permutationTest = function(clusters.ref, clusters.test,
   }
   if (verbose > 0) printFlush("");
   means = colMeans(permValues);
-  sds = sd(permValues);
+  sds = apply(permValues, 2, sd, na.rm = TRUE);
   list(observed = observed, Z = (observed-means)/sds, permuted.mean = means, permuted.sd = sds,
        permuted.cc = permValues);
 }

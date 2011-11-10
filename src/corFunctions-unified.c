@@ -609,7 +609,7 @@ int useNThreads(int n, int nThreadsRequested)
   return nt;
 #else
   // Silence "unused argument" warning
-  int a = n + nThreadsRequested;
+  n = n+1;
   return 1;
 #endif
 }

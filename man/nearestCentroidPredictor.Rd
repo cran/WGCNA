@@ -12,7 +12,8 @@ various ways of feature selection and weighing etc.
 nearestCentroidPredictor(
 
     # Input training and test data
-    x, y, xtest, 
+    x, y, 
+    xtest = NULL, 
 
     # Feature weights and selection criteria
     featureSignificance = NULL, 
@@ -29,16 +30,6 @@ nearestCentroidPredictor(
     sampleWeights = NULL, 
     weighSimByPrediction = 0, 
 
-    # Data pre-processing
-    nRemovePCs = 0, removePCsAfterScaling = TRUE, 
-
-    # Sample network options
-    useSampleNetwork = FALSE, 
-    adjFnc = "cor", adjOptions = "use = 'p'", 
-    networkPower = 2, 
-    clusteringFnc = ".hclust.cutreeDynamic", 
-    clusteringOptions = list(minClusterSize = 4, deepSplit = 2, verbose = 0), 
-   
     # What should be returned
     CVfold = 0, returnFactor = FALSE, 
 
@@ -134,43 +125,6 @@ Optional specification of sample weights. Useful for example if one wants to exp
   \item{weighSimByPrediction}{
 (Optional) power to downweigh features that are not well predicted between training and test sets. See
 details.
-}
-  \item{nRemovePCs}{
-Number of principal components to be removed from the training and test data before the prediction. Defaults
-to no removal. May be useful if there is suspicion of a large technical effect in the data.
-}
-  \item{removePCsAfterScaling}{
-Logical: should the principal components be removed after data scaling?
-}
-  \item{useSampleNetwork}{
-Logical: should sample networks be constructed and used in the prediction? See details.
-}
-  \item{adjFnc}{
-Character string specifying the adjacency similarity function for sample networks. This function should
-behave roughly like the function \code{\link{cor}} in that it takes one argument \code{x} plus possibly
-options
-and calculates the pair-wise similarities between the columns of \code{x}. For convenience, the
-value \code{"dist"} is treated specially: the Euclidean distance between the columns of \code{x}
-is calculated and used directly as the input dissimilarity for clustering.
-}
-  \item{adjOptions}{
-Character string specifying the options to be passed to the adjacency similarity function for sample
-networks. Disregarded for \code{adjFnc="dist"}.
-}
-  \item{networkPower}{
-Soft-thresholding power for the sample network adjacency.
-}
-  \item{clusteringFnc}{
-Character string specifying the clustering function for module identification in the sample networks. The
-clustering function must accept a 
-dissimilarity structure as the first argument and can accept an arbitrary number of other arguments/options
-that can be passed
-using the argument \code{clusteringOptions} below. The return value must be a vector of cluster labels, with
-0 meaning unassigned. Two internal functions are provided, \code{.hclust.cutreeDynamic} and \code{.pam.NCP}
-that implement hierarchical clustering and PAM, respectively, are provided. See Clustering Functions below.
-}
-  \item{clusteringOptions}{
-A list of named elements that will be passed as arguments 
 }
   \item{CVfold}{
 Non-negative integer specifying cross-validation. Zero means no cross-validation will be performed. values
@@ -271,29 +225,6 @@ cluster labels for samples in the class.}
 \author{
 Peter Langfelder
 }
-\section{Clustering functions}{
-The clustering function is specified in the argument \code{clusteringFnc}. The 
-clustering function must accept a
-dissimilarity structure as the first argument and can accept an arbitrary number of other arguments/options
-that can be passed
-using the argument \code{clusteringOptions}. The return value must be a vector of cluster labels, with
-0 meaning unassigned. Two internal functions are provided, \code{.hclust.cutreeDynamic} and \code{.pam.NCP}
-that implement hierarchical clustering and PAM, respectively, are provided. 
-
-The function
-\code{.hclust.cutreeDynamic} calls \code{\link{hclust}} to build a hierarchical clustering dendrogram, then
-identifies modules in the dendrogram using \code{\link{cutreeDynamic}}. The function
-\code{.hclust.cutreeDynamic} accepts all options accepted by functions \code{\link{hclust}} and
-\code{\link{cutreeDynamic}}. Since both functions accept an option named "method", the \code{method} option
-affects \code{hclust}, and the "method" argument of \code{cutreeDynamic} can be given by argument
-\code{cutreeMethod}. 
-
-The function \code{.pam.NCP} calls \code{\link[cluster]{pam}} (the standard Partitioning Around Medoids) and
-passes all arguments to that function. The reason one cannot call  \code{\link[cluster]{pam}} directly is
-that it returns more than just the cluster labels. \code{.pam.NCP} will discard the extra output and return
-just the clustering labels. 
-}
-
 \seealso{
 \code{\link{votingLinearPredictor}}
 }

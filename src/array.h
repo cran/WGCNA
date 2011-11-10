@@ -134,7 +134,7 @@ class indArray
 void indArray::init(int size)
 {
   unsigned val = 1;
-  for (int i=0; i<8*sizeof(int); i++)
+  for (unsigned i=0; i<8*sizeof(int); i++)
   {
     mask[i] = val; 
     invMask[i] = ~mask[i];
@@ -174,7 +174,7 @@ double max(vector <double> v)
   if (v.size()==0)
     throw(Exception(string("attempt to calculate max of an empty vector.")));
   double max = v[0];
-  for (int i=1; i<v.size(); i++)
+  for (unsigned i=1; i<v.size(); i++)
     if (!ISNAN(v[i]) && (v[i] > max)) max = v[i];
   return max;
 }
@@ -184,7 +184,7 @@ int max(vector <int> v)
   if (v.size()==0)
     throw(Exception(string("attempt to calculate max of an empty vector.")));
   int max = v[0];
-  for (int i=1; i<v.size(); i++)
+  for (unsigned i=1; i<v.size(); i++)
     if (v[i] > max) max = v[i];
   return max;
 }
@@ -195,7 +195,7 @@ double min(vector <double> v)
   if (v.size()==0)
     throw(Exception(string("attempt to calculate min of an empty vector.")));
   double min = v[0];
-  for (int i=1; i<v.size(); i++)
+  for (unsigned i=1; i<v.size(); i++)
     if (!ISNAN(v[i]) && (v[i] < min)) min = v[i];
   return min;
 }
@@ -205,7 +205,7 @@ int min(vector <int> v)
   if (v.size()==0)
     throw(Exception(string("attempt to calculate min of an empty vector.")));
   int min = v[0];
-  for (int i=1; i<v.size(); i++)
+  for (unsigned i=1; i<v.size(); i++)
     if (v[i] < min) min = v[i];
   return min;
 }

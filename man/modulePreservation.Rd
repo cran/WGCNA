@@ -22,7 +22,7 @@ modulePreservation(
    maxModuleSize = 1000, 
    quickCor = 1, 
    ccTupletSize = 2, 
-   calculateCor.kIMall = TRUE,
+   calculateCor.kIMall = FALSE,
    useInterpolation = FALSE, 
    checkData = TRUE, 
    greyName = NULL, 

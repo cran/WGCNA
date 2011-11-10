@@ -8,7 +8,8 @@ an appropriate soft-thresholding power for network construction.
 }
 \usage{
 pickSoftThreshold(
-  datExpr, 
+  data, 
+  dataIsExpr = TRUE,
   RsquaredCut = 0.85, 
   powerVector = c(seq(1, 10, by = 1), seq(12, 20, by = 2)), 
   removeFirst = FALSE, nBreaks = 10, blockSize = 1000, 
@@ -19,16 +20,22 @@ pickSoftThreshold(
 
 pickSoftThreshold.fromSimilarity(
     similarity,
-    RsquaredCut = 0.85, powerVector = c(seq(1, 10, by = 1), seq(12, 20, by = 2)),
+    RsquaredCut = 0.85, 
+    powerVector = c(seq(1, 10, by = 1), seq(12, 20, by = 2)),
     removeFirst = FALSE, nBreaks = 10, blockSize = 1000,
-    networkType = "unsigned", moreNetworkConcepts=FALSE, verbose = 0, indent = 0)
+    networkType = "unsigned", 
+    moreNetworkConcepts=FALSE, 
+    verbose = 0, indent = 0)
 
 }
 \arguments{
-  \item{datExpr}{ expression data in a matrix or data frame. Rows correspond to samples and columns to
+  \item{data}{ expression data in a matrix or data frame. Rows correspond to samples and columns to
 genes. }
 
-  \item{similarity}{ a symmetric matrix with entries between -1 and 1 and unit diagonal.}
+  \item{dataIsExpr}{ logical: should the data be interpreted as expression (or other numeric) data, or as a
+similarity matrix of network nodes? }
+
+  \item{similarity}{ similarity matrix: a symmetric matrix with entries between -1 and 1 and unit diagonal.}
 
   \item{RsquaredCut}{ desired minimum scale free topology fitting index \eqn{R^2}. }
 
@@ -61,10 +68,11 @@ progressively more and more verbose. }
 two spaces. }
 }
 \details{
-  The function calculates a weighted network of the type specified by \code{networkType} either from the
-correlation matrix of
-\code{datExpr} or from the similarity matrix \code{similarity} to
-the powers given in \code{powerVector}. For each power the scale free topology fit index is calculated
+  The function calculates weighted networks either by
+interpreting \code{data} directly as similarity, or first transforming it to similarity of the type
+specified by \code{networkType}.
+The weighted networks are obtained by raising the similarity to the powers given in \code{powerVector}. 
+For each power the scale free topology fit index is calculated
 and returned along with other information on connectivity. 
 }
 \value{

@@ -9,7 +9,8 @@ user pick an appropriate threshold for network construction.
 }
 \usage{
 pickHardThreshold(
-  datExpr, 
+  data, 
+  dataIsExpr,
   RsquaredCut = 0.85, 
   cutVector = seq(0.1, 0.9, by = 0.05), 
   moreNetworkConcepts = FALSE,
@@ -24,8 +25,11 @@ pickHardThreshold.fromSimilarity(
     removeFirst = FALSE, nBreaks = 10)
 }
 \arguments{
-  \item{datExpr}{ expression data in a matrix or data frame. Rows correspond to samples and columns to
+  \item{data}{ expression data in a matrix or data frame. Rows correspond to samples and columns to
 genes. }
+
+  \item{dataIsExpr}{ logical: should the data be interpreted as expression (or other numeric) data, or as a
+similarity matrix of network nodes? }
 
   \item{similarity}{ similarity matrix: a symmetric matrix with entries between -1 and 1 and unit diagonal.}
 
