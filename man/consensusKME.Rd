@@ -80,12 +80,12 @@ is expected to accept arguments \code{x} (gene expression profiles), \code{y} (e
 profiles), and \code{alternative} with possibilities at least \code{"greater", "two.sided"}. 
 Any additional arguments can be passed via \code{corOptions}. 
 
-The function \code{corAndPvalueFnc} should return a list which at the least contains a matrix 
-of associations of genes and eigengenes.
-This component should have the name given by \code{corComponent} below. Other components are optional but
+The function \code{corAndPvalueFnc} should return a list which at the least contains (1) a matrix 
+of associations of genes and eigengenes (this component should have the name given by \code{corComponent}),
+and (2) a matrix of the corresponding p-values, named "p" or "p.value". Other components are optional but
 for full functionality should include
-(1) \code{nObs} giving the number of observations for each association (which is the number of samples less
-number of missing data - this can in principle vary from association to association), and (2) \code{Z}
+(3) \code{nObs} giving the number of observations for each association (which is the number of samples less
+number of missing data - this can in principle vary from association to association), and (4) \code{Z}
 giving a Z static for each observation. If these are missing, \code{nObs} is calculated in the main
 function, and calculations using the Z statistic are skipped.
 }
