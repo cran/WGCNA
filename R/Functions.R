@@ -295,7 +295,7 @@ pickSoftThreshold = function (data, dataIsExpr = TRUE, RsquaredCut = 0.85,
         cat("\n\n")
     for (i in c(1:length(powerVector))) 
     {
-        khelp= datk[, i] - 1
+        khelp= datk[, i] 
         SFT1=scaleFreeFitIndex(k=khelp,nBreaks=nBreaks,removeFirst=removeFirst)
         datout[i, 2] = SFT1$Rsquared.SFT  
         datout[i, 3] = SFT1$slope.SFT 
@@ -5213,6 +5213,5 @@ metaAnalysis = function(multiExpr, multiTrait,
 
   out;
 }
-             
 
 

@@ -13,8 +13,8 @@ also be used for general association networks specified by a symmetric adjacency
 \details{
 \tabular{ll}{
 Package: \tab WGCNA\cr
-Version: \tab 1.14\cr
-Date: \tab 2011-11-08\cr
+Version: \tab 1.15\cr
+Date: \tab 2011-11-11\cr
 Depends: \tab R (>= 2.3.0), stats, impute, grDevices, dynamicTreeCut (>= 1.20), utils, flashClust, qvalue,
 Hmisc, splines, reshape \cr
 Suggests: AnnotationDbi, GO.db, org.*.eg.db, infotheo, entropy, minet
@@ -143,6 +143,8 @@ moduleMergeUsingKME     Merge modules and reassign genes using kME
 moduleNumber            Fixed-height cut of a dendrogram
 modulePreservation	Calculation of module preservation statistics
 multiSetMEs             Calculate module eigengenes
+multiData.eigengeneSignificance
+                        Calculate eigengene significance for multiple data sets
 mutualInfoAdjacency     Calculate weighted adjacency matrices based on mutual information
 nPresent                Number of present data entries
 nearestNeighborConnectivity

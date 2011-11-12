@@ -1,6 +1,16 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
 
+	. Due to CRAN requirements, R versions below 2.10 are not supported anymore.
+
+	. New function multiData.eigengeneSignificance for calculating module eigengene 
+	  significances in multi-set situations.
+
+	. DIFF: bugfix in function pickSoftThreshold, subtraction of
+	  self-connectivity is now corrected which may lead to slightly
+	  different scale-free analysis results.
+
+
 2011/11/08: 1.14
 
 	. The default value of argument calculateCors.kKIMall in function
@@ -48,6 +58,7 @@ Note: as of 2009/03/10, changes that lead to different calculational results are
 
 	. New function metaAnalysis to calculate meta-analysis significance
 	  statistics
+
 
 2011/08/17: 1.13
 
