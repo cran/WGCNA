@@ -1,6 +1,28 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
 
+2011/12/06: 1.17
+
+	. function consensusKME now returns additional statistics based on 3
+	  different sets of weights
+	. bugfix in function TOMplot: the heatmap is now drawn correctly
+	. GOenrichmentAnalysis is now faster
+	. nearestCentroidPredictor is now more robust to constant variables
+	. bugfix in function standardScreeningNumericTrait: default value for
+	  argument corOptions is now correct
+
+
+2011/11/16: 1.16
+
+	. Bugfix in standardScreeningBinaryTrait: sign of `signed' Kruskal test
+	  statistic is now calculated correctly
+	. Function metaAnalysis now (optionally) also calculates meta-analysis
+	  statistics using the rankPvalue function.
+	. Function consensusKME now also optionally uses rankPvalue for
+	  meta-analysis of kME results across input data sets
+
+2011/11/14: 1.15
+
 	. Due to CRAN requirements, R versions below 2.10 are not supported anymore.
 
 	. New function multiData.eigengeneSignificance for calculating module eigengene 
@@ -8,7 +30,8 @@ Note: as of 2009/03/10, changes that lead to different calculational results are
 
 	. DIFF: bugfix in function pickSoftThreshold, subtraction of
 	  self-connectivity is now corrected which may lead to slightly
-	  different scale-free analysis results.
+	  different scale-free analysis results (thanks to Michael Linderman
+	  for reporting it).
 
 
 2011/11/08: 1.14

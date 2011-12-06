@@ -10,6 +10,7 @@ standardScreeningBinaryTrait=function(datExpr, y,
            corFnc = cor, corOptions = list(use = 'p'),
            kruskalTest=FALSE, qValues = FALSE, var.equal=FALSE, na.action="na.exclude") 
 {
+
    datExpr=data.frame(datExpr)
    levelsy=levels(factor(y))
    if (length(levelsy)>2 ) 
@@ -31,6 +32,7 @@ standardScreeningBinaryTrait=function(datExpr, y,
 
   corFnc = match.fun(corFnc);
   corOptions$y = yNumeric;
+  nGenes = dim(datExpr)[[2]];
   for (i in 1:dim(datExpr)[[2]]) {
         corOptions$x = as.numeric(datExpr[,i]);
         corPearson[i] = as.numeric(do.call(corFnc, corOptions));
@@ -42,10 +44,19 @@ standardScreeningBinaryTrait=function(datExpr, y,
         {
            pvalueStudent[i]= t.Student[i] = NA 
         } else {
-          tst = t.test( as.numeric(datExpr[,i])~yNumeric,var.equal=var.equal,na.action=na.action)
-          pvalueStudent[i] = tst$p.value;
-          t.Student[i] = -tst$statistic 
-          # The - sign above is intentional to make the sign of t consistent with correlation
+          tst = try(t.test( as.numeric(datExpr[,i])~yNumeric,var.equal=var.equal,na.action=na.action),
+                    silent = TRUE)
+          if (!inherits(tst, "try-error"))
+          {
+            pvalueStudent[i] = tst$p.value;
+            t.Student[i] = -tst$statistic 
+            # The - sign above is intentional to make the sign of t consistent with correlation
+          } else {
+            printFlush(paste("standardScreeningBinaryTrait: An error ocurred in t.test for variable", 
+                             i, ":\n", tst));
+            printFlush(paste("Will return missing value(s) for this variable.\n\n"));
+          }
+          
         }
         AreaUnderROC[i] = rcorr.cens(datExpr[, i], yNumeric, outx = TRUE)[[1]]
         if (kruskalTest) {
@@ -53,14 +64,22 @@ standardScreeningBinaryTrait=function(datExpr, y,
             {
                pvaluekruskal[i] = stat.Kruskal[i] = NA
             } else {
-               kt = kruskal.test(datExpr[, i] ~ factor(yNumeric),  na.action="na.exclude")
-               pvaluekruskal[i] = kt$p.value;
-               stat.Kruskal[i] = kt$statistic;
-               # Find which side is higher
-               r = rank(datExpr[, i]);
-               sums = tapply(r, factor(yNumeric), sum);
-               sign.Kruskal[i] = 2 * ( (sums[1] < sums[2]) - 0.5);
-               # sign.Kruskal is 1 if the ranks in group 1 are smaller than in group 2
+               kt = try(kruskal.test(datExpr[, i] ~ factor(yNumeric),  na.action="na.exclude"), silent = TRUE)
+               if (!inherits(kt, "try-error"))
+               {
+                 pvaluekruskal[i] = kt$p.value;
+                 stat.Kruskal[i] = kt$statistic;
+                 # Find which side is higher
+                 r = rank(datExpr[, i]);
+                 means = tapply(r, factor(yNumeric), mean, na.rm = TRUE);
+                 sign.Kruskal[i] = 2 * ( (means[1] < means[2]) - 0.5);
+                 # sign.Kruskal is 1 if the ranks in group 1 are smaller than in group 2
+               } else {
+                 printFlush(paste("standardScreeningBinaryTrait: An error ocurred in kruskal.test for variable",
+                                  i, ":\n", kt));
+                 printFlush(paste("Will return missing value(s) for this variable.\n\n"));
+               }
+
            }
         } 
     }

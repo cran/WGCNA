@@ -268,8 +268,8 @@ nearestCentroidPredictor = function(
   nGood = nVars;
   nNA = sum(is.na(featureSignificance));
   testCentroidSimilarities = list();
-
-  keep = is.finite(featureSignificance);
+  xSD = apply(x, 2, sd, na.rm = TRUE);
+  keep = is.finite(featureSignificance) & (xSD>0);
   nKeep = sum(keep);
   keepInd = c(1:nVars)[keep];
   order = order(featureSignificance[keep]);
@@ -372,7 +372,6 @@ nearestCentroidPredictor = function(
   # Trivial cluster labels: clusters equal case classes
   for (l in 1:nLevels)
     clusterLabels[[l]] = rep(l, sum(y==levels[l]))
-  clusterNumbers = rep(1, nLevels);
 
   nClusters = sum(clusterNumbers);
   centroidSimilarities = array(NA, dim = c(nSamples, nClusters));
