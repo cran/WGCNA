@@ -13,9 +13,11 @@ consensusKME(multiExpr, moduleLabels,
              consensusQuantile = 0, 
              signed = TRUE,
              useModules = NULL,
-             countWeightPower = 1,
+             metaAnalysisWeights = NULL,
              corAndPvalueFnc = corAndPvalue, corOptions = list(), corComponent = "cor",
              getQvalues = FALSE,
+             useRankPvalue = TRUE,
+             rankPvalueOptions = list(calculateQvalue = getQvalues, pValueMethod = "scale"),
              setNames = NULL, 
              excludeGrey = TRUE, greyLabel = ifelse(is.numeric(moduleLabels), 0, "grey"))
 }
@@ -45,10 +47,10 @@ with \code{useModules}.}
   \item{consensusQuantile}{
   Quantile for the consensus calculation. Should be a number between 0 (minimum) and 1.
 }
-  \item{countWeightPower}{
-  This argument controls how the individual kME values are weighted in the weighted average output 
-  (see Value below). The weight of each input set is proportional to number of samples in the set, 
-  raised to the power \code{countWeightPower}. 
+  \item{metaAnalysisWeights}{
+    Optional specification of meta-analysis weights for each input set. If given, must be a numeric vector
+of length equal the number of input data sets (i.e., \code{length(multiExpr)}). These weights will be used
+in addition to constant weights and weights proportional to number of samples (observations) in each set.
 }
   \item{corAndPvalueFnc}{
   Function that calculates associations between expression profiles and eigengenes. See details.
@@ -62,6 +64,14 @@ with \code{useModules}.}
   \item{getQvalues}{
    logical: should q-values (estimates of FDR) be calculated?
 }
+  \item{useRankPvalue}{ Logical: should the \code{\link{rankPvalue}} function be used to obtain alternative
+meta-analysis statistics?}
+
+  \item{rankPvalueOptions}{ Additional options for function \code{\link{rankPvalue}}. These include
+\code{na.last} (default \code{"keep"}), \code{ties.method} (default \code{"average"}),
+\code{calculateQvalue} (default copied from input \code{getQvalues}),
+and \code{pValueMethod} (default \code{"scale"}).
+See the help file for \code{\link{rankPvalue}} for full details.}
   \item{setNames}{
    names for the input sets. If not given, will be taken from \code{names(multiExpr)}. If those are
 \code{NULL} as well, the names will be \code{"Set_1", "Set_2", ...}.
@@ -98,25 +108,103 @@ actual output):
 individual data sets)in each module for each gene across the input data
 sets. The module labels (here 1, 2, etc.) correspond to those in \code{moduleLabels}.}
 
-\item{average.kME.1, average.kME.2, ...}{Average kME in each module for each gene across the input data 
-sets. }
+\item{weightedAverage.equalWeights.kME1, weightedAverage.equalWeights.kME2, ...}{
+Average kME in each module for each gene across the
+input data sets. }
 
-\item{weightedAverage.kME.1, weightedAverage.kME.2, ...}{Average kME in each module for each gene across the
-input data sets. The weight of each data set is proportional to number of samples in the set, raised to the
-power \code{countWeightPower}. } 
+\item{weightedAverage.DoFWeights.kME1, weightedAverage.DoFWeights.kME2, ...}{
+Weighted average kME in each module for each gene across the
+input data sets. The weight of each data set is proportional to number of samples in the set. }
 
-\item{meta.Z.kME1, meta.Z.kME2, ...}{Meta-analysis Z statistic for kME in each module, 
-obtained by weighing the Z scores in each set by number of
-samples raised to the power \code{countWeightPower}. Only returned if the function \code{corAndPvalueFnc}
+\item{weightedAverage.userWeights.kME1, weightedAverage.userWeights.kME2, ...}{
+(Only present if input \code{metaAnalysisWeights} is non-NULL.)
+Weighted average kME in each module for each gene across the
+input data sets. The weight of each data set is given in \code{metaAnalysisWeights}.}
+
+\item{meta.Z.equalWeights.kME1, meta.Z.equalWeights.kME2, ...}{Meta-analysis Z statistic for kME in each module, 
+obtained by weighing the Z scores in each set equally. Only returned if the function \code{corAndPvalueFnc}
 returns the Z statistics corresponding to the correlations.}
 
-\item{meta.p.kME1, meta.p.kME2, ...}{ p-values obtained from the meta-analysis Z statistics.Only returned if
-the function \code{corAndPvalueFnc} 
-returns the Z statistics corresponding to the correlations. }
+\item{meta.Z.DoFWeights.kME1, meta.Z.DoFWeights.kME2, ...}{Meta-analysis Z statistic for kME in each module, 
+obtained by weighing the Z scores in each set by number of
+samples. Only returned if the function \code{corAndPvalueFnc}
+returns the Z statistics corresponding to the correlations.}
 
-\item{meta.q.kME1, meta.q.kME2, ...}{ q-values obtained from the meta-analysis p-values. Only present if
+\item{meta.Z.userWeights.kME1, meta.Z.userWeights.kME2, ...}{Meta-analysis Z statistic for kME in each module, 
+obtained by weighing the Z scores in each set by \code{metaAnalysisWeights}. 
+Only returned if \code{metaAnalysisWeights} is non-NULL and the function \code{corAndPvalueFnc}
+returns the Z statistics corresponding to the correlations.}
+
+\item{meta.p.equalWeights.kME1, meta.p.equalWeights.kME2, ...}{ 
+p-values obtained from the equal-weight meta-analysis Z statistics. Only returned if the function
+\code{corAndPvalueFnc} returns the Z statistics corresponding to the correlations. } 
+
+\item{meta.p.DoFWeights.kME1, meta.p.DoFWeights.kME2, ...}{ 
+p-values obtained from the degree-of-freedom weight meta-analysis Z statistics. Only returned if the function
+\code{corAndPvalueFnc} returns the Z statistics corresponding to the correlations. } 
+
+\item{meta.p.userWeights.kME1, meta.p.userWeights.kME2, ...}{ 
+p-values obtained from the user-supplied weight meta-analysis Z statistics. Only returned if
+\code{metaAnalysisWeights} is non-NULL and the function
+\code{corAndPvalueFnc} returns the Z statistics corresponding to the correlations. } 
+
+\item{meta.q.equalWeights.kME1, meta.q.equalWeights.kME2, ...}{ 
+q-values obtained from the equal-weight meta-analysis p-values. Only present if
 \code{getQvalues} is \code{TRUE} and the function \code{corAndPvalueFnc} 
 returns the Z statistics corresponding to the kME values.}
+
+\item{meta.q.DoFWeights.kME1, meta.q.DoFWeights.kME2, ...}{ 
+q-values obtained from the degree-of-freedom weight meta-analysis p-values. Only present if
+\code{getQvalues} is \code{TRUE} and the function \code{corAndPvalueFnc} 
+returns the Z statistics corresponding to the kME values.}
+
+\item{meta.q.userWeights.kME1, meta.q.userWeights.kME2, ...}{ 
+q-values obtained from the user-specified weight meta-analysis p-values. Only present if
+\code{metaAnalysisWeights} is non-NULL, 
+\code{getQvalues} is \code{TRUE} and the function \code{corAndPvalueFnc} 
+returns the Z statistics corresponding to the kME values.}
+
+The next set of columns contain the results of function \code{\link{rankPvalue}} and are only present if
+input \code{useRankPvalue} is \code{TRUE}. Some columns may be missing depending on the options specified in
+\code{rankPvalueOptions}. 
+
+\item{pValueExtremeRank.ME1, pValueExtremeRank.ME2, ...}{This is the minimum between pValueLowRank and
+pValueHighRank, i.e. min(pValueLow, pValueHigh)}
+
+\item{pValueLowRank.ME1, pValueLowRank.ME2, ...}{Asymptotic p-value for observing a consistently low value
+across the columns of datS based on the rank method.}
+
+\item{pValueHighRank.ME1, pValueHighRank.ME2, ...}{Asymptotic p-value for observing a consistently low value
+across the columns of datS based on the rank method.} 
+
+\item{pValueExtremeScale.ME1, pValueExtremeScale.ME2, ...}{This is the minimum between pValueLowScale and
+pValueHighScale, i.e. min(pValueLow, pValueHigh)}
+
+\item{pValueLowScale.ME1, pValueLowScale.ME2, ...}{Asymptotic p-value for observing a consistently low value
+across the columns of datS based on the Scale method.} 
+
+\item{pValueHighScale.ME1, pValueHighScale.ME2, ...}{Asymptotic p-value for observing a consistently low
+value across the columns of datS based on the Scale method.} 
+
+\item{qValueExtremeRank.ME1, qValueExtremeRank.ME2, ...}{local false discovery rate (q-value) corresponding
+to the p-value pValueExtremeRank} 
+
+\item{qValueLowRank.ME1, qValueLowRank.ME2, ...}{local false discovery rate (q-value) corresponding to the
+p-value pValueLowRank} 
+
+\item{qValueHighRank.ME1, lueHighRank.ME2, ...}{local false discovery rate (q-value) corresponding to the
+p-value pValueHighRank} 
+
+\item{qValueExtremeScale.ME1, qValueExtremeScale.ME2, ...}{local false discovery rate (q-value)
+corresponding to the p-value pValueExtremeScale}
+
+\item{qValueLowScale.ME1, qValueLowScale.ME2, ...}{local false discovery rate (q-value) corresponding to the
+p-value pValueLowScale}
+
+\item{qValueHighScale.ME1,qValueHighScale.ME2, ...}{local false discovery rate (q-value) corresponding to
+the p-value pValueHighScale}
+
+The following set of columns summarize kME in individual input data sets.
 
 \item{kME1.Set_1, kME1.Set_2, ..., kME2.Set_1, kME2.Set_2, ...}{ kME values for each gene in each module in
 each given data set. }

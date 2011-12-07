@@ -8,7 +8,7 @@ Standard screening for numeric traits based on Pearson correlation.
 }
 \usage{
 standardScreeningNumericTrait(datExpr, yNumeric,
-                              corFnc = cor, corOptions = list("use = 'p'"), qValues = TRUE)
+                              corFnc = cor, corOptions = list(use = 'p'), qValues = TRUE)
 }
 \arguments{
   \item{datExpr}{

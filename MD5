@@ -1,12 +1,12 @@
-4eb2e9c6ca55be623e8ddecc099cc94f *Changelog
-11682cc8263d2c3cf14366cb352ca6d7 *DESCRIPTION
+452ab3985a737bbf0a3b3fc418994c52 *Changelog
+49416dab0df6e81fa1d663d9b6bdc44c *DESCRIPTION
 970fd32521fb5ab965eeec686834d06b *NAMESPACE
 2640fb7286cab45b6de425c01109f80e *R/AFcorMI.R
 ea14a2a861b238bbb31d9f54117b7fdb *R/Functions-fromSimilarity.R
 5a86b88c501ec512d80bdb0b8f5886cc *R/Functions-modColor.R
 097846fd303fca478b00861a23b4626d *R/Functions-multiData.R
-42578daa0613c727fb724c2ba5c01984 *R/Functions.R
-26e80823aa117381dea59b7190c30d40 *R/GOenrichmentAnalysis.R
+d6517234ac570edb6e0a0669277563a8 *R/Functions.R
+7df4514409a13851a38fab29d54a249a *R/GOenrichmentAnalysis.R
 c71beb3c2312e81f9102e918679745ce *R/accuracyMeasures.R
 6694f89a89e904eb1bc90d28cf28fc37 *R/adjacency.polyReg.R
 3cc995eb826b701ba4d3a7bf6ad64a3a *R/adjacency.splineReg.R
@@ -28,7 +28,7 @@ da2729744a42bda91cc02ddf3714a612 *R/kMEcomparisonScatterplot.R
 de5a35825d9b736b61c515ebee717d25 *R/moduleMergeUsingKME.R
 d031f9111f460dd7c3476f92c13645fb *R/modulePreservation.R
 d96c4db72edd76ecee257f03f3743c3e *R/mutualInfoAdjacency.R
-1ebf3d90438401e8f871dac0a82880e1 *R/nearestCentroidPredictor.R
+b92717ee22aa436149b7a048d0f14720 *R/nearestCentroidPredictor.R
 ff247c78f289e887d88ea719e482e2ee *R/networkConcepts.R
 cbbf15f7e1af46c97769349028dcc197 *R/overlapTableUsingKME.R
 1f84c828572b06bc6baf3ad5df077b99 *R/populationMeansInAdmixture.R
@@ -38,7 +38,7 @@ b9031c27dab6ce4d7c4e320a5d921234 *R/pquantile.R
 0f6a00ada5b99112e8dadea807aa2a00 *R/qvalue.R
 ccc79bd4eb6ee39d21d38293b67c0287 *R/smaFunctions-Rna.R
 f87924d7f12e5bc286821069abd5101e *R/smaFunctions.R
-2cc59b4a43f27f8e5bf49542288edd40 *R/standardScreeningBinaryTrait.R
+f47410b4caeba609f5a5d92f0f6c8cee *R/standardScreeningBinaryTrait.R
 f20cae9009e6bca9e4f19328f17a229f *R/stratifiedBarplot.R
 e2e282ac0ba378da41a92b8cf1674007 *R/useNThreads.R
 4fa327921910818befde2e98bad07277 *R/userListEnrichment.R
@@ -57,7 +57,7 @@ c14de92cb72ff91090a7ba478308fd72 *man/BloodLists.Rd
 358a7693a58846c2f047764271b189b1 *man/TOMplot.Rd
 d95a6e779cb6edf6b40206b52e3215a7 *man/TOMsimilarity.Rd
 502131e33c1e9b1c66d48d90aba59b22 *man/TOMsimilarityFromExpr.Rd
-6bcd26773ee54cbbcb1eb3792a33e85a *man/WGCNA-package.Rd
+57803ef40e3a7cf15199b073befab1ce *man/WGCNA-package.Rd
 95ba0052e33532b0a2636b06ae6bc03e *man/accuracyMeasures.Rd
 051b9a0b6e3d224367101ae392fdee22 *man/addErrorBars.Rd
 2703e1c680bae62e4c5aaecdcfbbd424 *man/addGrid.Rd
@@ -88,7 +88,7 @@ e3f8541b1a35d25d0767fca0ecd2a2b3 *man/collectGarbage.Rd
 161399055c32a9010d1311b4987249b8 *man/conformityBasedNetworkConcepts.Rd
 f02e1252a1f127594ba501f14727ad6d *man/conformityDecomposition.Rd
 4b6bf406edcd173d39851f05614e3dfa *man/consensusDissTOMandTree.Rd
-a8bb88d2c112a96a46085854eb422ab4 *man/consensusKME.Rd
+441c71299e56b04251946d4d54721952 *man/consensusKME.Rd
 b7894dd42a2601088dca9dea50eff843 *man/consensusMEDissimilarity.Rd
 171634ec94492cd2a68a284c88329b68 *man/consensusOrderMEs.Rd
 dab0f9668d35ff557fb59dadb7f3b3fe *man/consensusProjectiveKMeans.Rd
@@ -127,7 +127,7 @@ d199088b5c80bfb44a87d682b18774ca *man/intramodularConnectivity.Rd
 5257dea14695c56e26d792717a89de29 *man/matchLabels.Rd
 caad2f4cd29ed55a6c2ff090d7090ecb *man/matrixToNetwork.Rd
 b5b11c8f26921357d29697b240f1cb70 *man/mergeCloseModules.Rd
-3f36c22aa04a27b3c693a9d368aafd1b *man/metaAnalysis.Rd
+7e569285bec82da17a74c8bfad65c7b7 *man/metaAnalysis.Rd
 ffd97d40240349925bc44f5b1906d3e5 *man/metaZfunction.Rd
 7edcdce8f159ca0dfa75c6381c252900 *man/moduleColor.getMEprefix.Rd
 cadbc62207509c337b6a361997f5aff5 *man/moduleEigengenes.Rd
@@ -198,7 +198,7 @@ fe4f33b0118a94102b47510875ed615a *man/spaste.Rd
 7ecad95060f87ef52377475bc0b16424 *man/standardColors.Rd
 38f3be3815da878aefe82b8ed031d0f8 *man/standardScreeningBinaryTrait.Rd
 08f1a4fccc3aefb0682181775f6f2718 *man/standardScreeningCensoredTime.Rd
-8b3a2d56285f2bab5befb457f4f50d2c *man/standardScreeningNumericTrait.Rd
+7b4a9eefca4c24e78b3e419616836c45 *man/standardScreeningNumericTrait.Rd
 5e81bfb27bfc037bea6d1bfe0e203c0e *man/stat.diag.da.Rd
 87f05439163372d9038c2e35e4227c51 *man/stats.bwss.Rd
 ee8e76f68bf0082b629605fc36df945b *man/stdErr.Rd

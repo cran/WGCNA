@@ -4299,19 +4299,24 @@ goodSamplesGenesMS = function(multiExpr, minFraction = 1/2, minNSamples = ..minN
     labCol = NULL, main = NULL, xlab = NULL, ylab = NULL, keep.dendro = FALSE, 
     verbose = getOption("verbose"), setLayout = TRUE, hang = 0.04, ...) 
 {
-    scale <- if (symm && missing(scale)) 
-        "none"
-    else match.arg(scale)
-    if (length(di <- dim(x)) != 2 || !is.numeric(x)) 
+    scale <- if(symm && missing(scale)) "none" else match.arg(scale)
+    if(length(di <- dim(x)) != 2 || !is.numeric(x))
         stop("'x' must be a numeric matrix")
-    nr <- di[1]
-    nc <- di[2]
-    if (nr <= 1 || nc <= 1) stop("'x' must have at least 2 rows and 2 columns")
-    if (!is.numeric(margins) || length(margins) != 2) stop("'margins' must be a numeric vector of length 2")
-    doRdend <- !identical(Rowv, NA)
-    doCdend <- !identical(Colv, NA)
-    if (is.null(Rowv)) Rowv <- rowMeans(x, na.rm = na.rm)
-    if (is.null(Colv)) Colv <- colMeans(x, na.rm = na.rm)
+    nr <- di[1L]
+    nc <- di[2L]
+    if(nr <= 1 || nc <= 1)
+        stop("'x' must have at least 2 rows and 2 columns")
+    if(!is.numeric(margins) || length(margins) != 2L)
+        stop("'margins' must be a numeric vector of length 2")
+
+    doRdend <- !identical(Rowv,NA)
+    doCdend <- !identical(Colv,NA)
+    if(!doRdend && identical(Colv, "Rowv")) doCdend <- FALSE
+    ## by default order by row/col means
+    if(is.null(Rowv)) Rowv <- rowMeans(x, na.rm = na.rm)
+    if(is.null(Colv)) Colv <- colMeans(x, na.rm = na.rm)
+
+    ## get the dendrograms and reordering indices
     if (doRdend) {
         if (inherits(Rowv, "dendrogram")) 
             ddr <- Rowv
@@ -4349,7 +4354,10 @@ goodSamplesGenesMS = function(multiExpr, minFraction = 1/2, minNSamples = ..minN
             stop("column dendrogram ordering gave index of wrong length")
     }
     else colInd <- 1:nc
+
+    ## reorder x
     x <- x[rowInd, colInd]
+
     labRow <- if (is.null(labRow)) 
         if (is.null(rownames(x))) (1:nr)[rowInd] else rownames(x)
     else labRow[rowInd]
@@ -4366,6 +4374,8 @@ goodSamplesGenesMS = function(multiExpr, minFraction = 1/2, minNSamples = ..minN
         sx <- apply(x, 2, sd, na.rm = na.rm)
         x <- sweep(x, 2, sx, "/")
     }
+
+    ## Calculate the plot layout
     lmat <- rbind(c(NA, 3), 2:1)
     lwid <- c(if (doRdend) 1 else 0.05, 4)
     lhei <- c((if (doCdend) 1 else 0.05) + if (!is.null(main)) 0.5 else 0, 4)
@@ -4386,9 +4396,10 @@ goodSamplesGenesMS = function(multiExpr, minFraction = 1/2, minNSamples = ..minN
         cat("layout: widths = ", lwid, ", heights = ", lhei, "; lmat=\n")
         print(lmat)
     }
+    if (!symm || scale != "none") x <- t(x)
     op <- par(no.readonly = TRUE)
     if (revC) {
-        iy <- nr:1
+        iy <- nc:1
         ddr <- rev(ddr)
         rowInd.colors = rev(rowInd)
         x <- x[, iy]
@@ -4405,7 +4416,6 @@ goodSamplesGenesMS = function(multiExpr, minFraction = 1/2, minNSamples = ..minN
         image(cbind(1:nc), col = ColSideColors[colInd], axes = FALSE)
     }
     par(mar = c(margins[1], 0, 0, margins[2]))
-    if (!symm || scale != "none") x <- t(x)
     image(1:nc, 1:nr, x, xlim = 0.5 + c(0, nc), ylim = 0.5 + c(0, nr), axes = FALSE, 
           xlab = "", ylab = "", ...)
     axis(1, 1:nc, labels = labCol, las = 2, line = -0.5, tick = 0, cex.axis = cexCol)
@@ -4632,7 +4642,7 @@ if (!qValues) {
 #
 #================================================================================
 
-standardScreeningNumericTrait= function (datExpr, yNumeric, corFnc = cor, corOptions = list("use = 'p'"),
+standardScreeningNumericTrait= function (datExpr, yNumeric, corFnc = cor, corOptions = list(use = 'p'),
                                          qValues = TRUE) 
 { 
 datExpr=data.frame(datExpr)
@@ -4875,9 +4885,11 @@ qvalue.restricted = function(p, trapErrors = TRUE, ...)
 consensusKME = function(multiExpr, moduleLabels, multiEigengenes = NULL, consensusQuantile = 0,
                         signed = TRUE,
                         useModules = NULL,
-                        countWeightPower = 1, 
+                        metaAnalysisWeights = NULL, 
                         corAndPvalueFnc = corAndPvalue, corOptions = list(),
                         corComponent = "cor", getQvalues = FALSE,
+                        useRankPvalue = TRUE,
+                        rankPvalueOptions = list(calculateQvalue = getQvalues, pValueMethod = "scale"),
                         setNames = NULL, excludeGrey = TRUE,
                         greyLabel = ifelse(is.numeric(moduleLabels), 0, "grey"))
 {
@@ -4887,6 +4899,10 @@ consensusKME = function(multiExpr, moduleLabels, multiEigengenes = NULL, consens
   nSets = size$nSets;
   nGenes = size$nGenes;
   nSamples = size$nSamples;
+
+  if (!is.null(metaAnalysisWeights))
+     if (length(metaAnalysisWeights)!=nSets)
+       stop("Length of 'metaAnalysisWeights' must equal number of input sets.");
 
   if (!is.null(useModules))
   {
@@ -4935,9 +4951,26 @@ consensusKME = function(multiExpr, moduleLabels, multiEigengenes = NULL, consens
     q = apply(p, c(2:3), qvalue.restricted);
   } else q = NULL;
 
-  kME.average = rowMeans(kME, dims = 2);
-  kME.weightedAverage = rowSums( kME * nObs^countWeightPower, dim = 2) / 
-                          rowSums(nObs^countWeightPower, dim = 2)
+  # kME.average = rowMeans(kME, dims = 2); <-- not neccessary since weighted average also contains it
+
+  powers = c(0, 1);
+  nPowers = length(powers)
+  nWeights = nPowers + !is.null(metaAnalysisWeights)
+  weightNames = c("equalWeights", "DoFWeights", "userWeights") [1:nWeights];
+  kME.weightedAverage = array(NA, dim = c(nGenes, nWeights, nModules));
+  for (m in 1:nWeights)
+  {
+    if (m<=nPowers) {
+      weights = nObs^powers[m]
+    } else
+      weights = array( rep(metaAnalysisWeights, rep(nGenes*nModules, nSets)),
+                             dim = c(nGenes, nModules, nSets));
+    kME.weightedAverage[, m, ] = rowSums( kME * weights, na.rm = TRUE, dim = 2) / 
+                                    rowSums(weights, dim = 2, na.rm = TRUE)
+  }
+
+  dim(kME.weightedAverage) = c(nGenes * nWeights, nModules);
+
   if (any(is.na(kME)))
   {
      kME.consensus.1 = apply(kME, c(1,2), quantile, prob = consensusQuantile, na.rm = TRUE);
@@ -4967,23 +5000,67 @@ consensusKME = function(multiExpr, moduleLabels, multiEigengenes = NULL, consens
   # Get meta-Z, -p, -q values
   if (haveZs)
   {
-    Z.kME.meta = rowSums( Z * nObs^countWeightPower, dim = 2) / 
-                          sqrt(rowSums(nObs^(2*countWeightPower), dim = 2))
-    if (signed)
+    Z.kME.meta = p.kME.meta = array(0, dim = c(nGenes, nWeights, nModules))
+    if (getQvalues) q.kME.meta = array(0, dim = c(nGenes, nWeights, nModules));
+    for (m in 1:nWeights)
     {
-       p.kME.meta = pnorm(Z.kME.meta, lower.tail = FALSE);
-    } else
-       p.kME.meta = 2*pnorm(abs(Z.kME.meta), lower.tail = FALSE);
-    #colnames(Z.kME.meta) = spaste("meta.Z.kME.", modLevels);
-    #colnames(p.kME.meta) = spaste("meta.p.kME.", modLevels);
-    if (getQvalues)
+      if (m<=nPowers) {
+        weights = nObs^powers[m]
+      } else
+        weights = array( rep(metaAnalysisWeights, rep(nGenes*nModules, nSets)), 
+                             dim = c(nGenes, nModules, nSets));
+
+      Z1 = rowSums( Z * weights, na.rm = TRUE, dim = 2) / sqrt(rowSums(weights^2, na.rm = TRUE, dim = 2))
+      if (signed)
+      {
+         p1 = pnorm(Z1, lower.tail = FALSE);
+      } else
+         p1 = 2*pnorm(abs(Z1), lower.tail = FALSE);
+      Z.kME.meta[, m, ] = Z1;
+      p.kME.meta[, m, ] = p1;
+      if (getQvalues)
+      {
+        q1 = apply(p1, 2, qvalue.restricted);
+        q.kME.meta[, m, ] = q1;
+      }
+    }
+    dim(Z.kME.meta) = dim(p.kME.meta) = c(nGenes* nWeights, nModules);
+    if (getQvalues) 
     {
-      q.kME.meta = apply(p.kME.meta, 2, qvalue.restricted);
-     # colnames(p.kME.meta) = spaste("meta.q.kME.", modLevels);
+        dim(q.kME.meta) = c(nGenes * nWeights, nModules);
     } else 
-      q.kME.meta = NULL;
+        q.kME.meta = NULL;
   } else {
     Z.kME.meta = p.kME.meta = q.kME.meta = NULL;
+  }
+
+  # Call rankPvalue
+
+  if (useRankPvalue)
+  {
+    for (mod in 1:nModules) for (m in 1:nWeights)
+    {
+      if (m<=nPowers) {
+        weights = nObs[, mod, ]^powers[m]
+      } else
+        weights = matrix( metaAnalysisWeights, nGenes, nSets, byrow = TRUE);
+      # rankPvalue requires a vector of weights... so compress the weights to a vector.
+      # Output a warning if the compression loses information.
+      nDifferent = apply(weights, 2, function(x) {length(unique(x)) });
+      if (any(nDifferent)>1)
+        printFlush(paste("Warning in consensusKME: rankPvalue requires compressed weights.\n",
+                         "Some weights may not be entirely accurate."));
+      cw = colMeans(weights, na.rm = TRUE);
+      rankPvalueOptions$columnweights = cw / sum(cw);
+
+      rankPvalueOptions$datS = kME[, mod, ];
+      rp1 = do.call(rankPvalue, rankPvalueOptions);
+      colnames(rp1) = spaste(colnames(rp1), ".ME", modLevels[mod], ".", weightNames[m]);
+      if (mod==1 && m==1) {
+        rp = rp1;
+      } else 
+        rp = cbind(rp, rp1);
+    }
   }
 
   # Format the output... this will entail some rearranging of the individual set results.
@@ -5004,26 +5081,30 @@ consensusKME = function(multiExpr, moduleLabels, multiEigengenes = NULL, consens
   colnames(recast) = spaste( rep(varNames, nSets * nModules),
                              rep( modLevels, rep(nVars * nSets, nModules)), 
                              ".", rep( rep(setNames, rep(nVars, nSets)), nModules));
-             
-  #colnames(kME.average) = spaste("average.kME.", modLevels)               
-  #colnames(kME.consensus) = spaste("consensus.kME.", modLevels)               
-  #colnames(kME.weightedAverage) = spaste("weightedAverage.kME.", modLevels)               
   combinedMeta.0 = rbind(
              kME.consensus,
-             kME.average, 
              kME.weightedAverage,
              Z.kME.meta,
              p.kME.meta,
              q.kME.meta);
 
-  combinedMeta = matrix(combinedMeta.0, nGenes, (3 + 2*haveZs + haveZs*getQvalues) * nModules);
-  metaNames = c("consensus.kME.", "average.kME.", "weightedAverage.kME.", "meta.Z.kME.", "meta.p.kME.",
-                "meta.q.kME.")[ c(TRUE, TRUE, TRUE, haveZs, haveZs, haveZs && getQvalues)];
+  combinedMeta = matrix(combinedMeta.0, nGenes, 
+                            (1 + nWeights + (2*haveZs + haveZs*getQvalues)*nWeights) * nModules);
+  metaNames = c("consensus.kME", 
+                spaste("weightedAverage.", weightNames, ".kME"), 
+                spaste("meta.Z.", weightNames, ".kME"), 
+                spaste("meta.p.", weightNames, ".kME"),
+                spaste("meta.q.", weightNames, ".kME")
+                )[ c(TRUE, TRUE, TRUE, rep(haveZs, nWeights), rep(haveZs, nWeights), 
+                               rep(haveZs && getQvalues, nWeights))];
   nMetaVars = length(metaNames);
   colnames(combinedMeta) = spaste (rep(metaNames, nModules), 
                                    rep(modLevels, rep(nMetaVars, nModules)));
 
-  out = data.frame(ID = ID, combinedMeta, recast);
+  if (useRankPvalue) {
+     out = data.frame(ID = ID, combinedMeta, rp, recast);
+  } else 
+     out = data.frame(ID = ID, combinedMeta, recast);
 
   out
 }
@@ -5049,6 +5130,8 @@ metaAnalysis = function(multiExpr, multiTrait,
                         metaAnalysisWeights = NULL,
                         corFnc = cor, corOptions = list(use = 'p'),
                         getQvalues = FALSE,
+                        useRankPvalue = TRUE,
+                        rankPvalueOptions = list(),
                         setNames = NULL, 
                         kruskalTest = FALSE, var.equal = FALSE, 
                         metaKruskal = kruskalTest,
@@ -5081,7 +5164,7 @@ metaAnalysis = function(multiExpr, multiTrait,
      setNames = spaste("Set_", c(1:nSets));
 
   if (metaKruskal && !kruskalTest) 
-     stop("Kruskal statistic meta-analysis requires kruskal test. Set kruskalTest=TRUE and try again.");
+     stop("Kruskal statistic meta-analysis requires kruskal test. Use kruskalTest=TRUE.");
 
   if (is.null(binary)) binary = .isBinary(multiTrait);
 
@@ -5094,8 +5177,6 @@ metaAnalysis = function(multiExpr, multiTrait,
   }
 
   setResults = list();
-
-  
 
   for (set in 1:size$nSets)
   {
@@ -5186,7 +5267,7 @@ metaAnalysis = function(multiExpr, multiTrait,
     } else
       weights = matrix( metaAnalysisWeights, size$nGenes, nSets, byrow = TRUE);
 
-    metaZ = rowSums( setZ * weights) / sqrt(rowSums(weights^2))
+    metaZ = rowSums( setZ * weights, na.rm = TRUE) / sqrt(rowSums(weights^2, na.rm = TRUE))
     p.meta = 2*pnorm(abs(metaZ), lower.tail = FALSE);
     if (getQvalues)
     {
@@ -5201,10 +5282,40 @@ metaAnalysis = function(multiExpr, multiTrait,
     metaResults = cbind(metaResults, meta1);
   }
 
+  # Use rankPvalue to produce yet another meta-analysis
+
+  rankMetaResults = NULL;
+  if (useRankPvalue)
+  {
+    rankPvalueOptions$datS = as.data.frame(setZ);
+    if (is.na(match("calculateQvalue", names(rankPvalueOptions))))
+      rankPvalueOptions$calculateQvalue = getQvalues;
+    for (m in 1:nMeta)
+    {
+      if (m<=nPowers) {
+        weights = nObs^powers[m]
+      } else
+        weights = matrix( metaAnalysisWeights, size$nGenes, nSets, byrow = TRUE);
+
+      # rankPvalue requires a vector of weights... so compress the weights to a vector.
+      # Output a warning if the compression loses information.
+      nDifferent = apply(weights, 2, function(x) {length(unique(x)) });
+      if (any(nDifferent)>1)
+        printFlush(paste("Warning in metaAnalysis: rankPvalue requires compressed weights.\n", 
+                         "Some weights may not be entirely accurate."));
+      rankPvalueOptions$columnweights = colMeans(weights, na.rm = TRUE);
+      rankPvalueOptions$columnweights = rankPvalueOptions$columnweights / sum(rankPvalueOptions$columnweights)
+      rp = do.call(rankPvalue, rankPvalueOptions);
+      colnames(rp) = spaste(colnames(rp), ".", metaNames[m]);
+      rankMetaResults = cbind(rankMetaResults, as.matrix(rp));
+    }
+  }
+
   # Put together the output
 
   out = list(ID = ID,
              metaResults,
+             rankMetaResults,
              comb,
              if (trafo) setZ else NULL,
              NULL);   # The last NULL is necessary so the line below works even if nothing else is NULL

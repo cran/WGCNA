@@ -18,6 +18,8 @@ metaAnalysis(multiExpr, multiTrait,
              metaAnalysisWeights = NULL, 
              corFnc = cor, corOptions = list(use = "p"), 
              getQvalues = FALSE, 
+             useRankPvalue = TRUE,
+             rankPvalueOptions = list(),
              setNames = NULL, 
              kruskalTest = FALSE, var.equal = FALSE, 
              metaKruskal = kruskalTest, na.action = "na.exclude")
@@ -51,6 +53,15 @@ robust alternative, \code{\link{bicor}}.
   \item{getQvalues}{
    Logical: should q-values (FDRs) be calculated?
 }
+  \item{useRankPvalue}{ Logical: should the \code{\link{rankPvalue}} function be used to obtain alternative
+meta-analysis statistics?}
+
+  \item{rankPvalueOptions}{ Additional options for function \code{\link{rankPvalue}}. These include
+\code{na.last} (default \code{"keep"}), \code{ties.method} (default \code{"average"}), 
+\code{calculateQvalue} (default copied from input \code{getQvalues}), 
+and \code{pValueMethod} (default \code{"all"}). 
+See the help file for \code{\link{rankPvalue}} for full details.}
+
   \item{setNames}{
    Optional specification of set names (labels). These are used to label the corresponding components of the
 output. If not given, will be taken from the \code{names} attribute of \code{multiExpr}. If
@@ -104,91 +115,120 @@ are present.}
 \item{q.userWeights}{ q-values corresponding to \code{p.userWeights}, only present if
 \code{getQvalues} is \code{TRUE}. }
 
+The next set of columns is present only if input \code{useRankPvalue} is \code{TRUE} and contain the output
+of the function \code{\link{rankPvalue}} with the same column weights as the above meta-analysis. Depending
+on the input options \code{calculateQvalue} and \code{pValueMethod} in \code{rankPvalueOptions}, some
+columns may be missing.
+
+\item{pValueExtremeRank}{This is the minimum between pValueLowRank and
+pValueHighRank, i.e. min(pValueLow, pValueHigh)}
+
+\item{pValueLowRank}{Asymptotic p-value for observing a consistently low value across
+the columns of datS based on the rank method.}
+
+\item{pValueHighRank}{Asymptotic p-value for observing a consistently low value across
+the columns of datS based on the rank method.}
+
+\item{pValueExtremeScale}{This is the minimum between pValueLowScale and
+pValueHighScale, i.e. min(pValueLow, pValueHigh)}
+
+\item{pValueLowScale}{Asymptotic p-value for observing a consistently low value across
+the columns of datS based on the Scale method.}
+
+\item{pValueHighScale}{Asymptotic p-value for observing a consistently low value across
+the columns of datS based on the Scale method.}
+
+\item{qValueExtremeRank}{local false discovery rate (q-value) corresponding to the p-value
+pValueExtremeRank}
+
+\item{qValueLowRank}{local false discovery rate (q-value) corresponding to the p-value
+pValueLowRank}
+
+\item{qValueHighRank}{local false discovery rate (q-value) corresponding to the p-value
+pValueHighRank}
+
+\item{qValueExtremeScale}{local false discovery rate (q-value) corresponding to the p-value
+pValueExtremeScale}
+
+\item{qValueLowScale}{local false discovery rate (q-value) corresponding to the p-value
+pValueLowScale}
+
+\item{qValueHighScale}{local false discovery rate (q-value) corresponding to the p-value
+pValueHighScale}
+
 The following columns contain results returned by \code{\link{standardScreeningBinaryTrait}} or
 \code{\link{standardScreeningNumericTrait}} (depending on whether the input trait is binary or continuous).
 
 For binary traits, the following information is returned for each set:
 
-  \item{corPearson.Set_1}{}
-  \item{corPearson.Set_2,...}{pearson correlation with a binary numeric version of the input variable. The
-numeric variable equals 1 for level 1 and 2 for level 2. The levels are given by levels(factor(y)).} 
+  \item{corPearson.Set_1, corPearson.Set_2,...}{Pearson correlation with a binary numeric version of the
+input variable. The numeric variable equals 1 for level 1 and 2 for level 2. The levels are given by
+levels(factor(y)).}  
 
-  \item{t.Student.Set_1}{}
-  \item{t.Student.Set_2, ...}{Student's t-test statistic}
+  \item{t.Student.Set_1, t.Student.Set_2, ...}{Student t-test statistic}
 
-  \item{pvalueStudent.Set_1}{}
-  \item{pvalueStudent.Set_2, ...}{two-sided Student t-test p-value.}
+  \item{pvalueStudent.Set_1, pvalueStudent.Set_2, ...}{two-sided Student t-test p-value.}
 
-  \item{qvalueStudent.Set_1}{}
-  \item{qvalueStudent.Set_2, ...}{(if input \code{qValues==TRUE})
+  \item{qvalueStudent.Set_1, qvalueStudent.Set_2, ...}{(if input \code{qValues==TRUE})
 q-value (local false discovery rate) based on the Student T-test p-value (Storey et al 2004).}
 
-  \item{foldChange.Set_1}{}
-  \item{foldChange.Set_2, ...}{a (signed) ratio of mean values. If the mean in the first group (corresponding to
-level 1) is larger than that of the second group, it equals meanFirstGroup/meanSecondGroup.
+  \item{foldChange.Set_1, foldChange.Set_2, ...}{a (signed) ratio of mean values. If the mean in the first
+group (corresponding to level 1) is larger than that of the second group, it equals
+meanFirstGroup/meanSecondGroup. 
 But if the mean of the second group is larger than that of the first group it equals
 -meanSecondGroup/meanFirstGroup (notice the minus sign).}
 
-  \item{meanFirstGroup.Set_1}{}
-  \item{meanSecondGroup.Set_2, ...}{means of columns in input \code{datExpr} across samples in the second group.}
+  \item{meanFirstGroup.Set_1, meanSecondGroup.Set_2, ...}{means of columns in input \code{datExpr} across
+samples in the second group.}
 
-  \item{SE.FirstGroup.Set_1}{}
-  \item{SE.FirstGroup.Set_2, ...}{standard errors of columns in input \code{datExpr} across samples in the
+  \item{SE.FirstGroup.Set_1, SE.FirstGroup.Set_2, ...}{standard errors of columns in input \code{datExpr}
+across samples in the 
 first group.  Recall that SE(x)=sqrt(var(x)/n) where n is the number of non-missing values of x. } 
 
-  \item{SE.SecondGroup.Set_1}{}
-  \item{SE.SecondGroup.Set_2, ...}{standard errors of columns in input \code{datExpr} across samples in the
-second group.} 
+  \item{SE.SecondGroup.Set_1, SE.SecondGroup.Set_2, ...}{standard errors of columns in input \code{datExpr}
+across samples in the second group.} 
 
-  \item{areaUnderROC.Set_1}{}
-  \item{areaUnderROC.Set_2, ...}{the area under the ROC, also known as the concordance index or C.index.
-This is a measure of discriminatory power. The measure lies between 0 and 1 where 0.5 indicates no
-discriminatory power. 0 indicates that the "opposite" predictor has perfect discriminatory power. To compute
-it we use the function \link[Hmisc]{rcorr.cens} with \code{outx=TRUE} (from Frank Harrel's package Hmisc).}
+  \item{areaUnderROC.Set_1, areaUnderROC.Set_2, ...}{the area under the ROC, also known as the concordance
+index or C.index.  This is a measure of discriminatory power. The measure lies between 0 and 1 where 0.5
+indicates no discriminatory power. 0 indicates that the "opposite" predictor has perfect discriminatory
+power. To compute it we use the function \link[Hmisc]{rcorr.cens} with \code{outx=TRUE} (from Frank Harrel's
+package Hmisc).}  
 
-  \item{nPresentSamples.Set_1}{}
-  \item{nPresentSamples.Set_2, ...}{number of samples with finite measurements for each gene.}
+  \item{nPresentSamples.Set_1, nPresentSamples.Set_2, ...}{number of samples with finite measurements for
+each gene.}  
 
 If input \code{kruskalTest} is \code{TRUE}, the following columns further summarize results of 
 Kruskal-Wallis test:
-  \item{stat.Kruskal.Set_1}{}
-  \item{stat.Kruskal.Set_2, ...}{Kruskal-Wallis test statistic.}
 
-  \item{stat.Kruskal.signed.Set_1}{}
-  \item{stat.Kruskal.signed.Set_2,...}{(Warning: experimental) Kruskal-Wallis test statistic including a
-sign that indicates whether the average rank is higher in second group (positive) or first group (negative).
+  \item{stat.Kruskal.Set_1, stat.Kruskal.Set_2, ...}{Kruskal-Wallis test statistic.}
+
+  \item{stat.Kruskal.signed.Set_1, stat.Kruskal.signed.Set_2,...}{(Warning: experimental) Kruskal-Wallis
+test statistic including a sign that indicates whether the average rank is higher in second group (positive)
+or first group (negative). 
 } 
 
-  \item{pvaluekruskal.Set_1}{}
-  \item{pvaluekruskal.Set_2, ...}{Kruskal-Wallis test p-value.}
+  \item{pvaluekruskal.Set_1, pvaluekruskal.Set_2, ...}{Kruskal-Wallis test p-value.}
 
-  \item{qkruskal.Set_1}{}
-  \item{qkruskal.Set_2, ...}{q-values corresponding to the Kruskal-Wallis test p-value (if input
-\code{qValues==TRUE}).} 
+  \item{qkruskal.Set_1, qkruskal.Set_2, ...}{q-values corresponding to the Kruskal-Wallis test p-value (if
+input \code{qValues==TRUE}).} 
 
   \item{Z.Set1, Z.Set2, ...}{Z statistics obtained from \code{pvalueStudent.Set1, pvalueStudent.Set2, ...}
 or from \code{pvaluekruskal.Set1, pvaluekruskal.Set2, ...}, depending on input \code{metaKruskal}.}
 
 For numeric traits, the following columns are returned:
 
- \item{cor.Set_1}{}
- \item{cor.Set_2, ...}{correlations of all genes with the trait}
+ \item{cor.Set_1, cor.Set_2, ...}{correlations of all genes with the trait}
 
- \item{Z.Set1}{}
- \item{Z.Set2, ...}{Fisher Z statistics corresponding to the correlations}
+ \item{Z.Set1, Z.Set2, ...}{Fisher Z statistics corresponding to the correlations}
 
- \item{pvalueStudent.Set_1}{}
- \item{pvalueStudent.Set_2, ...}{Student p-values of the correlations}
+ \item{pvalueStudent.Set_1, pvalueStudent.Set_2, ...}{Student p-values of the correlations}
 
- \item{qvalueStudent.Set_1}{}
- \item{qvalueStudent.Set_1, ...}{(if input \code{qValues==TRUE}) q-values of the correlations calculated
-from the p-values} 
+ \item{qvalueStudent.Set_1, qvalueStudent.Set_1, ...}{(if input \code{qValues==TRUE}) q-values of the
+correlations calculated from the p-values}
 
- \item{AreaUnderROC.Set_1}{}
- \item{AreaUnderROC.Set_2, ...}{area under the ROC}
+ \item{AreaUnderROC.Set_1, AreaUnderROC.Set_2, ...}{area under the ROC}
 
- \item{nPresentSamples.Set_1}{}
- \item{nPresentSamples.Set_2, ...}{number of samples present for the calculation of each association. }
+ \item{nPresentSamples.Set_1, nPresentSamples.Set_2, ...}{number of samples present for the calculation of each association. }
 
 }
 \references{

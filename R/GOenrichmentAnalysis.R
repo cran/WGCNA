@@ -191,10 +191,10 @@ GOenrichmentAnalysis = function(labels, entrezCodes,
        nBackgroundGenes = nMappedGenes;
    }
 
-   termCodes = list();
+   termCodes = vector(mode="list", length = nTerms);
    collectGarbage();
    nExpandLength = 0;
-   blockSize = 100000; # For a more efficient concatenating of offspring genes
+   blockSize = 3000; # For a more efficient concatenating of offspring genes
    nAllInTerm = rep(0, nTerms);
    if (verbose > 0)
    {
