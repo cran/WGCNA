@@ -102,6 +102,12 @@ weights}
 \item{q.equalWeights}{ q-values corresponding to \code{p.Stouffer.equalWeights}, only present if
 \code{getQvalues} is \code{TRUE}.} 
 
+\item{Z.RootDoFWeights}{ Meta-analysis Z statistics obtained using Stouffer's method with weights given by
+the square root of the number of (non-missing) samples in each data set}
+\item{p.RootDoFWeights}{ p-values corresponding to \code{Z.DoFWeights} }
+\item{q.RootDoFWeights}{ q-values corresponding to \code{p.DoFWeights}, only present if
+\code{getQvalues} is \code{TRUE}. }
+
 \item{Z.DoFWeights}{ Meta-analysis Z statistics obtained using Stouffer's method with weights given by
 the number of (non-missing) samples in each data set}
 \item{p.DoFWeights}{ p-values corresponding to \code{Z.DoFWeights} }
@@ -118,43 +124,47 @@ are present.}
 The next set of columns is present only if input \code{useRankPvalue} is \code{TRUE} and contain the output
 of the function \code{\link{rankPvalue}} with the same column weights as the above meta-analysis. Depending
 on the input options \code{calculateQvalue} and \code{pValueMethod} in \code{rankPvalueOptions}, some
-columns may be missing.
+columns may be missing. The following columns are calculated using equal weights for each data set.
 
-\item{pValueExtremeRank}{This is the minimum between pValueLowRank and
+\item{pValueExtremeRank.equalWeights}{This is the minimum between pValueLowRank and
 pValueHighRank, i.e. min(pValueLow, pValueHigh)}
 
-\item{pValueLowRank}{Asymptotic p-value for observing a consistently low value across
+\item{pValueLowRank.equalWeights}{Asymptotic p-value for observing a consistently low value across
 the columns of datS based on the rank method.}
 
-\item{pValueHighRank}{Asymptotic p-value for observing a consistently low value across
+\item{pValueHighRank.equalWeights}{Asymptotic p-value for observing a consistently low value across
 the columns of datS based on the rank method.}
 
-\item{pValueExtremeScale}{This is the minimum between pValueLowScale and
+\item{pValueExtremeScale.equalWeights}{This is the minimum between pValueLowScale and
 pValueHighScale, i.e. min(pValueLow, pValueHigh)}
 
-\item{pValueLowScale}{Asymptotic p-value for observing a consistently low value across
+\item{pValueLowScale.equalWeights}{Asymptotic p-value for observing a consistently low value across
 the columns of datS based on the Scale method.}
 
-\item{pValueHighScale}{Asymptotic p-value for observing a consistently low value across
+\item{pValueHighScale.equalWeights}{Asymptotic p-value for observing a consistently low value across
 the columns of datS based on the Scale method.}
 
-\item{qValueExtremeRank}{local false discovery rate (q-value) corresponding to the p-value
+\item{qValueExtremeRank.equalWeights}{local false discovery rate (q-value) corresponding to the p-value
 pValueExtremeRank}
 
-\item{qValueLowRank}{local false discovery rate (q-value) corresponding to the p-value
+\item{qValueLowRank.equalWeights}{local false discovery rate (q-value) corresponding to the p-value
 pValueLowRank}
 
-\item{qValueHighRank}{local false discovery rate (q-value) corresponding to the p-value
+\item{qValueHighRank.equalWeights}{local false discovery rate (q-value) corresponding to the p-value
 pValueHighRank}
 
-\item{qValueExtremeScale}{local false discovery rate (q-value) corresponding to the p-value
+\item{qValueExtremeScale.equalWeights}{local false discovery rate (q-value) corresponding to the p-value
 pValueExtremeScale}
 
-\item{qValueLowScale}{local false discovery rate (q-value) corresponding to the p-value
+\item{qValueLowScale.equalWeights}{local false discovery rate (q-value) corresponding to the p-value
 pValueLowScale}
 
-\item{qValueHighScale}{local false discovery rate (q-value) corresponding to the p-value
+\item{qValueHighScale.equalWeights}{local false discovery rate (q-value) corresponding to the p-value
 pValueHighScale}
+
+\item{...}{Analogous columns calculated by weighting each input set using the square root of the number of
+samples, number of samples, and user weights (if given). The corresponding column names carry the suffixes
+\code{RootDofWeights}, \code{DoFWeights}, \code{userWeights}.}
 
 The following columns contain results returned by \code{\link{standardScreeningBinaryTrait}} or
 \code{\link{standardScreeningNumericTrait}} (depending on whether the input trait is binary or continuous).

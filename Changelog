@@ -1,14 +1,43 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
 
+2011/12/22: 1.18
+
+	. DIFF: p-value calculation in userListEnrichment is now corrected 
+	  to give the probability of overlap **as strong or stronger** than observed,
+	  rather than that of overlap **stronger** than observed. The resulting 
+	  p-values are more conservative; the difference can be large for very small
+	  categories.
+
+	. metaAnalysis and consensusKME now also calculate meta-analysis
+	  statistics using weights proportional to the square root 
+	  of the number of samples
+
+	. Added citation information for the package. The citation is available
+	  by typing the command citation("WGCNA"). Please cite the package 
+	  if you use it in published research. (The citation("WGCNA") gives 
+	  somewhat mis-formatted results on older R versions, sorry.)
+
+2011/12/20: 1.17-1
+
+	. Minor clean-up of greeting message
+
+	. Functions goodSamples and goodGenes as well as their combined and
+	  multi-set versions now properly respect settings of minNSamples and
+	  minNGenes
+
 2011/12/06: 1.17
 
-	. function consensusKME now returns additional statistics based on 3
+	. Function consensusKME now returns additional statistics based on 3
 	  different sets of weights
-	. bugfix in function TOMplot: the heatmap is now drawn correctly
-	. GOenrichmentAnalysis is now faster
+
+	. Bugfix in function TOMplot: the heatmap is now drawn correctly
+
+	. GOenrichmentAnalysis is now about 40% faster
+
 	. nearestCentroidPredictor is now more robust to constant variables
-	. bugfix in function standardScreeningNumericTrait: default value for
+
+	. Bugfix in function standardScreeningNumericTrait: default value for
 	  argument corOptions is now correct
 
 
@@ -16,8 +45,10 @@ Note: as of 2009/03/10, changes that lead to different calculational results are
 
 	. Bugfix in standardScreeningBinaryTrait: sign of `signed' Kruskal test
 	  statistic is now calculated correctly
+
 	. Function metaAnalysis now (optionally) also calculates meta-analysis
 	  statistics using the rankPvalue function.
+
 	. Function consensusKME now also optionally uses rankPvalue for
 	  meta-analysis of kME results across input data sets
 

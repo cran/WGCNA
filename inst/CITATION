@@ -1,0 +1,22 @@
+citEntry("Article",
+         author = c(person("Peter", "Langfelder"), person("Steve", "Horvath")),
+         title  = "WGCNA: an R package for weighted correlation network analysis",
+         journal = "BMC Bioinformatics",
+         year    = "2008",
+         number  = "1",
+         pages = "559", 
+         PubMedID = "19114008",
+
+         textVersion = 
+         paste("Langfelder P and Horvath S,\n", 
+               "WGCNA: an R package for weighted correlation network analysis.\n",
+               "BMC Bioinformatics 2008, 9:559 doi:10.1186/1471-2105-9-559\n",
+               sep=""),
+               
+         mheader = "To cite WGCNA in publications use:",
+         
+         mfooter = 
+         paste("We have invested a lot of time and effort in creating the package,",
+          "please cite it when using it for data analysis.", sep = " ")
+        )
+
