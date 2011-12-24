@@ -77,22 +77,19 @@ userListEnrichment <- function (geneR, labelR, fnIn = NULL, catNmIn = fnIn, name
     lenAll = length(geneAll)
     results = list(pValues = NULL, ovGenes = list(), sigOverlaps = NULL)
     namesOv = NULL  
-    for (r in 1:length(catsR)) for (i in 1:length(catsIn)) {
-        gr = geneR[labelR == catsR[r]]
-        gi = geneIn[labelIn == catsIn[i]]
-        go = intersect(gr, gi)
-        lr = length(gr)
-        li = length(gi)
-        lo = length(go)
-        pv = .phyper2(lenAll, lr, li, lo, FALSE)
-        if (lo == 0) 
-            pv = 1
-        if (pv < 1e-04) 
-            pv = .phyper2(lenAll, lr, li, lo, TRUE)
-        pOut = c(catsR[r], catsIn[i], typeIn[i], lo, pv)
+    for (r in 1:length(catsR)) for (i in 1:length(catsIn)) { 
+        isR  = is.element(geneAll,geneR[(labelR == catsR[r])])
+        isI  = is.element(geneAll,geneIn[(labelIn == catsIn[i])]) 
+        lyn  = sum(isR&(!isI))
+        lny  = sum(isI&(!isR))
+        lyy  = sum(isR&isI)
+        gyy  = geneAll[isR&isI]
+        lnn  = lenAll - lyy - lyn - lny
+        pv   = fisher.test(matrix(c(lnn,lny,lyn,lyy), 2, 2))$p.value
+        pOut = c(catsR[r], catsIn[i], typeIn[i], lyy, pv)
         results$pValues = rbind(results$pValues, pOut)
         namesOv = c(namesOv, paste(catsR[r], "--", catsIn[i]))
-        results$ovGenes[[length(namesOv)]] = go
+        results$ovGenes[[length(namesOv)]] = gyy
     }
     results$pValues = cbind(results$pValues, apply(cbind(1, as.numeric(results$pValues[, 
         4]) * length(namesOv)), 1, min))

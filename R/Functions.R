@@ -4086,11 +4086,11 @@ goodGenes = function(datExpr, useSamples = NULL, useGenes = NULL,
   nGenes = sum(useGenes);
   nPresent = apply(!is.na(datExpr[useSamples, useGenes]), 2, sum)
   gg = useGenes;
-  gg[useGenes][nPresent<..minNSamples] = FALSE;
+  gg[useGenes][nPresent<minNSamples] = FALSE;
   var = apply(datExpr[useSamples, gg], 2, sd, na.rm = TRUE);
   nNAsGenes = apply(is.na(datExpr[useSamples, gg]), 2, sum);
   gg[gg] = (nNAsGenes < (1-minFraction) * nSamples & var>0 & (nSamples-nNAsGenes >= minNSamples));
-  if (sum(gg) < ..minNGenes)
+  if (sum(gg) < minNGenes)
     stop("Too few genes with valid expression levels in the required number of samples.");
 
   if (verbose>0 & (nGenes - sum(gg) > 0))
@@ -4117,8 +4117,8 @@ goodSamples = function(datExpr, useSamples = NULL, useGenes = NULL,
   nNAsSamples = apply(is.na(datExpr[useSamples, useGenes]), 1, sum);
   goodSamples = useSamples;
   goodSamples[useSamples] = ((nNAsSamples < (1-minFraction)*nGenes) & 
-                             (nGenes - nNAsSamples >= ..minNGenes));
-  if (sum(goodSamples) < ..minNSamples)
+                             (nGenes - nNAsSamples >= minNGenes));
+  if (sum(goodSamples) < minNSamples)
     stop("Too few samples with valid expression levels for the required number of genes.");
 
   if (verbose>0 & (nSamples - sum(goodSamples)>0))
@@ -4953,10 +4953,10 @@ consensusKME = function(multiExpr, moduleLabels, multiEigengenes = NULL, consens
 
   # kME.average = rowMeans(kME, dims = 2); <-- not neccessary since weighted average also contains it
 
-  powers = c(0, 1);
+  powers = c(0, 0.5, 1);
   nPowers = length(powers)
   nWeights = nPowers + !is.null(metaAnalysisWeights)
-  weightNames = c("equalWeights", "DoFWeights", "userWeights") [1:nWeights];
+  weightNames = c("equalWeights", "RootDoFWeights", "DoFWeights", "userWeights") [1:nWeights];
   kME.weightedAverage = array(NA, dim = c(nGenes, nWeights, nModules));
   for (m in 1:nWeights)
   {
@@ -5249,10 +5249,10 @@ metaAnalysis = function(multiExpr, multiTrait,
   nObsCols = grep("nPresentSamples", colnames(comb));
   nObs = comb[, nObsCols];
 
-  powers = c(0, 1);
-  nPowers = 2;
+  powers = c(0, 0.5, 1);
+  nPowers = 3;
 
-  metaNames = c("equalWeights", "DoFWeights")
+  metaNames = c("equalWeights", "RootDoFWeights", "DoFWeights")
   if (is.null(metaAnalysisWeights)) {
     nMeta = nPowers;
   } else {

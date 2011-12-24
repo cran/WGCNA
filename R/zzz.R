@@ -7,14 +7,14 @@
   ourRow = match("WGCNA", x$Package);
   ourVer = as.character(x$Version[ourRow]);
 
-  printFlush("====================================================================================\n*");
+  printFlush("==========================================================================\n*");
   printFlush("*  Package WGCNA version", if (is.finite(ourRow)) ourVer else "unknown", "loaded.\n*")
 
   if (.useNThreads()==1 && .nProcessorsOnline() > 1)
   {
    printFlush(spaste(
-         "*    Important note: It appears that your system supports multi-threading, but it is\n", 
-         "*    not enabled within WGCNA in R. \n",
+         "*    Important note: It appears that your system supports multi-threading,\n",
+         "*    but it is not enabled within WGCNA in R. \n",
          "*    To allow multi-threading within WGCNA with all available cores, use \n",
          "*\n",
          "*          allowWGCNAThreads()\n",
@@ -35,7 +35,7 @@
          "\n*     before running R. Other operating systems or shells will", 
          "\n*     have a similar command to achieve the same aim.\n*"));
   }
-  printFlush("====================================================================================\n\n");
+  printFlush("==========================================================================\n\n");
 
   impRow = match("impute", x$Package);
   if (is.finite(impRow))

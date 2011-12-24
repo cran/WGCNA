@@ -112,6 +112,11 @@ sets. The module labels (here 1, 2, etc.) correspond to those in \code{moduleLab
 Average kME in each module for each gene across the
 input data sets. }
 
+\item{weightedAverage.RootDoFWeights.kME1, weightedAverage.RootDoFWeights.kME2, ...}{
+Weighted average kME in each module for each gene across the
+input data sets. The weight of each data set is proportional to the square root of the 
+number of samples in the set. }
+
 \item{weightedAverage.DoFWeights.kME1, weightedAverage.DoFWeights.kME2, ...}{
 Weighted average kME in each module for each gene across the
 input data sets. The weight of each data set is proportional to number of samples in the set. }
@@ -125,8 +130,14 @@ input data sets. The weight of each data set is given in \code{metaAnalysisWeigh
 obtained by weighing the Z scores in each set equally. Only returned if the function \code{corAndPvalueFnc}
 returns the Z statistics corresponding to the correlations.}
 
+\item{meta.Z.RootDoFWeights.kME1, meta.Z.RootDoFWeights.kME2, ...}{
+Meta-analysis Z statistic for kME in each module, 
+obtained by weighing the Z scores in each set by the square root of the number of
+samples. Only returned if the function \code{corAndPvalueFnc}
+returns the Z statistics corresponding to the correlations.}
+
 \item{meta.Z.DoFWeights.kME1, meta.Z.DoFWeights.kME2, ...}{Meta-analysis Z statistic for kME in each module, 
-obtained by weighing the Z scores in each set by number of
+obtained by weighing the Z scores in each set by the number of
 samples. Only returned if the function \code{corAndPvalueFnc}
 returns the Z statistics corresponding to the correlations.}
 
@@ -137,6 +148,11 @@ returns the Z statistics corresponding to the correlations.}
 
 \item{meta.p.equalWeights.kME1, meta.p.equalWeights.kME2, ...}{ 
 p-values obtained from the equal-weight meta-analysis Z statistics. Only returned if the function
+\code{corAndPvalueFnc} returns the Z statistics corresponding to the correlations. } 
+
+\item{meta.p.RootDoFWeights.kME1, meta.p.RootDoFWeights.kME2, ...}{ 
+p-values obtained from the meta-analysis Z statistics with weights proportional to the square root of the
+number of samples. Only returned if the function
 \code{corAndPvalueFnc} returns the Z statistics corresponding to the correlations. } 
 
 \item{meta.p.DoFWeights.kME1, meta.p.DoFWeights.kME2, ...}{ 
@@ -153,6 +169,12 @@ q-values obtained from the equal-weight meta-analysis p-values. Only present if
 \code{getQvalues} is \code{TRUE} and the function \code{corAndPvalueFnc} 
 returns the Z statistics corresponding to the kME values.}
 
+\item{meta.q.RootDoFWeights.kME1, meta.q.RootDoFWeights.kME2, ...}{ 
+q-values obtained from the meta-analysis p-values with weights proportional to the square root of the 
+number of samples. Only present if
+\code{getQvalues} is \code{TRUE} and the function \code{corAndPvalueFnc} 
+returns the Z statistics corresponding to the kME values.}
+
 \item{meta.q.DoFWeights.kME1, meta.q.DoFWeights.kME2, ...}{ 
 q-values obtained from the degree-of-freedom weight meta-analysis p-values. Only present if
 \code{getQvalues} is \code{TRUE} and the function \code{corAndPvalueFnc} 
@@ -166,43 +188,60 @@ returns the Z statistics corresponding to the kME values.}
 
 The next set of columns contain the results of function \code{\link{rankPvalue}} and are only present if
 input \code{useRankPvalue} is \code{TRUE}. Some columns may be missing depending on the options specified in
-\code{rankPvalueOptions}. 
+\code{rankPvalueOptions}. We explicitly list columns that are based on weighing each set equally; names of
+these columns carry the suffix \code{.equalWeights}
 
-\item{pValueExtremeRank.ME1, pValueExtremeRank.ME2, ...}{This is the minimum between pValueLowRank and
+\item{pValueExtremeRank.ME1.equalWeights, pValueExtremeRank.ME2.equalWeights, ...}{
+This is the minimum between pValueLowRank and
 pValueHighRank, i.e. min(pValueLow, pValueHigh)}
 
-\item{pValueLowRank.ME1, pValueLowRank.ME2, ...}{Asymptotic p-value for observing a consistently low value
+\item{pValueLowRank.ME1.equalWeights, pValueLowRank.ME2.equalWeights, ...}{
+Asymptotic p-value for observing a consistently low value
 across the columns of datS based on the rank method.}
 
-\item{pValueHighRank.ME1, pValueHighRank.ME2, ...}{Asymptotic p-value for observing a consistently low value
+\item{pValueHighRank.ME1.equalWeights, pValueHighRank.ME2.equalWeights, ...}{
+Asymptotic p-value for observing a consistently low value
 across the columns of datS based on the rank method.} 
 
-\item{pValueExtremeScale.ME1, pValueExtremeScale.ME2, ...}{This is the minimum between pValueLowScale and
+\item{pValueExtremeScale.ME1.equalWeights, pValueExtremeScale.ME2.equalWeights, ...}{
+This is the minimum between pValueLowScale and
 pValueHighScale, i.e. min(pValueLow, pValueHigh)}
 
-\item{pValueLowScale.ME1, pValueLowScale.ME2, ...}{Asymptotic p-value for observing a consistently low value
+\item{pValueLowScale.ME1.equalWeights, pValueLowScale.ME2.equalWeights, ...}{
+Asymptotic p-value for observing a consistently low value
 across the columns of datS based on the Scale method.} 
 
-\item{pValueHighScale.ME1, pValueHighScale.ME2, ...}{Asymptotic p-value for observing a consistently low
+\item{pValueHighScale.ME1.equalWeights, pValueHighScale.ME2.equalWeights, ...}{
+Asymptotic p-value for observing a consistently low
 value across the columns of datS based on the Scale method.} 
 
-\item{qValueExtremeRank.ME1, qValueExtremeRank.ME2, ...}{local false discovery rate (q-value) corresponding
+\item{qValueExtremeRank.ME1.equalWeights, qValueExtremeRank.ME2.equalWeights, ...}{
+local false discovery rate (q-value) corresponding
 to the p-value pValueExtremeRank} 
 
-\item{qValueLowRank.ME1, qValueLowRank.ME2, ...}{local false discovery rate (q-value) corresponding to the
+\item{qValueLowRank.ME1.equalWeights, qValueLowRank.ME2.equalWeights, ...}{
+local false discovery rate (q-value) corresponding to the
 p-value pValueLowRank} 
 
-\item{qValueHighRank.ME1, lueHighRank.ME2, ...}{local false discovery rate (q-value) corresponding to the
+\item{qValueHighRank.ME1.equalWeights, lueHighRank.ME2.equalWeights, ...}{
+local false discovery rate (q-value) corresponding to the
 p-value pValueHighRank} 
 
-\item{qValueExtremeScale.ME1, qValueExtremeScale.ME2, ...}{local false discovery rate (q-value)
+\item{qValueExtremeScale.ME1.equalWeights, qValueExtremeScale.ME2.equalWeights, ...}{
+local false discovery rate (q-value)
 corresponding to the p-value pValueExtremeScale}
 
-\item{qValueLowScale.ME1, qValueLowScale.ME2, ...}{local false discovery rate (q-value) corresponding to the
+\item{qValueLowScale.ME1.equalWeights, qValueLowScale.ME2.equalWeights, ...}{
+local false discovery rate (q-value) corresponding to the
 p-value pValueLowScale}
 
-\item{qValueHighScale.ME1,qValueHighScale.ME2, ...}{local false discovery rate (q-value) corresponding to
+\item{qValueHighScale.ME1.equalWeights,qValueHighScale.ME2.equalWeights, ...}{
+local false discovery rate (q-value) corresponding to
 the p-value pValueHighScale}
+
+\item{...}{Analogous columns corresponding to weighing individual sets by the square root of the number of
+samples, by number of samples, and by user weights (if given). The corresponding column name suffixes are 
+\code{.RootDoFWeights}, \code{.DoFWeights}, and \code{.userWeights}.}
 
 The following set of columns summarize kME in individual input data sets.
 
