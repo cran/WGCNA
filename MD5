@@ -1,12 +1,12 @@
-b0ae4cd05f9a1062236c351c8e0f50f5 *Changelog
-fd8eef4cbb01345d287158d6f59e5535 *DESCRIPTION
+58a8c4c5434bdbcc3238bc1ee6e5f1d0 *Changelog
+5ba1f9412c5cb55cdc319c410a86862c *DESCRIPTION
 970fd32521fb5ab965eeec686834d06b *NAMESPACE
 2640fb7286cab45b6de425c01109f80e *R/AFcorMI.R
 ea14a2a861b238bbb31d9f54117b7fdb *R/Functions-fromSimilarity.R
 5a86b88c501ec512d80bdb0b8f5886cc *R/Functions-modColor.R
 097846fd303fca478b00861a23b4626d *R/Functions-multiData.R
 f0a3dba5bc4286647a8f32ff0cbeb126 *R/Functions.R
-7df4514409a13851a38fab29d54a249a *R/GOenrichmentAnalysis.R
+b63eb52a98c6766dc3dee3e8f4fed84f *R/GOenrichmentAnalysis.R
 c71beb3c2312e81f9102e918679745ce *R/accuracyMeasures.R
 6694f89a89e904eb1bc90d28cf28fc37 *R/adjacency.polyReg.R
 3cc995eb826b701ba4d3a7bf6ad64a3a *R/adjacency.splineReg.R
@@ -58,7 +58,7 @@ c14de92cb72ff91090a7ba478308fd72 *man/BloodLists.Rd
 358a7693a58846c2f047764271b189b1 *man/TOMplot.Rd
 d95a6e779cb6edf6b40206b52e3215a7 *man/TOMsimilarity.Rd
 502131e33c1e9b1c66d48d90aba59b22 *man/TOMsimilarityFromExpr.Rd
-f59c0793ed28c751085141acf78bb1f6 *man/WGCNA-package.Rd
+d167dd38fef0f6122507b55809de9824 *man/WGCNA-package.Rd
 95ba0052e33532b0a2636b06ae6bc03e *man/accuracyMeasures.Rd
 051b9a0b6e3d224367101ae392fdee22 *man/addErrorBars.Rd
 2703e1c680bae62e4c5aaecdcfbbd424 *man/addGrid.Rd
