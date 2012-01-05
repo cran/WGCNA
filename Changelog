@@ -1,6 +1,11 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
 
+2012/01/04: 1.18-1
+
+	. Bugfix in function GOenrichmentAnalysis fixes occasional crash of
+	  the function
+
 2011/12/22: 1.18
 
 	. DIFF: p-value calculation in userListEnrichment is now corrected 

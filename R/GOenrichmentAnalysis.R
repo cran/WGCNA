@@ -241,7 +241,8 @@ GOenrichmentAnalysis = function(labels, entrezCodes,
              newl = length(newe);
              if ((len + newl) > maxLen)
              {
-               maxLen = maxLen + blockSize;
+               nExpand = ceiling( (len + newl - maxLen)/blockSize);
+               maxLen = maxLen + blockSize * nExpand;
                tex = c(tex, rep("", maxLen - length(tex)));
                tcx = c(tcx, rep("", maxLen - length(tex)));
                nExpandLength = nExpandLength + 1;
