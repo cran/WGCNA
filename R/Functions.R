@@ -5095,7 +5095,7 @@ consensusKME = function(multiExpr, moduleLabels, multiEigengenes = NULL, consens
                 spaste("meta.Z.", weightNames, ".kME"), 
                 spaste("meta.p.", weightNames, ".kME"),
                 spaste("meta.q.", weightNames, ".kME")
-                )[ c(TRUE, TRUE, TRUE, rep(haveZs, nWeights), rep(haveZs, nWeights), 
+                )[ c(rep(TRUE, nWeights+1), rep(haveZs, nWeights), rep(haveZs, nWeights), 
                                rep(haveZs && getQvalues, nWeights))];
   nMetaVars = length(metaNames);
   colnames(combinedMeta) = spaste (rep(metaNames, nModules), 
