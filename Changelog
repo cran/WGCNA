@@ -1,6 +1,10 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
 
+2012/01/12: 1.18-2
+
+	. Bugfix in function consensusKME fixes column names of output
+
 2012/01/04: 1.18-1
 
 	. Bugfix in function GOenrichmentAnalysis fixes occasional crash of
