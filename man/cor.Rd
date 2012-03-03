@@ -97,6 +97,14 @@ significant.
 is given, and the correlations of the columns of \code{x} if \code{y} is not given. 
 }
 \author{ Peter Langfelder }
+
+\references{
+  Peter Langfelder, Steve Horvath (2012)
+  Fast R Functions for Robust Correlations and Hierarchical Clustering.
+  Journal of Statistical Software, 46(11), 1-17.
+  \url{http://www.jstatsoft.org/v46/i11/}
+}
+
 \note{ 
   The implementation uses the BLAS library matrix multiplication function for the most expensive step of
 the calculation. Using a tuned, architecture-specific BLAS may significantly improve the performance of

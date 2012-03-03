@@ -49,7 +49,7 @@ multiData.eigengeneSignificance = function(multiData, multiTrait, moduleLabels,
   {
     corOptions$x = multiEigengenes[[set]]$data;
     corOptions$y = multiTrait[[set]]$data;
-    cp = do.call(corAndPvalueFnc, arg = corOptions);
+    cp = do.call(corAndPvalueFnc, args = corOptions);
     corComp = grep(corComponent, names(cp));
     pComp = match("p", names(cp));
     if (is.na(pComp)) pComp = match("p.value", names(cp));
@@ -87,6 +87,18 @@ multiData.eigengeneSignificance = function(multiData, multiTrait, moduleLabels,
        q.value = q,
        Z = Z, 
        nObservations = nObs)
+}
+
+#==============================================================================================
+#
+# nSets
+#
+#==============================================================================================
+
+nSets = function(multiData, ...) 
+{
+  size = checkSets(multiData, ...);
+  size$nSets;
 }
   
              

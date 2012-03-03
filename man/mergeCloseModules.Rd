@@ -7,10 +7,12 @@ eigengenes.
 }
 \usage{
 mergeCloseModules(exprData, colors, 
+                  consensusQuantile = 0,
                   cutHeight = 0.2, 
                   MEs = NULL, 
                   impute = TRUE,
                   useAbs = FALSE, 
+                  corFnc = cor, corOptions = list(use = 'p'),
                   iterate = TRUE, 
                   relabel = FALSE, 
                   colorSeq = NULL, 
@@ -32,6 +34,9 @@ columns to genes, or in a multi-set format (see \code{\link{checkSets}}). See
 The method only makes sense when genes have the
 same color label in all sets, hence a single vector. }
 
+  \item{consensusQuantile}{A number giving the desired quantile to use in the consensus similarity
+calculation (see details).}
+
   \item{cutHeight}{Maximum dissimilarity (i.e., 1-correlation) that qualifies modules for merging.}
 
   \item{MEs}{If module eigengenes have been calculated before, the user can save some computational time
@@ -44,6 +49,11 @@ replaced by their hubgene approximation. See \code{\link{moduleEigengenes}} for 
 
   \item{useAbs}{Specifies whether absolute value of correlation or plain correlation (of module
 eigengenes) should be used in calculating module dissimilarity.}
+
+  \item{corFnc}{Correlation function to be used to calculate correlation of module eigengenes. }
+
+  \item{corOptions}{Can be used to specify options to the correlation function, in addition to argument
+\code{x} which is used to pass the actual data to calculate the correlation of.}
 
   \item{iterate}{Controls whether the merging procedure should be repeated until there is no change. If
 FALSE, only one iteration will be executed.}
@@ -86,7 +96,8 @@ indentation, each unit above that adds two spaces. }
 \details{
   This function returns the color labels for modules that are obtained from the input modules by merging
 ones that are closely related. The relationships are quantified by correlations of module eigengenes; a
-``consensus'' measure is defined as the minimum over the corresponding relationship in each set. Once the
+``consensus'' measure is defined as the ``consensus quantile'' 
+over the corresponding relationship in each set. Once the
 (dis-)similarity is calculated, average linkage hierarchical clustering of the module eigengenes is
 performed, the dendrogram is cut at the height \code{cutHeight} and modules on each branch are merged.
 The process is (optionally) repeated until no more modules are merged.

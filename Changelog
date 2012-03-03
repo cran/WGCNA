@@ -1,6 +1,47 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
 
+	. Argument name change in function TOMplot: colors and colorsLeft are
+	  now Colors and ColorsLeft to avoid conflict with argument col to
+	  functions heatmap and image.
+
+	. Bugfix in internal function .consensusMEDissimilarity that caused crashes
+	  mergeCloseModules.
+
+	. DIFF: blockwiseConsensusModules now passes the argument mergConsensusQuantile
+	  to mergeCloseModules, which can lead to different module merging 
+	  compared to previous versions. Use mergeConsensusQuantile = 0 to 
+	  reproduce results from older versions of this package.
+	  
+	. Function mergeCloseModules now takes arguments consensusQuantile,
+	  corFnc and corOptions
+
+	. New function blockwiseIndividualTOMs to calculate individual TOMs 
+	  across multi-set expression data
+
+	. New functionality in blockwiseConsensusModules that can now utilize
+	  pre-calculated individual TOMs, giving more flexibility
+
+	. New utility function lowerTri2matrix
+
+	. Internal change: default chunk size in consensus module calculation
+	  is now 1e8 instead of 1e7. Most computers with at least 2GB of
+	  memory should be able to handle as much; the size can be lowered (or
+	  increased) if necessary.
+
+	. Function sizeGrWindow now calls dev.new rather than X11
+
+	. New function nSets to directly return the number of sets in a
+	  multi-set variable.
+
+	. Function verboseBarplot now returns the midpoints of the drawn bars
+	  (as the function barplot does) augmented by the bar heights as
+	  attribute "height".
+
+	. Minor changes and cleanup in code
+
+	. New citation added for our JSS article
+
 2012/01/12: 1.18-2
 
 	. Bugfix in function consensusKME fixes column names of output
