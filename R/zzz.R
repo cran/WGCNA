@@ -2,13 +2,12 @@
 
 .onAttach = function(libname, pkgname)
 {
+  ourVer = try( gsub("[^0-9_.-]", "", packageVersion("WGCNA"), fixed = FALSE) );
 
-  x = as.data.frame(installed.packages());
-  ourRow = match("WGCNA", x$Package);
-  ourVer = as.character(x$Version[ourRow]);
+  if (inherits(ourVer, "try-error")) ourVer = "";
 
   printFlush("==========================================================================\n*");
-  printFlush("*  Package WGCNA version", if (is.finite(ourRow)) ourVer else "unknown", "loaded.\n*")
+  printFlush(paste("*  Package WGCNA", ourVer, "loaded.\n*"))
 
   if (.useNThreads()==1 && .nProcessorsOnline() > 1)
   {
@@ -37,14 +36,15 @@
   }
   printFlush("==========================================================================\n\n");
 
-  impRow = match("impute", x$Package);
-  if (is.finite(impRow))
+
+  imputeVer = try( gsub("[^0-9_.-]", "", packageVersion("impute"), fixed = FALSE) );
+
+  if (!inherits(imputeVer, "try-error"))
   {
-    version = as.character(x$Version[impRow]);
-    if (compareVersion(version, "1.12")< 0)
+    if (compareVersion(imputeVer, "1.12")< 0)
     {
-      printFlush(paste("Caution: installed package 'impute' is not the newest version.\n",
-            "Older versions can occasionally crash the code or the entire R session.\n",
+      printFlush(paste("*!*!*!*!*!*!* Caution: installed package 'impute' is too old.\n",
+            "Old versions of this package can occasionally crash the code or the entire R session.\n",
             "If you already have the newest version available from CRAN, \n",
             "and you still see this warning, please download the impute package \n",
             "from Bioconductor at \n",

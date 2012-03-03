@@ -1,56 +1,116 @@
 \name{blockwiseConsensusModules}
 \alias{blockwiseConsensusModules}
-
 \title{ Find consensus modules across several datasets. }
 \description{
   Perform network construction and consensus module detection across several datasets.
 }
 \usage{
 blockwiseConsensusModules(
-  multiExpr, blocks = NULL,
-  maxBlockSize = 5000,
-  randomSeed = 12345,
-  corType = "pearson",
-  power = 6,
-  consensusQuantile = 0,
-  networkType = "unsigned",
-  TOMType = "unsigned",
-  TOMDenom = "min",
-  scaleTOMs = TRUE, scaleQuantile = 0.95,
-  sampleForScaling = TRUE, sampleForScalingFactor = 1000,
-  useDiskCache = TRUE, chunkSize = NULL,
-  cacheBase = ".blockConsModsCache",
-  deepSplit = 2,
-  detectCutHeight = 0.995, minModuleSize = 20,
-  checkMinModuleSize = TRUE,
-  maxCoreScatter = NULL, minGap = NULL,
-  maxAbsCoreScatter = NULL, minAbsGap = NULL,
-  pamStage = TRUE, pamRespectsDendro = TRUE,
-  minKMEtoJoin =0.7,
-  minCoreKME = 0.5, minCoreKMESize = minModuleSize/3,
-  minKMEtoStay = 0.2,
-  reassignThresholdPS = 1e-4,
-  mergeCutHeight = 0.15,
-  impute = TRUE,
-  getTOMs = NULL,
-  saveTOMs = FALSE, 
-  saveTOMFileBase = "consensusTOM",
-  getTOMScalingSamples = FALSE,
-  trapErrors = FALSE,
-  checkPower = TRUE,
-  numericLabels = FALSE,
-  checkMissingData = TRUE,
-  maxPOutliers = 1,
-  quickCor = 0,
-  pearsonFallback = "individual",
-  cosineCorrelation = FALSE,
-  nThreads = 0,
-  verbose = 2, indent = 0)
+     multiExpr, 
+
+     # Data checking options
+
+     checkMissingData = TRUE,
+
+     # Blocking options
+
+     blocks = NULL, 
+     maxBlockSize = 5000, 
+     randomSeed = 12345,
+
+     # TOM precalculation arguments, if available
+
+     individualTOMInfo = NULL,
+     useIndivTOMSubset = NULL,
+
+     # Network construction arguments: correlation options
+
+     corType = "pearson",
+     maxPOutliers = 1,
+     quickCor = 0,
+     pearsonFallback = "individual", 
+     cosineCorrelation = FALSE,
+
+     # Adjacency function options
+
+     power = 6, 
+     networkType = "unsigned", 
+     checkPower = TRUE,
+
+     # Topological overlap options
+
+     TOMType = "unsigned",           
+     TOMDenom = "min",
+
+     # Save individual TOMs?
+
+     saveIndividualTOMs = TRUE,
+     individualTOMFileNames = "individualTOM-Set\%s-Block\%b.RData",
+
+     # Consensus calculation options 
+
+     consensusQuantile = 0,
+     scaleTOMs = TRUE, scaleQuantile = 0.95,
+
+     # Sampling for scaling (speeds up calculation)
+
+     sampleForScaling = TRUE, sampleForScalingFactor = 1000,
+     getTOMScalingSamples = FALSE, 
+                   
+     # Returning the consensus TOM
+     saveTOMs = FALSE, 
+     consensusTOMFileNames = "consensusTOM-block.\%b.RData",
+
+     # Internal handling of TOMs
+
+     useDiskCache = TRUE, chunkSize = NULL,
+     cacheBase = ".blockConsModsCache",
+
+     # Basic tree cut options 
+
+     deepSplit = 2, 
+     detectCutHeight = 0.995, minModuleSize = 20,
+     checkMinModuleSize = TRUE,
+
+     # Advanced tree cut opyions
+
+     maxCoreScatter = NULL, minGap = NULL,
+     maxAbsCoreScatter = NULL, minAbsGap = NULL,
+     pamStage = TRUE,  pamRespectsDendro = TRUE,
+
+     # Gene joining and removal from a module, and module "significance" criteria
+
+     reassignThresholdPS = 1e-4,
+     minKMEtoJoin =0.7, 
+     minCoreKME = 0.5, minCoreKMESize = minModuleSize/3,
+     minKMEtoStay = 0.2,
+
+     # Module eigengene calculation options
+
+     impute = TRUE,
+     trapErrors = FALSE,
+
+     #Module merging options
+
+     mergeCutHeight = 0.15, 
+     mergeConsensusQuantile = consensusQuantile,
+
+     # Output options
+
+     numericLabels = FALSE,
+
+     # General options
+
+     nThreads = 0,
+     verbose = 2, indent = 0)
 }
 \arguments{
   \item{multiExpr}{ expression data in the multi-set format (see \code{\link{checkSets}}). A vector of
 lists, one per set. Each set must contain a component \code{data} that contains the expression data, with
 rows corresponding to samples and columns to genes or probes. }
+
+  \item{checkMissingData}{logical: should data be checked for excessive numbers of missing entries in
+genes and samples, and for genes with zero variance? See details. }
 
     \item{blocks}{ optional specification of blocks in which hierarchical clustering and module detection
 should be performed. If given, must be a numeric vector with one entry per gene
@@ -64,131 +124,22 @@ will be pre-clustered into blocks whose size should not exceed \code{maxBlockSiz
 starts. If a current seed exists, it is saved and restored upon exit. If \code{NULL} is given, the
 function will not save and restore the seed. }
 
+%%%%%%%%%%%%%%
+
+  \item{individualTOMInfo}{ Optional data for TOM matrices in individual data sets. This object is returned by
+the function \code{\link{blockwiseIndividualTOMs}}. If not given, appropriate topological overlaps will be
+calculated using the network contruction options below. }
+
+  \item{useIndivTOMSubset}{ If \code{individualTOMInfo} is given, this argument allows to only select a subset
+of the individual set networks contained in \code{individualTOMInfo}. It should be a numeric vector giving the
+indices of the individual sets to be used. Note that this argument is NOT applied to \code{multiExpr}. }
+
+
+%%%%%%%%%%%%%%
+
   \item{corType}{ character string specifying the correlation to be used. Allowed values are (unique
 abbreviations of) \code{"pearson"} and \code{"bicor"}, corresponding to Pearson and bidweight
 midcorrelation, respectively. Missing values are handled using the \code{pariwise.complete.obs} option. }
-
-  \item{power}{ soft-thresholding power for netwoek construction. }
-
-  \item{consensusQuantile}{ qunatile at which consensus is to be defined. See details. }
-
-  \item{networkType}{ network type. Allowed values are (unique abbreviations of) \code{"unsigned"},
-\code{"signed"}, \code{"signed hybrid"}. See \code{\link{adjacency}}. }
-
-  \item{TOMType}{ one of \code{"none"}, \code{"unsigned"}, \code{"signed"}. If \code{"none"}, adjacency
-will be used for clustering. If \code{"unsigned"}, the standard TOM will be used (more generally, TOM
-function will receive the adjacency as input). If \code{"signed"}, TOM will keep track of the sign of
-correlations between neighbors. }
-
-  \item{TOMDenom}{ a character string specifying the TOM variant to be used. Recognized values are 
-\code{"min"} giving the standard TOM described in Zhang and Horvath (2005), and \code{"mean"} in which 
-the \code{min} function in the denominator is replaced by \code{mean}. The \code{"mean"} may produce 
-better results but at this time should be considered experimental.}
-%The default mean denominator
-%variant
-%is preferrable and we recommend using it unless the user needs to reproduce older results obtained using
-%the standard, minimum denominator TOM. }
-
-  \item{scaleTOMs}{ should set-specific TOM matrices be scaled to the same scale?}
-
-  \item{scaleQuantile}{ if \code{scaleTOMs} is \code{TRUE}, topological overlaps (or adjacencies if
-TOMs are not computed) will be scaled such that their \code{scaleQuantile} quantiles will agree. }
-
-  \item{sampleForScaling}{ if \code{TRUE}, scale quantiles will be determined from a sample of network
-similarities. Note that using all data can double the memory footprint of the function and the function
-may fail. }
-
-  \item{sampleForScalingFactor}{ determines the number of samples for scaling: the number is
- \code{1/scaleQuantile * sampleForScalingFactor}. Should be set well above 1 to ensure accuracy of the
-sampled quantile. }
-
-  \item{useDiskCache}{ should calculated network similarities in individual sets be temporarilly saved
-to disk? Saving to disk is somewhat slower than keeping all data in memory, but for large blocks and/or
-many sets the memory footprint may be too big. }
-
-  \item{chunkSize}{ network similarities are saved in smaller chunks of size \code{chunkSize}. }
-
-  \item{cacheBase}{ character string containing the desired name for the cache files. The actual file
-names will consists of \code{cacheBase} and a suffix to make the file names unique. }
-
-  \item{deepSplit}{ integer value between 0 and 4. Provides a simplified control over how sensitive
-module detection should be to module splitting, with 0 least and 4 most sensitive. See
-\code{\link[dynamicTreeCut]{cutreeDynamic}} for more details. }
-
-  \item{detectCutHeight}{ dendrogram cut height for module detection. See
-\code{\link[dynamicTreeCut]{cutreeDynamic}} for more details.  }
-
-  \item{minModuleSize}{ minimum module size for module detection. See
-\code{\link[dynamicTreeCut]{cutreeDynamic}} for more details.  }
-
-  \item{checkMinModuleSize}{ logical: should sanity checks be performed on \code{minModuleSize}?}
-
-  \item{maxCoreScatter}{ maximum scatter of the core for a branch to be a cluster, given as the fraction
-of \code{cutHeight} relative to the 5th percentile of joining heights. See
-\code{\link[dynamicTreeCut]{cutreeDynamic}} for more details.  }
-
-  \item{minGap}{ minimum cluster gap given as the fraction of the difference between \code{cutHeight} and
-the 5th percentile of joining heights. See \code{\link[dynamicTreeCut]{cutreeDynamic}} for more details. } 
-
-  \item{maxAbsCoreScatter}{ maximum scatter of the core for a branch to be a cluster given as absolute
-heights. If given, overrides \code{maxCoreScatter}. See \code{\link[dynamicTreeCut]{cutreeDynamic}} for more details. }
-
-  \item{minAbsGap}{ minimum cluster gap given as absolute height difference. If given, overrides
-\code{minGap}. See \code{\link[dynamicTreeCut]{cutreeDynamic}} for more details. }
-
-  \item{pamStage}{ logical.  If TRUE, the second (PAM-like) stage of module detection will be performed.
-     See \code{\link[dynamicTreeCut]{cutreeDynamic}} for more details. }
-
-  \item{pamRespectsDendro}{Logical, only used when \code{pamStage} is \code{TRUE}.
-If \code{TRUE}, the PAM stage will
-respect the dendrogram in the sense an object can be PAM-assigned only to clusters that lie below it on
-the branch that the object is merged into.
-     See \code{\link[dynamicTreeCut]{cutreeDynamic}} for more details. }
-
-  \item{minKMEtoJoin}{ a number between 0 and 1. Genes with eigengene connectivity higher than
-\code{minKMEtoJoin} are automatically assigned to their closest module.  }
-
-  \item{minCoreKME}{ a number between 0 and 1. If a detected module does not have at least
-\code{minModuleKMESize} genes with eigengene connectivity at least \code{minCoreKME}, the module is
-disbanded (its genes are unlabeled and returned to the pool of genes waiting for mofule detection). }
-
-  \item{minCoreKMESize}{ see \code{minCoreKME} above. }
-
-  \item{minKMEtoStay}{ genes whose eigengene connectivity to their module eigengene is lower than
-\code{minKMEtoStay} are removed from the module.}
-
-  \item{reassignThresholdPS}{ per-set p-value ratio threshold for reassigning genes between modules. 
-See Details. }
-
-  \item{mergeCutHeight}{ dendrogram cut height for module merging. }
-
-  \item{impute}{ logical: should imputation be used for module eigengene calculation? See
-\code{\link{moduleEigengenes}} for more details. }
-
-  \item{getTOMs}{ deprecated, please use saveTOMs below. }
-
-  \item{saveTOMs}{ logical: should the consensus topological overlap matrices for each block be saved
-and returned?  } 
-
-  \item{saveTOMFileBase}{ character string containing the file name base for files containing the
-consensus topological overlaps. The full file names have \code{"block.1.RData"}, \code{"block.2.RData"}
-etc. appended. These files are standard R data files and can be loaded using the \code{\link{load}}
-function. } 
-
- \item{getTOMScalingSamples}{ logical: should samples used for TOM scaling be saved for future analysis?
-This option is only available when \code{sampleForScaling} is \code{TRUE}. }
-
- \item{trapErrors}{ logical: should errors in calculations be trapped? }
-
-  \item{checkPower}{ logical: should basic sanity check be performed on the supplied \code{power}? If
-you would like to experiment with unusual powers, set the argument to \code{FALSE} and proceed with
-caution. }
-
-  \item{numericLabels}{ logical: should the returned modules be labeled by colors (\code{FALSE}), or by
-numbers (\code{TRUE})? }
-
-  \item{checkMissingData}{logical: should data be checked for excessive numbers of missing entries in
-genes and samples, and for genes with zero variance? See details. }
 
   \item{maxPOutliers}{ only used for \code{corType=="bicor"}. Specifies the maximum percentile of data 
 that can be considered outliers on either 
@@ -214,6 +165,160 @@ effect for Pearson correlation. See \code{\link{bicor}}.}
 
   \item{cosineCorrelation}{logical: should the cosine version of the correlation calculation be used? The 
 cosine calculation differs from the standard one in that it does not subtract the mean. }
+
+%%%%%%%%%%%%%%
+
+  \item{power}{ soft-thresholding power for netwoek construction. }
+
+  \item{networkType}{ network type. Allowed values are (unique abbreviations of) \code{"unsigned"},
+\code{"signed"}, \code{"signed hybrid"}. See \code{\link{adjacency}}. }
+
+  \item{checkPower}{ logical: should basic sanity check be performed on the supplied \code{power}? If
+you would like to experiment with unusual powers, set the argument to \code{FALSE} and proceed with
+caution. }
+
+  \item{TOMType}{ one of \code{"none"}, \code{"unsigned"}, \code{"signed"}. If \code{"none"}, adjacency
+will be used for clustering. If \code{"unsigned"}, the standard TOM will be used (more generally, TOM
+function will receive the adjacency as input). If \code{"signed"}, TOM will keep track of the sign of
+correlations between neighbors. }
+
+  \item{TOMDenom}{ a character string specifying the TOM variant to be used. Recognized values are 
+\code{"min"} giving the standard TOM described in Zhang and Horvath (2005), and \code{"mean"} in which 
+the \code{min} function in the denominator is replaced by \code{mean}. The \code{"mean"} may produce 
+better results but at this time should be considered experimental.}
+%The default mean denominator
+%variant
+%is preferrable and we recommend using it unless the user needs to reproduce older results obtained using
+%the standard, minimum denominator TOM. }
+
+%%%%%%%%%%%%%%%
+
+  \item{saveIndividualTOMs}{logical: should individual TOMs be saved to disk for later use? }
+
+  \item{individualTOMFileNames}{character string giving the file names to save individual TOMs into. The
+following tags should be used to make the file names unique for each set and block: \code{\%s} will be
+replaced by the set number; \code{\%N} will be replaced by the set name (taken from \code{names(multiExpr)})
+if it exists, otherwise by set number; \code{\%b} will be replaced by the block number. If the file names turn
+out to be non-unique, an error will be generated.}
+
+%%%%%%%%%%%%%%
+
+  \item{consensusQuantile}{ qunatile at which consensus is to be defined. See details. }
+
+  \item{scaleTOMs}{ should set-specific TOM matrices be scaled to the same scale?}
+
+  \item{scaleQuantile}{ if \code{scaleTOMs} is \code{TRUE}, topological overlaps (or adjacencies if
+TOMs are not computed) will be scaled such that their \code{scaleQuantile} quantiles will agree. }
+
+%%%%%%%%%%%%%%
+
+  \item{sampleForScaling}{ if \code{TRUE}, scale quantiles will be determined from a sample of network
+similarities. Note that using all data can double the memory footprint of the function and the function
+may fail. }
+
+  \item{sampleForScalingFactor}{ determines the number of samples for scaling: the number is
+ \code{1/scaleQuantile * sampleForScalingFactor}. Should be set well above 1 to ensure accuracy of the
+sampled quantile. }
+
+ \item{getTOMScalingSamples}{ logical: should samples used for TOM scaling be saved for future analysis?
+This option is only available when \code{sampleForScaling} is \code{TRUE}. }
+
+%%%%%%%%%%%%%%
+
+  \item{saveTOMs}{ logical: should the consensus topological overlap matrices for each block be saved
+and returned?  } 
+
+  \item{consensusTOMFileNames}{ character string containing the file namefiles containing the
+consensus topological overlaps. The tag \code{\%b} will be replaced by the block number. If the resulting file
+names are non-unique (for example, because the user gives a file name without a \code{\%b} tag), an error
+will be generated.
+These files are standard R data files and can be loaded using the \code{\link{load}}
+function. } 
+
+%%%%%%%%%%%%%%
+
+  \item{useDiskCache}{ should calculated network similarities in individual sets be temporarilly saved
+to disk? Saving to disk is somewhat slower than keeping all data in memory, but for large blocks and/or
+many sets the memory footprint may be too big. }
+
+  \item{chunkSize}{ network similarities are saved in smaller chunks of size \code{chunkSize}. }
+
+  \item{cacheBase}{ character string containing the desired name for the cache files. The actual file
+names will consists of \code{cacheBase} and a suffix to make the file names unique. }
+
+%%%%%%%%%%%%%%
+
+  \item{deepSplit}{ integer value between 0 and 4. Provides a simplified control over how sensitive
+module detection should be to module splitting, with 0 least and 4 most sensitive. See
+\code{\link[dynamicTreeCut]{cutreeDynamic}} for more details. }
+
+  \item{detectCutHeight}{ dendrogram cut height for module detection. See
+\code{\link[dynamicTreeCut]{cutreeDynamic}} for more details.  }
+
+  \item{minModuleSize}{ minimum module size for module detection. See
+\code{\link[dynamicTreeCut]{cutreeDynamic}} for more details.  }
+
+  \item{checkMinModuleSize}{ logical: should sanity checks be performed on \code{minModuleSize}?}
+
+%%%%%%%%%%%%%%%%
+
+  \item{maxCoreScatter}{ maximum scatter of the core for a branch to be a cluster, given as the fraction
+of \code{cutHeight} relative to the 5th percentile of joining heights. See
+\code{\link[dynamicTreeCut]{cutreeDynamic}} for more details.  }
+
+  \item{minGap}{ minimum cluster gap given as the fraction of the difference between \code{cutHeight} and
+the 5th percentile of joining heights. See \code{\link[dynamicTreeCut]{cutreeDynamic}} for more details. } 
+
+  \item{maxAbsCoreScatter}{ maximum scatter of the core for a branch to be a cluster given as absolute
+heights. If given, overrides \code{maxCoreScatter}. See \code{\link[dynamicTreeCut]{cutreeDynamic}} for more details. }
+
+  \item{minAbsGap}{ minimum cluster gap given as absolute height difference. If given, overrides
+\code{minGap}. See \code{\link[dynamicTreeCut]{cutreeDynamic}} for more details. }
+
+  \item{pamStage}{ logical.  If TRUE, the second (PAM-like) stage of module detection will be performed.
+     See \code{\link[dynamicTreeCut]{cutreeDynamic}} for more details. }
+
+  \item{pamRespectsDendro}{Logical, only used when \code{pamStage} is \code{TRUE}.
+If \code{TRUE}, the PAM stage will
+respect the dendrogram in the sense an object can be PAM-assigned only to clusters that lie below it on
+the branch that the object is merged into.
+     See \code{\link[dynamicTreeCut]{cutreeDynamic}} for more details. }
+
+%%%%%%%%%%%%%
+
+  \item{reassignThresholdPS}{ per-set p-value ratio threshold for reassigning genes between modules. 
+See Details. }
+
+  \item{minKMEtoJoin}{ a number between 0 and 1. Genes with eigengene connectivity higher than
+\code{minKMEtoJoin} are automatically assigned to their closest module.  }
+
+  \item{minCoreKME}{ a number between 0 and 1. If a detected module does not have at least
+\code{minModuleKMESize} genes with eigengene connectivity at least \code{minCoreKME}, the module is
+disbanded (its genes are unlabeled and returned to the pool of genes waiting for mofule detection). }
+
+  \item{minCoreKMESize}{ see \code{minCoreKME} above. }
+
+  \item{minKMEtoStay}{ genes whose eigengene connectivity to their module eigengene is lower than
+\code{minKMEtoStay} are removed from the module.}
+
+%%%%%%%%%%%%%
+
+  \item{impute}{ logical: should imputation be used for module eigengene calculation? See
+\code{\link{moduleEigengenes}} for more details. }
+
+ \item{trapErrors}{ logical: should errors in calculations be trapped? }
+
+%%%%%%%%%%%%%
+
+  \item{mergeCutHeight}{ dendrogram cut height for module merging. }
+
+  \item{mergeConsensusQuantile}{consensus quantile for module merging. See \code{mergeCloseModules} for
+details. }
+
+  \item{numericLabels}{ logical: should the returned modules be labeled by colors (\code{FALSE}), or by
+numbers (\code{TRUE})? }
+
+%%%%%%%%%%%%%
 
   \item{nThreads}{ non-negative integer specifying the number of parallel threads to be used by certain
 parts of correlation calculations. This option only has an effect on systems on which a POSIX thread

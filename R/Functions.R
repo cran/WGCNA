@@ -12,7 +12,7 @@
 ..minNGenes = 4;
 ..minNSamples = 4;
 
-.largestBlockSize = 1e7;
+.largestBlockSize = 1e8;
 
 .networkTypes = c("unsigned", "signed", "signed hybrid");
 .adjacencyTypes = c(.networkTypes, "distance");
@@ -815,13 +815,15 @@ plotColorUnderTree = function(
        nCharFit = floor(width1/charHeight/cex.rowText/1.2/par("lheight"))
        if (nCharFit==0) stop("Rows are too narrow to fit text. Consider decreasing cex.rowText.");
        set = textPositions[tr];
-       colLevs = sort(unique(colors[, set]));
-       textLevs[[tr]] = rowText[match(colLevs, colors[, set]), tr];
-       nLevs = length(colLevs);
+       #colLevs = sort(unique(colors[, set]));
+       #textLevs[[tr]] = rowText[match(colLevs, colors[, set]), tr];
+       textLevs[[tr]] = sort(unique(rowText[, tr]));
+       nLevs = length(textLevs[[tr]]);
        textPos[[tr]] = rep(0, nLevs);
+       orderedText = rowText[dendro$order, tr]
        for (cl in 1:nLevs)
        {
-         ind = C[, set] == colLevs[cl];
+         ind = orderedText == textLevs[[tr]][cl];
          sind = ind[-1];
          ind1 = ind[-length(ind)];
          starts = c(1:length(ind))[!ind1 & sind];
@@ -937,22 +939,22 @@ plotClusterTreeSamples=function(datExpr, y = NULL, traitLabels = NULL, yLabels =
 # The function TOMplot creates a TOM plot
 # Inputs:  distance measure, hierarchical (hclust) object, color label=colors
 
-TOMplot = function(dissim, dendro, colors=NULL, colorsLeft = colors, terrainColors=FALSE, 
+TOMplot = function(dissim, dendro, Colors=NULL, ColorsLeft = Colors, terrainColors=FALSE, 
                    setLayout = TRUE, ...) 
 {
-  if ( is.null(colors) ) colors=rep("white", dim(as.matrix(dissim))[[1]] )
-  if ( is.null(colorsLeft)) colorsLeft = colors;
-  nNodes=length(colors)
+  if ( is.null(Colors) ) Colors=rep("white", dim(as.matrix(dissim))[[1]] )
+  if ( is.null(ColorsLeft)) ColorsLeft = Colors;
+  nNodes=length(Colors)
   if (nNodes<2) {
      warning("You have only 1 or 2 genes in TOMplot. No plot will be produced")
   } else {
-     if (nNodes != length(colorsLeft)) 
+     if (nNodes != length(ColorsLeft)) 
        stop("ERROR: number of (top) color labels does not equal number of left color labels")
      if (nNodes != dim(dissim)[[1]] ) 
        stop(paste("ERROR: number of color labels does not equal number of nodes in dissim.\n",
                   "     nNodes != dim(dissim)[[1]] "))
-     labeltree = as.character(colors)
-     labelrow  = as.character(colorsLeft)
+     labeltree = as.character(Colors)
+     labelrow  = as.character(ColorsLeft)
      #labelrow[dendro$order[length(labeltree):1]]=labelrow[dendro$order]
      options(expressions = 10000)
      dendro$height = (dendro$height - min(dendro$height))/(1.15 *
@@ -1435,14 +1437,16 @@ verboseBarplot = function (x, g,  main = "",
   p1=signif(kruskal.test(x~factor(g) )$p.value,2)
   if (AnovaTest)  p1=signif(  anova(lm(x~factor(g)))$Pr[[1]]    ,2)
   if ( AnovaTest | KruskalTest)  main=paste(main," p=",as.character(p1) )
-  barplot(Means1, main=main,col=color, xlab=xlab,ylab=ylab, cex=cex, cex.axis=cex.axis,cex.lab=cex.lab,
-  cex.main=cex.main, ...)
+  ret = barplot(Means1, main=main,col=color, xlab=xlab,ylab=ylab, cex=cex, cex.axis=cex.axis,cex.lab=cex.lab,
+                cex.main=cex.main, ...)
   abline(h=0)
   if (numberStandardErrors >0) 
   {
       err.bp(as.vector(Means1), as.vector(SE), two.sided=two.sided,
              numberStandardErrors= numberStandardErrors)
   }
+  attr(ret, "height") = as.vector(Means1);
+  invisible(ret);
 }
 
 
@@ -2550,11 +2554,11 @@ simulateMultiExpr = function(eigengenes, nGenes, modProportions,
     SetEigengenes = scale(eigengenes[[set]]$data);
     setLeaveOut = leaveOut[, set];
     # Convert setLeaveOut from boolean to a list of indices where it's TRUE
-    SetMinCor = rep(minCor, nMods);
-    SetMaxCor = rep(maxCor, nMods);
+    # SetMinCor = rep(minCor, nMods);
+    # SetMaxCor = rep(maxCor, nMods);
     SetLO = c(1:nMods)[setLeaveOut];
     setData = simulateDatExpr(SetEigengenes, nGenes, modProportions,
-                          minCor = SetMinCor, maxCor = SetMaxCor, 
+                          minCor = minCor, maxCor = maxCor, 
                           corPower = corPower, 
                           signed = signed, propNegativeCor = propNegativeCor,
                           backgroundNoise = backgroundNoise, leaveOut = SetLO,
@@ -3299,7 +3303,7 @@ sizeGrWindow = function(width, height)
   if ( (din[1]!=width) | (din[2]!=height) )
   {
     dev.off();
-    X11(width = width, height=height);
+    dev.new(width = width, height=height);
   }
 }
 
@@ -4356,7 +4360,7 @@ goodSamplesGenesMS = function(multiExpr, minFraction = 1/2, minNSamples = ..minN
     else colInd <- 1:nc
 
     ## reorder x
-    x <- x[rowInd, colInd]
+    x <- x[rowInd, colInd];
 
     labRow <- if (is.null(labRow)) 
         if (is.null(rownames(x))) (1:nr)[rowInd] else rownames(x)
@@ -4931,7 +4935,7 @@ consensusKME = function(multiExpr, moduleLabels, multiEigengenes = NULL, consens
   {
     corOptions$x = multiExpr[[set]]$data;
     corOptions$y = multiEigengenes[[set]]$data;
-    cp = do.call(corAndPvalueFnc, arg = corOptions);
+    cp = do.call(corAndPvalueFnc, args = corOptions);
     corComp = grep(corComponent, names(cp));
     pComp = match("p", names(cp));
     if (is.na(pComp)) pComp = match("p.value", names(cp));
@@ -4965,8 +4969,8 @@ consensusKME = function(multiExpr, moduleLabels, multiEigengenes = NULL, consens
     } else
       weights = array( rep(metaAnalysisWeights, rep(nGenes*nModules, nSets)),
                              dim = c(nGenes, nModules, nSets));
-    kME.weightedAverage[, m, ] = rowSums( kME * weights, na.rm = TRUE, dim = 2) / 
-                                    rowSums(weights, dim = 2, na.rm = TRUE)
+    kME.weightedAverage[, m, ] = rowSums( kME * weights, na.rm = TRUE, dims = 2) / 
+                                    rowSums(weights, dims = 2, na.rm = TRUE)
   }
 
   dim(kME.weightedAverage) = c(nGenes * nWeights, nModules);
@@ -5010,7 +5014,7 @@ consensusKME = function(multiExpr, moduleLabels, multiEigengenes = NULL, consens
         weights = array( rep(metaAnalysisWeights, rep(nGenes*nModules, nSets)), 
                              dim = c(nGenes, nModules, nSets));
 
-      Z1 = rowSums( Z * weights, na.rm = TRUE, dim = 2) / sqrt(rowSums(weights^2, na.rm = TRUE, dim = 2))
+      Z1 = rowSums( Z * weights, na.rm = TRUE, dims = 2) / sqrt(rowSums(weights^2, na.rm = TRUE, dims = 2))
       if (signed)
       {
          p1 = pnorm(Z1, lower.tail = FALSE);
@@ -5325,4 +5329,7 @@ metaAnalysis = function(multiExpr, multiTrait,
   out;
 }
 
+
+#===============================================================================================
+#
 

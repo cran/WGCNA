@@ -9,8 +9,8 @@ the corresponding hierarchical clustering dendrogram and module colors.
 TOMplot(
    dissim, 
    dendro, 
-   colors = NULL, 
-   colorsLeft = colors, 
+   Colors = NULL, 
+   ColorsLeft = Colors, 
    terrainColors = FALSE, 
    setLayout = TRUE,
    ...)
@@ -20,10 +20,10 @@ TOMplot(
 
   \item{dendro}{ the corresponding hierarchical clustering dendrogram }
 
-  \item{colors}{ optional specification of module colors to be plotted on top }
+  \item{Colors}{ optional specification of module colors to be plotted on top }
 
-  \item{colorsLeft}{ optional specification of module colors on the left side. If \code{NULL},
-\code{colors} will be used.  }
+  \item{ColorsLeft}{ optional specification of module colors on the left side. If \code{NULL},
+\code{Colors} will be used.  }
 
   \item{terrainColors}{ logical: should terrain colors be used? }
 
@@ -35,7 +35,7 @@ setting the correct layout. }
 }
 \details{
   The standard \code{heatmap} function uses the \code{\link{layout}} function to set the following
-layout (when \code{colors} is given):
+layout (when \code{Colors} is given):
 \preformatted{
 0 0 5
 0 0 2

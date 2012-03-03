@@ -851,14 +851,56 @@ multiSetMEs = function(exprData, colors, universalColors = NULL, useSets = NULL,
 #---------------------------------------------------------------------------------------------
 # This function merges modules whose MEs fall on one branch of a hierarchical clustering tree
 
-mergeCloseModules = function(exprData, colors, cutHeight = 0.2, MEs = NULL, 
+
+.consensusMEDissimilarity = function(multiMEs, 
+                                     consensusQuantile = 0, useAbs = FALSE, 
+                                     corFnc = cor, corOptions = list(use = 'p'),
+                                     useSets = NULL, 
+                                     greyMEname = "ME0")
+{
+  nSets = checkSets(multiMEs)$nSets;
+  useMEs = c(1:ncol(multiMEs[[1]]$data))[names(multiMEs[[1]]$data)!=greyMEname]
+  useNames = names(multiMEs[[1]]$data)[useMEs];
+  nUseMEs = length(useMEs);
+  if (nUseMEs<2) 
+    stop("Something is wrong: there are two or more proper modules, but less than two proper",
+         "eigengenes. Please check that the grey color label and module eigengene label", 
+         "are correct.");
+
+  if (is.null(useSets)) useSets = c(1:nSets);
+  MEDiss = array(NA, dim = c(nUseMEs, nUseMEs, nSets));
+  for (set in useSets)
+  {
+    corOptions$x = multiMEs[[set]]$data[, useMEs];
+    if (useAbs)
+    {
+        diss = 1-abs(do.call(corFnc, corOptions));
+    } else {
+        diss = 1-do.call(corFnc, corOptions);
+    }
+    MEDiss[, , set] = diss;
+  }
+ 
+  dim(MEDiss) = c( nUseMEs * nUseMEs, nSets);
+  ConsDiss = apply(MEDiss, 1, quantile, probs = 1-consensusQuantile, names = FALSE, na.rm = TRUE);
+  dim(ConsDiss) = c(nUseMEs, nUseMEs)
+  colnames(ConsDiss) = rownames(ConsDiss) = useNames;
+  ConsDiss;
+}
+     
+                  
+
+mergeCloseModules = function(exprData, colors, consensusQuantile = 0, 
+                             cutHeight = 0.2, MEs = NULL, 
                              impute = TRUE,
                              useAbs = FALSE, 
+                             corFnc = cor, corOptions = list(use = 'p'),
                              iterate = TRUE,
                              relabel = FALSE, colorSeq = NULL, 
                              getNewMEs = TRUE,
                              getNewUnassdME = TRUE,
-                             useSets = NULL, checkDataFormat = TRUE, 
+                             useSets = NULL, 
+                             checkDataFormat = TRUE, 
                              unassdColor = ifelse(is.numeric(colors), 0, "grey"), 
                              trapErrors = FALSE,
                              verbose = 1, indent = 0)
@@ -973,35 +1015,15 @@ mergeCloseModules = function(exprData, colors, cutHeight = 0.2, MEs = NULL,
         break;
       }
   
-      # Cluster the found module eigengenes and merge ones that are too close _in all sets_.
+      # Cluster the found module eigengenes and merge ones that are too close according to the specified
+      # quantile.
   
-      MEDiss = vector(mode="list", length = nSets);
-      if (is.null(useSets)) useSets = c(1:nSets);
-      for (set in useSets)
-      {
-        useMEs = c(1:dim(MEs[[set]]$data)[2])[names(MEs[[set]]$data)!=greyMEname];
-        if (length(useMEs)<2) 
-          stop("Something is wrong: there are two or more proper modules, but less than two proper",
-               "eigengenes. Please check that the grey color label and module eigengene label", 
-               "are correct.");
-        if (useAbs)
-        {
-            diss = 1-abs(cor(MEs[[set]]$data[, useMEs], use = "p"));
-        } else {
-            diss = 1-cor(MEs[[set]]$data[, useMEs], use = "p");
-        }
-        MEDiss[[set]] = list(Diss = diss);
-      }
-     
-      for (set in useSets)
-        if (set==useSets[1])
-        {
-          ConsDiss = MEDiss[[set]]$Diss;
-        } else {
-          ConsDiss = pmax(ConsDiss, MEDiss[[set]]$Diss);
-        }
-     
       nOldMods = nlevels(as.factor(colors));
+
+      ConsDiss = .consensusMEDissimilarity(MEs, consensusQuantile = consensusQuantile, useAbs = useAbs,
+                                           corFnc = corFnc, corOptions = corOptions, 
+                                           useSets = useSets, greyMEname = greyMEname);
+
       Tree = flashClust(as.dist(ConsDiss), method = "average");
       if (iteration==1) oldTree = Tree;
       TreeBranches = as.factor(moduleNumber(dendro = Tree, cutHeight = cutHeight, minSize = 1));
@@ -1087,27 +1109,12 @@ mergeCloseModules = function(exprData, colors, cutHeight = 0.2, MEs = NULL,
                              verbose = verbose-1, indent = indent+1);
         newMEs = consensusOrderMEs(NewMEs, useAbs = useAbs, useSets = useSets, greyLast = TRUE,
                                    greyName = greyMEname);
-        MEDiss = vector(mode="list", length = nSets);
-        useMEs = c(1:dim(newMEs[[1]]$data)[2])[names(newMEs[[1]]$data)!=greyMEname];
-        if (length(useMEs)>1) 
+
+        ConsDiss = .consensusMEDissimilarity(newMEs, consensusQuantile = consensusQuantile, useAbs = useAbs,
+                                             corFnc = corFnc, corOptions = corOptions, 
+                                             useSets = useSets, greyMEname = greyMEname);
+        if (length(ConsDiss) > 1)
         {
-          for (set in useSets)
-          {
-            if (useAbs)
-            {
-                diss = 1-abs(cor(newMEs[[set]]$data[, useMEs], use = "p"));
-            } else {
-                diss = 1-cor(newMEs[[set]]$data[, useMEs], use = "p");
-            }
-            MEDiss[[set]] = list(Diss = diss);
-          }
-          for (set in useSets)
-            if (set==useSets[1])
-            {
-              ConsDiss = MEDiss[[set]]$Diss;
-            } else {
-              ConsDiss = pmax(ConsDiss, MEDiss[[set]]$Diss);
-            }
           Tree = flashClust(as.dist(ConsDiss), method = "average");
         } else Tree = NULL;
       } else {

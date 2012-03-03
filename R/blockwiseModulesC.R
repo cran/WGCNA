@@ -1021,48 +1021,77 @@ recutBlockwiseTrees = function(datExpr,
 
 #==========================================================================================================
 #
-# blockwiseConsensusModules
+# blockwiseIndividualTOMs
 #
 #==========================================================================================================
-# Function to calculate consensus modules and eigengenes from all genes.
 
-blockwiseConsensusModules = function(multiExpr, blocks = NULL, 
+# This function calculates and saves blockwise topological overlaps for a given multi expression data. The
+# argument blocks can be given to specify blocks, or the blocks can be omitted and will be calculated if
+# necessary.
+
+# Note on naming of output files: %s will translate into set number, %N into set name (if given in
+# multiExpr), %b into block number.
+
+.substituteTags = function(format, tags, replacements)
+{
+  nTags = length(tags);
+  if (length(replacements)!= nTags) stop("Length of tags and replacements must be the same.");
+
+  for (t in 1:nTags)
+    format = gsub(as.character(tags[t]), as.character(replacements[t]), format, fixed = TRUE);
+
+  format;
+}
+
+.processFileName = function(format, setNumber, setNames, blockNumber)
+{ 
+  # The following is a workaround around empty (NULL) setNames. Replaces the name with the setNumber.
+  if (is.null(setNames)) setNames = rep(setNumber, setNumber)
+
+  .substituteTags(format, c("%s", "%N", "%b"), c(setNumber, setNames[setNumber], blockNumber));
+}
+
+
+
+
+blockwiseIndividualTOMs = function(multiExpr,
+
+                            # Data checking options
+
+                            checkMissingData = TRUE,
+
+                            # Blocking options
+
+                            blocks = NULL, 
                             maxBlockSize = 5000, 
                             randomSeed = 12345,
+
+                            # Network construction arguments: correlation options
+
                             corType = "pearson",
-                            power = 6, 
-                            consensusQuantile = 0,
-                            networkType = "unsigned", 
-                            TOMType = "unsigned", 
-                            TOMDenom = "min",
-                            scaleTOMs = TRUE, scaleQuantile = 0.95,
-                            sampleForScaling = TRUE, sampleForScalingFactor = 1000,
-                            useDiskCache = TRUE, chunkSize = NULL,
-                            cacheBase = ".blockConsModsCache",
-                            deepSplit = 2, 
-                            detectCutHeight = 0.995, minModuleSize = 20,
-                            checkMinModuleSize = TRUE,
-                            maxCoreScatter = NULL, minGap = NULL,
-                            maxAbsCoreScatter = NULL, minAbsGap = NULL,
-                            pamStage = TRUE,  pamRespectsDendro = TRUE,
-                            minKMEtoJoin =0.7, 
-                            minCoreKME = 0.5, minCoreKMESize = minModuleSize/3,
-                            minKMEtoStay = 0.2,
-                            reassignThresholdPS = 1e-4,
-                            mergeCutHeight = 0.15, 
-                            impute = TRUE,
-                            getTOMs = NULL,
-                            saveTOMs = FALSE, 
-                            saveTOMFileBase = "consensusTOM",
-                            getTOMScalingSamples = FALSE, 
-                            trapErrors = FALSE,
-                            checkPower = TRUE,
-                            numericLabels = FALSE,
-                            checkMissingData = TRUE,
                             maxPOutliers = 1,
                             quickCor = 0,
                             pearsonFallback = "individual", 
                             cosineCorrelation = FALSE,
+
+                            # Adjacency function options
+
+                            power = 6, 
+                            networkType = "unsigned", 
+                            checkPower = TRUE,
+
+                            # Topological overlap options
+
+                            TOMType = "unsigned",           
+                            TOMDenom = "min",
+
+                            # Save individual TOMs? If not, they will be returned in the session.
+
+                            saveTOMs = TRUE,
+                            individualTOMFileNames = "individualTOM-Set%s-Block%b.RData",
+
+                            # General options
+
                             nThreads = 0,
                             verbose = 2, indent = 0)
 {
@@ -1094,19 +1123,8 @@ blockwiseConsensusModules = function(multiExpr, blocks = NULL,
   if (!is.null(blocks) && (length(blocks)!=nGenes))
     stop("Input error: length of 'blocks' must equal number of genes in 'multiExpr'.");
 
-  if ( (consensusQuantile < 0) | (consensusQuantile > 1) ) 
-    stop("'consensusQuantile' must be between 0 and 1.");
-
-  if (checkMinModuleSize & (minModuleSize > nGenes/2))
-  {
-    minModuleSize = nGenes/2;
-    warning("blockwiseConsensusModules: minModuleSize appeared too large and was lowered to", 
-            minModuleSize,
-            ". If you insist on keeping the original minModuleSize, set checkMinModuleSize = FALSE.");
-  }
-
   if (verbose>0) 
-     printFlush(paste(spaces, "Calculating consensus modules and module eigengenes", 
+     printFlush(paste(spaces, "Calculating consensus topological overlaps", 
                       "block-wise from all genes"));
 
   intCorType = pmatch(corType, .corTypes);
@@ -1122,15 +1140,11 @@ blockwiseConsensusModules = function(multiExpr, blocks = NULL,
     stop(paste("Invalid 'TOMDenom'. Recognized values are", paste(.TOMDenoms, collapse = ", ")))
 
   if ( checkPower & ((sum(power<1)>0) | (sum(power>50)>0) ) ) stop("power must be between 1 and 50.");
-  if ( (minKMEtoJoin >1) | (minKMEtoJoin  <0) ) stop("minKMEtoJoin  must be between 0 and 1.");
 
   intNetworkType = charmatch(networkType, .networkTypes);
   if (is.na(intNetworkType))
     stop(paste("Unrecognized networkType argument.", 
          "Recognized values are (unique abbreviations of)", paste(.networkTypes, collapse = ", ")));
-
-  if (!is.null(getTOMs))
-    warning("getTOMs is deprecated, please use saveTOMs instead.");
 
   if ( (maxPOutliers < 0) | (maxPOutliers > 1)) stop("maxPOutliers must be between 0 and 1.");
   if (quickCor < 0) stop("quickCor must be positive.");
@@ -1145,9 +1159,6 @@ blockwiseConsensusModules = function(multiExpr, blocks = NULL,
 
   nSamples = dataSize$nSamples;
   
-  allLabels = rep(0, nGenes);
-  allLabelIndex = NULL;
-
   # Check data for genes and samples that have too many missing values
 
   if (checkMissingData)
@@ -1162,6 +1173,7 @@ blockwiseConsensusModules = function(multiExpr, blocks = NULL,
     gsg = list(goodGenes = rep(TRUE, nGenes), goodSamples = list());
     for (set in 1:nSets)
       gsg$goodSamples[[set]] = rep(TRUE, nSamples[set]);
+    gsg$allOK = TRUE;
   }
 
   nGGenes = sum(gsg$goodGenes);
@@ -1190,93 +1202,61 @@ blockwiseConsensusModules = function(multiExpr, blocks = NULL,
   blockOrder = order(-blockSizes);
   nBlocks = length(blockLevels);
 
-  if (is.null(chunkSize)) chunkSize = as.integer(.largestBlockSize/nSets)
+  # check file names for uniqueness
 
-  if ( saveTOMs )
+  actualFileNames = NULL;
+  if (saveTOMs) 
   {
-    printFlush(paste(spaces, "..will save consensus TOMs in files starting with", saveTOMFileBase))
+    actualFileNames = matrix("", nSets, nBlocks);
+    for (set in 1:nSets) for (b in 1:nBlocks)
+      actualFileNames[set, b] = .processFileName(individualTOMFileNames, set, names(multiExpr), b);
+  
+    rownames(actualFileNames) = spaste("Set.", c(1:nSets));
+    colnames(actualFileNames) = spaste("Block.", c(1:nBlocks));
+    if (length(unique(as.vector(actualFileNames))) < nSets * nBlocks) 
+    {
+      printFlush("Error: File names for (some) set/block combinations are not unique:");
+      print(actualFileNames);
+      stop("File names must be unique.");
+    }
   }
-
-  reassignThreshold = reassignThresholdPS^nSets;
-
+  
   # Initialize various variables
 
-  if (getTOMScalingSamples)
-  {
-    if (!sampleForScaling)
-      stop(paste("Incompatible input options: TOMScalingSamples can only be returned", 
-                 "if sampleForScaling is TRUE."));
-    TOMScalingSamples = list();
-  }
-
-  consMEs = vector(mode = "list", length = nSets);
-  dendros = list();
-
-  originCount = rep(0, nSets);
-
   blockGenes = list();
-
-  TOMFiles = rep("", nBlocks);
-
   blockNo = 1;
-  maxUsedLabel = 0;
-
   collectGarbage();
+  setTomDS = list();
   # Here's where the analysis starts
-
-  while (blockNo <= nBlocks)
+  for (blockNo in 1:nBlocks)
   {
-    if (verbose>1) printFlush(paste(spaces, "..Working on block", blockNo, "."));
-    # Select most connected genes
+    if (verbose>1 && nBlocks > 1) printFlush(paste(spaces, "..Working on block", blockNo, "."));
+    # Select the block genes
     block = c(1:nGGenes)[gBlocks==blockLevels[blockOrder[blockNo]]];
     nBlockGenes = length(block);
     blockGenes[[blockNo]] = c(1:nGenes)[gsg$goodGenes][gBlocks==blockLevels[blockOrder[blockNo]]];
-    scaleQuant = rep(1, nSets);
-    scalePowers = rep(1, nSets);
-    selExpr = vector(mode = "list", length = nSets);
     errorOccurred = FALSE;
 
     # Set up file names or memory space to hold the set TOMs
-    if (useDiskCache)
+    if (!saveTOMs)
     {
-      nChunks = ceiling(nBlockGenes * (nBlockGenes-1)/2/chunkSize);
-      TOMfileNames = array("", dim = c(nChunks, nSets));
-      chunkLengths = rep(0, nChunks);
-    } else {
-      setTomDS = array(0, dim = c(nSets, nBlockGenes*(nBlockGenes-1)));
+      setTomDS[[blockNo]] = array(0, dim = c(nSets, nBlockGenes*(nBlockGenes-1)));
     } 
-
-    # create a bogus consTomDS distance structure.
-
-    consTomDS = dist(as.matrix(as.numeric(multiExpr[[1]]$data[1, block])));
-
-    # sample entry indices from the distance structure for TOM scaling, if requested
-
-    if (sampleForScaling)
-    {
-      qx = min(scaleQuantile, 1-scaleQuantile);
-      nScGenes = min(sampleForScalingFactor * 1/qx, length(consTomDS));
-      nTOMEntries = length(consTomDS)
-      scaleSample = sample(nTOMEntries, nScGenes);
-      if (getTOMScalingSamples)
-        TOMScalingSamples[[blockNo]] = list(sampleIndex = scaleSample,
-                                            TOMSamples = matrix(NA, nScGenes, nSets));
-    }
 
     # For each set: calculate and save TOM
 
+    tom = matrix(0, nBlockGenes, nBlockGenes);
     for (set in 1:nSets)
     {
       if (verbose>2) printFlush(paste(spaces, "....Working on set", set))
-      selExpr[[set]] = list(data = multiExpr[[set]]$data[, block]);
-      tom = matrix(0, nBlockGenes, nBlockGenes);
+      selExpr = multiExpr[[set]]$data[, block];
 
       # Calculate TOM by calling a custom C function:
       callVerb = max(0, verbose - 1); callInd = indent + 2;
       CcorType = intCorType - 1;
       CnetworkType = intNetworkType - 1;
       CTOMType = intTOMType - 1;
-      tempExpr = as.double(as.matrix(selExpr[[set]]$data));
+      tempExpr = as.double(as.matrix(selExpr));
       warn = 0;
 
       collectGarbage();
@@ -1300,12 +1280,378 @@ blockwiseConsensusModules = function(multiExpr, blocks = NULL,
   
       #FIXME: warn if necessary
 
-      rm(tom, tempExpr); collectGarbage();
+      rm(tempExpr); 
       dim(tomResult$tom) = c(nBlockGenes, nBlockGenes);
       tomDS = as.dist(tomResult$tom);
       # dim(tom) = c(nBlockGenes, nBlockGenes);
-      rm(tomResult); collectGarbage();
+      rm(tomResult); 
 
+      # Save the calculated TOM either to disk in chunks or to memory.
+      if (saveTOMs) 
+      {
+        save(tomDS, file = actualFileNames[set, blockNo]); 
+      } else {
+        setTomDS[[blockNo]] [set, ] = tomDS[];
+      }
+    }
+    rm(tomDS); collectGarbage();
+  }
+
+  # Re-set random number generator if necessary
+  if (seedSaved) .Random.seed <<- savedSeed;
+
+  list(actualTOMFileNames = actualFileNames, 
+       TOMSimilarities = if(!saveTOMs) setTomDS else NULL,
+       blocks = blocks,
+       blockGenes = blockGenes,
+       goodSamplesAndGenes = gsg, 
+       nGGenes = nGGenes,
+       gBlocks = gBlocks,
+       nThreads = nThreads,
+       TOMSavedInFiles = saveTOMs,
+       intNetworkType = intNetworkType,
+       intCorType = intCorType,
+       nSets = nSets
+       )
+}
+
+#==========================================================================================================
+#
+# lowerTri2matrix
+#
+#==========================================================================================================
+
+lowerTri2matrix = function(x, diag = 1)
+{
+  if (class(x)=="dist")
+  {
+    mat = as.matrix(x)
+  } else {
+    n = length(x);
+    n1 = (1 + sqrt(1 + 8*n))/2
+    if (floor(n1)!=n1) stop("Input length does not translate into matrix");
+    mat = matrix(0, n1, n1);
+    mat[lower.tri(mat)] = x;
+    mat = mat + t(mat);
+  }
+  diag(mat) = diag;
+  mat;
+}
+
+  
+
+#==========================================================================================================
+#
+# blockwiseConsensusModules
+#
+#==========================================================================================================
+# Function to calculate consensus modules and eigengenes from all genes.
+
+blockwiseConsensusModules = function(multiExpr, 
+
+                            # Data checking options
+
+                            checkMissingData = TRUE,
+
+                            # Blocking options
+
+                            blocks = NULL, 
+                            maxBlockSize = 5000, 
+                            randomSeed = 12345,
+
+                            # individual TOM information
+
+                            individualTOMInfo = NULL,
+                            useIndivTOMSubset = NULL,
+
+                            # Network construction arguments: correlation options
+
+                            corType = "pearson",
+                            maxPOutliers = 1,
+                            quickCor = 0,
+                            pearsonFallback = "individual", 
+                            cosineCorrelation = FALSE,
+
+                            # Adjacency function options
+
+                            power = 6, 
+                            networkType = "unsigned", 
+                            checkPower = TRUE,
+
+                            # Topological overlap options
+
+                            TOMType = "unsigned",           
+                            TOMDenom = "min",
+
+                            # Save individual TOMs?
+
+                            saveIndividualTOMs = TRUE,
+                            individualTOMFileNames = "individualTOM-Set%s-Block%b.RData",
+
+                            # Consensus calculation options 
+
+                            consensusQuantile = 0,
+                            scaleTOMs = TRUE, scaleQuantile = 0.95,
+
+                            # Sampling for scaling (speeds up calculation)
+
+                            sampleForScaling = TRUE, sampleForScalingFactor = 1000,
+                            getTOMScalingSamples = FALSE, 
+                   
+                            # Returning the consensus TOM
+                            saveTOMs = FALSE, 
+                            consensusTOMFileNames = "consensusTOM-block.%b.RData",
+
+                            # Internal handling of TOMs
+
+                            useDiskCache = TRUE, chunkSize = NULL,
+                            cacheBase = ".blockConsModsCache",
+
+                            # Basic tree cut options 
+
+                            deepSplit = 2, 
+                            detectCutHeight = 0.995, minModuleSize = 20,
+                            checkMinModuleSize = TRUE,
+
+                            # Advanced tree cut opyions
+
+                            maxCoreScatter = NULL, minGap = NULL,
+                            maxAbsCoreScatter = NULL, minAbsGap = NULL,
+                            pamStage = TRUE,  pamRespectsDendro = TRUE,
+
+                            # Gene joining and removal from a module, and module "significance" criteria
+
+                            reassignThresholdPS = 1e-4,
+                            minKMEtoJoin =0.7, 
+                            minCoreKME = 0.5, minCoreKMESize = minModuleSize/3,
+                            minKMEtoStay = 0.2,
+
+                            # Module eigengene calculation options
+
+                            impute = TRUE,
+                            trapErrors = FALSE,
+
+                            # Module merging options
+
+                            mergeCutHeight = 0.15, 
+                            mergeConsensusQuantile = consensusQuantile,
+
+                            # Output options
+
+                            numericLabels = FALSE,
+
+# General options
+                            nThreads = 0,
+                            verbose = 2, indent = 0)
+{
+  spaces = indentSpaces(indent);
+
+  dataSize = checkSets(multiExpr);
+  nSets = dataSize$nSets;
+  nGenes = dataSize$nGenes;
+
+  if (length(power)!=1)
+  {
+    if (length(power)!=nSets)
+      stop("Invalid arguments: Length of 'power' must equal number of sets given in 'multiExpr'.");
+  } else {
+    power = rep(power, nSets);
+  }
+
+  seedSaved = FALSE;
+  if (!is.null(randomSeed))
+  {
+    if (exists(".Random.seed"))
+    {
+       seedSaved = TRUE;
+       savedSeed = .Random.seed
+    } 
+    set.seed(randomSeed);
+  }
+
+  if ( (consensusQuantile < 0) | (consensusQuantile > 1) ) 
+    stop("'consensusQuantile' must be between 0 and 1.");
+
+  if (checkMinModuleSize & (minModuleSize > nGenes/2))
+  {
+    minModuleSize = nGenes/2;
+    warning("blockwiseConsensusModules: minModuleSize appeared too large and was lowered to", 
+            minModuleSize,
+            ". If you insist on keeping the original minModuleSize, set checkMinModuleSize = FALSE.");
+  }
+
+  if (verbose>0) 
+     printFlush(paste(spaces, "Calculating consensus modules and module eigengenes", 
+                      "block-wise from all genes"));
+
+  # If topological overlaps weren't calculated yet, calculate them.
+
+  if (is.null(individualTOMInfo))
+  {
+    individualTOMInfo = blockwiseIndividualTOMs(multiExpr = multiExpr, 
+                         checkMissingData = checkMissingData,
+                         blocks = blocks,
+                         maxBlockSize = maxBlockSize,
+                         randomSeed = NULL,
+                         corType = corType,
+                         maxPOutliers = maxPOutliers,
+                         quickCor = quickCor,
+                         pearsonFallback = pearsonFallback,
+                         cosineCorrelation = cosineCorrelation,
+                         power = power,
+                         networkType = networkType, 
+                         TOMType = TOMType,
+                         TOMDenom = TOMDenom,
+                         saveTOMs = useDiskCache,
+                         individualTOMFileNames = individualTOMFileNames,
+                         nThreads = nThreads,
+                         verbose = verbose, indent = indent);
+  } 
+
+  if (is.null(useIndivTOMSubset))
+  {  
+    if (individualTOMInfo$nSets != nSets)
+      stop(paste("Number of sets in individualTOMInfo and in multiExpr do not agree.\n",
+                 "  To use a subset of individualTOMInfo, set useIndivTOMSubset appropriately."));
+
+    useIndivTOMSubset = c(1:nSets);
+  }
+
+  if (length(useIndivTOMSubset)!=nSets)
+    stop("Length of 'useIndivTOMSubset' must equal the number of sets in 'multiExpr'");
+
+  if (length(unique(useIndivTOMSubset))!=nSets)
+    stop("Entries of 'useIndivTOMSubset' must be unique");
+
+  if (any(useIndivTOMSubset<1) | any(useIndivTOMSubset>individualTOMInfo$nSets))
+    stop("All entries of 'useIndivTOMSubset' must be between 1 and the number of sets in individualTOMInfo");
+
+  if ( (minKMEtoJoin >1) | (minKMEtoJoin  <0) ) stop("minKMEtoJoin  must be between 0 and 1.");
+
+  intNetworkType = individualTOMInfo$intNetworkType;
+  intCorType = individualTOMInfo$intCorType;
+
+  fallback = pmatch(pearsonFallback, .pearsonFallbacks)
+
+  nSamples = dataSize$nSamples;
+  
+  allLabels = rep(0, nGenes);
+  allLabelIndex = NULL;
+
+  # Restrict data to goodSamples and goodGenes
+
+  gsg = individualTOMInfo$goodSamplesAndGenes;
+
+  # Restrict gsg to used sets
+
+  gsg$goodSamples = gsg$goodSamples[useIndivTOMSubset];
+  if (!gsg$allOK)
+  {
+    for (set in 1:nSets) 
+      multiExpr[[set]]$data = multiExpr[[set]] $ data [gsg$goodSamples[[set ]], 
+                                                        gsg$goodGenes];
+  }
+
+  nGGenes = sum(gsg$goodGenes);
+  nGSamples = rep(0, nSets);
+  for (set in 1:nSets) nGSamples[set] = sum(gsg$goodSamples[[ set ]]);
+
+  blocks = individualTOMInfo$blocks;
+  gBlocks = individualTOMInfo$gBlocks;
+
+  blockLevels = as.numeric(levels(factor(gBlocks)));
+  blockSizes = table(gBlocks)
+  blockOrder = order(-blockSizes);
+  nBlocks = length(blockLevels);
+
+  if (is.null(chunkSize)) chunkSize = as.integer(.largestBlockSize/nSets)
+
+  reassignThreshold = reassignThresholdPS^nSets;
+
+  # Initialize various variables
+
+  if (getTOMScalingSamples)
+  {
+    if (!sampleForScaling)
+      stop(paste("Incompatible input options: TOMScalingSamples can only be returned", 
+                 "if sampleForScaling is TRUE."));
+    TOMScalingSamples = list();
+  }
+
+  consMEs = vector(mode = "list", length = nSets);
+  dendros = list();
+
+  originCount = rep(0, nSets);
+
+  TOMFiles = rep("", nBlocks);
+
+  maxUsedLabel = 0;
+  collectGarbage();
+  # Here's where the analysis starts
+
+  for (blockNo in 1:nBlocks)
+  {
+    if (verbose>1) printFlush(paste(spaces, "..Working on block", blockNo, "."));
+    # Select most connected genes
+    block = c(1:nGGenes)[gBlocks==blockLevels[blockOrder[blockNo]]];
+    nBlockGenes = length(block);
+    # blockGenes[[blockNo]] = c(1:nGenes)[gsg$goodGenes][gBlocks==blockLevels[blockOrder[blockNo]]];
+    scaleQuant = rep(1, nSets);
+    scalePowers = rep(1, nSets);
+    selExpr = vector(mode = "list", length = nSets);
+    errorOccurred = FALSE;
+
+    # Set up file names or memory space to hold the set TOMs
+    if (useDiskCache)
+    {
+      nChunks = ceiling(nBlockGenes * (nBlockGenes-1)/2/chunkSize);
+      TOMfileNames = array("", dim = c(nChunks, nSets));
+      chunkLengths = rep(0, nChunks);
+    } else {
+      # Note: setTomDS will contained the scaled set TOM matrices.
+      setTomDS = array(0, dim = c(nSets, nBlockGenes*(nBlockGenes-1)));
+    } 
+
+    # create a bogus consTomDS distance structure.
+
+    consTomDS = as.dist(matrix(0, nBlockGenes, nBlockGenes));
+
+    # sample entry indices from the distance structure for TOM scaling, if requested
+
+    if (sampleForScaling)
+    {
+      qx = min(scaleQuantile, 1-scaleQuantile);
+      nScGenes = min(sampleForScalingFactor * 1/qx, length(consTomDS));
+      nTOMEntries = length(consTomDS)
+      scaleSample = sample(nTOMEntries, nScGenes);
+      if (getTOMScalingSamples)
+        TOMScalingSamples[[blockNo]] = list(sampleIndex = scaleSample,
+                                            TOMSamples = matrix(NA, nScGenes, nSets));
+    }
+
+    # For each set: Read the pre-calculated TOM from disk.
+
+    for (set in 1:nSets)
+    {
+      # Set up selExpr for later use in multiSetMEs
+      selExpr[[set]] = list(data = multiExpr[[set]]$data[ , gBlocks==blockLevels[blockOrder[blockNo]] ]);
+      if (verbose>2) printFlush(paste(spaces, "....Working on set", set))
+      if (useDiskCache)
+      {
+         # Load the appropriate file
+         x = load(file = individualTOMInfo$ actualTOMFileNames[useIndivTOMSubset[set], blockNo]);
+         # Basic checks of validity
+         if (x!="tomDS")
+           stop(paste("File", individualTOMInfo$ actualTOMFileNames[useIndivTOMSubset[set], blockNo], 
+                      "does not contain the correct content (variable names)"));
+         if (length(tomDS)!=nBlockGenes*(nBlockGenes-1)/2)
+           stop(paste("File", individualTOMInfo$ actualTOMFileNames[useIndivTOMSubset[set], blockNo],
+                      "contains data of correct type but incorrect length."));
+      } else {
+        tomDS = as.dist(matrix(0, nBlockGenes, nBlockGenes));
+        tomDS[] = individualTOMInfo$TOMsimilarities[[blockNo]] [useIndivTOMSubset[set], ]
+      }
+        
       if (scaleTOMs)
       {
         # Scale TOMs so that scaleQuantile agree in each set
@@ -1329,6 +1675,7 @@ blockwiseConsensusModules = function(multiExpr, blocks = NULL,
       }
 
       # Save the calculated TOM either to disk in chunks or to memory.
+      
       if (useDiskCache)
       {
         if (verbose > 3) printFlush(paste(spaces, "......saving TOM similarity to disk cache.."));
@@ -1347,7 +1694,6 @@ blockwiseConsensusModules = function(multiExpr, blocks = NULL,
       } else {
         setTomDS[set, ] = tomDS[];
       }
-      if (set==1) consTomDS[] = tomDS[];
       rm(tomDS); collectGarbage();
     }
 
@@ -1383,8 +1729,6 @@ blockwiseConsensusModules = function(multiExpr, blocks = NULL,
           originCount = originCount + as.vector(table(as.integer(which)));
           collectGarbage();
         } else { 
-          #consTomDS[start:end] = apply(setChunks, 2, quantile,
-          #                   probs = consensusQuantile,  na.rm = TRUE, names = FALSE, type = 8);
           consTomDS[start:end] = colQuantileC(setChunks, p = consensusQuantile);
         }
         start = end + 1;
@@ -1404,7 +1748,11 @@ blockwiseConsensusModules = function(multiExpr, blocks = NULL,
 
     if (saveTOMs)
     {
-       TOMFiles[blockNo] = paste(saveTOMFileBase, "-block.", blockNo, ".RData", sep="");
+       TOMFiles[blockNo] = .substituteTags(consensusTOMFileNames, "%b", blockNo);
+       if (sum(TOMFiles[1:blockNo]==TOMFiles[blockNo])>1)
+         stop(paste("File names to save blocks of consensus TOM are not unique.\n",
+                    "  Please make sure you use the tag %b somewhere in the file name -\n",
+                    "   - this tag will be replaced by the block number. "));
        save(consTomDS, file = TOMFiles[blockNo]);
     }
     consTomDS = 1-consTomDS;
@@ -1591,8 +1939,6 @@ blockwiseConsensusModules = function(multiExpr, blocks = NULL,
 
     collectGarbage();
   
-    blockNo = blockNo + 1;
-
   }
 
   # Check whether any of the already assigned genes (in this or previous blocks) should be re-assigned
@@ -1682,7 +2028,9 @@ blockwiseConsensusModules = function(multiExpr, blocks = NULL,
     colors = labels2colors(allLabels)
   }
   mergedColors = colors;
-  mergedMods = try(mergeCloseModules(multiExpr, colors[gsg$goodGenes], cutHeight = mergeCutHeight, 
+  mergedMods = try(mergeCloseModules(multiExpr, colors[gsg$goodGenes], 
+                                     consensusQuantile = mergeConsensusQuantile,
+                                     cutHeight = mergeCutHeight, 
                                      relabel = TRUE, impute = impute,
                                      verbose = verbose-2, indent = indent + 2), silent = TRUE);
   if (class(mergedMods)=='try-error')
@@ -1737,11 +2085,13 @@ blockwiseConsensusModules = function(multiExpr, blocks = NULL,
        goodGenes = gsg$goodGenes, 
        dendrograms = dendros,
        TOMFiles = TOMFiles,
-       blockGenes = blockGenes,
+       blockGenes = individualTOMInfo$blockGenes,
        blocks = blocks,
        blockOrder = blockLevels[blockOrder],
        originCount = originCount,
-       TOMScalingSamples = if (getTOMScalingSamples) TOMScalingSamples else NULL);
+       TOMScalingSamples = if (getTOMScalingSamples) TOMScalingSamples else NULL,
+       individualTOMInfo = individualTOMInfo
+      )
 }
 
 

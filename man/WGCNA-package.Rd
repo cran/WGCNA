@@ -13,8 +13,8 @@ also be used for general association networks specified by a symmetric adjacency
 \details{
 \tabular{ll}{
 Package: \tab WGCNA\cr
-Version: \tab 1.18-2\cr
-Date: \tab 2012-01-12\cr
+Version: \tab 1.19\cr
+Date: \tab 2012-03-03\cr
 Depends: \tab R (>= 2.10), stats, impute, grDevices, dynamicTreeCut (>= 1.20), utils, flashClust,
 Hmisc, splines, reshape \cr
 Suggests: AnnotationDbi, GO.db, org.*.eg.db, infotheo, entropy, minet
@@ -54,6 +54,9 @@ bicor                   Biweight Midcorrelation
 bicorAndPvalue          Biweight Midcorrelation and the associated p-value
 blockwiseConsensusModules
                         Find consensus modules across several datasets.
+blockwiseIndividualTOMs
+                        Calculate individual topological overlaps across 
+                        multi-set data
 blockwiseModules        Automatic network construction and module
                         detection
 BloodLists              (data) Gene sets for user enrichment analysis 
@@ -132,6 +135,8 @@ labeledBarplot          Barplot with text or color labels
 labeledHeatmap          Produce a labeled heatmap plot
 labelPoints		Attempt to intelligently label points in a scatterplot
 labels2colors           Convert numerical labels to colors
+lowerTri2matrix         Reconstruct a symmetric matrix from a distance 
+                        (lower-triangular) representation
 matchLabels             Relabel modules to best approximate a reference labeling
 mergeCloseModules       Merge close modules in gene expression data
 metaAnalysis            Meta-analysis significance statistics
@@ -237,6 +242,7 @@ standardScreeningCensoredTime
 stdErr                  Standard error
 stratifiedBarplot	Bar plots of data across two splitting parameters
 swapTwoBranches         Swap branches in a dendrogram
+TrueTrait               Estimate the true trait underlying a list of surrogate markers
 unsignedAdjacency       Calculation of unsigned adjacency
 userListEnrichment      Measure enrichment between inputted and user-defined lists
 vectorTOM               Topological overlap for a subset of the whole set of genes
@@ -257,6 +263,12 @@ Maintainer: Peter Langfelder <Peter.Langfelder@gmail.com>
 \references{
 Peter Langfelder and Steve Horvath (2008) WGCNA: an R package for weighted correlation network analysis. BMC
 Bioinformatics 2008, 9:559
+
+Peter Langfelder, Steve Horvath (2012)
+Fast R Functions for Robust Correlations and Hierarchical Clustering.
+Journal of Statistical Software, 46(11), 1-17.
+\url{http://www.jstatsoft.org/v46/i11/}
+
 
 Bin Zhang and Steve Horvath (2005) "A General Framework for Weighted Gene Co-Expression Network
 Analysis", Statistical Applications in Genetics and Molecular Biology: Vol. 4: No. 1, Article 17
