@@ -119,11 +119,11 @@ TOMsimilarity = function(adjMat, TOMType = "unsigned", TOMDenom = "min", verbose
   if (is.na(TOMDenomC))
     stop(paste("Invalid 'TOMDenom'. Recognized values are", paste(.TOMDenoms, collapse = ", ")))
 
-
-
   checkAdjMat(adjMat, min = if (TOMTypeC==2) -1 else 0, max = 1);
 
   if (sum(is.na(adjMat))>0) adjMat[is.na(adjMat)] = 0;
+  if (any(diag(adjMat)!=1)) diag(adjMat) = 1;
+
   nGenes = dim(adjMat)[1];
 
   tom = matrix(0, nGenes, nGenes);
@@ -171,7 +171,7 @@ blockwiseModules = function(datExpr, blocks = NULL,
                             maxCoreScatter = NULL, minGap = NULL,
                             maxAbsCoreScatter = NULL, minAbsGap = NULL,
                             pamStage = TRUE, pamRespectsDendro = TRUE,
-                            minKMEtoJoin =0.7, 
+                            # minKMEtoJoin =0.7, 
                             minCoreKME = 0.5, minCoreKMESize = minModuleSize/3,
                             minKMEtoStay = 0.3,
                             reassignThreshold = 1e-6,
@@ -221,7 +221,7 @@ blockwiseModules = function(datExpr, blocks = NULL,
   if (is.null(nThreads) || (nThreads==0)) nThreads = .useNThreads();
 
   if ( (power<1) | (power>30) ) stop("power must be between 1 and 30.");
-  if ( (minKMEtoJoin >1) | (minKMEtoJoin  <0) ) stop("minKMEtoJoin  must be between 0 and 1.");
+  # if ( (minKMEtoJoin >1) | (minKMEtoJoin  <0) ) stop("minKMEtoJoin  must be between 0 and 1.");
 
   intNetworkType = charmatch(networkType, .networkTypes);
   if (is.na(intNetworkType))
@@ -677,7 +677,7 @@ recutBlockwiseTrees = function(datExpr,
                       maxCoreScatter = NULL, minGap = NULL,
                       maxAbsCoreScatter = NULL, minAbsGap = NULL,
                       pamStage = TRUE, pamRespectsDendro = TRUE,
-                      minKMEtoJoin =0.7, 
+                      # minKMEtoJoin =0.7, 
                       minCoreKME = 0.5, minCoreKMESize = minModuleSize/3,
                       minKMEtoStay = 0.3,
                       reassignThreshold = 1e-6,
@@ -694,7 +694,7 @@ recutBlockwiseTrees = function(datExpr,
   if (is.na(intCorType))
     stop(paste("Invalid 'corType'. Recognized values are", paste(.corTypes, collapse = ", ")))
   
-  if ( (minKMEtoJoin >1) | (minKMEtoJoin  <0) ) stop("minKMEtoJoin  must be between 0 and 1.");
+  # if ( (minKMEtoJoin >1) | (minKMEtoJoin  <0) ) stop("minKMEtoJoin  must be between 0 and 1.");
 
   intNetworkType = charmatch(networkType, .networkTypes);
   if (is.na(intNetworkType))
@@ -1422,7 +1422,8 @@ blockwiseConsensusModules = function(multiExpr,
                             # Gene joining and removal from a module, and module "significance" criteria
 
                             reassignThresholdPS = 1e-4,
-                            minKMEtoJoin =0.7, 
+                            trimmingConsensusQuantile = consensusQuantile,
+                            # minKMEtoJoin =0.7, 
                             minCoreKME = 0.5, minCoreKMESize = minModuleSize/3,
                             minKMEtoStay = 0.2,
 
@@ -1526,7 +1527,7 @@ blockwiseConsensusModules = function(multiExpr,
   if (any(useIndivTOMSubset<1) | any(useIndivTOMSubset>individualTOMInfo$nSets))
     stop("All entries of 'useIndivTOMSubset' must be between 1 and the number of sets in individualTOMInfo");
 
-  if ( (minKMEtoJoin >1) | (minKMEtoJoin  <0) ) stop("minKMEtoJoin  must be between 0 and 1.");
+  # if ( (minKMEtoJoin >1) | (minKMEtoJoin  <0) ) stop("minKMEtoJoin  must be between 0 and 1.");
 
   intNetworkType = individualTOMInfo$intNetworkType;
   intCorType = individualTOMInfo$intCorType;
@@ -1868,7 +1869,7 @@ blockwiseConsensusModules = function(multiExpr,
                       prepComma(.corOptions[intCorType]), ")"))
       for (set in 1:nSets) KME[, set] = as.vector(eval(corEval));
       if (intNetworkType==1) KME = abs(KME);
-      consKME = apply(KME, 1, min, na.rm = TRUE);
+      consKME = apply(KME, 1, quantile, probs = trimmingConsensusQuantile, names = FALSE, na.rm = TRUE);
       if (sum(consKME>minCoreKME) < minCoreKMESize) 
       {
         blockLabels[modGenes] = 0;
@@ -2114,11 +2115,13 @@ recutConsensusTrees = function(multiExpr,
                             maxCoreScatter = NULL, minGap = NULL,
                             maxAbsCoreScatter = NULL, minAbsGap = NULL,
                             pamStage = TRUE,  pamRespectsDendro = TRUE,
-                            minKMEtoJoin =0.7, 
+                            # minKMEtoJoin =0.7, 
+                            trimmingConsensusQuantile = 0,
                             minCoreKME = 0.5, minCoreKMESize = minModuleSize/3,
                             minKMEtoStay = 0.2,
                             reassignThresholdPS = 1e-4,
                             mergeCutHeight = 0.15, 
+                            mergeConsensusQuantile = trimmingConsensusQuantile,
                             impute = TRUE,
                             trapErrors = FALSE,
                             numericLabels = FALSE,
@@ -2142,7 +2145,7 @@ recutConsensusTrees = function(multiExpr,
   if (is.na(intCorType))
     stop(paste("Invalid 'corType'. Recognized values are", paste(.corTypes, collapse = ", ")))
 
-  if ( (minKMEtoJoin >1) | (minKMEtoJoin  <0) ) stop("minKMEtoJoin  must be between 0 and 1.");
+  # if ( (minKMEtoJoin >1) | (minKMEtoJoin  <0) ) stop("minKMEtoJoin  must be between 0 and 1.");
 
   intNetworkType = charmatch(networkType, .networkTypes);
   if (is.na(intNetworkType))
@@ -2320,7 +2323,7 @@ recutConsensusTrees = function(multiExpr,
                       prepComma(.corOptions[intCorType]), ")"))
       for (set in 1:nSets) KME[, set] = as.vector(eval(corEval));
       if (intNetworkType==1) KME = abs(KME);
-      consKME = apply(KME, 1, min, na.rm = TRUE);
+      consKME = apply(KME, 1, quantile, probs = trimmingConsensusQuantile, na.rm = TRUE);
       if (sum(consKME>minCoreKME) < minCoreKMESize) 
       {
         blockLabels[modGenes] = 0;
@@ -2482,7 +2485,9 @@ recutConsensusTrees = function(multiExpr,
     colors = labels2colors(allLabels)
   }
   mergedColors = colors;
-  mergedMods = try(mergeCloseModules(multiExpr, colors[gsg$goodGenes], cutHeight = mergeCutHeight, 
+  mergedMods = try(mergeCloseModules(multiExpr, colors[gsg$goodGenes], 
+                                     consensusQuantile = mergeConsensusQuantile, 
+                                     cutHeight = mergeCutHeight, 
                                      relabel = TRUE, impute = impute,
                                      verbose = verbose-2, indent = indent + 2), silent = TRUE);
   if (class(mergedMods)=='try-error')

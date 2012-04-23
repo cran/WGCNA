@@ -1,6 +1,41 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
 
+2012/04/23: 1.20
+
+	. New function blueWhiteRed that produces a color sequence
+	  distinguishable by people with the most common kind of color
+	  blindness (green-red color blindness). The currently much-used
+	  greenWhiteRed now outputs a warning to that effect. We recommend
+	  that users switch to blueWhiteRed. 
+
+	. The default color palette for numbers2colors is now blueWhiteRed.
+
+	. Function TOMsimilarity now forces the diagonal of the input
+	  adjacency matrix to be 1. The diagonal is not really meaningful in a
+	  network analysis, but the underlying C code assumes the diagonal to
+	  be 1 since it simplifies calculations. This change also applies to
+	  TOMdist (which calls TOMsimilarity). 
+
+	. Function blockwiseConsensusModules now accepts argument
+	  trimmingConsensusQuantile and makes the consensus in module trimmimg
+	  consistent with the consensus in network construction and 
+	  module identification.
+
+	. Function recutConsensusTrees now accepts arguments trimmingConsensusQuantile
+	  and mergeConsensusQuantile with the same effect as in
+	  blockwiseConsensusModules.
+
+	. Removed argument minKMEtoJoin from blockwise* and recut* functions as it has
+	  not been used by the actual code.
+
+	. Function verboseBarplot now accepts argument horiz and is capable of
+	  creating horizontal barplots.
+
+	. Internal: C function minWhichMin now ignores missing values.
+
+2012/02/28: 1.19
+
 	. Argument name change in function TOMplot: colors and colorsLeft are
 	  now Colors and ColorsLeft to avoid conflict with argument col to
 	  functions heatmap and image.

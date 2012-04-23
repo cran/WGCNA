@@ -23,11 +23,12 @@ recutConsensusTrees(
   maxCoreScatter = NULL, minGap = NULL,
   maxAbsCoreScatter = NULL, minAbsGap = NULL,
   pamStage = TRUE, pamRespectsDendro = TRUE,
-  minKMEtoJoin =0.7,
+  trimmingConsensusQuantile = 0,
   minCoreKME = 0.5, minCoreKMESize = minModuleSize/3,
   minKMEtoStay = 0.2,
   reassignThresholdPS = 1e-4,
   mergeCutHeight = 0.15,
+  mergeConsensusQuantile = trimmingConsensusQuantile,
   impute = TRUE,
   trapErrors = FALSE,
   numericLabels = FALSE,
@@ -97,8 +98,8 @@ respect the dendrogram in the sense an object can be PAM-assigned only to cluste
 the branch that the object is merged into.
      See \code{\link[dynamicTreeCut]{cutreeDynamic}} for more details. }
 
-  \item{minKMEtoJoin}{ a number between 0 and 1. Genes with eigengene connectivity higher than
-\code{minKMEtoJoin} are automatically assigned to their closest module.  }
+  \item{trimmingConsensusQuantile}{a number between 0 and 1 specifying the consensus quantile used for kME
+calculation that determines module trimming according to the arguments below.}
 
   \item{minCoreKME}{ a number between 0 and 1. If a detected module does not have at least
 \code{minModuleKMESize} genes with eigengene connectivity at least \code{minCoreKME}, the module is
@@ -113,6 +114,9 @@ disbanded (its genes are unlabeled and returned to the pool of genes waiting for
 See Details. }
 
   \item{mergeCutHeight}{ dendrogram cut height for module merging. }
+
+  \item{mergeConsensusQuantile}{consensus quantile for module merging. See \code{mergeCloseModules} for
+details. }
 
   \item{impute}{ logical: should imputation be used for module eigengene calculation? See
 \code{\link{moduleEigengenes}} for more details. }
@@ -140,14 +144,16 @@ parameters.
 This function takes as input the networks and dendrograms that are produced by
 \code{\link{blockwiseConsensusModules}}.  Working block by block, 
 modules are identified in the
-dendrograms by the Dynamic Hybrid tree cut. Found modules are trimmed of genes whose
-correlation with module eigengene (KME) is less than \code{minKMEtoStay} in any
-of the sets. Modules in which
-fewer than \code{minCoreKMESize} genes have KME higher than \code{minCoreKME} (in all sets)
+dendrograms by the Dynamic Hybrid tree cut. 
+Found modules are trimmed of genes whose
+consensus module membership kME (that is, correlation with module eigengene) 
+is less than \code{minKMEtoStay}.
+Modules in which
+fewer than \code{minCoreKMESize} genes have consensus KME higher than \code{minCoreKME}
 are disbanded, i.e., their constituent genes are pronounced
-unassigned. Conversely, any unassigned genes with KME higher than \code{minKMEtoJoin} in all sets 
-are automatically
-assigned to their nearest module.
+unassigned. 
+
+
 
 After all blocks have been processed, the function checks whether there are genes whose KME in the module
 they assigned is lower than KME to another module. If p-values of the higher correlations are smaller

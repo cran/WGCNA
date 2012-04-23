@@ -11,7 +11,7 @@ numbers2colors(
    centered = signed, 
    lim = NULL, 
    commonLim = FALSE,
-   colors = if (signed) greenWhiteRed(100) else greenWhiteRed(100)[50:100], 
+   colors = if (signed) blueWhiteRed(100) else blueWhiteRed(100)[51:100],
    naColor = "grey")
 }
 \arguments{
@@ -50,4 +50,5 @@ individually for each column of \code{x}.
 \author{ Peter Langfelder }
 
 \seealso{ \code{\link{labels2colors}} for color coding of ordinal labels. }
+
 \keyword{ misc }% __ONLY ONE__ keyword per line

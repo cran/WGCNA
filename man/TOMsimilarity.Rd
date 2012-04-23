@@ -41,6 +41,10 @@ overlap (which is a measure of similarity) into a measure of dissimilarity by su
   If \code{TOMType = "unsigned"}, entries of the adjacency matrix are required to lie between 0 and 1;
 for \code{TOMType = "signed"} they can be between -1 and 1. In both cases the resulting TOM entries, as
 well as the corresponding dissimilarities, lie between 0 and 1. 
+
+  The underlying C code assumes that the diagonal of the adjacency matrix equals 1. If this is not the case,
+the diagonal of the input is set to 1 before the calculation begins.
+
 }
 \value{
   A matrix holding the topological overlap.
