@@ -420,7 +420,7 @@ void tomSimilarityFromAdj(double * adj, int * nGenes,
 /*
 
   Function returning the column-wise minimum and minimum index. For easier integration with R, the index
-will also be stored as a double. Caution, NAs will trip this function up.
+will also be stored as a double. NA's are ignored.
 
 */
 
@@ -436,7 +436,7 @@ void minWhichMin(double * matrix, int * nRows, int * nColumns, double * min, dou
     for (int j=1; j<nrows; j++)
     {
       col++;
-      if (*col < curmin) { curmin = *col; curwhich = (double) j; }
+      if (!ISNAN(*col) && (*col < curmin)) { curmin = *col; curwhich = (double) j; }
     }
     min[i] = curmin;
     whichMin[i] = curwhich;

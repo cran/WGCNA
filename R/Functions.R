@@ -1401,11 +1401,13 @@ verboseBoxplot = function(x, g,
 verboseBarplot = function (x, g,  main = "",
     xlab = NA, ylab = NA, cex = 1, cex.axis = 1.5, cex.lab = 1.5,
     cex.main = 1.5, color="grey", numberStandardErrors=1,
-    KruskalTest=TRUE,  AnovaTest=FALSE, two.sided=TRUE, ...) 
+    KruskalTest=TRUE,  AnovaTest=FALSE, two.sided=TRUE, 
+    horiz = FALSE, ...) 
 {
   stderr1 = function(x){ sqrt( var(x,na.rm=TRUE)/sum(!is.na(x))   ) }
   SE=tapply(x, factor(g), stderr1 )
-  err.bp=function(dd,error,two.sided=FALSE,numberStandardErrors){
+  err.bp=function(dd,error,two.sided=FALSE,numberStandardErrors, horiz = FALSE)
+  {
       if(!is.numeric(dd)) {
             stop("All arguments must be numeric")}
       if(is.vector(dd)){
@@ -1421,14 +1423,30 @@ verboseBarplot = function (x, g,  main = "",
       NoStandardErrors=1
       ERR1=dd+numberStandardErrors*error
       ERR2=dd- numberStandardErrors*error
-      for(i in 1:length(dd)){
+      if (horiz)
+      {
+        for(i in 1:length(dd))
+        {
+          segments(dd[i], xval[i], ERR1[i], xval[i])
+          segments(ERR1[i], xval[i]-MW, ERR1[i], xval[i]+MW)
+          if(two.sided)
+          {
+            segments(dd[i], xval[i], ERR2[i], xval[i])
+            segments(ERR2[i], xval[i]-MW, ERR2[i], xval[i]+MW)
+          }
+        }
+      } else {
+        for(i in 1:length(dd))
+        {
           segments(xval[i],dd[i],xval[i],ERR1[i])
           segments(xval[i]-MW,ERR1[i],xval[i]+MW,ERR1[i])
-          if(two.sided){
+          if(two.sided)
+          {
             segments(xval[i],dd[i],xval[i],ERR2[i])
             segments(xval[i]-MW,ERR2[i],xval[i]+MW,ERR2[i])
           }
         }
+      }
   } # end of function err.bp
   if ( is.na(ylab) ) ylab= as.character(match.call(expand.dots = FALSE)$x)
   if ( is.na(xlab) ) xlab= as.character( match.call(expand.dots = FALSE)$g)
@@ -1438,14 +1456,15 @@ verboseBarplot = function (x, g,  main = "",
   if (AnovaTest)  p1=signif(  anova(lm(x~factor(g)))$Pr[[1]]    ,2)
   if ( AnovaTest | KruskalTest)  main=paste(main," p=",as.character(p1) )
   ret = barplot(Means1, main=main,col=color, xlab=xlab,ylab=ylab, cex=cex, cex.axis=cex.axis,cex.lab=cex.lab,
-                cex.main=cex.main, ...)
+                cex.main=cex.main, horiz = horiz, ...)
   abline(h=0)
   if (numberStandardErrors >0) 
   {
       err.bp(as.vector(Means1), as.vector(SE), two.sided=two.sided,
-             numberStandardErrors= numberStandardErrors)
+             numberStandardErrors= numberStandardErrors, horiz = horiz)
   }
   attr(ret, "height") = as.vector(Means1);
+  attr(ret, "stdErr") = as.vector(SE);
   invisible(ret);
 }
 
@@ -3321,8 +3340,12 @@ greenBlackRed = function(n, gamma = 1)
   col;
 }
 
-greenWhiteRed = function(n, gamma = 1)
+greenWhiteRed = function(n, gamma = 1, warn = TRUE)
 {
+  if (warn) 
+      warning(spaste("WGCNA::greenWhiteRed: this palette is not suitable for people\n",
+                     "with green-red color blindness (the most common kind of color blindness).\n",
+                     "Consider using the function blueWhiteRed instead."));
   half = as.integer(n/2);
   red = c(seq(from=0, to=1, length.out = half)^(1/gamma), rep(1, times = half+1));
   green = c(rep(1, times = half+1), seq(from=1, to=0, length.out = half)^(1/gamma));
@@ -3343,6 +3366,42 @@ redWhiteGreen = function(n, gamma = 1)
   col;
 }
 
+#======================================================================================================
+#
+# Color pallettes that are more friendly to people with common color blindness
+#
+#======================================================================================================
+
+blueWhiteRed = function(n, gamma = 1)
+{
+  blueEnd = c(0, 0.35, 0.80);
+  redEnd = c(0.8, 0.2, 0);
+  middle = c(1,1,1);
+
+  half = as.integer(n/2);
+  if (n%%2 == 0)
+  {
+    index1 = c(1:half);
+    index2 = c(1:half)+half;
+    frac1 = ((index1-1)/(half-1))^(1/gamma);
+    frac2 = rev(frac1);
+  } else {
+    index1 = c(1:(half + 1))
+    index2 = c(1:half) + half + 1
+    frac1 = (c(0:half)/half)^(1/gamma);
+    frac2 = rev((c(1:half)/half)^(1/gamma));
+  }
+  cols = matrix(0, n, 3);
+  for (c in 1:3)
+  {
+    cols[ index1, c] = blueEnd[c] + (middle[c] - blueEnd[c]) * frac1;
+    cols[ index2, c] = redEnd[c] + (middle[c] - redEnd[c]) * frac2;
+  }
+
+  rgb(cols[, 1], cols[, 2], cols[, 3], maxColorValue = 1);
+}
+
+#=========================================================================================================
 #
 # KeepCommonProbes
 #
@@ -3940,7 +3999,7 @@ numbers2colors = function(x,
                      centered = signed,
                      lim = NULL, 
                      commonLim = FALSE,
-                     colors = if (signed) greenWhiteRed(100) else greenWhiteRed(100)[50:100],
+                     colors = if (signed) blueWhiteRed(100) else blueWhiteRed(100)[51:100],
                      naColor = "grey")
 {
   x = as.matrix(x);

@@ -21,7 +21,6 @@ recutBlockwiseTrees(
   maxCoreScatter = NULL, minGap = NULL,
   maxAbsCoreScatter = NULL, minAbsGap = NULL,
   pamStage = TRUE, pamRespectsDendro = TRUE,
-  minKMEtoJoin =0.7,
   minCoreKME = 0.5, minCoreKMESize = minModuleSize/3,
   minKMEtoStay = 0.3,
   reassignThreshold = 1e-6,
@@ -91,9 +90,6 @@ the branch that the object is merged into.
      See \code{\link[dynamicTreeCut]{cutreeDynamic}} for more details. }
 
 
-  \item{minKMEtoJoin}{ a number between 0 and 1. Genes with eigengene connectivity higher than
-\code{minKMEtoJoin} are automatically assigned to their closest module.  }
-
   \item{minCoreKME}{ a number between 0 and 1. If a detected module does not have at least
 \code{minModuleKMESize} genes with eigengene connectivity at least \code{minCoreKME}, the module is
 disbanded (its genes are unlabeled and returned to the pool of genes waiting for mofule detection). }
@@ -137,9 +133,7 @@ dendrogram by the Dynamic Hybrid Tree Cut algorithm. Found modules are trimmed o
 correlation with module eigengene (KME) is less than \code{minKMEtoStay}. Modules in which
 fewer than \code{minCoreKMESize} genes have KME higher than \code{minCoreKME} 
 are disbanded, i.e., their constituent genes are pronounced
-unassigned. Conversely, any unassigned genes with KME higher than \code{minKMEtoJoin} 
-are automatically
-assigned to their nearest module.
+unassigned. 
 
 After all blocks have been processed, the function checks whether there are genes whose KME in the module
 they assigned is lower than KME to another module. If p-values of the higher correlations are smaller

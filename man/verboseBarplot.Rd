@@ -9,7 +9,8 @@ verboseBarplot(x, g,
                main = "", xlab = NA, ylab = NA, 
                cex = 1, cex.axis = 1.5, cex.lab = 1.5, cex.main = 1.5, 
                color = "grey", numberStandardErrors = 1, 
-               KruskalTest = TRUE, AnovaTest = FALSE, two.sided = TRUE, ...)
+               KruskalTest = TRUE, AnovaTest = FALSE, two.sided = TRUE, 
+               horiz = FALSE, ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -28,6 +29,7 @@ calculated. }
   \item{KruskalTest}{logical: should Kruskal-Wallis test be performed? See details. }
   \item{AnovaTest}{ logical: should ANOVA be performed? See details.  }
   \item{two.sided}{ logical: should the printed p-value be two-sided? See details. }
+  \item{horiz}{ logical: should the bars be drawn horizontally? }
   \item{\dots}{ other parameters to function \code{\link{barplot}}  }
 }
 \details{

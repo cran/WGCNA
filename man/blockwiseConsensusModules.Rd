@@ -78,10 +78,10 @@ blockwiseConsensusModules(
      maxAbsCoreScatter = NULL, minAbsGap = NULL,
      pamStage = TRUE,  pamRespectsDendro = TRUE,
 
-     # Gene joining and removal from a module, and module "significance" criteria
+     # Gene reassignment and trimming from a module, and module "significance" criteria
 
      reassignThresholdPS = 1e-4,
-     minKMEtoJoin =0.7, 
+     trimmingConsensusQuantile = consensusQuantile,
      minCoreKME = 0.5, minCoreKMESize = minModuleSize/3,
      minKMEtoStay = 0.2,
 
@@ -289,8 +289,8 @@ the branch that the object is merged into.
   \item{reassignThresholdPS}{ per-set p-value ratio threshold for reassigning genes between modules. 
 See Details. }
 
-  \item{minKMEtoJoin}{ a number between 0 and 1. Genes with eigengene connectivity higher than
-\code{minKMEtoJoin} are automatically assigned to their closest module.  }
+  \item{trimmingConsensusQuantile}{a number between 0 and 1 specifying the consensus quantile used for kME
+calculation that determines module trimming according to the arguments below.}
 
   \item{minCoreKME}{ a number between 0 and 1. If a detected module does not have at least
 \code{minModuleKMESize} genes with eigengene connectivity at least \code{minCoreKME}, the module is
@@ -348,13 +348,12 @@ chunks until they are needed again for the calculation of the consensus network 
 requested, the consensus topological overlaps are saved to disk for later use.
 Genes are then clustered using average linkage hierarchical clustering and modules are identified in the
 resulting dendrogram by the Dynamic Hybrid tree cut. Found modules are trimmed of genes whose
-correlation with module eigengene (KME) is less than \code{minKMEtoStay} in any
-of the sets. Modules in which
-fewer than \code{minCoreKMESize} genes have KME higher than \code{minCoreKME} (in all sets)
+consensus module membership kME (that is, correlation with module eigengene) 
+is less than \code{minKMEtoStay}.
+Modules in which
+fewer than \code{minCoreKMESize} genes have consensus KME higher than \code{minCoreKME}
 are disbanded, i.e., their constituent genes are pronounced
-unassigned. Conversely, any unassigned genes with KME higher than \code{minKMEtoJoin} in all sets 
-are automatically
-assigned to their nearest module.
+unassigned. 
 
 After all blocks have been processed, the function checks whether there are genes whose KME in the module
 they assigned is lower than KME to another module. If p-values of the higher correlations are smaller

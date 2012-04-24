@@ -68,7 +68,4 @@ Our copy does not require Tcl/Tk.}
   QVALUE Manual \url{http://faculty.washington.edu/~jstorey/qvalue/manual.pdf}
 }
 \author{John D. Storey \email{jstorey@u.washington.edu}, adapted for WGCNA by Peter Langfelder}
-\seealso{
-Other functions from package qvalue: \code{\link[qvalue]{qplot}}, \code{\link[qvalue]{qwrite}}, \code{\link[qvalue]{qsummary}},
-\code{\link[qvalue]{qvalue.gui}}}
 \keyword{misc}

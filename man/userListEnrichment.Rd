@@ -10,7 +10,8 @@ This function measures list enrichment between inputted lists of genes and files
 \usage{
 userListEnrichment(geneR, labelR, fnIn=NULL, catNmIn = fnIn, nameOut = "enrichment.csv", 
                    useBrainLists = FALSE, useBloodAtlases=FALSE, omitCategories = "grey", 
-                   outputCorrectedPvalues = TRUE, useStemCellLists = FALSE) 
+                   outputCorrectedPvalues = TRUE, useStemCellLists = FALSE, 
+                   outputGenes = FALSE, minGenesInCategory = 1) 
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -43,6 +44,12 @@ If TRUE (default) only pvalues that are significant after correcting for multipl
 }
   \item{useStemCellLists}{
 If TRUE, a pre-made set of stem cell (SC)-derived enrichment lists will be added to any user-defined lists for enrichment comparison.  The default is FALSE.  See references section for related references.
+}
+  \item{outputGenes}{
+If TRUE, will output a list of all genes in each returned category, as well as a count of the number of genes in each category.  The default is FALSE.
+}
+  \item{minGenesInCategory}{
+Will omit all significant categories with fewer than minGenesInCategory genes (default is 1).
 }
 }
 \details{
@@ -138,7 +145,8 @@ MitochondrialType ==> Mitochondrial genes from the somatic vs. synaptic fraction
 MO ==> Markers for many different things provided to my by Mike Oldham.  These were originally from several sources:
 1. 2+_26Mar08 => Genetics-based disease genes in two or more studies from http://www.alzforum.org/ (compiled by Mike Oldham).
 2. Bachoo => Bachoo, R.M. et al. (2004) Molecular diversity of astrocytes with implications for neurological disorders. PNAS 101, 8384-8389.
-3. Foster => Foster, LJ, de Hoog, CL, Zhang, Y, Zhang, Y, Xie, X, Mootha, VK, Mann, M. (2006) A Mammalian Organelle Map by Protein Correlation Profiling. Cell 125(1): 187-199.
+3. Foster => Foster, LJ, de Hoog, CL, Zhang, Y, Zhang, Y, Xie, X, Mootha, VK, Mann, M. (2006) A Mammalian
+Organelle Map by Protein Correlation Profiling. Cell 125(1): 187-199.
 4. Morciano => Morciano, M. et al. Immunoisolation of two synaptic vesicle pools from synaptosomes: a proteomics analysis. J. Neurochem. 95, 1732-1745 (2005).
 5. Sugino => Sugino, K. et al. Molecular taxonomy of major neuronal classes in the adult mouse forebrain. Nat. Neurosci. 9, 99-107 (2006).
 

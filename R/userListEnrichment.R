@@ -1,7 +1,7 @@
 #
 userListEnrichment <- function (geneR, labelR, fnIn = NULL, catNmIn = fnIn, nameOut = "enrichment.csv", 
     useBrainLists = FALSE, useBloodAtlases = FALSE, omitCategories = "grey", 
-    outputCorrectedPvalues = TRUE, useStemCellLists = FALSE) 
+    outputCorrectedPvalues = TRUE, useStemCellLists = FALSE, outputGenes=FALSE, minGenesInCategory=1) 
 {
     if (length(geneR) != length(labelR)) 
         stop("geneR and labelR must have same number of elements.")
@@ -107,6 +107,23 @@ userListEnrichment <- function (geneR, labelR, fnIn = NULL, catNmIn = fnIn, name
     results$sigOverlaps = as.data.frame(results$sigOverlaps[order(as.numeric(results$sigOverlaps[, 
         4])), ]);
     row.names(results$sigOverlaps) = NULL;
+    
+    ## NEW CODE START
+    rSig  = results$sigOverlaps
+    rCats = paste(rSig$InputCategories,"--",rSig$UserDefinedCategories)
+    rNums <- rGenes <- NULL
+    for (i in 1:dim(rSig)[1]){
+      rGn    = results$ovGenes[[which(names(results$ovGenes)==rCats[i])]]
+      rNums  = c(rNums,length(rGn))
+      rGenes = c(rGenes,paste(rGn,collapse=", "))
+    }
+    rSig$NumGenes = rNums
+    rSig$CategoryGenes = rGenes
+    rSig = rSig[rSig$NumGenes>=minGenesInCategory,]
+    if(!outputGenes) rSig = rSig[,1:4]
+    results$sigOverlaps = rSig
+    ## NEW CODE END
+
     write.csv(results$sigOverlaps, nameOut, row.names = FALSE)
     write(paste(length(namesOv), "comparisons were successfully performed."), 
         "")
