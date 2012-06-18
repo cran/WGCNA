@@ -135,6 +135,7 @@ modulePreservation = function(
    quickCor = 1,
    ccTupletSize = 2,
    calculateCor.kIMall = FALSE, 
+   calculateClusterCoeff = FALSE,
    useInterpolation = FALSE,
    checkData = TRUE,
    greyName = NULL,
@@ -311,6 +312,7 @@ modulePreservation = function(
                      # calculateQuality = calculateQuality,
                      ccTupletSize = ccTupletSize,
                      calculateCor.kIMall = calculateCor.kIMall,
+                     calculateClusterCoeff = calculateClusterCoeff,
                      checkData = FALSE, greyName = greyName, 
                      verbose = verbose -3, indent = indent + 2);
 
@@ -522,6 +524,7 @@ modulePreservation = function(
                                                   maxModuleSize = maxModuleSize, quickCor = quickCor,
                                                   ccTupletSize = ccTupletSize,
                                                   calculateCor.kIMall = calculateCor.kIMall,
+                                                  calculateClusterCoeff = calculateClusterCoeff,
                                                   # calculateQuality = calculateQuality,
                                                   greyName = greyName,
                                                   checkData = FALSE, 
@@ -1076,6 +1079,7 @@ modulePreservation = function(
                               maxModuleSize = 1000, quickCor = 1,
                               ccTupletSize,
                               calculateCor.kIMall,
+                              calculateClusterCoeff,
                               # calculateQuality = FALSE, 
                               checkData = TRUE,
                               greyName,
@@ -1350,7 +1354,8 @@ modulePreservation = function(
                      nType = nType, 
                      MEgold = MEgold, MEgrey = MEgrey, 
                      densityOnly = densityOnly, calculatePermutation = calculatePermutation,
-                     calculateCor.kIMall = calculateCor.kIMall);
+                     calculateCor.kIMall = calculateCor.kIMall, 
+                     calculateClusterCoeff = calculateClusterCoeff);
              
           if (dataIsExpr)
           {
@@ -1419,8 +1424,8 @@ modulePreservation = function(
       {
         stop(paste("The submitted 'multiExpr' data contain genes or samples\n",
               "  with zero variance or excessive counts of missing entries.\n",
-              "  Please use the function goodSamplesGenes on each set to filter out the problematic\n",
-              "  genes and samples before running modulePreservation."))
+              "  Please use the function goodSamplesGenes on each set to identify the problematic\n",
+              "  genes and samples, and remove them before running modulePreservation."))
       }
    }
 }
@@ -1438,7 +1443,8 @@ modulePreservation = function(
       if (!gsg$allOK)
       {
         stop(paste("The submitted 'multiAdj' contains rows or columns\n",
-              "  with zero variance or excessive counts of missing entries."))
+              "  with zero variance or excessive counts of missing entries. Please remove\n",
+              "  offending rows and columns before running modulePreservation."))
       }
    }
 }
@@ -1469,8 +1475,8 @@ modulePreservation = function(
   maxh1=max(as.dist(adjmat1) ); minh1=min(as.dist(adjmat1) );
   nolinksNeighbors <- apply(adjmat1, 1, .computeLinksInNeighbors, imatrix=adjmat1)
   subTerm = apply(adjmat1, 1, .computeSqDiagSum, vec = diag(adjmat1));
-  plainsum  <- apply(adjmat1, 1, sum)
-  squaresum <- apply(adjmat1^2, 1, sum)
+  plainsum  <- colSums(adjmat1)
+  squaresum <- colSums(adjmat1^2)
   total.edge = plainsum^2 - squaresum
   #CChelp=rep(-666, no.nodes)
   CChelp=ifelse(total.edge==0,0, (nolinksNeighbors-subTerm)/total.edge)
@@ -1684,14 +1690,22 @@ modulePreservation = function(
         adjacency3 = ModuleCorData3^6;
         adjacency3[ModuleCorData3 < 0] = 0;
      }
-     ccRef = .clusterCoeff(adjacency1);
-     ccRefP = .clusterCoeff(adjacency2);
-     ccTest = .clusterCoeff(adjacency3);
+     if (opt$calculateClusterCoeff)
+     {
+       ccRef = .clusterCoeff(adjacency1);
+       ccRefP = .clusterCoeff(adjacency2);
+       ccTest = .clusterCoeff(adjacency3);
+       meanCC[j, 1] = mean(ccRefP);
+       meanCC[j, 2] = mean(ccTest);
+       if (!opt$densityOnly)
+       {
+         corExpr = parse(text=paste(opt$corFnc, "(ccRef, ccTest ", prepComma(opt$corOptions), ")"));
+         corCC[j] = eval(corExpr);
+       }
+     } 
      marRef = .MAR(adjacency1);
      marRefP = .MAR(adjacency2);
      marTest = .MAR(adjacency3);
-     meanCC[j, 1] = mean(ccRefP);
-     meanCC[j, 2] = mean(ccTest);
      meanMAR[j, 1] = mean(marRefP);
      meanMAR[j, 2] = mean(marTest);
      if (!opt$densityOnly)
@@ -1700,8 +1714,6 @@ modulePreservation = function(
        kIMtest = apply(adjacency3, 2, sum, na.rm = TRUE)
        corExpr = parse(text=paste(opt$corFnc, "(kIMref, kIMtest ", prepComma(opt$corOptions), ")"));
        corkIM[j] = eval(corExpr);
-       corExpr = parse(text=paste(opt$corFnc, "(ccRef, ccTest ", prepComma(opt$corOptions), ")"));
-       corCC[j] = eval(corExpr);
        corExpr = parse(text=paste(opt$corFnc, "(marRef, marTest ", prepComma(opt$corOptions), ")"));
        corMAR[j] = eval(corExpr);
      }
@@ -1786,7 +1798,7 @@ modulePreservation = function(
 
 .coreCalcForAdj = function(datRef, datRefP, datTest, colors, opt)
 {
-
+#  printFlush(".coreCalcForAdj:entering");
   colorLevels = levels(factor(colors))
   nMods =length(colorLevels)
   nGenes = length(colors);
@@ -1800,6 +1812,7 @@ modulePreservation = function(
 
   svds=list()
   kIM = list();
+  #printFlush(".coreCalcForAdj:getting svds and kIM");
   if (!opt$densityOnly)
   {            
      svds[[1]] = .getSVDs(datRef, colors);
@@ -1828,6 +1841,7 @@ modulePreservation = function(
     proVar[m, 2] = svds[[3]][[m]]$d[1]/sum(svds[[3]][[m]]$d); 
   }
 
+  #printFlush(".coreCalcForAdj:getting corkME and ICOR");
   corkME = rep(NA, nMods);
   corkMEall = rep(NA, nMods);
   corkIM = rep(NA, nMods);
@@ -1882,7 +1896,6 @@ modulePreservation = function(
      }
   }
   
-  # if (verbose > 1) printFlush(paste(spaces, "....calculating separability..."));
   MeanAdj = matrix(NA, nMods, 2);
   sepMat = array(NA, dim = c(nMods, nMods, 2));
   corCC = rep(NA, nMods);
@@ -1892,26 +1905,28 @@ modulePreservation = function(
   for (m in 1:nMods) if (act[m])
   {
     modAdj = datRefP[modGenes[[m]], modGenes[[m]]];
-    ccRef = .clusterCoeff(datRef);
-    meanCC[m, 1] = mean(modAdj);
-    marRef = .MAR(modAdj);
-    meanMAR[m, 1] = mean(marRef);
+    if (opt$calculateClusterCoeff) ccRefP = .clusterCoeff(modAdj);
+    marRefP = .MAR(modAdj);
+    meanMAR[m, 1] = mean(marRefP);
     MeanAdj[m,1]=mean(as.dist(modAdj), na.rm = TRUE);
 
     modAdj = datRef[modGenes[[m]], modGenes[[m]]];
-    ccRef = .clusterCoeff(modAdj);
+    if (opt$calculateClusterCoeff) ccRef = .clusterCoeff(modAdj);
     marRef = .MAR(modAdj);
   
     modAdj = datTest[modGenes[[m]], modGenes[[m]]];
-    ccTest = .clusterCoeff(modAdj);
+    if (opt$calculateClusterCoeff) ccTest = .clusterCoeff(modAdj);
     marTest = .MAR(modAdj);
     MeanAdj[m,2] = mean(as.dist(modAdj), na.rm = TRUE);
 
-    meanCC[m, 2] = mean(ccTest);
+    if (opt$calculateClusterCoeff)
+    {
+      meanCC[m, 1] = mean(ccRefP);
+      meanCC[m, 2] = mean(ccTest);
+      corExpr = parse(text=paste(opt$corFnc, "(ccRef, ccTest ", prepComma(opt$corOptions), ")"));
+      corCC[m] = eval(corExpr);
+    }
     meanMAR[m, 2] = mean(marTest);
-
-    corExpr = parse(text=paste(opt$corFnc, "(ccRef, ccTest ", prepComma(opt$corOptions), ")"));
-    corCC[m] = eval(corExpr);
     corExpr = parse(text=paste(opt$corFnc, "(marRef, marTest ", prepComma(opt$corOptions), ")"));
     corMAR[m] = eval(corExpr);
 
@@ -1940,7 +1955,6 @@ modulePreservation = function(
   notGold = colorLevels!=gold;
   for(k in 1:2)
      Separability[notGold, k]=1-apply(sepMat[notGold, notGold, k, drop = FALSE], 1, max, na.rm = TRUE)                        
-
   MeanSignAwareCorDat=matrix(NA,nMods ,2)
   list(modSizes = modSizes, 
        corkIM = corkIM, corkME = corkME, corkMEall = corkMEall, 

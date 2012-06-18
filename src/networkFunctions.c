@@ -436,7 +436,7 @@ void minWhichMin(double * matrix, int * nRows, int * nColumns, double * min, dou
     for (int j=1; j<nrows; j++)
     {
       col++;
-      if (!ISNAN(*col) && (*col < curmin)) { curmin = *col; curwhich = (double) j; }
+      if ( ISNAN(curmin) || (!ISNAN(*col) && (*col < curmin))) { curmin = *col; curwhich = (double) j; }
     }
     min[i] = curmin;
     whichMin[i] = curwhich;

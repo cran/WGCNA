@@ -17,18 +17,6 @@
 
 # In this version the blocks are chosen by pre-clustering.
 
-.networkTypes = c("unsigned", "signed", "signed hybrid");
-.TOMTypes = c("none", "unsigned", "signed");
-
-.TOMDenoms = c("min", "mean");
-
-#.corTypes = c("pearson", "bicor", "spearman");
-
-.corTypes = c("pearson", "bicor");
-
-.corFnc = c("cor", "bicor", "cor");
-.corOptions = c("use = 'p'", "use = 'p'", "use = 'p', method = spearman");
-
 #==========================================================================================================
 #
 #  TOM similarity via a call to a compiled code.
@@ -1560,7 +1548,7 @@ blockwiseConsensusModules = function(multiExpr,
   blocks = individualTOMInfo$blocks;
   gBlocks = individualTOMInfo$gBlocks;
 
-  blockLevels = as.numeric(levels(factor(gBlocks)));
+  blockLevels = sort(unique(gBlocks));
   blockSizes = table(gBlocks)
   blockOrder = order(-blockSizes);
   nBlocks = length(blockLevels);
@@ -1936,7 +1924,7 @@ blockwiseConsensusModules = function(multiExpr,
     # Update allLabels
 
     allLabelIndex = c(allLabelIndex, blockLabelIndex);
-    allLabels[block[blockAssigned]] = blockLabels[blockAssigned];
+    allLabels[gsg$goodGenes][block[blockAssigned]] = blockLabels[blockAssigned];
 
     collectGarbage();
   

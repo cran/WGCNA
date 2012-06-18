@@ -495,6 +495,44 @@ consensusMEDissimilarity = function(MEs, useAbs = FALSE, useSets = NULL, method 
   ConsDiss;
 }
 
+# This function merges modules whose MEs fall on one branch of a hierarchical clustering tree
+
+.consensusMEDissimilarity = function(multiMEs, 
+                                     consensusQuantile = 0, useAbs = FALSE, 
+                                     corFnc = cor, corOptions = list(use = 'p'),
+                                     useSets = NULL, 
+                                     greyMEname = "ME0")
+{
+  nSets = checkSets(multiMEs)$nSets;
+  useMEs = c(1:ncol(multiMEs[[1]]$data))[names(multiMEs[[1]]$data)!=greyMEname]
+  useNames = names(multiMEs[[1]]$data)[useMEs];
+  nUseMEs = length(useMEs);
+#  if (nUseMEs<2) 
+#    stop("Something is wrong: there are two or more proper modules, but less than two proper",
+#         "eigengenes. Please check that the grey color label and module eigengene label", 
+#         "are correct.");
+
+  if (is.null(useSets)) useSets = c(1:nSets);
+  MEDiss = array(NA, dim = c(nUseMEs, nUseMEs, nSets));
+  for (set in useSets)
+  {
+    corOptions$x = multiMEs[[set]]$data[, useMEs];
+    if (useAbs)
+    {
+        diss = 1-abs(do.call(corFnc, corOptions));
+    } else {
+        diss = 1-do.call(corFnc, corOptions);
+    }
+    MEDiss[, , set] = diss;
+  }
+ 
+  dim(MEDiss) = c( nUseMEs * nUseMEs, nSets);
+  ConsDiss = apply(MEDiss, 1, quantile, probs = 1-consensusQuantile, names = FALSE, na.rm = TRUE);
+  dim(ConsDiss) = c(nUseMEs, nUseMEs)
+  colnames(ConsDiss) = rownames(ConsDiss) = useNames;
+  ConsDiss;
+}
+     
 #======================================================================================================
 # ColorHandler.R
 #======================================================================================================
@@ -849,45 +887,6 @@ multiSetMEs = function(exprData, colors, universalColors = NULL, useSets = NULL,
 # MergeCloseModules
 #
 #---------------------------------------------------------------------------------------------
-# This function merges modules whose MEs fall on one branch of a hierarchical clustering tree
-
-
-.consensusMEDissimilarity = function(multiMEs, 
-                                     consensusQuantile = 0, useAbs = FALSE, 
-                                     corFnc = cor, corOptions = list(use = 'p'),
-                                     useSets = NULL, 
-                                     greyMEname = "ME0")
-{
-  nSets = checkSets(multiMEs)$nSets;
-  useMEs = c(1:ncol(multiMEs[[1]]$data))[names(multiMEs[[1]]$data)!=greyMEname]
-  useNames = names(multiMEs[[1]]$data)[useMEs];
-  nUseMEs = length(useMEs);
-  if (nUseMEs<2) 
-    stop("Something is wrong: there are two or more proper modules, but less than two proper",
-         "eigengenes. Please check that the grey color label and module eigengene label", 
-         "are correct.");
-
-  if (is.null(useSets)) useSets = c(1:nSets);
-  MEDiss = array(NA, dim = c(nUseMEs, nUseMEs, nSets));
-  for (set in useSets)
-  {
-    corOptions$x = multiMEs[[set]]$data[, useMEs];
-    if (useAbs)
-    {
-        diss = 1-abs(do.call(corFnc, corOptions));
-    } else {
-        diss = 1-do.call(corFnc, corOptions);
-    }
-    MEDiss[, , set] = diss;
-  }
- 
-  dim(MEDiss) = c( nUseMEs * nUseMEs, nSets);
-  ConsDiss = apply(MEDiss, 1, quantile, probs = 1-consensusQuantile, names = FALSE, na.rm = TRUE);
-  dim(ConsDiss) = c(nUseMEs, nUseMEs)
-  colnames(ConsDiss) = rownames(ConsDiss) = useNames;
-  ConsDiss;
-}
-     
                   
 
 mergeCloseModules = function(exprData, colors, consensusQuantile = 0, 
