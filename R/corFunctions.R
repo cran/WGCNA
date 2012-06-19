@@ -1,11 +1,5 @@
 # slight re-definition of the bicor function
 
-.pearsonFallbacks = c("none", "individual", "all");
-
-.zeroMADWarnings = c("Some results will be NA.", 
-                     "Pearson correlation was used for individual columns with MAD=NA.",
-                     "Pearson correlation was used for entire variable.");
-
 bicor = function(x, y = NULL, robustX = TRUE, robustY = TRUE, use = 'all.obs', maxPOutliers = 1, quick = 0,
                  pearsonFallback = "individual", 
                  cosine = FALSE,

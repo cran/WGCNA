@@ -7,17 +7,6 @@
 # . visualization
 
 
-# Below these two numbers functions will not work.
-
-..minNGenes = 4;
-..minNSamples = 4;
-
-.largestBlockSize = 1e8;
-
-.networkTypes = c("unsigned", "signed", "signed hybrid");
-.adjacencyTypes = c(.networkTypes, "distance");
-.TOMTypes = c("none", "unsigned", "signed");
-
 #==========================================================================================
 #
 #  Subselection for multi-set data structure
@@ -1454,7 +1443,7 @@ verboseBarplot = function (x, g,  main = "",
   Means1= tapply(x, factor(g), mean, na.rm=TRUE)
   p1=signif(kruskal.test(x~factor(g) )$p.value,2)
   if (AnovaTest)  p1=signif(  anova(lm(x~factor(g)))$Pr[[1]]    ,2)
-  if ( AnovaTest | KruskalTest)  main=paste(main," p=",as.character(p1) )
+  if ( AnovaTest | KruskalTest)  main=paste(main, "p =",as.character(p1) )
   ret = barplot(Means1, main=main,col=color, xlab=xlab,ylab=ylab, cex=cex, cex.axis=cex.axis,cex.lab=cex.lab,
                 cex.main=cex.main, horiz = horiz, ...)
   abline(h=0)
@@ -4007,7 +3996,7 @@ numbers2colors = function(x,
     stop("'x' must be numeric. For a factor, please use as.numeric(x) in the call.");
   if (is.null(signed))
   {
-     if (any(x, na.rm = TRUE)<0 & any(x>0, na.rm = TRUE))
+     if (any(x<0, na.rm = TRUE) & any(x>0, na.rm = TRUE))
      {
        signed = TRUE;
      } else
@@ -4804,7 +4793,7 @@ if (!is.null(columnweights) ) {
 if ( min(columnweights,na.rm=T)<0 )  stop("At least one component of columnweights is negative, which makes no sense. The entries should be positive numbers")
 if ( sum(is.na(columnweights))>0 )  stop("At least one component of columnweights is missing, which makes no sense. The entries should be positive numbers")
 if ( sum( columnweights)!= 1 ) {
- warning("The entries of columnweights do not sum to 1. Therefore, they will divided by the sum. Then the resulting weights sum to 1.");
+ # warning("The entries of columnweights do not sum to 1. Therefore, they will divided by the sum. Then the resulting weights sum to 1.");
 columnweights= columnweights/sum( columnweights)
 }
 }

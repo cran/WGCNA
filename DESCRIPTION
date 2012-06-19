@@ -1,6 +1,6 @@
 Package: WGCNA
-Version: 1.20
-Date: 2012-04-23
+Version: 1.22
+Date: 2012-06-18
 Title: Weighted Correlation Network Analysis
 Author: Peter Langfelder <Peter.Langfelder@gmail.com> and Steve Horvath
         <SHorvath@mednet.ucla.edu> with contributions by Chaochao Cai,
@@ -16,6 +16,6 @@ Description: Functions necessary to perform Weighted Correlation
         Network Analysis
 URL:
         http://www.genetics.ucla.edu/labs/horvath/CoexpressionNetwork/Rpackages/WGCNA/
-Packaged: 2012-04-23 21:35:48 UTC; plangfelder
+Packaged: 2012-06-18 18:39:50 UTC; plangfelder
 Repository: CRAN
-Date/Publication: 2012-04-24 03:59:37
+Date/Publication: 2012-06-19 06:33:22

@@ -23,6 +23,7 @@ modulePreservation(
    quickCor = 1, 
    ccTupletSize = 2, 
    calculateCor.kIMall = FALSE,
+   calculateClusterCoeff = FALSE,
    useInterpolation = FALSE, 
    checkData = TRUE, 
    greyName = NULL, 
@@ -100,6 +101,9 @@ calculations, but with potentially inaccurate results if the proportion of missi
   \item{calculateCor.kIMall}{ logical: should cor.kMEall be calculated? This option is only valid for
 adjacency input. If \code{FALSE}, cor.kIMall will not be calculated, potentially saving significant amount
 of time if the input adjacencies are large and contain many modules. }
+
+  \item{calculateClusterCoeff}{ logical: should statistics based on the clustering coefficient be
+calculated? While these statistics may be interesting, the calculations are also computationally expensive.}
 
   \item{checkData}{ logical: should data be checked for excessive number of missing entries? See
 \code{\link{goodSamplesGenesMS}} for details. }

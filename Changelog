@@ -1,6 +1,47 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
 
+2012/06/18: 1.22
+
+	. DIFF: Bugfix in function blockwiseConsensusModules: the module colors are
+	  now correct (and not scrambled) when some genes are excluded due to
+	  too many missing entries. Apologies for any non-sense results this
+	  error may have generated.
+
+	. Bugfix in the function modulePreservation when used on adjacency
+	  input: clustering coefficient calculations are now corrected.
+
+	. Function modulePreservation gains an additional argument
+	  calculateClusterCoeff, with default value FALSE, that can be used to
+	  enable/disable clustering coefficient calculations. These tend to be
+	  slow and for efficiency purposes the default is FALSE. 
+
+	. DIFF: because of the above, clustering coefficient calculations in
+	  function modulePreservation are disabled as a default. 
+
+	. Error message in modulePreservation about input containing genes
+	  with too many missing values is now more informative.
+
+	. Bugfix in function numbers2colors: function now properly accounts
+	  for the presence of positive and negative entries when automatically
+	  deciding whether the input should be considered signed or unsigned.
+
+	. Function rankPvalue now doesn't warn about weights not summing to 1.
+
+	. DIFF: bugfix in function userListEnrichment corrects output.
+	  Previously, UNcorrected p-values were returned when corrected
+	  p-values were requested, and no p-values were returned when
+	  uncorrected p-values were requested. 
+
+	. p-value display in function verboseBarplot is now cleaned up by
+	  properly arranging spaces.
+
+	. Bugfix in mergeCloseModules: function now completes correctly when
+	  all modules are merged into a single module.
+
+	. Internal bugfix in C function minWhichMin: function now works
+	  correctly when the first entry is NA or NaN.
+
 2012/04/23: 1.20
 
 	. New function blueWhiteRed that produces a color sequence
@@ -152,7 +193,7 @@ Note: as of 2009/03/10, changes that lead to different calculational results are
 
 2011/11/08: 1.14
 
-	. The default value of argument calculateCors.kKIMall in function
+	. The default value of argument calculateCor.KIMall in function
 	  modulePreservation is now FALSE to speed up execution.
 
 	. New function consensusKME to calculate "consensus" kME across

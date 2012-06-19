@@ -92,15 +92,15 @@ userListEnrichment <- function (geneR, labelR, fnIn = NULL, catNmIn = fnIn, name
         results$ovGenes[[length(namesOv)]] = gyy
     }
     results$pValues = cbind(results$pValues, apply(cbind(1, as.numeric(results$pValues[, 
-        4]) * length(namesOv)), 1, min))
+        5]) * length(namesOv)), 1, min))
     colnames(results$pValues) = c("InputCategories", "UserDefinedCategories", "Type", 
         "NumOverlap", "Pvalues", "CorrectedPvalues")
     names(results$ovGenes) = namesOv
     results$sigOverlaps = results$pValues[as.numeric(results$pValues[, 
-        5]) < 0.05, c(1, 2, 3, 5)]
+        6]) < 0.05, c(1, 2, 3, 6)]
     if (!outputCorrectedPvalues) {
         results$sigOverlaps = results$pValues[as.numeric(results$pValues[, 
-            4]) < 0.05, c(1, 2, 3, 4)]
+            5]) < 0.05, c(1, 2, 3, 5)]
         write("Note that outputted p-values are not corrected for multiple comparisons.", 
             "")
     }
