@@ -158,9 +158,10 @@ class CLASS_NAME
     vector <int> table();	// returns frequencies but no values
     vector <int> table(vector <TYPE> & values); // returns frequencies and values
 
-    void copy2vector(int start, int length, vector <TYPE> & result);
+    void copy2vector(int start, int length, vector <int> & result);
+    void copy2vector(int start, int length, vector <double> & result);
     void colMWM(CLASS_NAME & minVal, INT_CLASS & which);
-    void colQuantile(double q, CLASS_NAME & quantile);
+    void colQuantile(double q, dArray & quantile);
 
     void sample(int size, CLASS_NAME & values, int replace = 0);
 
@@ -307,14 +308,24 @@ void CLASS_NAME::setDim(vector <int> dims, int start)
 }
   
 
-void CLASS_NAME::copy2vector(int start, int length, vector <TYPE> & result)
+void CLASS_NAME::copy2vector(int start, int length, vector <int> & result)
 {
   if (start + length > this->length())
     throw(Exception(string("copy2vector: start+length exceed the actual length of the array.")));
   result.clear();
   // result.reserve(length);
   for (int i=start; i<start + length; i++)
-    result.push_back(*(data_+i));
+    result.push_back((int) *(data_+i));
+}
+
+void CLASS_NAME::copy2vector(int start, int length, vector <double> & result)
+{
+  if (start + length > this->length())
+    throw(Exception(string("copy2vector: start+length exceed the actual length of the array.")));
+  result.clear();
+  // result.reserve(length);
+  for (int i=start; i<start + length; i++)
+    result.push_back((double) *(data_+i));
 }
 
 void CLASS_NAME::colMWM(CLASS_NAME & minVal, INT_CLASS & which)
@@ -348,49 +359,6 @@ void CLASS_NAME::colMWM(CLASS_NAME & minVal, INT_CLASS & which)
       }
     minVal.linValue(col, cmin);
     which.linValue(col, wmin);
-  }
-}
-
-void CLASS_NAME::colQuantile(double q, CLASS_NAME & quantile)
-{
-  if (dim().size()==0)
-    throw(Exception(string(
-       "Attempt to calculate columnwise quantile of array that has no dimensions set.")));
-  if (dim().size()==1)
-    quantile.setDim(1);
-  else
-    quantile.setDim(dim(), 1);
-
-  int colLen = dim()[0], totLen = length();
-
-  if (colLen==0)
-    throw(Exception(string("colQuantile: Column length is zero in variable") + name()));
-
-  vector <TYPE> column;
-  column.reserve(colLen);
-
-  double index = q * (colLen-1);
-  double i1 = floor(index), i2 = ceil(index);
-  int ii1 = (int) i1, ii2 = (int) i2;
-  // cout << "Quantile: q = " << q << ", ii1: " << ii1 << ", ii2: " << ii2 << ", index: "<< index << endl;
-  for (int i=0, col=0; i<totLen; i+=colLen, col++)
-  {
-    // column.clear();
-    // cout << "Sorting column starting at position" << i << endl;
-    copy2vector(i, colLen, column);
-    // cout << "original vector:" << endl;
-    // for (int kk=0; kk<column.size(); kk++) cout << column[kk] << ", "; cout << endl;
-    sort(column.begin(), column.end());
-    // cout << "sorted vector:" << endl;
-    // for (int kk=0; kk<column.size(); kk++) cout << column[kk] << ", "; cout << endl;
-    double val;
-    if (i1!=i2)
-      val = (index - i1) * column[ii2] + (i2-index) * column[ii1];
-    else
-      val = column[ii1];
-    // cout << "index: " << index << ", i1:" << i1 << ", i2: " << i2 << 
-            // ", Quantile: " <<  val << endl;
-    quantile.linValue(col, (TYPE) val);
   }
 }
 

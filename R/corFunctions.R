@@ -53,7 +53,7 @@ bicor = function(x, y = NULL, robustX = TRUE, robustY = TRUE, use = 'all.obs', m
                err = as.integer(err), 
                warn = as.integer(warnX), nThreads = as.integer(nThreads),
                verbose = as.integer(verbose), indent = as.integer(indent),
-               DUP = FALSE, NAOK = TRUE);
+               DUP = FALSE, NAOK = TRUE, PACKAGE = "WGCNA");
     }
     dim(res$res) = dim(bi);
     if (!is.null(dimnames(x)[[2]])) dimnames(res$res) = list(dimnames(x)[[2]],  dimnames(x)[[2]] );
@@ -80,7 +80,8 @@ bicor = function(x, y = NULL, robustX = TRUE, robustY = TRUE, use = 'all.obs', m
              warnX = as.integer(warnX), 
              warnY = as.integer(warnY), 
              nThreads = as.integer(nThreads),
-             verbose = as.integer(verbose), indent = as.integer(indent), DUP = FALSE, NAOK = TRUE);
+             verbose = as.integer(verbose), indent = as.integer(indent), DUP = FALSE, NAOK = TRUE,
+             PACKAGE = "WGCNA");
     dim(res$res) = dim(bi);
     if (!is.null(dimnames(x)[[2]]) || !is.null(dimnames(y)[[2]]))
         dimnames(res$res) = list(dimnames(x)[[2]], dimnames(y)[[2]]);
@@ -158,7 +159,7 @@ cor = function(x, y = NULL, use = "all.obs", method = c("pearson", "kendall", "s
                    res = as.double(bi), nNA = as.integer(nNA),
                    err = as.integer(err), nThreads = as.integer(nThreads), 
                    verbose = as.integer(verbose), indent = as.integer(indent),
-                   DUP = FALSE, NAOK = TRUE);
+                   DUP = FALSE, NAOK = TRUE, PACKAGE = "WGCNA");
          dim(res$res) = dim(bi);
          if (!is.null(dimnames(x)[[2]])) dimnames(res$res) = list(dimnames(x)[[2]],  dimnames(x)[[2]] );
       } else {
@@ -174,7 +175,8 @@ cor = function(x, y = NULL, use = "all.obs", method = c("pearson", "kendall", "s
                  cosineY = as.integer(cosineY),
                  res = as.double(bi), nNA = as.integer(nNA), err = as.integer(err),
                  nThreads = as.integer(nThreads),
-                 verbose = as.integer(verbose), indent = as.integer(indent), DUP = FALSE, NAOK = TRUE);
+                 verbose = as.integer(verbose), indent = as.integer(indent), DUP = FALSE, NAOK = TRUE,
+                 PACKAGE = "WGCNA");
          dim(res$res) = dim(bi);
          if (!is.null(dimnames(x)[[2]]) || !is.null(dimnames(y)[[2]]))
             dimnames(res$res) = list(dimnames(x)[[2]], dimnames(y)[[2]]);

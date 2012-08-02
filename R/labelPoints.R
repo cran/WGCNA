@@ -6,7 +6,7 @@
 #=================================================================================================
 
 labelPoints = function(x, y, labels, cex = 0.7, offs = 0.01, xpd = TRUE, jiggle = 0, 
-                       ...)
+                       protectEdges = TRUE, ...)
 {
   nPts = length(labels);
   box = par("usr");
@@ -51,7 +51,16 @@ labelPoints = function(x, y, labels, cex = 0.7, offs = 0.01, xpd = TRUE, jiggle 
 
   if (nPts==1) 
   {
-    text(x, y + labHeight + offs/scaleY, labels, cex = cex, xpd = xpd, adj = c(0.5, 0.5), ...)
+    if (protectEdges)
+    {
+       shift = ifelse(x - labWidth/2/scaleX < box[1], box[1] - x + labWidth/2/scaleX, 
+                       ifelse(x + labWidth/2/scaleX > box[2], box[2] - x - labWidth/2/scaleX, 0));
+       x = x + shift;
+       # Also check the top and bottom edges
+       yShift = if (y + labHeight/scaleY  + offs/scaleY > box[4])  -(labHeight + 2*offs)/scaleY else 0;
+       y = y + yShift
+    } 
+    text(x, y + labHeight/2/scaleY + offs/scaleY, labels, cex = cex, xpd = xpd, adj = c(0.5, 0.5), ...)
     return (0);
   }
 
@@ -94,6 +103,7 @@ labelPoints = function(x, y, labels, cex = 0.7, offs = 0.01, xpd = TRUE, jiggle 
   xt = (xx + dx)/scaleX;
   yt = (yy + dy)/scaleY;
 
+
   # Check if any of the points overlap with a label (of a different point)
 
   pointMaxx = matrix(xx + offs, nPts, nPts);
@@ -129,6 +139,22 @@ labelPoints = function(x, y, labels, cex = 0.7, offs = 0.01, xpd = TRUE, jiggle 
   #for (p in 1:nPts) if (nOverPerLabel[p]==1) 
   #{
      
+  # Check if any of the labels extend past the left or right edge of the plot
+  if (protectEdges)
+  {
+     shift = ifelse(xt - labWidth/2/scaleX < box[1], box[1] - xt + labWidth/2/scaleX, 
+                     ifelse(xt + labWidth/2/scaleX > box[2], box[2] - xt - labWidth/2/scaleX, 0));
+     xt = xt + shift;
+
+     # Also check the top and bottom edges
+     # Do labels overlap with points along the x coordinate?
+     xOverlap = abs(xt-x) < (labWidth/2 + offs)/scaleX;
+
+     yShift = ifelse(yt - labHeight/2/scaleY < box[3],  
+                      ifelse(xOverlap, (labHeight + 2*offs)/scaleY, box[3] - yt + labHeight/2/scaleY),
+                      ifelse(yt + labHeight/2/scaleY > box[4], -(labHeight + 2*offs)/scaleY, 0));
+     yt = yt + yShift
+  } 
 
   if (par("xlog")) xt = 10^xt;
   if (par("ylog")) yt = 10^yt;

@@ -519,6 +519,7 @@ modulePreservation = function(
                                                   calculatePermutation = TRUE,
                                                   multiColorForAccuracy = permColorsForAcc, 
                                                   networkType = networkType,
+                                                  corFnc = corFnc, corOptions = corOptions,
                                                   referenceNetworks=1, densityOnly = useInterpolation,
                                                   maxGoldModuleSize = maxGoldModuleSize,
                                                   maxModuleSize = maxModuleSize, quickCor = quickCor,
@@ -1291,7 +1292,7 @@ modulePreservation = function(
           # Create the permuted data sets
           if (sum(keepGenes) < nRefGenes)
           {
-             colorRef = colorRef[keepGenes]
+            colorRef = colorRef[keepGenes]
              if (dataIsExpr)
              {
                 datRef = datRef[, keepGenes]
@@ -1516,21 +1517,21 @@ modulePreservation = function(
   if (!opt$densityOnly)
   {            
      ME[[1]]=moduleEigengenes(datRef, colors)$eigengenes
-     kME[[1]]=as.matrix(signedKME(datRef,ME[[1]]))
+     kME[[1]]=as.matrix(signedKME(datRef,ME[[1]], corFnc = opt$corFnc, corOptions = opt$corOptions))
   }
    
   if (opt$calculatePermutation | opt$densityOnly)
   {
     #printFlush("Calculating ME[[2]]");
     ME[[2]]=moduleEigengenes(datRefP, colors)$eigengenes
-    kME[[2]]=as.matrix(signedKME(datRefP,ME[[2]]))
+    kME[[2]]=as.matrix(signedKME(datRefP,ME[[2]], corFnc = opt$corFnc, corOptions = opt$corOptions))
   } else {
     ME[[2]] = ME[[1]]
     kME[[2]] = kME[[1]]
   }
 
   ME[[3]]=moduleEigengenes(datTest, colors)$eigengenes
-  kME[[3]]=as.matrix(signedKME(datTest,ME[[3]]))
+  kME[[3]]=as.matrix(signedKME(datTest,ME[[3]], corFnc = opt$corFnc, corOptions = opt$corOptions))
 
   modGenes = list();
   for (m in 1:nMods)
@@ -1577,15 +1578,16 @@ modulePreservation = function(
      {
         if (opt$nType==1)
         {
-          meanSignAwareKME[j,1]=mean(abs(kME[[2]][modGenes[[j]],j1]),na.rm=T)
-          meanSignAwareKME[j,2]=mean(abs(kME[[3]][modGenes[[j]],j1]),na.rm=T)
+          meanSignAwareKME[j,1]=mean(abs(kME[[2]][modGenes[[j]],j1]),na.rm = TRUE)
+          meanSignAwareKME[j,2]=mean(abs(kME[[3]][modGenes[[j]],j1]),na.rm = TRUE)
         } else {
-          meanSignAwareKME[j,1]=abs(mean(kME[[2]][modGenes[[j]],j1],na.rm=T))
-          meanSignAwareKME[j,2]=abs(mean(kME[[3]][modGenes[[j]],j1],na.rm=T))
+          meanSignAwareKME[j,1]=abs(mean(kME[[2]][modGenes[[j]],j1],na.rm = TRUE))
+          meanSignAwareKME[j,2]=abs(mean(kME[[3]][modGenes[[j]],j1],na.rm = TRUE))
         }
      } else {
-        meanSignAwareKME[j,1]=abs(mean(abs(kME[[2]][modGenes[[j]],j1]),na.rm=T));
-        meanSignAwareKME[j,2]=abs(mean(sign(kME[[1]][modGenes[[j]],j1]) * kME[[3]][modGenes[[j]],j1],na.rm=T))
+        meanSignAwareKME[j,1]=abs(mean(abs(kME[[2]][modGenes[[j]],j1]),na.rm = TRUE));
+        meanSignAwareKME[j,2]=abs(mean(sign(kME[[1]][modGenes[[j]],j1]) * kME[[3]][modGenes[[j]],j1],na.rm =
+TRUE))
      }
   }
   
@@ -1647,8 +1649,8 @@ modulePreservation = function(
              else SignedModuleCorData3 = ModuleCorData3
      } else
         SignedModuleCorData3 = sign(ModuleCorData1)*ModuleCorData3
-     MeanSignAwareCorDat[j,1]=mean(as.dist(SignedModuleCorData2),na.rm=T)
-     MeanSignAwareCorDat[j,2]=mean(as.dist(SignedModuleCorData3),na.rm=T)
+     MeanSignAwareCorDat[j,1]=mean(as.dist(SignedModuleCorData2),na.rm = TRUE)
+     MeanSignAwareCorDat[j,2]=mean(as.dist(SignedModuleCorData3),na.rm = TRUE)
      if (!opt$densityOnly)
      {
         #ICORdat[j]=cor(c(as.dist(ModuleCorData1)),c(as.dist(ModuleCorData3)),use="p")
@@ -1884,15 +1886,15 @@ modulePreservation = function(
      {
         if (opt$nType==1)
         {
-          meanSignAwareKME[m,1]=mean(abs(svds[[2]][[m]]$u),na.rm=T)
-          meanSignAwareKME[m,2]=mean(abs(svds[[3]][[m]]$u),na.rm=T)
+          meanSignAwareKME[m,1]=mean(abs(svds[[2]][[m]]$u),na.rm = TRUE)
+          meanSignAwareKME[m,2]=mean(abs(svds[[3]][[m]]$u),na.rm = TRUE)
         } else {
-          meanSignAwareKME[m,1]=abs(mean(svds[[2]][[m]]$u,na.rm=T))
-          meanSignAwareKME[m,2]=abs(mean(svds[[3]][[m]]$u,na.rm=T))
+          meanSignAwareKME[m,1]=abs(mean(svds[[2]][[m]]$u,na.rm = TRUE))
+          meanSignAwareKME[m,2]=abs(mean(svds[[3]][[m]]$u,na.rm = TRUE))
         }
      } else {
-        meanSignAwareKME[m,1]=mean(abs(svds[[2]][[m]]$u),na.rm=T)
-        meanSignAwareKME[m,2]=abs(mean(sign(svds[[1]][[m]]$u) * svds[[3]][[m]]$u,na.rm=T))
+        meanSignAwareKME[m,1]=mean(abs(svds[[2]][[m]]$u),na.rm = TRUE)
+        meanSignAwareKME[m,2]=abs(mean(sign(svds[[1]][[m]]$u) * svds[[3]][[m]]$u,na.rm = TRUE))
      }
   }
   

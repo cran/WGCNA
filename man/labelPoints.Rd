@@ -7,10 +7,12 @@
 }
 \description{
   Given scatterplot point coordinates, the function tries to place labels near the points such that the
-labels do not become scrambled.
+labels overlap as little as possible. User beware: the algorithm implemented here is quite primitive and
+while it will help in many cases, it is by no means perfect. Consider this function experimental. We hope to
+improve the algorithm in the future to make it useful in a broader range of situations.
 }
 \usage{
-labelPoints(x, y, labels, cex = 0.7, offs = 0.01, xpd = TRUE, jiggle = 0, ...)
+labelPoints(x, y, labels, cex = 0.7, offs = 0.01, xpd = TRUE, jiggle = 0, protectEdges = TRUE, ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -36,6 +38,9 @@ labelPoints(x, y, labels, cex = 0.7, offs = 0.01, xpd = TRUE, jiggle = 0, ...)
   amount of random noise to be added to the coordinates. This may be useful if the scatterplot is too
 regular (such as all points on one straight line). 
 }
+
+  \item{protectEdges}{ logical: should labels be shifted inside the (actual or virtual) frame of the plot? }
+
   \item{\dots}{
   other arguments to function \code{\link{text}}. 
 }
@@ -48,8 +53,11 @@ suboptimal; the author promises to further develop the function sometime in the 
 Note that this function does not plot the actual scatterplot; only the labels are plotted. Plotting the
 scatterplot is the responsibility of the user. 
 
-The argument offset needs to be carefully tuned to the size of the plotted symbols. Sorry, no automation
+The argument \code{offs} needs to be carefully tuned to the size of the plotted symbols. Sorry, no automation
 here yet.
+
+The argument \code{protectEdges} can be used to shift labels that would otherwise extend beyond the plot to
+within the plot. Sometimes this may cause some overlapping with other points or labels; use with care.
 
 }
 \value{

@@ -2,6 +2,9 @@
 
 .pearsonFallbacks = c("none", "individual", "all");
 
+.threadAllowVar = "ALLOW_WGCNA_THREADS"
+
+
 .zeroMADWarnings = c("Some results will be NA.", 
                      "Pearson correlation was used for individual columns with MAD=NA.",
                      "Pearson correlation was used for entire variable.");

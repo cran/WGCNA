@@ -3,6 +3,7 @@
 # 2. change scaling mode
 # 3. change nFeaturesInBag default
 
+## 20120906 new change: make sure yBag varies.
 
 .forwardSelection = function( x, y, xtest, nCandidateCovariates,  candidateCorFnc, candidateCorOptions, classify, NmandatoryCovariates) 
 {  
@@ -73,7 +74,7 @@ randomGLMpredictor = function(
   replace = TRUE,
   nObsInBag = if (replace) nrow(x) else as.integer(0.632 * nrow(x)),
   nFeaturesInBag = ceiling(ifelse(ncol(x)<=10, ncol(x), 
-		ifelse(ncol(x)<=300, (0.68-0.0016*ncol(x))*ncol(x), ncol(x)/5))),
+		ifelse(ncol(x)<=300, (1.0276-0.00276*ncol(x))*ncol(x), ncol(x)/5))),
   nCandidateCovariates=50,
   candidateCorFnc= cor,
   candidateCorOptions = list(method = "pearson", use="p"),
@@ -170,18 +171,26 @@ randomGLMpredictor = function(
   for (p in 1:nBags)
   {
     bagSamples = sample(nSamples, nObsInBag, replace = replace);
+    yBag = y[bagSamples];
+    while (var(yBag, na.rm=T)==0) 
+    {
+    bagSamples = sample(nSamples, nObsInBag, replace = replace);
+    yBag = y[bagSamples];        
+    }
+
     bagObsIndx[p,] = bagSamples
     oob = c(1:nSamples)[-unique(bagSamples)];
     nOOB = length(oob);
 
-    if (mandatory) 
-    {
-      features = c(mandatoryCovariates, sample((1:nVars)[-mandatoryCovariates], nFeaturesInBag - length(mandatoryCovariates)))
-    }else{
-      features = sample(1:nVars, nFeaturesInBag);}
+    if (mandatory) {
+      features = c(mandatoryCovariates, sample((1:nVars)[-mandatoryCovariates], 
+                nFeaturesInBag - length(mandatoryCovariates)))
+    }else {
+      features = sample(1:nVars, nFeaturesInBag)
+    }
+
 
     xBag = x[bagSamples, features];
-    yBag = y[bagSamples];
 
     if (doTest)
     {

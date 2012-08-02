@@ -12,6 +12,10 @@
 
 #include "exceptions.h"
 
+extern "C" {
+#include "corFunctions-common.h"
+}
+
 #ifndef __array_cc__
 
 #define __array_cc__
@@ -157,6 +161,8 @@ void indArray::init(int size, bool value)
 
 #define INT_CLASS iArray
 
+class dArray;
+
 #define TYPE int
 #define CLASS_NAME iArray
 #include "arrayGeneric.h"
@@ -208,6 +214,64 @@ int min(vector <int> v)
   for (unsigned i=1; i<v.size(); i++)
     if (v[i] < min) min = v[i];
   return min;
+}
+
+void dArray::colQuantile(double q, dArray & quant)
+{
+  if (dim().size()==0)
+    throw(Exception(string(
+       "Attempt to calculate columnwise quantile of array that has no dimensions set.")));
+  if (dim().size()==1)
+    quant.setDim(1);
+  else
+    quant.setDim(dim(), 1);
+
+  int colLen = dim()[0], totLen = length();
+
+  if (colLen==0)
+    throw(Exception(string("colQuantile: Column length is zero in variable") + name()));
+
+  vector <double> column;
+  column.reserve(colLen);
+
+  int err;
+  double val;
+  for (int i=0, col=0; i<totLen; i+=colLen, col++)
+  {
+    // column.clear();
+    copy2vector(i, colLen, column);
+    val = quantile(column.data(), colLen, q, 0,  & err);
+    quant.linValue(col, val);
+  }
+}
+
+void iArray::colQuantile(double q, dArray & quant)
+{
+  if (dim().size()==0)
+    throw(Exception(string(
+       "Attempt to calculate columnwise quantile of array that has no dimensions set.")));
+  if (dim().size()==1)
+    quant.setDim(1);
+  else
+    quant.setDim(dim(), 1);
+
+  int colLen = dim()[0], totLen = length();
+
+  if (colLen==0)
+    throw(Exception(string("colQuantile: Column length is zero in variable") + name()));
+
+  vector <double> column;
+  column.reserve(colLen);
+
+  int err;
+  double val;
+  for (int i=0, col=0; i<totLen; i+=colLen, col++)
+  {
+    // column.clear();
+    copy2vector(i, colLen, column);
+    val = quantile(column.data(), colLen, q, 0, & err);
+    quant.linValue(col, val);
+  }
 }
 
 

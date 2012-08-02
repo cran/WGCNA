@@ -8,7 +8,8 @@
 
 standardScreeningBinaryTrait=function(datExpr, y, 
            corFnc = cor, corOptions = list(use = 'p'),
-           kruskalTest=FALSE, qValues = FALSE, var.equal=FALSE, na.action="na.exclude") 
+           kruskalTest=FALSE, qValues = FALSE, var.equal=FALSE, na.action="na.exclude",
+           getAreaUnderROC = TRUE) 
 {
 
    datExpr=data.frame(datExpr)
@@ -17,10 +18,9 @@ standardScreeningBinaryTrait=function(datExpr, y,
      stop("The sample trait y contains more than 2 levels. Please input a binary variable y")
    if (length(levelsy)==1 ) 
      stop("The sample trait y is constant. Please input a binary sample trait with some variation.")
-   yNumeric=ifelse( y==levelsy[[1]], 1, ifelse( y==levelsy[[2]], 2, NA))
+   yNumeric=as.numeric(factor(y));
    if (length(yNumeric) !=dim(datExpr)[[1]] ) 
      stop("the length of the sample trait y does not equal the number of rows of datExpr")
-   corPearson=rep(NA, dim(datExpr)[[2]] ) 
    pvalueStudent = t.Student = Z.Student = rep(NA, dim(datExpr)[[2]] ) 
    pvaluekruskal = stat.Kruskal = Z.Kruskal = sign.Kruskal = rep(NA, dim(datExpr)[[2]] ) 
    nPresent = rep(0, dim(datExpr)[[2]] ) 
@@ -32,14 +32,17 @@ standardScreeningBinaryTrait=function(datExpr, y,
 
   corFnc = match.fun(corFnc);
   corOptions$y = yNumeric;
+  corOptions$x = datExpr;
+  corPearson=as.numeric(do.call(corFnc, corOptions));
   nGenes = dim(datExpr)[[2]];
-  for (i in 1:dim(datExpr)[[2]]) {
-        corOptions$x = as.numeric(datExpr[,i]);
-        corPearson[i] = as.numeric(do.call(corFnc, corOptions));
-        no.present=  sum( ! is.na(datExpr[,i])  & ! is.na(yNumeric)   )
-        nPresent[i] = no.present;
-        no.present1=  sum( ! is.na(datExpr[,i])  & !is.na(yNumeric) & yNumeric==1  )
-        no.present2=  sum( ! is.na(datExpr[,i])  & !is.na(yNumeric) & yNumeric==2  )
+  nPresent1 = as.numeric( t(as.matrix(!is.na(yNumeric) & yNumeric==1)) %*% ! is.na(datExpr) );
+  nPresent2 = as.numeric( t(as.matrix(!is.na(yNumeric) & yNumeric==2)) %*% ! is.na(datExpr) );
+  nPresent = nPresent1 + nPresent2;
+
+  for (i in 1:nGenes) {
+        no.present1 = nPresent1[i];
+        no.present2 = nPresent2[i];
+        no.present = nPresent[i];
         if (no.present1<2 | no.present2<2 ) 
         {
            pvalueStudent[i]= t.Student[i] = NA 
@@ -58,7 +61,7 @@ standardScreeningBinaryTrait=function(datExpr, y,
           }
           
         }
-        AreaUnderROC[i] = rcorr.cens(datExpr[, i], yNumeric, outx = TRUE)[[1]]
+        if (getAreaUnderROC) AreaUnderROC[i] = rcorr.cens(datExpr[, i], yNumeric, outx = TRUE)[[1]]
         if (kruskalTest) {
             if (no.present<5 ) 
             {
@@ -100,8 +103,8 @@ standardScreeningBinaryTrait=function(datExpr, y,
                             "calculated q-values will be invalid. qvalue error:\n\n", xx, "\n")) 
       }
     }
-    meanLevel1 = as.numeric(apply(datExpr[y == levelsy[[1]] & !is.na(y), ], 2, mean, na.rm = TRUE));
-    meanLevel2 = as.numeric(apply(datExpr[y == levelsy[[2]] & !is.na(y), ], 2, mean, na.rm = TRUE));
+    meanLevel1 = as.numeric(apply(datExpr[!is.na(y) & y == levelsy[[1]], ], 2, mean, na.rm = TRUE));
+    meanLevel2 = as.numeric(apply(datExpr[!is.na(y) & y == levelsy[[2]], ], 2, mean, na.rm = TRUE));
   
     Z.Student = qnorm(pvalueStudent/2, lower.tail = FALSE) * sign(t.Student);
     if (kruskalTest)
@@ -115,8 +118,7 @@ standardScreeningBinaryTrait=function(datExpr, y,
     SE.Level1 = as.numeric(apply(datExpr[y == levelsy[[1]] & !is.na(y), ], 2, stderr1))
     SE.Level2 =as.numeric(apply(datExpr[y == levelsy[[2]] & !is.na(y), ], 2, stderr1))
 
-    FoldChangeLevel1vsLevel2 = ifelse(meanLevel1/meanLevel2 > 
-        1, meanLevel1/meanLevel2, -meanLevel2/meanLevel1)
+    FoldChangeLevel1vsLevel2 = ifelse(meanLevel1/meanLevel2 > 1, meanLevel1/meanLevel2, -meanLevel2/meanLevel1)
     
     output = data.frame(ID = dimnames(datExpr)[[2]], corPearson = corPearson, 
         t.Student = t.Student,
@@ -125,8 +127,10 @@ standardScreeningBinaryTrait=function(datExpr, y,
          meanFirstGroup = meanLevel1,
         meanSecondGroup = meanLevel2, 
          SE.FirstGroup = SE.Level1,
-      SE.SecondGroup = SE.Level2,
-      AreaUnderROC = AreaUnderROC)
+      SE.SecondGroup = SE.Level2);
+
+    if (getAreaUnderROC)
+       output$AreaUnderROC = AreaUnderROC;
 
     if (kruskalTest) {
         output = data.frame(output, stat.Kruskal = stat.Kruskal, 

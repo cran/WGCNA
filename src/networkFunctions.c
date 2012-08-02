@@ -150,6 +150,43 @@ void testAdjacency(double * expr, int * nSamples, int * nGenes, int * corType, i
 }
 
 
+/********************************************************************************************
+ *
+ * checkAvailableMemory
+ *
+ ********************************************************************************************/
+
+size_t checkAvailableMemory()
+{
+  size_t guess;
+  if ( sizeof (size_t)==4 ) 
+     guess = 16384;  // 2^14
+  else
+     guess = 131072;  // power of 2 nearest to 100k
+
+  int tooLarge = 1;
+  double * pt;
+  while ( (tooLarge) && (guess > 1000))
+  {
+     Rprintf("trying matrix of size %d\n", guess);
+     tooLarge = ( (pt=malloc(guess*guess*sizeof(double))) == NULL );
+     if (tooLarge) guess = (guess * 3) / 4;
+     Rprintf("next size will be %d\n", guess);
+  }
+
+  if (!tooLarge) free(pt);   
+
+  Rprintf("Returning %d.\n", guess * guess);
+
+  return guess*guess;
+}
+
+void checkAvailableMemoryForR(double * size)
+{
+  *size = 1.0 *  checkAvailableMemory() ;
+}
+  
+
 //===========================================================================================
 //
 // tomSimilarity

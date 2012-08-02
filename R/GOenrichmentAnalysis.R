@@ -36,6 +36,7 @@ GOenrichmentAnalysis = function(labels, entrezCodes,
                removeDuplicates = TRUE,
                leaveOutLabel = NULL,
                nBestP = 10, pCut = NULL, nBiggest = 0,
+               getTermDetails = TRUE,
                verbose = 2, indent = 0 )
 {
 
@@ -341,7 +342,7 @@ GOenrichmentAnalysis = function(labels, entrezCodes,
       dimnames(countsInTerm) = list (labelLevels, names(Go2eg));
 
       bestPTerms = list();
-      modSizes = table(labels[, set]);
+      modSizes = table(labels[ !(labels[, set] %in% leaveOutLabel), set]);
 
       if (!is.null(pCut) || nBestP > 0)
       {
@@ -403,14 +404,17 @@ GOenrichmentAnalysis = function(labels, entrezCodes,
                    enrTab$termOntology[rci] = 
                          eval(parse(text = "AnnotationDbi:::Ontology(goInfo[[dbind]])"));
                  } 
-                 geneCodes = intersect(modCodes[[ll]], termCodes[[term]])
-                 bestPTerms[[ont]]$forModule[[ll]][[rci]] = list(termID = termID,
-                         termName = enrTab$termName[rci],
-                         enrichmentP = enrTab$enrichmentP[rci],
-                         termDefinition = enrTab$termDefinition[rci],
-                         termOntology = enrTab$termOntology[rci],
-                         geneCodes = geneCodes,
-                         genePositions = keepEC[match(geneCodes, entrezCodes)]);
+                 if (getTermDetails)
+                 {
+                   geneCodes = intersect(modCodes[[ll]], termCodes[[term]])
+                   bestPTerms[[ont]]$forModule[[ll]][[rci]] = list(termID = termID,
+                           termName = enrTab$termName[rci],
+                           enrichmentP = enrTab$enrichmentP[rci],
+                           termDefinition = enrTab$termDefinition[rci],
+                           termOntology = enrTab$termOntology[rci],
+                           geneCodes = geneCodes,
+                           genePositions = keepEC[match(geneCodes, entrezCodes)]);
+                }
               }
               if (ll==1) 
               {
@@ -477,14 +481,17 @@ GOenrichmentAnalysis = function(labels, entrezCodes,
                        eval(parse(text="AnnotationDbi:::Definition(goInfo[[dbind]])"));
                    enrTab$termOntology[rci] = eval(parse(text="AnnotationDbi:::Ontology(goInfo[[dbind]])"));
                  }
-                 geneCodes = intersect(modCodes[[ll]], termCodes[[term]])
-                 biggestTerms[[ont]]$forModule[[ll]][[rci]] = list(termID = termID,
-                         termName = enrTab$termName[rci],
-                         enrichmentP = enrTab$enrichmentP[rci],
-                         termDefinition = enrTab$termDefinition[rci],
-                         termOntology = enrTab$termOntology[rci],
-                         geneCodes = geneCodes,
-                         genePositions = keepEC[match(geneCodes, entrezCodes)]);
+                 if (getTermDetails)
+                 {
+                   geneCodes = intersect(modCodes[[ll]], termCodes[[term]])
+                   biggestTerms[[ont]]$forModule[[ll]][[rci]] = list(termID = termID,
+                           termName = enrTab$termName[rci],
+                           enrichmentP = enrTab$enrichmentP[rci],
+                           termDefinition = enrTab$termDefinition[rci],
+                           termOntology = enrTab$termOntology[rci],
+                           geneCodes = geneCodes,
+                           genePositions = keepEC[match(geneCodes, entrezCodes)]);
+                }
               }
               if (ll==1)
               {
