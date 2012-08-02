@@ -1,6 +1,33 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
 
+2012/08/02: 1.23-1
+
+	. Examples in help files are now shorter to speed up execution as per
+	  CRAN requests.
+
+2012/07/27: 1.23
+
+	. Function userListEnrichment is now improved with more categories of
+	  gene lists
+
+	. DIFF: bugfix in functions corAndPvalue and bicorAndPvalue:
+	  calculation of the Z statistic is now corrected. This bug did not
+	  affect the calculetion of Student t statistics nor the p-values.
+
+	. Function standardScreeningBinaryTrait gains argument areaUnderROC
+	  (default TRUE) that allows the user to turn off AUC calculation and
+	  thus achieve a substantial speedup for large data sets.
+
+	. Function metaAnalysis now by default turns off AUC calculation,
+	  making it much faster on large data sets. The AUC calculation can be
+	  enabled using the new argument getAreaUnderROC.
+
+	. New function randomGLMpredictor that implements an ensemble predictor based on
+	  bootstrap aggregation (bagging) of generalized linear models whose covariates 
+	  are selected using forward stepwise regression according to AIC criteria.
+
+
 2012/06/18: 1.22
 
 	. DIFF: Bugfix in function blockwiseConsensusModules: the module colors are

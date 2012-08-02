@@ -98,8 +98,8 @@ Steve Horvath
 \examples{
 m=50
 y=sample(c(1,2),m,replace=TRUE)
-datExprSignal=simulateModule(scale(y),100)
-datExprNoise=simulateModule(rnorm(m),500)
+datExprSignal=simulateModule(scale(y),30)
+datExprNoise=simulateModule(rnorm(m),150)
 datExpr=data.frame(datExprSignal,datExprNoise)
 
 Result1=standardScreeningBinaryTrait(datExpr,y)

@@ -122,8 +122,8 @@ The values returned by the corFast function may differ from the values returned 
 # Generate a random matrix with 200 rows and 1000 columns
 
 set.seed(10)
-nrow = 200;
-ncol = 1000;
+nrow = 100;
+ncol = 500;
 data = matrix(rnorm(nrow*ncol), nrow, ncol);
 
 ## First test: no missing data
@@ -148,7 +148,8 @@ system.time( {corFast = cor(data, use = 'p')} );
 
 all.equal(corStd, corFast)
 
-# Here the R's standard correlation slows down considerably, while corFast still retains it speed.
+# Here the R's standard correlation slows down considerably, while corFast still retains it speed. Choosing
+# higher ncol above will make the difference more pronounced.
 
 }
 

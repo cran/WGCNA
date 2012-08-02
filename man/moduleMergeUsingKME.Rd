@@ -65,29 +65,29 @@ MEbrown     = sample(1:100,50)
 MEyellow    = sample(1:100,50) 
 MEgreen     = c(MEyellow[1:30], sample(1:100,20))
 MEred	    = c(MEbrown [1:20], sample(1:100,30))
-MEblack	    = c(MEblue  [1:25], sample(1:100,25))
-ME   = data.frame(MEturquoise, MEblue, MEbrown, MEyellow, MEgreen, MEred, MEblack)
-dat1 = simulateDatExpr(ME,1000,c(0.2,0.1,0.08,0.051,0.05,0.042,0.041,0.3), signed=TRUE)
+#MEblack	    = c(MEblue  [1:25], sample(1:100,25))
+ME   = data.frame(MEturquoise, MEblue, MEbrown, MEyellow, MEgreen, MEred)#, MEblack)
+dat1 = simulateDatExpr(ME, 400, c(0.15,0.13,0.12,0.10,0.09,0.09,0.1), signed=TRUE)
 TOM1  = TOMsimilarityFromExpr(dat1$datExpr, networkType="signed")
 tree1 = flashClust(as.dist(1-TOM1),method="average")
 
 ## Here is an example using different mergePercentages, setting an inclusive threshPercent (91)
 colorh1  <- colorPlot <- labels2colors(dat1$allLabels)
-merges = c(65,50,35,20,5)
+merges = c(65,40,20,5)
 for (m in merges)  colorPlot = cbind(colorPlot, 
   moduleMergeUsingKME(dat1$datExpr,colorh1,threshPercent=91, mergePercent=m)$moduleColors)
 plotDendroAndColors(tree1, colorPlot, c("ORIG",merges), dendroLabels=FALSE)
 
 ## Here is an example using a lower reassignScale (so that more genes get reassigned)
 colorh1  <- colorPlot <- labels2colors(dat1$allLabels)
-merges = c(65,50,35,20,5)
+merges = c(65,40,20,5)
 for (m in merges)  colorPlot = cbind(colorPlot, 
   moduleMergeUsingKME(dat1$datExpr,colorh1,threshPercent=91, reassignScale=0.7, mergePercent=m)$moduleColors)
 plotDendroAndColors(tree1, colorPlot, c("ORIG",merges), dendroLabels=FALSE)
 
 ## Here is an example using a less-inclusive threshPercent (75), little if anything is merged.
 colorh1  <- colorPlot <- labels2colors(dat1$allLabels)
-merges = c(65,50,35,20,5)
+merges = c(65,40,20,5)
 for (m in merges)  colorPlot = cbind(colorPlot, 
   moduleMergeUsingKME(dat1$datExpr,colorh1,threshPercent=75, mergePercent=m)$moduleColors)
 plotDendroAndColors(tree1, colorPlot, c("ORIG",merges), dendroLabels=FALSE)

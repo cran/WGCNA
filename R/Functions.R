@@ -4694,30 +4694,52 @@ if (!qValues) {
 #
 #================================================================================
 
-standardScreeningNumericTrait= function (datExpr, yNumeric, corFnc = cor, corOptions = list(use = 'p'),
-                                         qValues = TRUE) 
+standardScreeningNumericTrait= function (datExpr, yNumeric, corFnc = cor, 
+                                         corOptions = list(use = 'p'),
+                                         alternative = c("two.sided", "less", "greater"),
+                                         qValues = TRUE, 
+                                         areaUnderROC = TRUE) 
 { 
-datExpr=data.frame(datExpr)
-    if (length(yNumeric) != dim(datExpr)[[1]]) 
-        stop("the length of the sample trait y does not equal the number of rows of datExpr")
-    corPearson = rep(NA, dim(datExpr)[[2]])
-    pvalueStudent = rep(NA, dim(datExpr)[[2]])
-    AreaUnderROC = rep(NA, dim(datExpr)[[2]])
-    nPresent = Z = rep(NA, dim(datExpr)[[2]])
+  datExpr=as.matrix(datExpr)
+  nGenes = ncol(datExpr);
+  nSamples = nrow(datExpr);
+  if (length(yNumeric) != nSamples)
+      stop("the length of the sample trait y does not equal the number of rows of datExpr")
+  corPearson = rep(NA, nGenes)
+  pvalueStudent = rep(NA, nGenes);
+  AreaUnderROC = rep(NA, nGenes);
+  nPresent = Z = rep(NA, nGenes);
        
   corFnc = match.fun(corFnc);
-  corOptions$x = yNumeric;
-  for (i in 1:dim(datExpr)[[2]]) {
-        corOptions$y = datExpr[,i];
-        #corPearson[i] = as.numeric(cor(yNumeric, datExpr[,i], use = "p"))
-        corPearson[i] = do.call(corFnc, corOptions);
-        no.present=  sum( ! is.na(datExpr[,i])  & ! is.na(yNumeric)   )
-        nPresent[i] = no.present;
-        pvalueStudent[i] = corPvalueStudent(corPearson[i], no.present )
-        AreaUnderROC[i] = rcorr.cens(datExpr[, i], yNumeric, 
-            outx = T)[[1]]
+  corOptions$y = yNumeric;
+  corOptions$x = as.matrix(datExpr);
+  cp = do.call(corFnc, corOptions);
+  corPearson = as.numeric(cp);
+
+  finMat = !is.na(datExpr)
+  np = t(finMat) %*% (!is.na(as.matrix(yNumeric)))
+
+  nPresent = as.numeric(np)
+
+  ia = match.arg(alternative)
+  T = sqrt(np - 2) * corPearson/sqrt(1 - corPearson^2)
+  if (ia == "two.sided") {
+       p = 2 * pt(abs(T), np - 2, lower.tail = FALSE)
   }
+  else if (ia == "less") {
+      p = pt(T, np - 2, lower.tail = TRUE)
+  }
+  else if (ia == "greater") {
+      p = pt(T, np - 2, lower.tail = FALSE)
+  }
+  pvalueStudent = as.numeric(p);
+
   Z = 0.5 * log( (1+corPearson)/(1-corPearson) ) * sqrt(nPresent -2 );
+
+  if (areaUnderROC) for (i in 1:dim(datExpr)[[2]]) 
+  {
+    AreaUnderROC[i] = rcorr.cens(datExpr[, i], yNumeric, outx = T)[[1]]
+  }
 
   q.Student=rep(NA, length(pvalueStudent) )
   rest1= ! is.na(pvalueStudent) 
@@ -4728,22 +4750,19 @@ datExpr=data.frame(datExpr)
       printFlush(paste("Warning in standardScreeningNumericTrait: function qvalue returned an error.\n",
                        "The returned qvalues will be invalid. The qvalue error: ", x, "\n"));
   }
-  if (is.null(dimnames(datExpr)))
+  if (is.null(colnames(datExpr)))
   {
      ID = spaste("Variable.", 1:ncol(datExpr));
   } else
-     ID = dimnames(datExpr)[[2]];
-  if (qValues) 
-  {
-     output = data.frame(ID = ID, cor = corPearson, 
-                      Z = Z, 
-                      pvalueStudent = pvalueStudent, qvalueStudent = q.Student,
-                      AreaUnderROC = AreaUnderROC, nPresentSamples = nPresent)
-  } else
-     output = data.frame(ID = ID, cor = corPearson,
+     ID = colnames(datExpr);
+
+  output = data.frame(ID = ID, cor = corPearson,
                       Z = Z,
-                      pvalueStudent = pvalueStudent, 
-                      AreaUnderROC = AreaUnderROC, nPresentSamples = nPresent)
+                      pvalueStudent = pvalueStudent);
+  if (qValues) output$qvalueStudent = q.Student;
+  if (areaUnderROC) output$AreaUnderROC = AreaUnderROC;
+
+  output$nPresentSamples = nPresent;
 
   output
 }
@@ -5182,6 +5201,7 @@ metaAnalysis = function(multiExpr, multiTrait,
                         metaAnalysisWeights = NULL,
                         corFnc = cor, corOptions = list(use = 'p'),
                         getQvalues = FALSE,
+                        getAreaUnderROC = FALSE,
                         useRankPvalue = TRUE,
                         rankPvalueOptions = list(),
                         setNames = NULL, 
@@ -5250,7 +5270,8 @@ metaAnalysis = function(multiExpr, multiTrait,
     } else {
       setResults[[set]] = standardScreeningNumericTrait(multiExpr[[set]]$data,
                             as.vector(multiTrait[[set]]$data), qValues = getQvalues, 
-                            corFnc = corFnc, corOptions = corOptions);
+                            corFnc = corFnc, corOptions = corOptions, 
+                            areaUnderROC = getAreaUnderROC);
       metaStat = "Z";
       trafo = FALSE;
     }

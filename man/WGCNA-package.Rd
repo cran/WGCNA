@@ -13,8 +13,8 @@ also be used for general association networks specified by a symmetric adjacency
 \details{
 \tabular{ll}{
 Package: \tab WGCNA\cr
-Version: \tab 1.22\cr
-Date: \tab 2012-06-18\cr
+Version: \tab 1.23-1\cr
+Date: \tab 2012-08-02\cr
 Depends: \tab R (>= 2.10), stats, impute, grDevices, dynamicTreeCut (>= 1.20), utils, flashClust,
 Hmisc, splines, reshape \cr
 Suggests: AnnotationDbi, GO.db, org.*.eg.db, infotheo, entropy, minet
@@ -62,6 +62,7 @@ blockwiseModules        Automatic network construction and module
 BloodLists              (data) Gene sets for user enrichment analysis 
 blueWhiteRed            Blue-white-red color sequence
 BrainLists              (data) Gene sets for user enrichment analysis 
+BrainRegionMarkers      (data) Gene Markers for Regions of the Human Brain
 checkAdjMat             Check adjacency matrix
 checkSets               Check structure and retrieve sizes of a group
                         of datasets
@@ -126,6 +127,7 @@ goodSamplesMS           Filter samples with too many missing entries across mult
 greenBlackRed           Green-black-red color sequence
 greenWhiteRed           Green-white-red color sequence
 hubGeneSignificance     Hubgene significance
+ImmunePathwayLists      (data) Immune Pathways with Corresponding Gene Markers
 initProgInd             Inline display of progress
 intramodularConnectivity
                         Calculation of intramodular connectivity
@@ -199,6 +201,7 @@ proportionsInAdmixture
                         Estimation of proportion of pure populations in an admixture
 qvalue                  q-value calculation from package qvalue 
 randIndex               Calculation of (adjusted) Rand index
+randomGLMpredictor	Ensemble predictor based on bagging of generalized linear models 
 rankPvalue              Estimate the p-value for ranking consistently high (or low) on multiple lists
 recutBlockwiseTrees     Repeat blockwise module detection from
                         pre-calculated data
@@ -214,6 +217,7 @@ removePrincipalComponents
                         Remove leading principal components from data
 scaleFreeFitIndex	Calculation of fitting statistics for evaluating scale free topology fit.
 scaleFreePlot           Visual check of scale-free topology
+SCsLists                (data) Stem Cell-Related Genes with Corresponding Gene Markers
 selectBranch            Find a branch in a dendrogram
 setCorrelationPreservation
                         Summary correlation preservation measure

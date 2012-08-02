@@ -17,7 +17,7 @@ corAndPvalue = function(x, y = NULL,
     y = as.matrix(y);
     np = t(finMat) %*% (!is.na(y));
   }
-  Z = 0.5 * log( (1+cor)/(1-cor) ) * sqrt(np-3);
+  Z = 0.5 * log( (1+cor)/(1-cor) ) * sqrt(np-2);
   if (ia=="two.sided")
   {
     T = sqrt(np - 2) * abs(cor)/sqrt(1 - cor^2)
@@ -50,7 +50,7 @@ bicorAndPvalue = function(x, y = NULL, use = "pairwise.complete.obs",
     y = as.matrix(y);
     np = t(finMat) %*% (!is.na(y));
   }
-  Z = 0.5 * log( (1+cor)/(1-cor) ) * sqrt(np-3);
+  Z = 0.5 * log( (1+cor)/(1-cor) ) * sqrt(np-2);
   if (ia=="two.sided")
   {
     T = sqrt(np - 2) * abs(cor)/sqrt(1 - cor^2)
