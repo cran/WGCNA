@@ -151,7 +151,7 @@ Jeremy A. Miller, Steve Horvath, Peter Langfelder, Chaochao Cai
     # number of columns (e.g. observations or microarrays)
     m=60
     # number of rows (e.g. variables or probes on a microarray) 
-    n=3000
+    n=500
     # seed module eigenvector for the simulateModule function
     MEtrue=rnorm(m)
     # numeric data frame of n rows and m columns
@@ -202,7 +202,7 @@ Jeremy A. Miller, Steve Horvath, Peter Langfelder, Chaochao Cai
     # Using collapseRows to calculate the module eigengene.
     # First we create some sample data as in example 1 (or use your own!)
     m=60
-    n=3000
+    n=500
     MEtrue=rnorm(m)
     datNumeric=data.frame(t(simulateModule(MEtrue,n)))
 

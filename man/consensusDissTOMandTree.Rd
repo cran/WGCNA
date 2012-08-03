@@ -48,8 +48,8 @@ MEyellow    = sample(1:100,50)
 MEgreen     = sample(1:100,50)
 
 ME   = data.frame(MEturquoise, MEblue, MEbrown, MEyellow, MEgreen)
-dat1 = simulateDatExpr(ME,1000,c(0.2,  0.1,  0.05,  0.03,  0.02,  0.3), signed=TRUE)
-dat2 = simulateDatExpr(ME,1000,c(0.22, 0.11, 0.055, 0.033, 0.022, 0.33),signed=TRUE)
+dat1 = simulateDatExpr(ME,300,c(0.2,  0.10,  0.10,  0.10,  0.10,  0.2), signed=TRUE)
+dat2 = simulateDatExpr(ME,300,c(0.18, 0.11, 0.11, 0.09, 0.11, 0.23),signed=TRUE)
 multiExpr = list(S1=list(data=dat1$datExpr),S2=list(data=dat2$datExpr))
 softPower=8
 

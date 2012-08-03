@@ -30,36 +30,29 @@ substantial amount of CPU time has to be invested into console output. See examp
 }
 \author{ Peter Langfelder }
 \examples{
-if (TRUE)
+max = 10;
+prog = initProgInd("Counting: ", "done");
+for (c in 1:max)
 {
-  max = 20;
-  prog = initProgInd("Counting: ", "done");
-  for (c in 1:max)
-  {
-    Sys.sleep(0.3);
-    prog = updateProgInd(c/max, prog);
-  }
-  printFlush("");
+  Sys.sleep(0.25);
+  prog = updateProgInd(c/max, prog);
 }
+printFlush("");
 
-if (TRUE)
+printFlush("Example 2:");
+prog = initProgInd();
+for (c in 1:max)
 {
-  max = 20;
-  printFlush("Example 2:");
-  prog = initProgInd();
-  for (c in 1:max)
-  {
-    Sys.sleep(0.3);
-    prog = updateProgInd(c/max, prog);
-  }
-  printFlush("");
+  Sys.sleep(0.25);
+  prog = updateProgInd(c/max, prog);
 }
+printFlush("");
 
 ## Example of a significant slowdown:
 
 ## Without progress indicator:
 
-system.time( {a = 0; for (i in 1:100000) a = a+i; } )
+system.time( {a = 0; for (i in 1:10000) a = a+i; } )
 
 ## With progress indicator, some 100 times slower:
 
@@ -67,10 +60,10 @@ system.time(
 {
   prog = initProgInd("Counting: ", "done");
   a = 0; 
-  for (i in 1:100000) 
+  for (i in 1:10000) 
   {
     a = a+i; 
-    prog = updateProgInd(i/100000, prog);
+    prog = updateProgInd(i/10000, prog);
   }
 } 
 )

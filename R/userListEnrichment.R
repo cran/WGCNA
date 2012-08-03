@@ -1,7 +1,8 @@
 #
 userListEnrichment <- function (geneR, labelR, fnIn = NULL, catNmIn = fnIn, nameOut = "enrichment.csv", 
     useBrainLists = FALSE, useBloodAtlases = FALSE, omitCategories = "grey", 
-    outputCorrectedPvalues = TRUE, useStemCellLists = FALSE, outputGenes=FALSE, minGenesInCategory=1) 
+    outputCorrectedPvalues = TRUE, useStemCellLists = FALSE, outputGenes = FALSE, 
+  	minGenesInCategory = 1, useBrainRegionMarkers = FALSE, useImmunePathwayLists = FALSE) 
 {
     if (length(geneR) != length(labelR)) 
         stop("geneR and labelR must have same number of elements.")
@@ -59,6 +60,20 @@ userListEnrichment <- function (geneR, labelR, fnIn = NULL, catNmIn = fnIn, name
             "")
         glIn = rbind(glIn, cbind(SCsLists, Type = rep("StemCells", nrow(SCsLists))))
     }
+	  if (useBrainRegionMarkers) {
+        if (!(exists("BrainRegionMarkers"))) BrainRegionMarkers = NULL;
+        data("BrainRegionMarkers",envir=sys.frame(sys.nframe()));
+        write("Brain region markers from http://human.brain-map.org/ -- see help file for details.", 
+            "")
+        glIn = rbind(glIn, cbind(BrainRegionMarkers, Type = rep("HumanBrainRegions", nrow(BrainRegionMarkers))))
+    }
+    if (useImmunePathwayLists) { 
+        if (!(exists("ImmunePathwayLists"))) ImmunePathwayLists = NULL;
+        data("ImmunePathwayLists",envir=sys.frame(sys.nframe()));
+        write("See help file for details regarding immune pathways.",
+		        "")
+	      glIn = rbind(glIn, cbind(ImmunePathwayLists, Type = rep("Immune", nrow(ImmunePathwayLists))))
+    }
     removeDups = unique(paste(as.character(glIn[, 1]), as.character(glIn[, 
         2]), as.character(glIn[, 3]), sep = "@#$%"))
     if (length(removeDups) < length(glIn[, 1])) 
@@ -108,7 +123,6 @@ userListEnrichment <- function (geneR, labelR, fnIn = NULL, catNmIn = fnIn, name
         4])), ]);
     row.names(results$sigOverlaps) = NULL;
     
-    ## NEW CODE START
     rSig  = results$sigOverlaps
     rCats = paste(rSig$InputCategories,"--",rSig$UserDefinedCategories)
     rNums <- rGenes <- NULL
@@ -122,8 +136,7 @@ userListEnrichment <- function (geneR, labelR, fnIn = NULL, catNmIn = fnIn, name
     rSig = rSig[rSig$NumGenes>=minGenesInCategory,]
     if(!outputGenes) rSig = rSig[,1:4]
     results$sigOverlaps = rSig
-    ## NEW CODE END
-
+ 
     write.csv(results$sigOverlaps, nameOut, row.names = FALSE)
     write(paste(length(namesOv), "comparisons were successfully performed."), 
         "")

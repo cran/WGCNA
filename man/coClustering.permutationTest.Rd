@@ -78,13 +78,14 @@ Reproducible? PLoS Comput Biol 7(1): e1001057. Co-clustering is discussed in the
 \examples{
   set.seed(1);
   nModules = 5;
-  nGenes = 500;
+  nGenes = 100;
   cl1 = sample(c(1:nModules), nGenes, replace = TRUE);
   cl2 = sample(c(1:nModules), nGenes, replace = TRUE);
   
   cc = coClustering(cl1, cl2)
 
-  ccPerm = coClustering.permutationTest(cl1, cl2, verbose = 1);
+  # Choose a low number of permutations to make the example fast
+  ccPerm = coClustering.permutationTest(cl1, cl2, nPermutations = 20, verbose = 1);
 
   ccPerm$observed
   ccPerm$Z
@@ -95,7 +96,7 @@ Reproducible? PLoS Comput Biol 7(1): e1001057. Co-clustering is discussed in the
   from1 = sample(c(TRUE, FALSE), nGenes, replace = TRUE);
   cl3[from1] = cl1[from1];
 
-  ccPerm = coClustering.permutationTest(cl1, cl3, verbose = 1);
+  ccPerm = coClustering.permutationTest(cl1, cl3, nPermutations = 20, verbose = 1);
 
   # observed co-clustering is higher than before:
   ccPerm$observed

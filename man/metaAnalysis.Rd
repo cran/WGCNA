@@ -18,6 +18,7 @@ metaAnalysis(multiExpr, multiTrait,
              metaAnalysisWeights = NULL, 
              corFnc = cor, corOptions = list(use = "p"), 
              getQvalues = FALSE, 
+             getAreaUnderROC = FALSE,
              useRankPvalue = TRUE,
              rankPvalueOptions = list(),
              setNames = NULL, 
@@ -52,6 +53,10 @@ robust alternative, \code{\link{bicor}}.
 }
   \item{getQvalues}{
    Logical: should q-values (FDRs) be calculated?
+}
+  \item{getAreaUnderROC}{
+   Logical: should area under the ROC be calculated? 
+   Caution, enabling the calculation will slow the function down considerably for large data sets.
 }
   \item{useRankPvalue}{ Logical: should the \code{\link{rankPvalue}} function be used to obtain alternative
 meta-analysis statistics?}

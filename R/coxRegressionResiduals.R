@@ -1,4 +1,5 @@
 ## The function is currently defined as
+
 coxRegressionResiduals = function(time,event,datCovariates=NULL) 
 {
 if (eval(parse(text= '!require("survival")'))) 
@@ -12,7 +13,7 @@ coxmodel=eval(parse(text = "survival:::coxph(Surv(time, event) ~ 1 , na.action =
 if (  !is.null(datCovariates) ){
 if ( dim(as.matrix(datCovariates))[[1]] !=length(event) ) stop("Error: the number of rows of the input matrix datCovariates is unequal to the number of observations specified in the vector event. In R language: dim(as.matrix(datCovariates))[[1]] !=length(event)")
 coxmodel=eval(parse(
-    text = "survival:::coxph(Surv(time, event) ~ . ,data=datCovariates, na.action = na.exclude)"));
+    text = "survival:::coxph(Surv(time, event) ~ . , data=datCovariates, na.action = na.exclude)"));
 } # end of if
 datResiduals=data.frame(martingale=residuals(coxmodel,type="martingale"),
                         deviance=residuals(coxmodel,type="deviance"))
