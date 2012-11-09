@@ -12,7 +12,10 @@ verboseScatterplot(x, y,
                    main = "", xlab = NA, ylab = NA, 
                    cex = 1, cex.axis = 1.5, cex.lab = 1.5, cex.main = 1.5, 
                    abline = FALSE, abline.color = 1, abline.lty = 1,
-                   corLabel = corFnc, ...)
+                   corLabel = corFnc, 
+                   col = 1, bg = 0,
+                   lmFnc = lm,
+                   ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -54,6 +57,14 @@ be determined from the full vectors \code{x} and \code{y}.}
 
   \item{corLabel}{ character string to be used as the label for the correlation value printed in the main
 title. }
+
+  \item{col}{color of the plotted symbols. Recycled as necessary. }
+
+  \item{bg}{fill color of the plotted symbols (used for certain symbols). Recycled as necessary. }
+
+  \item{lmFnc}{linear model fit function. Used to calculate the linear model fit line if \code{'abline'} is
+               \code{TRUE}. For example, robust linear models are implemented in the 
+               function \code{\link[MASS]{rlm}}. }
 
   \item{\dots}{ other arguments to the function \code{\link{plot}}. }
 }

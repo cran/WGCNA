@@ -24,6 +24,7 @@ GOenrichmentAnalysis(labels,
                      leaveOutLabel = NULL,
                      nBestP = 10, pCut = NULL, 
                      nBiggest = 0, 
+                     getTermDetails = TRUE,
                      verbose = 2, indent = 0)
 }
 \arguments{
@@ -86,6 +87,9 @@ more significant than \code{pCut} will be returned. If \code{pCut} is given, \co
 genes in each cluster can be returned by specifying the number of biggest terms per cluster to be
 returned. This may be useful for development and testing purposes. }
 
+  \item{getTermDetails}{ logical indicating whether detailed information on the most enriched terms should
+be returned. }
+
   \item{verbose}{ integer specifying the verbosity of the function. Zero means silent, positive values
 will cause the function to print progress reports.}
 
@@ -132,7 +136,8 @@ The name of each component is set appropriately. Each inner list contains two co
 \code{enrichment} is
 a data frame containing the highest enriched terms for each module; and \code{forModule} is a list of
 lists with one inner list per module, appropriately named. Each inner list contains one component per term.
-This component is yet another list and contains components \code{termName} (term name), 
+If input \code{getTermDeyails} is \code{TRUE}, 
+this component is yet another list and contains components \code{termName} (term name), 
 \code{enrichmentP} (enrichment P value), \code{termDefinition} (GO term definition), 
 \code{termOntology} (GO term ontology), \code{geneCodes} (Entrez codes of module genes in this term),
 \code{genePositions} (indices of the genes listed in \code{geneCodes} within the given \code{labels}). 

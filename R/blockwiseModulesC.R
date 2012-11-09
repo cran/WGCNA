@@ -78,7 +78,7 @@ TOMsimilarityFromExpr = function(datExpr, corType = "pearson", networkType = "un
         as.integer(fallback),
         as.integer(cosineCorrelation),
         tom = as.double(tom), warn = as.integer(warn), as.integer(nThreads), 
-        as.integer(verbose), as.integer(indent), NAOK = TRUE, DUP = FALSE) 
+        as.integer(verbose), as.integer(indent), NAOK = TRUE, DUP = FALSE, PACKAGE = "WGCNA") 
 
   # FIXME: output warnings if necessary
   tom[,] = tomResult$tom
@@ -119,7 +119,7 @@ TOMsimilarity = function(adjMat, TOMType = "unsigned", TOMDenom = "min", verbose
   tomResult = .C("tomSimilarityFromAdj", as.double(as.matrix(adjMat)), as.integer(nGenes),
         as.integer(TOMTypeC), 
         as.integer(TOMDenomC),
-        tom = as.double(tom), as.integer(verbose), as.integer(indent), DUP = FALSE) 
+        tom = as.double(tom), as.integer(verbose), as.integer(indent), DUP = FALSE, PACKAGE = "WGCNA") 
 
   tom[,] = tomResult$tom;
   diag(tom) = 1;
@@ -306,7 +306,7 @@ blockwiseModules = function(datExpr, blocks = NULL,
         as.integer(fallback),
         as.integer(cosineCorrelation),
         tom = as.double(dissTom), warn = as.integer(warn), as.integer(nThreads),
-        as.integer(callVerb), as.integer(callInd), NAOK = TRUE, DUP = FALSE) 
+        as.integer(callVerb), as.integer(callInd), NAOK = TRUE, DUP = FALSE, PACKAGE = "WGCNA") 
 
     # FIXME: warn if necessary
 
@@ -1264,7 +1264,7 @@ blockwiseIndividualTOMs = function(multiExpr,
           as.integer(fallback),
           as.integer(cosineCorrelation), 
           tom = as.double(tom), as.integer(warn), as.integer(nThreads),
-          as.integer(callVerb), as.integer(callInd), NAOK = TRUE, DUP = FALSE)
+          as.integer(callVerb), as.integer(callInd), NAOK = TRUE, DUP = FALSE, PACKAGE = "WGCNA")
   
       #FIXME: warn if necessary
 
@@ -1710,7 +1710,7 @@ blockwiseConsensusModules = function(multiExpr,
           which = rep(0, ncol(setChunks));
           whichmin = .C("minWhichMin", as.double(setChunks), 
                         as.integer(nrow(setChunks)), as.integer(ncol(setChunks)),
-                        as.double(min), as.double(which), DUP = FALSE);
+                        as.double(min), as.double(which), DUP = FALSE, PACKAGE = "WGCNA");
           min = whichmin[[4]];
           which = whichmin[[5]] + 1;
           rm(whichmin); collectGarbage();
@@ -2696,7 +2696,7 @@ projectiveKMeans = function (
     nearestDist = rep(0, nGenes);
     nearest = rep(0, nGenes);
     minRes = .C("minWhichMin", as.double(dst), as.integer(nCenters), as.integer(nGenes), 
-                as.double(nearestDist), as.double(nearest), DUP = FALSE);
+                as.double(nearestDist), as.double(nearest), DUP = FALSE, PACKAGE = "WGCNA");
     nearestDist = minRes[[4]];
     nearest = minRes[[5]]+1;
     rm(minRes); collectGarbage();
@@ -2846,11 +2846,11 @@ consensusProjectiveKMeans = function (
       if (useMean)
       {
         minRes = .C("mean", as.double(dstX), as.integer(nSets), as.integer(nGenes * nChanged), 
-                    as.double(dst), DUP = FALSE);
+                    as.double(dst), DUP = FALSE, PACKAGE = "WGCNA");
       } else {
         which = array(0, c(nChanged, nGenes));
         minRes = .C("minWhichMin", as.double(dstX), as.integer(nSets), as.integer(nGenes * nChanged), 
-                    as.double(dst), as.double(which), DUP = FALSE);
+                    as.double(dst), as.double(which), DUP = FALSE, PACKAGE = "WGCNA");
       }
       dstAll[changed, ] = -minRes[[4]];
     }
@@ -2960,7 +2960,7 @@ consensusProjectiveKMeans = function (
     nearestDist = rep(0, nGenes);
     nearest = rep(0, nGenes);
     minRes = .C("minWhichMin", as.double(dst), as.integer(nCenters), as.integer(nGenes), 
-                as.double(nearestDist), as.double(nearest), DUP = FALSE);
+                as.double(nearestDist), as.double(nearest), DUP = FALSE, PACKAGE = "WGCNA");
     nearestDist = minRes[[4]];
     nearest = minRes[[5]]+1;
     changed = NULL;
@@ -3034,7 +3034,7 @@ consensusProjectiveKMeans = function (
     dst = matrix(0, nC, nC);
     which = matrix(0, nC, nC);
     minRes = .C("minWhichMin", as.double(distX), as.integer(nSets), as.integer(nC*nC),
-                as.double(dst), as.double(which));
+                as.double(dst), as.double(which), PACKAGE = "WGCNA");
     dst[,] = -minRes[[4]];
     dst;
   }

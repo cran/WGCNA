@@ -13,8 +13,8 @@ also be used for general association networks specified by a symmetric adjacency
 \details{
 \tabular{ll}{
 Package: \tab WGCNA\cr
-Version: \tab 1.23-1\cr
-Date: \tab 2012-08-02\cr
+Version: \tab 1.25\cr
+Date: \tab 2012-11-06\cr
 Depends: \tab R (>= 2.10), stats, impute, grDevices, dynamicTreeCut (>= 1.20), utils, flashClust,
 Hmisc, splines, reshape \cr
 Suggests: AnnotationDbi, GO.db, org.*.eg.db, infotheo, entropy, minet
@@ -248,6 +248,7 @@ stdErr                  Standard error
 stratifiedBarplot	Bar plots of data across two splitting parameters
 swapTwoBranches         Swap branches in a dendrogram
 TrueTrait               Estimate the true trait underlying a list of surrogate markers
+transposeBigData        Block-by-block transpose of large matrices
 unsignedAdjacency       Calculation of unsigned adjacency
 userListEnrichment      Measure enrichment between inputted and user-defined lists
 vectorTOM               Topological overlap for a subset of the whole set of genes

@@ -126,7 +126,7 @@ userListEnrichment <- function (geneR, labelR, fnIn = NULL, catNmIn = fnIn, name
     rSig  = results$sigOverlaps
     rCats = paste(rSig$InputCategories,"--",rSig$UserDefinedCategories)
     rNums <- rGenes <- NULL
-    for (i in 1:dim(rSig)[1]){
+    if (nrow(rSig) > 0) for (i in 1:dim(rSig)[1]) {
       rGn    = results$ovGenes[[which(names(results$ovGenes)==rCats[i])]]
       rNums  = c(rNums,length(rGn))
       rGenes = c(rGenes,paste(rGn,collapse=", "))

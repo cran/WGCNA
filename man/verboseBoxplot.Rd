@@ -3,11 +3,13 @@
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{ Boxplot annotated by a Kruskal-Wallis p-value}
 \description{
-  Plot a boxplot annotated by the Kruskal-Wallis p-value.
+  Plot a boxplot annotated by the Kruskal-Wallis p-value. Uses the function \code{\link[graphics]{boxplot}}
+for the actual drawing.
 }
 \usage{
 verboseBoxplot(x, g, main = "", xlab = NA, ylab = NA, 
-               cex = 1, cex.axis = 1.5, cex.lab = 1.5, cex.main = 1.5, ...)
+               cex = 1, cex.axis = 1.5, cex.lab = 1.5, cex.main = 1.5, 
+               notch = TRUE, varwidth = TRUE, ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -20,6 +22,11 @@ verboseBoxplot(x, g, main = "", xlab = NA, ylab = NA,
   \item{cex.axis}{ character expansion factor for axis annotations. }
   \item{cex.lab}{ character expansion factor for axis labels. }
   \item{cex.main}{ character expansion factor for the main title. }
+  \item{notch}{logical: should the notches be drawn? See \code{\link[graphics]{boxplot}} and
+\code{\link{boxplot.stats}} for details. }
+  \item{varwidth}{logical: if \code{TRUE}, the boxes are drawn with widths
+          proportional to the square-roots of the number of
+          observations in the groups.}
   \item{\dots}{ other arguments to the function \code{\link{boxplot}}. Of note is the argument \code{las}
 that specifies label orientation. Value \code{las=1} will result in horizontal labels (the default), while
 \code{las=2} will result in vertical labels, useful when the labels are long.}

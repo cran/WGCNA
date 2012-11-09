@@ -4,8 +4,8 @@ colQuantileC = function(data, p)
 {  
   data = as.matrix(data)
 
-  if (sum(is.na(data))>0) 
-    stop("Missing values are not handled correctly yet. Sorry!");
+  #if (sum(is.na(data))>0) 
+  #  stop("Missing values are not handled correctly yet. Sorry!");
   ncol = ncol(data);
   nrow = nrow(data);
   quantiles = rep(0, ncol);
@@ -17,7 +17,7 @@ colQuantileC = function(data, p)
     stop(paste("Probability", p, "is out of the allowed range between 0 and 1."));
 
   res = .C("quantileC", data = as.double(data), nrow = as.integer(nrow), ncol = as.integer(ncol), 
-           p = as.double(p), quantiles = as.double(quantiles), DUP = FALSE);
+           p = as.double(p), quantiles = as.double(quantiles), DUP = FALSE, NAOK = TRUE);
 
   res$quantiles;
 }

@@ -632,11 +632,11 @@ labels2colors = function(labels, zeroIsGrey = TRUE, colorSeq = NULL, naColor = "
     
     if (commonColorCode)
     {
-      factors = factor(c(labels))
+      factors = factor(c(as.matrix(as.data.frame(labels))))
       nLabels = as.numeric(factors)
       dim(nLabels)= dim(labels);
     } else {
-      labels = as.matrix(labels);
+      labels = as.matrix(as.data.frame(labels));
       factors = list();
       for (c in 1:ncol(labels))
         factors[[c]] = factor(labels[, c]);
@@ -724,6 +724,13 @@ fixDataStructure = function(data, verbose = 0, indent = 0)
 #-------------------------------------------------------------------------------------------
 # Checks sets for consistency and returns some diagnostics.
 
+.permissiveDim = function(x)
+{
+  d = dim(x);
+  if (is.null(d)) return( c(length(x), 1))
+  return(d)
+}
+
 checkSets = function(data, checkStructure = FALSE, useSets = NULL)
 {
   nSets = length(data);
@@ -742,10 +749,10 @@ checkSets = function(data, checkStructure = FALSE, useSets = NULL)
     }
   } else {
     nSamples = vector(length = nSets);
-    nGenes = dim(data[[useSets[1]]]$data)[2];
+    nGenes = .permissiveDim(data[[useSets[1]]]$data)[2];
     for (set in useSets) 
     {
-      if (nGenes!=dim(data[[set]]$data)[2])
+      if (nGenes!=.permissiveDim(data[[set]]$data)[2])
       {
         if (checkStructure) 
         {
@@ -754,7 +761,7 @@ checkSets = function(data, checkStructure = FALSE, useSets = NULL)
            stop(paste("Incompatible number of genes in set 1 and", set));
         }
       }
-      nSamples[set] = dim(data[[set]]$data)[1];
+      nSamples[set] = .permissiveDim(data[[set]]$data)[1];
     }
   }
 

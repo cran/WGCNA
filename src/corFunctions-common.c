@@ -38,7 +38,7 @@
 
 double median(double * x, int n, int copy, int * err)
 {
-  double * xx;
+  double * xx, res;
   if (copy)
   {
     if ( (xx=malloc(n * sizeof(double)))==NULL ) 
@@ -66,13 +66,14 @@ double median(double * x, int n, int copy, int * err)
   // Any non-NA's left?
 
   if (bound<0)
-    return NA_REAL;
-
+    res = NA_REAL;
+  else 
   // yes, return the appropriate pivot. 
-  //
-  return pivot(xx, bound+1, ( 1.0 * bound)/2);
+    res = pivot(xx, bound+1, ( 1.0 * bound)/2);
 
   if (copy) free(xx);
+
+  return res;
 
 }
 
@@ -91,6 +92,8 @@ double median(double * x, int n, int copy, int * err)
 double quantile(double * x, int n, double q, int copy, int * err)
 {
   double * xx;
+  double res;
+
   if (copy)
   {
     if ( (xx=malloc(n * sizeof(double)))==NULL ) 
@@ -118,13 +121,14 @@ double quantile(double * x, int n, double q, int copy, int * err)
   // Any non-NA's left?
 
   if (bound<0)
-    return NA_REAL;
-
+    res = NA_REAL;
+  else
   // yes, return the appropriate pivot. 
-  //
-  return pivot(xx, bound+1, ( 1.0 * bound)*q);
+    res = pivot(xx, bound+1, ( 1.0 * bound)*q);
 
   if (copy) free(xx);
+
+  return res;
 
 }
 

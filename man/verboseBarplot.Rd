@@ -14,7 +14,7 @@ verboseBarplot(x, g,
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{x}{ numerical vector of data whose group means are to be plotted }
+  \item{x}{ numerical or binary vector of data whose group means are to be plotted }
   \item{g}{ a factor or a an object coercible to a factor giving the groups whose means are to be
 calculated. }
   \item{main}{ main title for the plot.}
@@ -40,7 +40,8 @@ error. If you want only plus one standard error (not minus) choose \code{two.sid
 of standard errors can be determined with the input \code{numberStandardErrors}. For example, if you want
 a 95\% confidence interval around the mean, choose \code{numberStandardErrors=2}. If you don't want any
 standard errors set \code{numberStandardErrors=-1}.  The function also outputs the p-value of a Kruskal
-Wallis test, which is a non-parametric multi group comparison test. Alternatively, one can use Analysis
+Wallis test (Fisher test for binary input data), 
+which is a non-parametric multi group comparison test. Alternatively, one can use Analysis
 of Variance (Anova) to compute a p-value by setting \code{AnovaTest=TRUE}.  Anova is a generalization of
 the Student t-test to multiple groups. In case of two groups, the Anova p-value equals the Student t-test
 p-value. Anova should only be used if \code{x} follows a normal distribution. Anova also assumes

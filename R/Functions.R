@@ -197,25 +197,28 @@ datout[i, 11] = Heterogeneity
 } # end of function pickHardThreshold
 
 
-
-# ===========================================================
+#==============================================================================================
+#
+# pickSoftThreshold
+#
+#===============================================================================================
 # The function pickSoftThreshold allows one to estimate the power parameter when using
 # a soft thresholding approach with the use of the power function AF(s)=s^Power
 # The removeFirst option removes the first point (k=1, P(k=1)) from the regression fit.
 # PL: a rewrite that splits the data into a few blocks.
 # SH: more netowkr concepts added.
-
+# PL: re-written for parallel processing
 
 pickSoftThreshold = function (data, dataIsExpr = TRUE, RsquaredCut = 0.85, 
     powerVector = c(seq(1, 10, by = 1), seq(12, 20, by = 2)), removeFirst = FALSE, nBreaks = 10, 
-    blockSize = 1000, corFnc = "cor", corOptions = "use = 'p'", 
+    blockSize = NULL, corFnc = cor, corOptions = list(use = 'p'), 
     networkType = "unsigned", moreNetworkConcepts=FALSE, verbose = 0, indent = 0)
 {
     intType = charmatch(networkType, .networkTypes)
     if (is.na(intType)) 
         stop(paste("Unrecognized 'networkType'. Recognized values are", 
             paste(.networkTypes, collapse = ", ")))
-    nGenes = dim(data)[[2]]
+    nGenes = ncol(data);
     if (nGenes<3) 
     { 
        stop("The input data data contain fewer than 3 rows (nodes).", 
@@ -227,6 +230,13 @@ pickSoftThreshold = function (data, dataIsExpr = TRUE, RsquaredCut = 0.85,
       if (any(diag(data)!=1)) diag(data) = 1;
     }
 
+    if (is.null(blockSize))
+    {
+      blockSize = blockSize(nGenes, rectangularBlocks = TRUE);
+      if (verbose > 0) 
+        printFlush(spaste("pickSoftThreshold: will use block size ", blockSize, "."))
+    }
+   
     colname1 = c("Power", "SFT.R.sq", "slope", "truncated R.sq", 
                  "mean(k)", "median(k)", "max(k)")
     if(moreNetworkConcepts) 
@@ -243,45 +253,70 @@ pickSoftThreshold = function (data, dataIsExpr = TRUE, RsquaredCut = 0.85,
             pind = initProgInd()
         else cat("\n")
     }
+
+    # if we're using one of WGNCA's own correlation functions, set the number of threads to 1.
+    corFnc = match.fun(corFnc);
+    corFormals = formals(corFnc);
+    if ("nThreads" %in% names(corFormals)) corOptions$nThreads = 1;
+
+    # Resulting connectivities
     datk = matrix(0, nrow = nGenes, ncol = length(powerVector))
+
+    # Number of threads. In this case I need this explicitly.
+    nThreads = WGCNAnThreads();
+
+    nPowers = length(powerVector);
+
+    # Main loop
     startG = 1
     while (startG <= nGenes) 
     {
-        endG = startG + blockSize - 1
-        if (endG > nGenes) 
-            endG = nGenes
-        if (verbose > 1) 
-            printFlush(paste(spaces, "  ..working on genes", 
-                startG, "through", endG, "of ", nGenes))
+      endG = min (startG + blockSize - 1, nGenes)
+
+      if (verbose > 1) 
+          printFlush(paste(spaces, "  ..working on genes", 
+              startG, "through", endG, "of ", nGenes))
+
+      nBlockGenes = endG - startG + 1;
+      jobs = allocateJobs(nBlockGenes, nThreads);
+      # This assumes that the non-zero length allocations
+      # precede the zero-length ones
+      actualThreads = which(sapply(jobs, length) > 0); 
+
+      datk[ c(startG:endG), ] = foreach(t = actualThreads, .combine = rbind) %dopar% 
+      {
+        useGenes = c(startG:endG)[ jobs[[t]] ]
+        nGenes1 = length(useGenes);
         if (dataIsExpr)
         {
-          corEval = parse(text = paste(corFnc, "(data, data[, c(startG:endG)]", 
-              prepComma(corOptions), ")"))
-          corx = eval(corEval)
+          corOptions$x = data;
+          corOptions$y = data[ , useGenes];
+          corx = do.call(corFnc, corOptions);
           if (intType == 1) {
               corx = abs(corx)
-          }
-          else if (intType == 2) {
+          } else if (intType == 2) {
               corx = (1 + corx)/2
-          }
-          else if (intType == 3) {
+          } else if (intType == 3) {
               corx[corx < 0] = 0
           }
           if (sum(is.na(corx)) != 0) 
               warning(paste("Some correlations are NA in block", 
                   startG, ":", endG, "."))
         } else {
-          corx = data[, c(startG:endG)];
+          corx = data[, useGenes];
         }
-        for (j in c(1:length(powerVector))) {
-            datk[c(startG:endG), j] = colSums(corx^powerVector[j], na.rm = TRUE) - 1;
+        datk.local = matrix(NA, nGenes1, nPowers);
+        for (j in 1:nPowers) {
+            datk.local[, j] = colSums(corx^powerVector[j], na.rm = TRUE) - 1;
         }
-        startG = endG + 1
-        if (verbose == 1) 
-            pind = updateProgInd(endG/nGenes, pind)
+        datk.local;
+      } # End of %dopar% evaluation
+      # Move to the next block of genes.
+      startG = endG + 1
+      if (verbose == 1) pind = updateProgInd(endG/nGenes, pind)
     }
-    if (verbose == 1) 
-        cat("\n\n")
+    if (verbose == 1) printFlush("");
+
     for (i in c(1:length(powerVector))) 
     {
         khelp= datk[, i] 
@@ -833,6 +868,7 @@ plotColorUnderTree = function(
   jIndex = nRows;
 
   if (is.null(rowLabels)) rowLabels = c(1:nColorRows);
+  C[is.na(C)] = "grey"
   for (j in 1:nColorRows)
   {
     jj = jIndex;
@@ -1332,7 +1368,10 @@ verboseScatterplot = function(x, y,
                              main ="", xlab = NA, ylab = NA, cex=1, cex.axis = 1.5,
                              cex.lab = 1.5, cex.main = 1.5, abline = FALSE, 
                              abline.color = 1, abline.lty = 1,
-                             corLabel = corFnc, ...) 
+                             corLabel = corFnc, 
+                             col = 1, bg = 0, 
+                             lmFnc = lm,
+                             ...) 
 {
   if ( is.na(xlab) ) xlab= as.character(match.call(expand.dots = FALSE)$x)
   if ( is.na(ylab) ) ylab= as.character(match.call(expand.dots = FALSE)$y)
@@ -1351,21 +1390,25 @@ verboseScatterplot = function(x, y,
      mainX = paste(main, " ", corLabel, "=", cor, ", p",corp, sep="");
   } else
      mainX = main;
+
   if (!is.null(sample))
   {
     if (length(sample) == 1)
     {
       sample = sample(length(x), sample)
     } 
+    if (length(col)<length(x)) col = rep(col, ceiling(length(x)/length(col)));
+    if (length(bg )<length(x))  bg = rep(bg,  ceiling(length(x)/length(bg)));
     plot(x[sample], y[sample], main=mainX, xlab=xlab, ylab=ylab, cex=cex, 
-         cex.axis=cex.axis, cex.lab=cex.lab, cex.main=cex.main, ...)
+         cex.axis=cex.axis, cex.lab=cex.lab, cex.main=cex.main, col = col[sample], bg = bg[sample], ...)
   } else {
     plot(x, y, main=mainX, xlab=xlab, ylab=ylab, cex=cex, 
-         cex.axis=cex.axis, cex.lab=cex.lab, cex.main=cex.main, ...)
+         cex.axis=cex.axis, cex.lab=cex.lab, cex.main=cex.main, col = col, bg = bg, ...)
   }
   if (abline)
   {
-    fit = lm(y~x);
+    lmFnc = match.fun(lmFnc);
+    fit = lmFnc(y~x);
     abline(reg = fit, col = abline.color, lty = abline.lty);
   }
   invisible(sample);
@@ -1373,7 +1416,7 @@ verboseScatterplot = function(x, y,
 
 verboseBoxplot = function(x, g,
                           main ="", xlab = NA, ylab = NA, cex=1, cex.axis = 1.5,
-                          cex.lab = 1.5, cex.main = 1.5, ...) 
+                          cex.lab = 1.5, cex.main = 1.5, notch = TRUE, varwidth = TRUE, ...) 
 {
   if ( is.na(xlab) ) xlab= as.character(match.call(expand.dots = FALSE)$g)
   #print(xlab1)
@@ -1381,7 +1424,7 @@ verboseBoxplot = function(x, g,
   #print(ylab1)
   p1 = signif(kruskal.test(x, factor(g) )$p.value,2)
   #if (p1< 5.0*10^(-22) ) p1="< 5e-22"
-  boxplot(x~factor(g), notch = TRUE, varwidth = TRUE, 
+  boxplot(x~factor(g), notch = notch, varwidth = varwidth,
           main=paste(main,"p =",as.character(p1) ),
           xlab=xlab, ylab=ylab, cex=cex, cex.axis=cex.axis,cex.lab=cex.lab, cex.main=cex.main, ...)
 }
@@ -1439,10 +1482,15 @@ verboseBarplot = function (x, g,  main = "",
   } # end of function err.bp
   if ( is.na(ylab) ) ylab= as.character(match.call(expand.dots = FALSE)$x)
   if ( is.na(xlab) ) xlab= as.character( match.call(expand.dots = FALSE)$g)
-  p1=signif(kruskal.test(x, factor(g) )$p.value,2)
+
   Means1= tapply(x, factor(g), mean, na.rm=TRUE)
-  p1=signif(kruskal.test(x~factor(g) )$p.value,2)
-  if (AnovaTest)  p1=signif(  anova(lm(x~factor(g)))$Pr[[1]]    ,2)
+  if (length(unique(x)) > 2)
+  {
+    p1=signif(kruskal.test(x~factor(g) )$p.value,2)
+    if (AnovaTest)  p1=signif(  anova(lm(x~factor(g)))$Pr[[1]]    ,2)
+  } else {
+    p1 = tryCatch(fisher.test(x, g, alternative = "two.sided")$p.value, error = function(e) {NA})
+  }
   if ( AnovaTest | KruskalTest)  main=paste(main, "p =",as.character(p1) )
   ret = barplot(Means1, main=main,col=color, xlab=xlab,ylab=ylab, cex=cex, cex.axis=cex.axis,cex.lab=cex.lab,
                 cex.main=cex.main, horiz = horiz, ...)
@@ -4014,7 +4062,7 @@ numbers2colors = function(x,
       lim = as.matrix(cbind(apply(x, 2, min, na.rm = TRUE),  apply(x, 2, max, na.rm = TRUE)));
     }
     if (commonLim) 
-      lim = t(as.matrix(c(min(lim[, 1], na.rm = TRUE), max(lim[, 2], na.rm = TRUE))));
+      lim = c(min(lim[, 1], na.rm = TRUE), max(lim[, 2], na.rm = TRUE));
   }
   if (is.null(dim(lim)))
   {

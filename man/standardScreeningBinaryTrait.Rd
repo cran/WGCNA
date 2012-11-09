@@ -18,7 +18,8 @@ standardScreeningBinaryTrait(
      datExpr, y, 
      corFnc = cor, corOptions = list(use = 'p'),
      kruskalTest = FALSE, qValues = FALSE,
-     var.equal=FALSE, na.action="na.exclude")
+     var.equal=FALSE, na.action="na.exclude",
+     getAreaUnderROC = TRUE)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -47,11 +48,13 @@ the variance otherwise the Welch (or Satterthwaite) approximation to the degrees
 Warning: here the default value is TRUE which is different from the default value of t.test. Type help(t.test)
 for more details. }
 \item{na.action}{
-    character string for the Student t-test: indicates what should happen when the data contain missing values NAs. 
+    character string for the Student t-test: indicates what should happen when the data contain missing
+values NAs. }
+\item{getAreaUnderROC}{logical: should area under the ROC curve be calculated? The calculation slows the
+function down somewhat. }
 
 }
 
-}
 \value{
   A data frame whose rows correspond to the columns of datE and whose
 columns report
@@ -74,7 +77,8 @@ But if the mean of the second group is larger than that of the first group it eq
   \item{areaUnderROC}{the area under the ROC, also known as the concordance index or C.index. This is a
 measure of discriminatory power. The measure lies between 0 and 1 where 0.5 indicates no discriminatory
 power. 0 indicates that the "opposite" predictor has perfect discriminatory power. To compute it we use
-the function \link[Hmisc]{rcorr.cens} with \code{outx=TRUE} (from Frank Harrel's package Hmisc).}
+the function \link[Hmisc]{rcorr.cens} with \code{outx=TRUE} (from Frank Harrel's package Hmisc).
+Only present if input \code{getAreUnderROC} is \code{TRUE}.}
   \item{nPresentSamples}{number of samples with finite measurements for each gene.}
 
 If input \code{kruskalTest} is \code{TRUE}, the following columns further summarize results of

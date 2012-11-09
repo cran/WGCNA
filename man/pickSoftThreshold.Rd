@@ -12,8 +12,8 @@ pickSoftThreshold(
   dataIsExpr = TRUE,
   RsquaredCut = 0.85, 
   powerVector = c(seq(1, 10, by = 1), seq(12, 20, by = 2)), 
-  removeFirst = FALSE, nBreaks = 10, blockSize = 1000, 
-  corFnc = "cor", corOptions = "use = 'p'", 
+  removeFirst = FALSE, nBreaks = 10, blockSize = NULL, 
+  corFnc = cor, corOptions = list(use = 'p'), 
   networkType = "unsigned",
   moreNetworkConcepts = FALSE,
   verbose = 0, indent = 0)
@@ -46,12 +46,13 @@ are to be calculated. }
 
   \item{nBreaks}{ number of bins in connectivity histograms }
 
-  \item{blockSize}{ block size into which the calculation of connectivity should be broken up. If R runs
+  \item{blockSize}{ block size into which the calculation of connectivity should be broken up. If not given,
+a suitable value will be calculated using function \code{blockSize} and printed if \code{verbose>0}. If R runs
 into memory problems, decrease this value. }
 
-  \item{corFnc}{ a character string giving the correlation function to be used in adjacency calculation. }
+  \item{corFnc}{the correlation function to be used in adjacency calculation. }
 
-  \item{corOptions}{ further options to the correlation function specified in \code{corFnc}. }
+  \item{corOptions}{ a list giving further options to the correlation function specified in \code{corFnc}. }
 
   \item{networkType}{ network type. Allowed values are (unique abbreviations of) \code{"unsigned"},
 \code{"signed"}, \code{"signed hybrid"}. See \code{\link{adjacency}}. }
@@ -74,6 +75,11 @@ specified by \code{networkType}.
 The weighted networks are obtained by raising the similarity to the powers given in \code{powerVector}. 
 For each power the scale free topology fit index is calculated
 and returned along with other information on connectivity. 
+
+On systems with multiple cores or processors, 
+the function pickSoftThreshold takes advantage of parallel processing if the function 
+\code{\link{enableWGCNAThreads}} has been called to allow parallel processing and set up the parallel
+calculation back-end.
 }
 \value{
   A list with the following components:

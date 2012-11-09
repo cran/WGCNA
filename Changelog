@@ -1,5 +1,53 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
+2012/11/06: 1.25 ("The Election Issue", pardon the pun.)
+
+	. DIFF: bugfix in function modulePreservation: the function now
+	  respects the corFnc and corOptions arguments throughout the
+	  calculations. This bug affected calculations that used correlation
+	  functions other than the default "cor" and options other than
+	  the default "use = 'p'".
+
+	. Introducing parallelization to user-level R functions through the use 
+	  of packages parallel, foreach and the doParallel backend. The parallelization 
+	  should work on all R-supported platforms. This change does not
+	  affect C-level workhorse functions for calculating correlations.
+
+	. New function blockSize that attempts to choose a suitable block size
+	  for most functions that use a block-wise approach to fit
+	  calculations into memory. 
+
+	. Function labels2colors is now more robust and should work for
+	  data.frames as well
+
+	. Function verboseBoxplot gains arguments notch and varwidth that are
+	  passed to the underlying boxplot call.
+
+	. Functions plotDendroUnderTree and plotDendroAndColors now 
+	  display missing color values as grey.
+
+	. Function verboseBarplot can now handle binary variables as well and
+	  will print Fisher exact test p-value.
+
+	. Function colQuantileC now ignores missing data
+
+	. Internal C code cleaned up and small memory leaks plugged.
+
+	. Function labelPoints has a new argument protectEdges that can
+	  prevent labels from going outside of the plot area.
+
+	. verboseScatterplot now has explicit arguments col and bg to specify
+	  colors and fill (background) of the plotting symbols. This makes
+	  specifying col and bg work also when only a sample of all points is
+	  plotted.
+
+	. GOenrichmentAnalysis can now optionally shorten output by omitting
+	  details of highest-enriched GO terms.
+
+	. Defaults in randomGLMpredictor have been slightly tweaked for better 
+	  performance.
+
+	. New function transposeBigData for transposing big matrices.
 
 2012/08/02: 1.23-1
 
