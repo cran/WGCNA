@@ -1,5 +1,5 @@
-33547e62123f080ee7c3b4b98af87dda *Changelog
-169037e8c7298012128101c6819a4b82 *DESCRIPTION
+4b4b5118cd5cd0460f0873c3f0c3c7f0 *Changelog
+dfd827b9a51579b133043e33d3cddae4 *DESCRIPTION
 970fd32521fb5ab965eeec686834d06b *NAMESPACE
 2640fb7286cab45b6de425c01109f80e *R/AFcorMI.R
 ea14a2a861b238bbb31d9f54117b7fdb *R/Functions-fromSimilarity.R
@@ -67,7 +67,7 @@ a1c383c7c833d5d3e336f02b5fead2f6 *man/SCsLists.Rd
 674cff64a1778713173951060078736c *man/TOMsimilarity.Rd
 502131e33c1e9b1c66d48d90aba59b22 *man/TOMsimilarityFromExpr.Rd
 8c91bdaacadbd7ec2c307ca32191cbbe *man/TrueTrait.Rd
-71f56ff5516ee01ffa62981c21cbbdec *man/WGCNA-package.Rd
+9bea2a8728d8554697f7915b9b6bd5f7 *man/WGCNA-package.Rd
 95ba0052e33532b0a2636b06ae6bc03e *man/accuracyMeasures.Rd
 051b9a0b6e3d224367101ae392fdee22 *man/addErrorBars.Rd
 2703e1c680bae62e4c5aaecdcfbbd424 *man/addGrid.Rd
@@ -234,7 +234,7 @@ b31cb5456f14d62a972a059f2928709c *man/verboseScatterplot.Rd
 5b60605817816b91df09d8a00118afff *man/votingLinearPredictor.Rd
 79b4e6437c1c28ffca58a9127550d161 *src/Makevars
 22d54f2b9dc56c83bb08fc083227e3fd *src/Makevars.win
-0c9cef4cc9f541d8822b28a144200347 *src/array.h
+7628d4607d92aad57bdd1de8b8525154 *src/array.h
 d7c646e8a13d966c15da6796c3b11389 *src/arrayGeneric.h
 9325eb75f2dbcd496f707012da9a7451 *src/compiling.h
 c3966f1ec94c69912c74f3d03b4fa809 *src/corFunctions-common.c

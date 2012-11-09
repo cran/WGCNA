@@ -240,7 +240,7 @@ void dArray::colQuantile(double q, dArray & quant)
   {
     // column.clear();
     copy2vector(i, colLen, column);
-    val = quantile(column.data(), colLen, q, 0,  & err);
+    val = quantile(&(column[0]), colLen, q, 0,  & err);
     quant.linValue(col, val);
   }
 }
@@ -269,7 +269,7 @@ void iArray::colQuantile(double q, dArray & quant)
   {
     // column.clear();
     copy2vector(i, colLen, column);
-    val = quantile(column.data(), colLen, q, 0, & err);
+    val = quantile(&(column[0]), colLen, q, 0, & err);
     quant.linValue(col, val);
   }
 }
