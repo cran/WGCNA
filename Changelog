@@ -1,5 +1,10 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
+2012/11/09: 1.25-1 ("The Election Fix")
+
+	. Internal C++ code now compliant with older compilers that don't
+	  implement vector::data()
+
 2012/11/06: 1.25 ("The Election Issue", pardon the pun.)
 
 	. DIFF: bugfix in function modulePreservation: the function now
