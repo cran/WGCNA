@@ -574,7 +574,7 @@ blockwiseModules = function(datExpr, blocks = NULL,
 
   if (!is.null(deleteModules)) 
   {
-     allMEs = allMEs[, -deleteModules, drop = FALSE];
+     AllMEs = AllMEs[, -deleteModules, drop = FALSE];
      genes = is.finite(match(allLabels, allLabelIndex[deleteModules]));
      allLabels[genes] = 0;
      allLabelIndex = allLabelIndex[-deleteModules];
@@ -940,7 +940,7 @@ recutBlockwiseTrees = function(datExpr,
 
   if (!is.null(deleteModules)) 
   {
-     allMEs = allMEs[, -deleteModules, drop = FALSE];
+     AllMEs = AllMEs[, -deleteModules, drop = FALSE];
      genes = is.finite(match(allLabels, allLabelIndex[deleteModules]));
      allLabels[genes] = 0;
      allLabelIndex = allLabelIndex[-deleteModules];

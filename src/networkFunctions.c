@@ -168,15 +168,15 @@ size_t checkAvailableMemory()
   double * pt;
   while ( (tooLarge) && (guess > 1000))
   {
-     Rprintf("trying matrix of size %d\n", guess);
+     // Rprintf("trying matrix of size %d\n", guess);
      tooLarge = ( (pt=malloc(guess*guess*sizeof(double))) == NULL );
      if (tooLarge) guess = (guess * 3) / 4;
-     Rprintf("next size will be %d\n", guess);
+     // Rprintf("next size will be %d\n", guess);
   }
 
   if (!tooLarge) free(pt);   
 
-  Rprintf("Returning %d.\n", guess * guess);
+  // Rprintf("Returning %d.\n", guess * guess);
 
   return guess*guess;
 }

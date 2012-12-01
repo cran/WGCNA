@@ -50,6 +50,9 @@ allowWGCNAThreads = function(nThreads = NULL)
 disableWGCNAThreads = function()
 {
   Sys.unsetenv(.threadAllowVar);
+  pars = list(1)
+  names(pars) = .threadAllowVar
+  do.call(Sys.setenv, pars)
   if (exists(".revoDoParCluster", where = ".GlobalEnv")) 
   {
     stopCluster(get(".revoDoParCluster", pos = ".GlobalEnv"));
@@ -119,7 +122,10 @@ enableWGCNAThreads = function(nThreads = NULL)
 
 WGCNAnThreads = function()
 {
-  suppressWarnings(as.numeric(as.character(Sys.getenv(.threadAllowVar, unset = NA))));
+  n = suppressWarnings(as.numeric(as.character(Sys.getenv(.threadAllowVar, unset = 1))));
+  if (is.na(n)) n = 1;
+  if (length(n)==0) n = 1;
+  n;
 }
 
 #========================================================================================================
@@ -134,6 +140,11 @@ WGCNAnThreads = function()
 
 allocateJobs = function(nTasks, nWorkers)
 {
+  if (is.na(nWorkers))
+  {
+    warning("In function allocateJobs: 'nWorkers' is NA. Will use 1 worker.");
+    nWorkers = 1;
+  }
   n1 = floor(nTasks/nWorkers);
   n2 = nTasks - nWorkers*n1;
   allocation = list();

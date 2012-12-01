@@ -1,5 +1,5 @@
-4b4b5118cd5cd0460f0873c3f0c3c7f0 *Changelog
-dfd827b9a51579b133043e33d3cddae4 *DESCRIPTION
+900b626f843476272dfe1f5ca0a8a1a2 *Changelog
+a78e4f39f174dff58c45730171d78774 *DESCRIPTION
 970fd32521fb5ab965eeec686834d06b *NAMESPACE
 2640fb7286cab45b6de425c01109f80e *R/AFcorMI.R
 ea14a2a861b238bbb31d9f54117b7fdb *R/Functions-fromSimilarity.R
@@ -11,7 +11,7 @@ e6176144fa33412715511440dd00bc1f *R/TrueTrait.R
 c71beb3c2312e81f9102e918679745ce *R/accuracyMeasures.R
 6694f89a89e904eb1bc90d28cf28fc37 *R/adjacency.polyReg.R
 3cc995eb826b701ba4d3a7bf6ad64a3a *R/adjacency.splineReg.R
-e14872fbf11d26ea04351935bfc6dd60 *R/blockwiseModulesC.R
+76d55625d25bb742c1b3aa4596a2d8ab *R/blockwiseModulesC.R
 15468ef5e298f2fdb6320a53fe144051 *R/coClustering.R
 ceee787204a986fedae3e8b3ce86d121 *R/collapseRows.R
 93b1234770b325950074537bc2aad873 *R/collapseRowsUsingKME.R
@@ -44,7 +44,7 @@ f87924d7f12e5bc286821069abd5101e *R/smaFunctions.R
 101bc6f0e31a5343456b98ccfb1ce6cb *R/standardScreeningBinaryTrait.R
 f20cae9009e6bca9e4f19328f17a229f *R/stratifiedBarplot.R
 838bed5c4cbe28e4c942be6e9ca537ac *R/transposeBigData.R
-f2e1af0f97997340039911d055c189b8 *R/useNThreads.R
+13c6d6b0bfa712c52f97b62c046be200 *R/useNThreads.R
 651691952d0f16d6816cbd783943b622 *R/userListEnrichment.R
 42a7d01f9a9dd9111fe1fdc42d4c7e26 *R/verboseIplot.R
 e29601ffdd534e19063fb43c2b3fa75c *R/votingLinearPredictor.R
@@ -67,7 +67,7 @@ a1c383c7c833d5d3e336f02b5fead2f6 *man/SCsLists.Rd
 674cff64a1778713173951060078736c *man/TOMsimilarity.Rd
 502131e33c1e9b1c66d48d90aba59b22 *man/TOMsimilarityFromExpr.Rd
 8c91bdaacadbd7ec2c307ca32191cbbe *man/TrueTrait.Rd
-9bea2a8728d8554697f7915b9b6bd5f7 *man/WGCNA-package.Rd
+d895e38b76b6b6c5a0c339e487e6e4da *man/WGCNA-package.Rd
 95ba0052e33532b0a2636b06ae6bc03e *man/accuracyMeasures.Rd
 051b9a0b6e3d224367101ae392fdee22 *man/addErrorBars.Rd
 2703e1c680bae62e4c5aaecdcfbbd424 *man/addGrid.Rd
@@ -242,7 +242,7 @@ dc75dbffa9eb5cc4cab09d05c4d3e8d7 *src/corFunctions-common.h
 895318610c787d0be2d05e8fed5a8929 *src/corFunctions-unified.c
 8cdd38cea04502f7d414ed5de15745ba *src/corFunctions.h
 5ce06b070466f09b11f2745166ab226a *src/exceptions.h
-c485ebc1e19e4d41b1d0cbb4548f53e1 *src/networkFunctions.c
+80e69d5a92ad7d3f8562658e9362c80a *src/networkFunctions.c
 0107b9e6c02ccc940a4894b0a34d473d *src/pivot.c
 84a3d30c96ad4be6d0c078218cc734d4 *src/pivot.h
 ab1077bce96ac5efbce3a11a48f930a8 *src/quantileC.cc
