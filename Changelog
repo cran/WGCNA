@@ -1,5 +1,16 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
+
+2012/12/01: 1.25-2 ("We ain't done fixin' yet")
+
+	. Bugfix in blockwise[Consensus]Modules fixes a crash under certain
+	  circumstances (when some of the initial modules are removed).
+	  [Thanks to Nicola Soranzo for pointing this out.]
+
+	. Bad choice of return value in WGCNAnThreads() that caused a crash in
+	  pickSoftThreshold is now fixed. [Thanks to multiple users who
+	  noticed this.]
+
 2012/11/09: 1.25-1 ("The Election Fix")
 
 	. Internal C++ code now compliant with older compilers that don't
