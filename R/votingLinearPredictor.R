@@ -8,6 +8,14 @@
                      2 * CumHazard - 2)
   sign(martingale1) * sqrt(deviance0);
 }
+
+
+.dropThirdDim = function(x)
+{
+  d = dim(x);
+  dim(x) = c(d[1], d[2]*d[3]);
+  x;
+}
  
 
 #-----------------------------------------------------------------------------------------------------
@@ -292,8 +300,8 @@ votingLinearPredictor = function(x, y, xtest = NULL,
 
     predictMat[ , , power] = 
          x %*% RWeights / matrix(weightSum, nrow = nSamples, ncol = nTraits, byrow = TRUE);
-    predMean = apply(predictMat[ , , power, drop = FALSE], 2, mean, na.rm = TRUE);
-    predSD = apply(predictMat[, , power, drop = FALSE], 2, sd, na.rm = TRUE);
+    predMean = apply(.dropThirdDim(predictMat[ , , power, drop = FALSE]), 2, mean, na.rm = TRUE);
+    predSD = apply(.dropThirdDim(predictMat[, , power, drop = FALSE]), 2, sd, na.rm = TRUE);
     predictMat[, , power] = scale(predictMat[, , power]) *
                       matrix(obsSD, nrow = nSamples, ncol = nTraits, byrow = TRUE) +
                       matrix(obsMean, nrow = nSamples, ncol = nTraits, byrow = TRUE);

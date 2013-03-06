@@ -13,6 +13,7 @@ verboseScatterplot(x, y,
                    cex = 1, cex.axis = 1.5, cex.lab = 1.5, cex.main = 1.5, 
                    abline = FALSE, abline.color = 1, abline.lty = 1,
                    corLabel = corFnc, 
+                   displayAsZero = 1e-5,
                    col = 1, bg = 0,
                    lmFnc = lm,
                    ...)
@@ -57,6 +58,9 @@ be determined from the full vectors \code{x} and \code{y}.}
 
   \item{corLabel}{ character string to be used as the label for the correlation value printed in the main
 title. }
+
+  \item{displayAsZero}{ Correlations whose absolute value is smaller than this number will be displayed as
+zero. This can result in a more intuitive display (for example, cor=0 instead of cor=2.6e-17).}
 
   \item{col}{color of the plotted symbols. Recycled as necessary. }
 

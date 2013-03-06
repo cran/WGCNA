@@ -1369,6 +1369,7 @@ verboseScatterplot = function(x, y,
                              cex.lab = 1.5, cex.main = 1.5, abline = FALSE, 
                              abline.color = 1, abline.lty = 1,
                              corLabel = corFnc, 
+                             displayAsZero = 1e-5,
                              col = 1, bg = 0, 
                              lmFnc = lm,
                              ...) 
@@ -1380,6 +1381,7 @@ verboseScatterplot = function(x, y,
   corExpr = parse(text = paste(corFnc, "(x, y ", prepComma(corOptions), ")"));
   #cor=signif(cor(x,y,use="p",method=correlationmethod),2)
   cor=signif(eval(corExpr),2)
+  if (abs(cor) < displayAsZero) cor = 0;
   corp = signif(corPvalueStudent(cor, sum(is.finite(x) & is.finite(y))), 2);
   #corpExpr = parse(text = paste("cor.test(x, y, ", corOptions, ")"));
   #corp=signif(cor.test(x,y,use="p",method=correlationmethod)$p.value,2)
