@@ -1,5 +1,22 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
+2013/03/06: 1.26 ("Spring growth")
+
+	. Bug fix in blockwiseModules, blockwiseConsensusModules and
+	  blockwiseIndividualTOMs: functions now use consisten block labels
+	  [thanks to Austin Hilliard for pointing it out].
+
+	. Function accuracyMeasures has been re-written to accept directly
+	  vectors of predicted and observed values, and work also for
+	  prediction of continuous outcomes. The new function is
+	  backwards-compatible with older versions except for the name of the
+	  first argument.
+
+	. Function verboseScatterplot gains a new argument displayAsZero that
+	  allows displaying small correlations as 0 (rather than say 1e-13).
+
+	. New function returnGeneSetsAsList returns gene sets used by function 
+	  userListEnrichment.
 
 2012/12/01: 1.25-2 ("We ain't done fixin' yet")
 

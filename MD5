@@ -1,17 +1,17 @@
-900b626f843476272dfe1f5ca0a8a1a2 *Changelog
-a78e4f39f174dff58c45730171d78774 *DESCRIPTION
+076d6cc1e6386c393b8ec6afa378a5a4 *Changelog
+d4f24071f402cb08f9ddfbe1de3821a5 *DESCRIPTION
 970fd32521fb5ab965eeec686834d06b *NAMESPACE
 2640fb7286cab45b6de425c01109f80e *R/AFcorMI.R
 ea14a2a861b238bbb31d9f54117b7fdb *R/Functions-fromSimilarity.R
 5e84a6ce02b260e085f01a344754a9d3 *R/Functions-modColor.R
 f0a23a7cf2d4b05f06b2b1dbe29eeb21 *R/Functions-multiData.R
-9beb6eb9cf135bfa4af5c0681dc5c30e *R/Functions.R
+40d06973ebe277554ae8a9e153f37f2c *R/Functions.R
 57afc307ea8a1b50f75919d6c7e5b2b2 *R/GOenrichmentAnalysis.R
 e6176144fa33412715511440dd00bc1f *R/TrueTrait.R
-c71beb3c2312e81f9102e918679745ce *R/accuracyMeasures.R
+50c27773dba239d58f6c42dbff46a944 *R/accuracyMeasures.R
 6694f89a89e904eb1bc90d28cf28fc37 *R/adjacency.polyReg.R
 3cc995eb826b701ba4d3a7bf6ad64a3a *R/adjacency.splineReg.R
-76d55625d25bb742c1b3aa4596a2d8ab *R/blockwiseModulesC.R
+58bd3b109d94272772fa6d5d39200b20 *R/blockwiseModulesC.R
 15468ef5e298f2fdb6320a53fe144051 *R/coClustering.R
 ceee787204a986fedae3e8b3ce86d121 *R/collapseRows.R
 93b1234770b325950074537bc2aad873 *R/collapseRowsUsingKME.R
@@ -19,7 +19,7 @@ ceee787204a986fedae3e8b3ce86d121 *R/collapseRows.R
 ba86cd4c5ea1b5da97813643852b9b7e *R/consensusDissTOMandTree.R
 239273bfb01626e6a7a6ea7eb966bca7 *R/corAndPvalue.R
 f770e1d7d5d042f13fe64809e12cd5a4 *R/corFunctions.R
-1a61ac8936eddfc40d9117f03546a09d *R/coxRegressionResiduals.R
+f5dfb236765806a3eb39bd028bff071b *R/coxRegressionResiduals.R
 aa9c7ff1a228742079e2cbd4a1f4c28e *R/dendrogramAdjustmentFunctions.R
 a8d6c9153283aef82a2f791dff6cb521 *R/exportFunctions.R
 269a880a70d3e9841f1f5c35818e4253 *R/heatmapWithLegend.R
@@ -39,6 +39,7 @@ b9031c27dab6ce4d7c4e320a5d921234 *R/pquantile.R
 e6f219281c915629a9e716bf133e304f *R/quantileC.R
 0f6a00ada5b99112e8dadea807aa2a00 *R/qvalue.R
 42cde3295452b6769fd404c9042385c8 *R/randomGLMpredictor.R
+69f368afdd00a44008445ba5d90cdd6b *R/returnGeneSetsAsList.R
 ccc79bd4eb6ee39d21d38293b67c0287 *R/smaFunctions-Rna.R
 f87924d7f12e5bc286821069abd5101e *R/smaFunctions.R
 101bc6f0e31a5343456b98ccfb1ce6cb *R/standardScreeningBinaryTrait.R
@@ -47,7 +48,7 @@ f20cae9009e6bca9e4f19328f17a229f *R/stratifiedBarplot.R
 13c6d6b0bfa712c52f97b62c046be200 *R/useNThreads.R
 651691952d0f16d6816cbd783943b622 *R/userListEnrichment.R
 42a7d01f9a9dd9111fe1fdc42d4c7e26 *R/verboseIplot.R
-e29601ffdd534e19063fb43c2b3fa75c *R/votingLinearPredictor.R
+7b96c0b753dc5edf84f0cb29887d4857 *R/votingLinearPredictor.R
 60cadb76d631c92423aa1ca9fc354c4e *R/zzz.R
 f403f840e0fc7f8a0c352107793e0b46 *data/BloodLists.rda
 51c2c6e860d1506d66e9b65c524453be *data/BrainLists.rda
@@ -67,8 +68,8 @@ a1c383c7c833d5d3e336f02b5fead2f6 *man/SCsLists.Rd
 674cff64a1778713173951060078736c *man/TOMsimilarity.Rd
 502131e33c1e9b1c66d48d90aba59b22 *man/TOMsimilarityFromExpr.Rd
 8c91bdaacadbd7ec2c307ca32191cbbe *man/TrueTrait.Rd
-d895e38b76b6b6c5a0c339e487e6e4da *man/WGCNA-package.Rd
-95ba0052e33532b0a2636b06ae6bc03e *man/accuracyMeasures.Rd
+6ec2c0e4f0d6d3cfa476b76467052647 *man/WGCNA-package.Rd
+84f2b03742dfb8f9cfac7d16fbc5d357 *man/accuracyMeasures.Rd
 051b9a0b6e3d224367101ae392fdee22 *man/addErrorBars.Rd
 2703e1c680bae62e4c5aaecdcfbbd424 *man/addGrid.Rd
 cae8eaec92ed9b1e44b74b887bb1f2d5 *man/addGuideLines.Rd
@@ -196,6 +197,7 @@ adec15fbabdc64fe49ca0d7c4629f723 *man/redWhiteGreen.Rd
 337af1487821999b4adf9b267472449e *man/relativeCorPredictionSuccess.Rd
 09f53652e9013b5e922ae51635c0bf45 *man/removeGreyME.Rd
 89bfa864baec9426f6b31c481245e27a *man/removePrincipalComponents.Rd
+c28a60dea52e6566d1ca84b221f8f1b8 *man/returnGeneSetsAsList.Rd
 8df291bea2fe4882cbef48c08cbaaa6a *man/rgcolors.func.Rd
 6a79360f6ec29c84aeb933bc46b4ff91 *man/scaleFreeFitIndex.Rd
 6af16d36f52d742261e34c9bb34cd570 *man/scaleFreePlot.Rd
@@ -230,7 +232,7 @@ ce280af9a4f8e11df73d535530c48e8a *man/userListEnrichment.Rd
 bd2c4b2c35161130ef2589b29d7bd040 *man/verboseBarplot.Rd
 459ac74f9b3b96c830e4dead386a3a89 *man/verboseBoxplot.Rd
 18fe9aca7afb7daa47d32c121b7336cc *man/verboseIplot.Rd
-b31cb5456f14d62a972a059f2928709c *man/verboseScatterplot.Rd
+07dbaee6d23cdd2390ea304356ebb84d *man/verboseScatterplot.Rd
 5b60605817816b91df09d8a00118afff *man/votingLinearPredictor.Rd
 79b4e6437c1c28ffca58a9127550d161 *src/Makevars
 22d54f2b9dc56c83bb08fc083227e3fd *src/Makevars.win

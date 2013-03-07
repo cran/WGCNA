@@ -137,6 +137,30 @@ TOMdist = function(adjMat, TOMType = "unsigned", TOMDenom = "min", verbose = 1, 
 {
   1-TOMsimilarity(adjMat, TOMType, TOMDenom, verbose, indent)
 }
+
+
+#==================================================================================
+#
+# Helper functions
+#
+#==================================================================================
+
+# order labels by size
+
+.orderLabelsBySize = function(labels, exclude = NULL)
+{
+  levels.0 = sort(unique(labels));
+  levels = levels.0[ !levels.0 %in% exclude]
+  levels.excl = levels.0 [levels.0 %in% exclude]
+  rearrange = labels %in% levels;
+  tab = table(labels [ rearrange ]);
+  rank = rank(-tab);
+
+  oldOrder = c(levels.excl, names(tab));
+  newOrder = c(levels.excl, names(tab)[rank]);
+
+  newOrder[ match(labels, oldOrder) ]
+}
  
 
 #==========================================================================================================
@@ -259,7 +283,7 @@ blockwiseModules = function(datExpr, blocks = NULL,
       clustering = projectiveKMeans(datExpr, preferredSize = maxBlockSize, 
                                     checkData = FALSE,
                                     sizePenaltyPower = 5, verbose = verbose-2, indent = indent + 1);
-      gBlocks = clustering$clusters;
+      gBlocks = .orderLabelsBySize(clustering$clusters)
       if (verbose > 2) { printFlush("Block sizes:"); print(table(gBlocks)); }
     } else
       gBlocks = rep(1, nGGenes);
@@ -271,7 +295,6 @@ blockwiseModules = function(datExpr, blocks = NULL,
 
   blockLevels = as.numeric(levels(factor(gBlocks)));
   blockSizes = table(gBlocks)
-  blockOrder = order(-blockSizes);
   nBlocks = length(blockLevels);
 
   # Initialize various variables
@@ -281,14 +304,13 @@ blockwiseModules = function(datExpr, blocks = NULL,
   TOMFiles = rep("", nBlocks);
   blockGenes = list();
 
-  blockNo = 1;
   maxUsedLabel = 0;
-  while (blockNo <= nBlocks)
+  for (blockNo in 1:nBlocks)
   {
     if (verbose>1) printFlush(paste(spaces, "..Working on block", blockNo, "."));
 
-    blockGenes[[blockNo]] = c(1:nGenes)[gsg$goodGenes][gBlocks==blockLevels[blockOrder[blockNo]]];
-    block = c(1:nGGenes)[gBlocks==blockLevels[blockOrder[blockNo]]];
+    blockGenes[[blockNo]] = c(1:nGenes)[gsg$goodGenes][gBlocks==blockLevels[blockNo]];
+    block = c(1:nGGenes)[gBlocks==blockLevels[blockNo]];
     selExpr = as.matrix(datExpr[, block]);
     nBlockGenes = length(block);
     dissTom = matrix(0, nBlockGenes, nBlockGenes);
@@ -643,7 +665,6 @@ blockwiseModules = function(datExpr, blocks = NULL,
        TOMFiles = TOMFiles, 
        blockGenes = blockGenes,
        blocks = blocks,
-       blockOrder = blockLevels[blockOrder],
        MEsOK = MEsOK);
 }
 
@@ -713,7 +734,6 @@ recutBlockwiseTrees = function(datExpr,
   gBlocks = blocks[gsg$goodGenes];
   blockLevels = as.numeric(levels(factor(gBlocks)));
   blockSizes = table(gBlocks)
-  blockOrder = order(-blockSizes);
   nBlocks = length(blockLevels);
 
 
@@ -725,7 +745,7 @@ recutBlockwiseTrees = function(datExpr,
   {
     if (verbose>1) printFlush(paste(spaces, "..Working on block", blockNo, "."));
 
-    block = c(1:nGGenes)[gBlocks==blockLevels[blockOrder[blockNo]]];
+    block = c(1:nGGenes)[gBlocks==blockLevels[blockNo]];
     selExpr = as.matrix(datExpr[, block]);
     nBlockGenes = length(block);
 
@@ -1176,7 +1196,7 @@ blockwiseIndividualTOMs = function(multiExpr,
       clustering = consensusProjectiveKMeans(multiExpr, preferredSize = maxBlockSize,
                                          sizePenaltyPower = 5, checkData = FALSE,
                                          verbose = verbose-2, indent = indent + 1);
-      gBlocks = clustering$clusters;
+      gBlocks = .orderLabelsBySize(clustering$clusters);
     } else 
       gBlocks = rep(1, nGGenes);
     blocks = rep(NA, nGenes);
@@ -1187,7 +1207,6 @@ blockwiseIndividualTOMs = function(multiExpr,
 
   blockLevels = as.numeric(levels(factor(gBlocks)));
   blockSizes = table(gBlocks)
-  blockOrder = order(-blockSizes);
   nBlocks = length(blockLevels);
 
   # check file names for uniqueness
@@ -1220,9 +1239,9 @@ blockwiseIndividualTOMs = function(multiExpr,
   {
     if (verbose>1 && nBlocks > 1) printFlush(paste(spaces, "..Working on block", blockNo, "."));
     # Select the block genes
-    block = c(1:nGGenes)[gBlocks==blockLevels[blockOrder[blockNo]]];
+    block = c(1:nGGenes)[gBlocks==blockLevels[blockNo]];
     nBlockGenes = length(block);
-    blockGenes[[blockNo]] = c(1:nGenes)[gsg$goodGenes][gBlocks==blockLevels[blockOrder[blockNo]]];
+    blockGenes[[blockNo]] = c(1:nGenes)[gsg$goodGenes][gBlocks==blockLevels[blockNo]];
     errorOccurred = FALSE;
 
     # Set up file names or memory space to hold the set TOMs
@@ -1550,7 +1569,6 @@ blockwiseConsensusModules = function(multiExpr,
 
   blockLevels = sort(unique(gBlocks));
   blockSizes = table(gBlocks)
-  blockOrder = order(-blockSizes);
   nBlocks = length(blockLevels);
 
   if (is.null(chunkSize)) chunkSize = as.integer(.largestBlockSize/nSets)
@@ -1582,9 +1600,9 @@ blockwiseConsensusModules = function(multiExpr,
   {
     if (verbose>1) printFlush(paste(spaces, "..Working on block", blockNo, "."));
     # Select most connected genes
-    block = c(1:nGGenes)[gBlocks==blockLevels[blockOrder[blockNo]]];
+    block = c(1:nGGenes)[gBlocks==blockLevels[blockNo]];
     nBlockGenes = length(block);
-    # blockGenes[[blockNo]] = c(1:nGenes)[gsg$goodGenes][gBlocks==blockLevels[blockOrder[blockNo]]];
+    # blockGenes[[blockNo]] = c(1:nGenes)[gsg$goodGenes][gBlocks==blockLevels[blockNo]];
     scaleQuant = rep(1, nSets);
     scalePowers = rep(1, nSets);
     selExpr = vector(mode = "list", length = nSets);
@@ -1623,7 +1641,7 @@ blockwiseConsensusModules = function(multiExpr,
     for (set in 1:nSets)
     {
       # Set up selExpr for later use in multiSetMEs
-      selExpr[[set]] = list(data = multiExpr[[set]]$data[ , gBlocks==blockLevels[blockOrder[blockNo]] ]);
+      selExpr[[set]] = list(data = multiExpr[[set]]$data[ , gBlocks==blockLevels[blockNo] ]);
       if (verbose>2) printFlush(paste(spaces, "....Working on set", set))
       if (useDiskCache)
       {
@@ -2076,7 +2094,6 @@ blockwiseConsensusModules = function(multiExpr,
        TOMFiles = TOMFiles,
        blockGenes = individualTOMInfo$blockGenes,
        blocks = blocks,
-       blockOrder = blockLevels[blockOrder],
        originCount = originCount,
        TOMScalingSamples = if (getTOMScalingSamples) TOMScalingSamples else NULL,
        individualTOMInfo = individualTOMInfo
@@ -2164,7 +2181,6 @@ recutConsensusTrees = function(multiExpr,
 
   blockLevels = as.numeric(levels(factor(gBlocks)));
   blockSizes = table(gBlocks)
-  blockOrder = order(-blockSizes);
   nBlocks = length(blockLevels);
   
   reassignThreshold = reassignThresholdPS^nSets;
@@ -2182,7 +2198,7 @@ recutConsensusTrees = function(multiExpr,
   {
     if (verbose>1) printFlush(paste(spaces, "..Working on block", blockNo, "."));
     # Select most connected genes
-    block = c(1:nGGenes)[gBlocks==blockLevels[blockOrder[blockNo]]];
+    block = c(1:nGGenes)[gBlocks==blockLevels[blockNo]];
     nBlockGenes = length(block);
     selExpr = vector(mode = "list", length = nSets);
     for (set in 1:nSets)
