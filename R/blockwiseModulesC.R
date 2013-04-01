@@ -1448,7 +1448,7 @@ blockwiseConsensusModules = function(multiExpr,
 
                             numericLabels = FALSE,
 
-# General options
+                            # General options
                             nThreads = 0,
                             verbose = 2, indent = 0)
 {
@@ -1616,7 +1616,7 @@ blockwiseConsensusModules = function(multiExpr,
       chunkLengths = rep(0, nChunks);
     } else {
       # Note: setTomDS will contained the scaled set TOM matrices.
-      setTomDS = array(0, dim = c(nSets, nBlockGenes*(nBlockGenes-1)));
+      setTomDS = array(0, dim = c(nSets, nBlockGenes*(nBlockGenes-1)/2));
     } 
 
     # create a bogus consTomDS distance structure.
@@ -1643,7 +1643,7 @@ blockwiseConsensusModules = function(multiExpr,
       # Set up selExpr for later use in multiSetMEs
       selExpr[[set]] = list(data = multiExpr[[set]]$data[ , gBlocks==blockLevels[blockNo] ]);
       if (verbose>2) printFlush(paste(spaces, "....Working on set", set))
-      if (useDiskCache)
+      if (individualTOMInfo$TOMSavedInFiles)
       {
          # Load the appropriate file
          x = load(file = individualTOMInfo$ actualTOMFileNames[useIndivTOMSubset[set], blockNo]);
@@ -1731,10 +1731,9 @@ blockwiseConsensusModules = function(multiExpr,
                         as.double(min), as.double(which), DUP = FALSE, PACKAGE = "WGCNA");
           min = whichmin[[4]];
           which = whichmin[[5]] + 1;
-          rm(whichmin); collectGarbage();
+          rm(whichmin); 
           consTomDS[start:end] = min;
           originCount = originCount + as.vector(table(as.integer(which)));
-          collectGarbage();
         } else { 
           consTomDS[start:end] = colQuantileC(setChunks, p = consensusQuantile);
         }
@@ -1743,7 +1742,17 @@ blockwiseConsensusModules = function(multiExpr,
     } else {
       if (consensusQuantile == 0)
       {
-         consTomDS[] = apply(setTomDS, 2, min)
+          min = rep(0, ncol(setTomDS));
+          which = rep(0, ncol(setTomDS));
+          whichmin = .C("minWhichMin", as.double(setTomDS),
+                        as.integer(nrow(setTomDS)), as.integer(ncol(setTomDS)),
+                        as.double(min), as.double(which), DUP = FALSE, PACKAGE = "WGCNA");
+          min = whichmin[[4]];
+          which = whichmin[[5]] + 1;
+          rm(whichmin); 
+          consTomDS[] = min;
+          originCount = as.vector(table(as.integer(which)));
+         #consTomDS[] = apply(setTomDS, 2, min)
       } else {
          #consTomDS[] = apply(setTomDS, 2, quantile, 
          #                    probs = consensusQuantile,  na.rm = TRUE, names = FALSE, type = 8);

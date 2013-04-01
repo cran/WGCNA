@@ -34,7 +34,7 @@ max = 10;
 prog = initProgInd("Counting: ", "done");
 for (c in 1:max)
 {
-  Sys.sleep(0.25);
+  Sys.sleep(0.10);
   prog = updateProgInd(c/max, prog);
 }
 printFlush("");
@@ -43,7 +43,7 @@ printFlush("Example 2:");
 prog = initProgInd();
 for (c in 1:max)
 {
-  Sys.sleep(0.25);
+  Sys.sleep(0.10);
   prog = updateProgInd(c/max, prog);
 }
 printFlush("");
@@ -57,15 +57,15 @@ system.time( {a = 0; for (i in 1:10000) a = a+i; } )
 ## With progress indicator, some 100 times slower:
 
 system.time( 
-{
-  prog = initProgInd("Counting: ", "done");
-  a = 0; 
-  for (i in 1:10000) 
   {
-    a = a+i; 
-    prog = updateProgInd(i/10000, prog);
-  }
-} 
+    prog = initProgInd("Counting: ", "done");
+    a = 0; 
+    for (i in 1:10000) 
+    {
+      a = a+i; 
+      prog = updateProgInd(i/10000, prog);
+    }
+  }   
 )
 }
 
