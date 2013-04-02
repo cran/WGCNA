@@ -1427,7 +1427,7 @@ verboseBoxplot = function(x, g,
   p1 = signif(kruskal.test(x, factor(g) )$p.value,2)
   #if (p1< 5.0*10^(-22) ) p1="< 5e-22"
   boxplot(x~factor(g), notch = notch, varwidth = varwidth,
-          main=paste(main,"p =",as.character(p1) ),
+          main=paste(main,"p =",p1 ),
           xlab=xlab, ylab=ylab, cex=cex, cex.axis=cex.axis,cex.lab=cex.lab, cex.main=cex.main, ...)
 }
 
@@ -1491,9 +1491,9 @@ verboseBarplot = function (x, g,  main = "",
     p1=signif(kruskal.test(x~factor(g) )$p.value,2)
     if (AnovaTest)  p1=signif(  anova(lm(x~factor(g)))$Pr[[1]]    ,2)
   } else {
-    p1 = tryCatch(fisher.test(x, g, alternative = "two.sided")$p.value, error = function(e) {NA})
+    p1 = tryCatch(signif(fisher.test(x, g, alternative = "two.sided")$p.value, 2), error = function(e) {NA})
   }
-  if ( AnovaTest | KruskalTest)  main=paste(main, "p =",as.character(p1) )
+  if ( AnovaTest | KruskalTest)  main=paste(main, "p =", p1 )
   ret = barplot(Means1, main=main,col=color, xlab=xlab,ylab=ylab, cex=cex, cex.axis=cex.axis,cex.lab=cex.lab,
                 cex.main=cex.main, horiz = horiz, ...)
   abline(h=0)

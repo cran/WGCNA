@@ -11,7 +11,8 @@ This function measures list enrichment between inputted lists of genes and files
 userListEnrichment(geneR, labelR, fnIn = NULL, catNmIn = fnIn, nameOut = "enrichment.csv", 
                    useBrainLists = FALSE, useBloodAtlases = FALSE, omitCategories = "grey", 
                    outputCorrectedPvalues = TRUE, useStemCellLists = FALSE, outputGenes = FALSE, 
-	                 minGenesInCategory = 1, useBrainRegionMarkers = FALSE, useImmunePathwayLists = FALSE) 
+	               minGenesInCategory = 1, useBrainRegionMarkers = FALSE, useImmunePathwayLists = FALSE,
+				   usePalazzoloWang = FALSE) 
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -57,6 +58,9 @@ If TRUE, a pre-made set of enrichment lists for human brain regions will be adde
   \item{useImmunePathwayLists}{
 If TRUE, a pre-made set of enrichment lists for immune system pathways will be added to any user-defined lists for enrichment comparison.  The default is FALSE.  These lists are derived from the lab of Daniel R Saloman.  See references section for more details.
 }
+  \item{usePalazzoloWang}{
+If TRUE, a pre-made set of enrichment lists compiled by Mike Palazzolo and Jim Wang from CHDI will be added to any user-defined lists for enrichment comparison.  The default is FALSE.  See references section for more details.
+}
 }
 \details{
 User-inputted files for fnIn can be in one of three formats:
@@ -91,13 +95,14 @@ PSID, Gene, Module, <other columns>
 }
 \value{
   \item{pValues}{
-A matrix showing the number of overlapping genes and both the uncorrected and Bonferroni corrected p-values for every pair of list overlaps tested.
+A data frame showing, for each comparison, the input category, user defined category, type, the number of overlapping genes and both the uncorrected and Bonferroni corrected p-values for every pair of list overlaps tested.
 }
   \item{ovGenes}{
 A list of character vectors corresponding to the overlapping genes for every pair of list overlaps tested.  Specific overlaps can be found by typing <variableName>$ovGenes$'<labelR> -- <comparisonCategory>'.  See example below.
 }
   \item{sigOverlaps}{
-Identical information that is written to nameOut.  P-values (corrected or uncorrected, depending on outputCorrectedPvalues) corresponding to all significant enrichments.
+Identical information that is written to nameOut. A data frame ith columns giving the input category, user
+defined category, type, and P-values (corrected or uncorrected, depending on outputCorrectedPvalues) corresponding to all significant enrichments.
 }
 }
 \references{
@@ -206,6 +211,31 @@ More information for the pre-defined immune pathways lists (useImmunePathwayList
 
 ImmunePathway ==> These lists were created by Brian Modena (a member of Daniel R Salomon's lab at Scripps Research Institute), with input from Sunil M Kurian and Dr. Salomon, using Ingenuity, WikiPathways and literature search to assemble them.  They reflect knowledge-based immune pathways and were in part informed by Dr. Salomon and colleague's work in expression profiling of biopsies and peripheral blood but not in some highly organized process.  These lists are not from any particular publication, but are culled to include only genes of reasonably high confidence.
 
+-------------------------------------
+References for the pre-defined lists from CHDI (usePalazzoloWang=TRUE, in alphabetical order by category descriptor) are as follows:
+
+Biocyc NCBI Biosystems ==> Several gene sets from the "Biocyc" component of NCBI Biosystems: Geer LY, Marchler-Bauer A, Geer RC, Han L, He J, He S, Liu C, Shi W, Bryant SH (2010) The NCBI BioSystems database. Nucleic Acids Res. 38(Database issue):D492-6. 
+
+Kegg NCBI Biosystems ==> Several gene sets from the "Kegg" component of NCBI Biosystems: Geer LY et al 2010 (full citation above).
+
+Palazzolo and Wang ==> These gene sets were compiled from a variety of sources by Mike Palazzolo and Jim Wang at CHDI.
+
+Pathway Interaction Database NCBI Biosystems ==> Several gene sets from the "Pathway Interaction Database" component of NCBI Biosystems: Geer LY et al 2010 (full citation above). 
+
+PMID 17500595 Kaltenbach 2007 ==> Several gene sets from: Kaltenbach LS, Romero E, Becklin RR, Chettier R, Bell R, Phansalkar A, et al. (2007) Huntingtin interacting proteins are genetic modifiers of neurodegeneration. PLoS Genet. 3(5):e82
+
+PMID 22348130 Schaefer 2012 ==> Several gene sets from: Schaefer MH, Fontaine JF, Vinayagam A, Porras P, Wanker EE, Andrade-Navarro MA (2012) HIPPIE: Integrating protein interaction networks with experiment based quality scores. PLoS One. 7(2):e31826
+
+PMID 22556411 Culver 2012 ==> Several gene sets from: Culver BP, Savas JN, Park SK, Choi JH, Zheng S, Zeitlin SO, Yates JR 3rd, Tanese N. (2012) Proteomic analysis of wild-type and mutant huntingtin-associated proteins in mouse brains identifies unique interactions and involvement in protein synthesis. J Biol Chem. 287(26):21599-614
+
+PMID 22578497 Cajigas 2012 ==> Several gene sets from: Cajigas IJ, Tushev G, Will TJ, tom Dieck S, Fuerst N, Schuman EM. (2012) The local transcriptome in the synaptic neuropil revealed by deep sequencing and high-resolution imaging. Neuron. 74(3):453-66
+
+Reactome NCBI Biosystems ==> Several gene sets from the "Reactome" component of NCBI Biosystems: Geer LY et al 2010 (full citation above). 
+
+Wiki Pathways NCBI Biosystems ==> Several gene sets from the "Wiki Pathways" component of NCBI Biosystems: Geer LY et al 2010 (full citation above). 
+
+Yang ==> These gene sets were compiled from a variety of sources by Mike Palazzolo and Jim Wang at CHDI.
+
 }
 \author{
 Jeremy Miller
@@ -222,8 +252,8 @@ write(c("TESTLIST1",geneR[700:1500], sep="\n"),"TESTLIST1.txt")
 write(c("TESTLIST2",geneR[1600:2400],sep="\n"),"TESTLIST2.txt")
 
 # Now run the function!
-system.time({testResults = userListEnrichment(geneR, labelR=categories, fnIn=c("TESTLIST1.txt","TESTLIST2.txt"), catNmIn=c("TEST1","TEST2"), 
-nameOut = "testEnrichment.csv",useBrainLists=FALSE, omitCategories ="grey")})
+testResults = userListEnrichment(geneR, labelR=categories, fnIn=c("TESTLIST1.txt","TESTLIST2.txt"), catNmIn=c("TEST1","TEST2"), 
+nameOut = "testEnrichment.csv",useBrainLists=TRUE, omitCategories ="grey")
 
 # To see a list of all significant enrichments, either open the file "testEnrichments.csv" in the current directory, or type:
 testResults$sigOverlaps

@@ -2,7 +2,8 @@
 userListEnrichment <- function (geneR, labelR, fnIn = NULL, catNmIn = fnIn, nameOut = "enrichment.csv", 
     useBrainLists = FALSE, useBloodAtlases = FALSE, omitCategories = "grey", 
     outputCorrectedPvalues = TRUE, useStemCellLists = FALSE, outputGenes = FALSE, 
-  	minGenesInCategory = 1, useBrainRegionMarkers = FALSE, useImmunePathwayLists = FALSE) 
+  	minGenesInCategory = 1, useBrainRegionMarkers = FALSE, useImmunePathwayLists = FALSE,
+	usePalazzoloWang = FALSE) 
 {
     if (length(geneR) != length(labelR)) 
         stop("geneR and labelR must have same number of elements.")
@@ -11,7 +12,8 @@ userListEnrichment <- function (geneR, labelR, fnIn = NULL, catNmIn = fnIn, name
         write("WARNING: not enough category names.  \n\t\t\t   Naming remaining categories with file names.", 
             "")
     }
-    if (is.null(fnIn) & (! (useBrainLists | useBloodAtlases | useStemCellLists)) ) 
+    if (is.null(fnIn) & (! (useBrainLists | useBloodAtlases | useStemCellLists | useBrainRegionMarkers
+	                      | useImmunePathwayLists | usePalazzoloWang)) ) 
         stop("Either enter user-defined lists or set one of the use_____ parameters to TRUE.")
 
     glIn = NULL
@@ -74,10 +76,23 @@ userListEnrichment <- function (geneR, labelR, fnIn = NULL, catNmIn = fnIn, name
 		        "")
 	      glIn = rbind(glIn, cbind(ImmunePathwayLists, Type = rep("Immune", nrow(ImmunePathwayLists))))
     }
-    removeDups = unique(paste(as.character(glIn[, 1]), as.character(glIn[, 
-        2]), as.character(glIn[, 3]), sep = "@#$%"))
-    if (length(removeDups) < length(glIn[, 1])) 
-        glIn = t(as.matrix(as.data.frame(strsplit(removeDups, "@#$%", fixed = TRUE))))
+	if (usePalazzoloWang) { 
+        if (!(exists("PWLists"))) PWLists = NULL;
+        data("PWLists",envir=sys.frame(sys.nframe()));
+        write("See help file for details regarding Palazzolo / Wang lists from CHDI.",
+		        "")
+		write("---- there are many of these gene sets so the function may take several (30-45+) minutes to run.",
+		        "")
+	      glIn = rbind(glIn, cbind(PWLists, Type = rep("PW_Lists", nrow(PWLists))))
+    }
+
+    #removeDups = unique(paste(as.character(glIn[, 1]), as.character(glIn[, 
+    #    2]), as.character(glIn[, 3]), sep = "@#$%"))
+    #if (length(removeDups) < length(glIn[, 1])) 
+    #    glIn = t(as.matrix(as.data.frame(strsplit(removeDups, "@#$%", fixed = TRUE))))
+
+    glIn = glIn[!duplicated(glIn), ]
+
     geneIn = as.character(glIn[, 1])
     labelIn = as.character(glIn[, 2])
     geneAll = sort(unique(geneR))
@@ -90,46 +105,69 @@ userListEnrichment <- function (geneR, labelR, fnIn = NULL, catNmIn = fnIn, name
     catsIn = sort(unique(labelIn))
     typeIn = glIn[keep, ][match(catsIn, labelIn), 3];
     lenAll = length(geneAll)
-    results = list(pValues = NULL, ovGenes = list(), sigOverlaps = NULL)
-    namesOv = NULL  
-    for (r in 1:length(catsR)) for (i in 1:length(catsIn)) { 
-        isR  = is.element(geneAll,geneR[(labelR == catsR[r])])
-        isI  = is.element(geneAll,geneIn[(labelIn == catsIn[i])]) 
-        lyn  = sum(isR&(!isI))
-        lny  = sum(isI&(!isR))
-        lyy  = sum(isR&isI)
-        gyy  = geneAll[isR&isI]
+    nCols.pValues = 5;
+    nComparisons = length(catsR) * length(catsIn);
+    nIn = length(catsIn);
+    nR = length(catsR);
+    index = 1; 
+    nOverlap = rep(0, nComparisons);
+    pValues = rep(0, nComparisons);
+    ovGenes = vector(mode = "list", length = nComparisons);
+    #isI = matrix(FALSE, lenAll, nIn);
+    #for (i in 1:nIn)
+    #{
+    #  isI[, i] = is.element(geneAll,geneIn[labelIn == catsIn[i]]);
+    #}
+    for (r in 1:length(catsR)) 
+    {
+      isR  = is.element(geneAll,geneR[(labelR == catsR[r])])
+      for (i in 1:length(catsIn)) 
+      { 
+    #    isI.1 = isI[, i];
+        isI.1 = is.element(geneAll,geneIn[labelIn == catsIn[i]]);
+        lyn  = sum(isR&(!isI.1))
+        lny  = sum(isI.1&(!isR))
+        lyy  = sum(isR&isI.1)
+        gyy  = geneAll[isR&isI.1]
         lnn  = lenAll - lyy - lyn - lny
         pv   = fisher.test(matrix(c(lnn,lny,lyn,lyy), 2, 2))$p.value
-        pOut = c(catsR[r], catsIn[i], typeIn[i], lyy, pv)
-        results$pValues = rbind(results$pValues, pOut)
-        namesOv = c(namesOv, paste(catsR[r], "--", catsIn[i]))
-        results$ovGenes[[length(namesOv)]] = gyy
+        nOverlap[index] = lyy;
+        pValues[index] = pv;
+        ovGenes[[index]] = gyy
+        index = index + 1
+      }
     }
-    results$pValues = cbind(results$pValues, apply(cbind(1, as.numeric(results$pValues[, 
-        5]) * length(namesOv)), 1, min))
-    colnames(results$pValues) = c("InputCategories", "UserDefinedCategories", "Type", 
-        "NumOverlap", "Pvalues", "CorrectedPvalues")
+
+    results = list(pValues = data.frame(InputCategories = rep(catsR, rep(nIn, nR)),
+                                        UserDefinedCategories = rep(catsIn, nR),
+                                        Type = rep(typeIn, nR),
+                                        NumOverlap = nOverlap,
+                                        Pvalues = pValues,
+                                        CorrectedPvalues = ifelse(pValues * nComparisons > 1, 1,
+                                                                  pValues * nComparisons)),
+                   ovGenes = ovGenes);
+    namesOv = paste(results$pValues$InputCategories, "--", results$pValues$UserDefinedCategories);
     names(results$ovGenes) = namesOv
-    results$sigOverlaps = results$pValues[as.numeric(results$pValues[, 
-        6]) < 0.05, c(1, 2, 3, 6)]
-    if (!outputCorrectedPvalues) {
-        results$sigOverlaps = results$pValues[as.numeric(results$pValues[, 
-            5]) < 0.05, c(1, 2, 3, 5)]
+    if (outputCorrectedPvalues) {
+        results$sigOverlaps = results$pValues[results$pValues$CorrectedPvalues < 0.05, c(1, 2, 3, 6)]
+    } else {
+        results$sigOverlaps = results$pValues[results$pValues$Pvalues < 0.05, c(1, 2, 3, 5)]
         write("Note that outputted p-values are not corrected for multiple comparisons.", 
             "")
     }
-    results$sigOverlaps = as.data.frame(results$sigOverlaps[order(as.numeric(results$sigOverlaps[, 
-        4])), ]);
+    results$sigOverlaps = results$sigOverlaps[order(results$sigOverlaps[, 4]), ];
     row.names(results$sigOverlaps) = NULL;
     
     rSig  = results$sigOverlaps
     rCats = paste(rSig$InputCategories,"--",rSig$UserDefinedCategories)
-    rNums <- rGenes <- NULL
-    if (nrow(rSig) > 0) for (i in 1:dim(rSig)[1]) {
+    nSig = nrow(rSig);
+    rNums <- rep(0, nSig);
+    rGenes <- rep("", nSig);
+    for (i in 1:dim(rSig)[1])
+    {
       rGn    = results$ovGenes[[which(names(results$ovGenes)==rCats[i])]]
-      rNums  = c(rNums,length(rGn))
-      rGenes = c(rGenes,paste(rGn,collapse=", "))
+      rNums[i]  = length(rGn);
+      rGenes[i] = paste(rGn,collapse=", ");
     }
     rSig$NumGenes = rNums
     rSig$CategoryGenes = rGenes

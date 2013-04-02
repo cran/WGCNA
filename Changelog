@@ -1,5 +1,19 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
+
+2013/04/01: 1.27-1 ("This one's no April 1 joke!")
+
+	. userListEnrichment now contains a new set of gene lists compiled mostly by Mike
+	  Palazzolo and Jim Wang at CHDI.
+
+	. userListEnrichment now runs faster
+
+	. Bug fix in verboseBarplot: p-values are now consistently diplayed
+	  with two significant digits.
+
+	. Bug fix in blockwiseConsensusModules: function now works correctly
+	  (and faster) when not using disk cache
+
 2013/03/06: 1.26 ("Spring growth")
 
 	. Bug fix in blockwiseModules, blockwiseConsensusModules and
