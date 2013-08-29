@@ -115,6 +115,7 @@ cor = function(x, y = NULL, use = "all.obs", method = c("pearson", "kendall", "s
                quick = 0, 
                cosine = FALSE, 
                cosineX = cosine, cosineY = cosine,
+               drop = FALSE,
                nThreads = 0, verbose = 0, indent = 0)
 {
     na.method <- pmatch(use, c("all.obs", "complete.obs", "pairwise.complete.obs", 
@@ -148,20 +149,19 @@ cor = function(x, y = NULL, use = "all.obs", method = c("pearson", "kendall", "s
       if (is.null(nThreads) || (nThreads==0)) nThreads = .useNThreads();
  
       if (prod(dim(x))==0) stop("'x' has a zero dimension."); 
-      nNA = 0;
-      err = 0;
+      nNA = as.integer(0);
+      err = as.integer(0);
+      cosine = as.integer(cosine);
+      nThreads = as.integer(nThreads);
+      verbose = as.integer(verbose);
+      indent = as.integer(indent);
       if (is.null(y))
       {
-         bi = matrix(0, ncol(x), ncol(x));
-         res = .C("cor1Fast", x = as.double(x), nrow = as.integer(nrow(x)), ncol = as.integer(ncol(x)),
-                   quick = as.double(quick), 
-                   cosine = as.integer(cosineX), 
-                   res = as.double(bi), nNA = as.integer(nNA),
-                   err = as.integer(err), nThreads = as.integer(nThreads), 
-                   verbose = as.integer(verbose), indent = as.integer(indent),
-                   DUP = FALSE, NAOK = TRUE, PACKAGE = "WGCNA");
-         dim(res$res) = dim(bi);
-         if (!is.null(dimnames(x)[[2]])) dimnames(res$res) = list(dimnames(x)[[2]],  dimnames(x)[[2]] );
+         res = .Call("cor1Fast_call", x,
+                   quick, cosine,
+                   nNA, err, nThreads,
+                   verbose, indent);
+         if (!is.null(dimnames(x)[[2]])) dimnames(res) = list(dimnames(x)[[2]],  dimnames(x)[[2]] );
       } else {
          y = as.matrix(y);
          if (prod(dim(y))==0) stop("'y' has a zero dimension."); 
@@ -177,11 +177,12 @@ cor = function(x, y = NULL, use = "all.obs", method = c("pearson", "kendall", "s
                  nThreads = as.integer(nThreads),
                  verbose = as.integer(verbose), indent = as.integer(indent), DUP = FALSE, NAOK = TRUE,
                  PACKAGE = "WGCNA");
-         dim(res$res) = dim(bi);
+         res = res$res;
+         dim(res) = dim(bi);
          if (!is.null(dimnames(x)[[2]]) || !is.null(dimnames(y)[[2]]))
-            dimnames(res$res) = list(dimnames(x)[[2]], dimnames(y)[[2]]);
+            dimnames(res) = list(dimnames(x)[[2]], dimnames(y)[[2]]);
       }
-      if (res$err > 0)
+      if (err > 0)
       {
         if (err > nKnownErrors)
         {
@@ -190,16 +191,17 @@ cor = function(x, y = NULL, use = "all.obs", method = c("pearson", "kendall", "s
           stop(paste(Cerrors[err], "occurred in compiled code. "));
         }
       }
-      if (res$nNA > 0)
+      if (nNA > 0)
       {
         warning(paste("Missing values generated in calculation of bicor.",
                       "Likely cause: too many missing entries or zero variance."));
       }
-      res$res;
+      if (drop) res[, , drop = TRUE] else res;
     } else {
       stats::cor(x,y, use, method);
     }
 }
+
 
 # Wrappers for compatibility with older scripts
 

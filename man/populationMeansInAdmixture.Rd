@@ -9,8 +9,11 @@ estimate the cell type specific mean gene expression values based on expression 
 cells. The method is described in Shen-Orr et al (2010) where it was used to estimate cell type specific
 gene expression levels based on a mixture sample. }
 \usage{
- populationMeansInAdmixture(datProportions, datE.Admixture, scaleProportionsTo1 = TRUE,
-scaleProportionsInCelltype = TRUE, setMissingProportionsToZero = FALSE)
+ populationMeansInAdmixture(
+    datProportions, datE.Admixture, 
+    scaleProportionsTo1 = TRUE,
+    scaleProportionsInCelltype = TRUE, 
+    setMissingProportionsToZero = FALSE)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -77,7 +80,8 @@ for (i in 1:no.pure ){
 datTrueMeans0[GeneIndicator==i,i]= datTrueMeans0[GeneIndicator==i,i]+1
 }
 dimnames(datTrueMeans0)[[1]]=paste("Gene",1:dim(datTrueMeans0)[[1]],sep="." )
-dimnames(datTrueMeans0)[[2]]=paste("MeanPureCellType",1:dim(datTrueMeans0)[[2]],sep=".")
+dimnames(datTrueMeans0)[[2]]=paste("MeanPureCellType",1:dim(datTrueMeans0)[[2]],
+                                   sep=".")
 # plot.mat(datTrueMeans0)
 # simulate the (expression) values of the admixed population samples
 
@@ -96,7 +100,8 @@ abline(0,1)
 
 #assume we only study 2 populations (ie we ignore the others)
 selectPopulations=c(1,2)
-datPredictedMeansTooFew=populationMeansInAdmixture(datProportions[,selectPopulations],datE.Admixture)
+datPredictedMeansTooFew=populationMeansInAdmixture(datProportions[,selectPopulations],
+                                                   datE.Admixture)
 
 par(mfrow=c(2,2))
 for (i in 1:length(selectPopulations) ){
@@ -107,7 +112,8 @@ abline(0,1)
 
 #assume we erroneously add a population
 datProportionsTooMany=data.frame(datProportions,WrongProp=sample(datProportions[,1]))
-datPredictedMeansTooMany=populationMeansInAdmixture(datProportionsTooMany,datE.Admixture)
+datPredictedMeansTooMany=populationMeansInAdmixture(datProportionsTooMany,
+                                 datE.Admixture)
 
 par(mfrow=c(2,2))
 for (i in 1:4 ){

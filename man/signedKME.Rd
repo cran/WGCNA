@@ -5,7 +5,10 @@
   Calculation of (signed) eigengene-based connectivity, also known as module membership.
 }
 \usage{
-signedKME(datExpr, datME, outputColumnName = "kME", corFnc = "cor", corOptions = "use = 'p'")
+signedKME(
+  datExpr, datME, 
+  outputColumnName = "kME", 
+  corFnc = "cor", corOptions = "use = 'p'")
 }
 \arguments{
   \item{datExpr}{ a data frame containing the gene expression data. Rows correspond to samples and

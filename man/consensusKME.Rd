@@ -8,18 +8,20 @@ Calculate consensus kME (eigengene-based connectivities) across multiple data se
 consensus module analysis. 
 }
 \usage{
-consensusKME(multiExpr, moduleLabels, 
-             multiEigengenes = NULL, 
-             consensusQuantile = 0, 
-             signed = TRUE,
-             useModules = NULL,
-             metaAnalysisWeights = NULL,
-             corAndPvalueFnc = corAndPvalue, corOptions = list(), corComponent = "cor",
-             getQvalues = FALSE,
-             useRankPvalue = TRUE,
-             rankPvalueOptions = list(calculateQvalue = getQvalues, pValueMethod = "scale"),
-             setNames = NULL, 
-             excludeGrey = TRUE, greyLabel = ifelse(is.numeric(moduleLabels), 0, "grey"))
+consensusKME(
+  multiExpr,
+  moduleLabels, 
+  multiEigengenes = NULL, 
+  consensusQuantile = 0, 
+  signed = TRUE,
+  useModules = NULL,
+  metaAnalysisWeights = NULL,
+  corAndPvalueFnc = corAndPvalue, corOptions = list(), corComponent = "cor",
+  getQvalues = FALSE,
+  useRankPvalue = TRUE,
+  rankPvalueOptions = list(calculateQvalue = getQvalues, pValueMethod = "scale"),
+  setNames = NULL, 
+  excludeGrey = TRUE, greyLabel = ifelse(is.numeric(moduleLabels), 0, "grey"))
 }
 \arguments{
   \item{multiExpr}{

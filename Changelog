@@ -1,6 +1,107 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
 
+2013/10/10: 1.34
+
+	. Function verboseBarplot gains argument addCellCounts that enables
+	  display of counts above each bar. 
+
+	. Function mtd.subset gains the argument 'permissive' that allows
+	  subsetting of "loose" multiData structures as well as 'drop' that
+	  controls dropping of dimensions with extent 1.
+
+	. Internal: Depends and Imports fields were cleaned up as per new CRAN
+	  requirements. Users should be aware that loading and attaching WGCNA 
+	  now does not automatically attach all packages from which WGCNA imports.
+
+	. Potentially serious bug has been fixed in the internal C code for
+	  calculations of correlation (function cor()). This bug seems to have led to
+	  correlation sometimes returning 0 where it should have returned an NA. 
+
+
+2013/08/29: 1.33
+
+	. mtd.apply and mda.applyToSubset gain argument mdaCopyNonData that controls whether
+	  non-data components of input should be copied to output
+
+	. Bug in matchLabels fixed that led to non-integer color labels if two
+	  reference modules had the same size.
+
+	. New function plotOrderedColors that extends plotColorUnderTree to
+	  the case where the plot 'above' is not a dendrogram but a general plot
+	  (a useful example is a barplot). 
+
+	. DIFF: bugfix in blockwiseModules, recutBlockwiseTrees,
+	  blockwiseConsensusModules, recutConsensusTrees: gene reassignment by
+	  kME now reassigns correct genes. Previously, the the reassigned
+	  genes were incorrectly chosen. This may make a small difference in
+	  the module assignments if reassignThreshold was above zero (as it
+	  was by default). The default was also changed to not perform module
+	  re-assignment.
+
+	. Switching to dynamicTreeCut 1.60: this dynamicTreeCut uses external
+	  criteria that are supplied by the blockwise* functions. The
+	  criteria are implemented in functions branchEigengeneDissim,
+	  mtd.branchEigengeneDissim, branchSplit, branchSplit.dissim
+	  To preserve results of older calculations, new features are disabled 
+	  by default.
+
+	. New functions for convenient handling of multiData structures:
+	  mtd.apply, mtd.applyToSubset, mtd.mapply, mtd.rbindSelf,
+	  mtd.setAttr, mtd.colnames, mtd.setColnames  mtd.simplify
+	  mtd.subset, list2multiData, multiData2list, isMultiData
+
+	. Function randomGLMPredictor has been removed. Please use the package
+	  randomGLM and the function randomGLM in that package.
+
+	. Internal C code has been simplified.
+
+2013/07/20: 1.30
+
+	. Functions blockwiseModules and TOMsimilarityFromExpr are now more
+	  memory-efficient: only 2 copies of the potentially large TOM matrix
+	  are needed, down from 3 before.
+
+	. Function mergeCloseModules can now optionally perform quantile
+	  equalization (normalization) on to make eigengene (dis-)similarities
+	  comparable across the data sets.
+
+	. Argument order in mergeCloseModules has changed to a more logical
+	  order
+	  
+2013/07/18: 1.29
+
+	. Functions determining the number of available cores are now more
+	  robust.
+
+	. labeledHeatmap gains argument naColor that controls the color for
+	  missing values.
+
+2013/07/09: 1.28
+
+	. Help files formatted to narrower line width.
+
+	. bugfix in pickSoftThreshold when dataIsExpr is FALSE: function now
+	  correctly checks similarity (thanks to Lourdes Pena Castillo for 
+	  reporting it).
+
+	. updateProgInd now only updates display if the value to be displayed
+	  is actually different from the one already displayed. This can lead
+	  to  somewhat better performance if updateProgInd is the performance
+	  bottleneck.
+
+	. DIFF: Bug fix in GOenrichmentAnalysis: all evidence codes listed on 
+	  http://www.geneontology.org/GO.evidence.shtml are now recognized. 
+	  This will likely may change GO enrichment results. We apologize for
+	  this omission.
+
+	. Bug fix in userListEnrichment: p-values of comparisons with no
+	  overlapping genes are now 1, instead of 0.
+
+	. plotColorUnderTree and plotDendroAndColors gain new arguments
+	  rowTextAlignment and rowTextIgnore that afford more flexibility in
+	  how the row text is formatted.
+
 2013/04/01: 1.27-1 ("This one's no April 1 joke!")
 
 	. userListEnrichment now contains a new set of gene lists compiled mostly by Mike
@@ -206,7 +307,7 @@ Note: as of 2009/03/10, changes that lead to different calculational results are
 	. Bugfix in internal function .consensusMEDissimilarity that caused crashes
 	  mergeCloseModules.
 
-	. DIFF: blockwiseConsensusModules now passes the argument mergConsensusQuantile
+	. DIFF: blockwiseConsensusModules now passes the argument mergeConsensusQuantile
 	  to mergeCloseModules, which can lead to different module merging 
 	  compared to previous versions. Use mergeConsensusQuantile = 0 to 
 	  reproduce results from older versions of this package.

@@ -49,7 +49,8 @@ MEyellow    = sample(1:100,50)
 MEgreen     = c(MEyellow[1:30], sample(1:100,20))
 MEred	    = c(MEbrown [1:20], sample(1:100,30))
 ME     = data.frame(MEturquoise, MEblue, MEbrown, MEyellow, MEgreen, MEred)
-dat1   = simulateDatExpr(ME,400 ,c(0.16,0.12,0.11,0.10,0.10,0.09,0.15), signed=TRUE)
+dat1   = simulateDatExpr(ME,400 ,c(0.16,0.12,0.11,0.10,0.10,0.09,0.15), 
+                         signed=TRUE)
 TOM1   = TOMsimilarityFromExpr(dat1$datExpr, networkType="signed")
 colnames(TOM1) <- rownames(TOM1) <- colnames(dat1$datExpr)
 tree1  = flashClust(as.dist(1-TOM1),method="average")
@@ -80,14 +81,16 @@ sizeGrWindow(12,9);
 
 layout(matrix(c(1:6), 6, 1), heights = c(0.8, 0.2, 0.8, 0.2, 0.8, 0.2));
 
-plotDendroAndColors(tree1,colorh2,dendroLabels=FALSE,main="Starting Dendrogram", setLayout = FALSE)
+plotDendroAndColors(tree1,colorh2,dendroLabels=FALSE,main="Starting Dendrogram", 
+                    setLayout = FALSE)
 
 tree1 = swapTwoBranches(tree1,hubs["red"],hubs["turquoise"])
 plotDendroAndColors(tree1,colorh2,dendroLabels=FALSE,main="Swap blue/turquoise and red/brown", 
                     setLayout = FALSE)
 
 tree1 = reflectBranch(tree1,hubs["blue"],hubs["green"])
-plotDendroAndColors(tree1,colorh2,dendroLabels=FALSE,main="Reflect turquoise/blue", setLayout = FALSE)
+plotDendroAndColors(tree1,colorh2,dendroLabels=FALSE,main="Reflect turquoise/blue", 
+                    setLayout = FALSE)
 
 }
 \keyword{misc}

@@ -94,10 +94,10 @@ matchLabels = function(source, reference, pThreshold = 5e-2 )
         bestInd = bestInd + 1;
       }
     }
-    if (is.finite(match(0, sourceMods))) newLabels[match(0, sourceMods)] = 0;
+    if (0 %in% sourceMods) newLabels[match(0, sourceMods)] = 0;
     maxAssd = max(newLabels, refMods, na.rm = TRUE)
     unassdSrcTab = table(source[is.na(newLabels[nsource]), col]);
-    unassdRank = rank(-unassdSrcTab);
+    unassdRank = rank(-unassdSrcTab, ties.method = "first");
 
     newLabels[is.na(newLabels)] = unassdRank + maxAssd;
 

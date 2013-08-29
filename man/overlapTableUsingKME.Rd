@@ -6,7 +6,13 @@
 Takes two sets of expression data (or kME tables) as input and returns a table listing the significant overlap between each module in each data set, as well as the actual genes in common for every module pair.  Modules can be defined in several ways (generally involving kME) based on user input.
 }
 \usage{
-overlapTableUsingKME(dat1, dat2, colorh1, colorh2, MEs1 = NULL, MEs2 = NULL, name1 = "MM1", name2 = "MM2", cutoffMethod = "assigned", cutoff = 0.5, omitGrey = TRUE, datIsExpression = TRUE)
+overlapTableUsingKME(
+   dat1, dat2, 
+   colorh1, colorh2, 
+   MEs1 = NULL, MEs2 = NULL, 
+   name1 = "MM1", name2 = "MM2", 
+   cutoffMethod = "assigned", cutoff = 0.5, 
+   omitGrey = TRUE, datIsExpression = TRUE)
 }
 \arguments{
   \item{dat1,dat2}{
@@ -69,18 +75,25 @@ ME.G = sample(1:100,50);  ME.H = sample(1:100,50)
 ME1     = data.frame(ME.A, ME.B, ME.C, ME.D, ME.E)
 ME2     = data.frame(ME.A, ME.C, ME.D, ME.E, ME.F, ME.G, ME.H)
 simDat1 = simulateDatExpr(ME1,1000,c(0.2,0.1,0.08,0.05,0.04,0.3), signed=TRUE)
-simDat2 = simulateDatExpr(ME2,1000,c(0.2,0.1,0.08,0.05,0.04,0.03,0.02,0.3), signed=TRUE)
+simDat2 = simulateDatExpr(ME2,1000,c(0.2,0.1,0.08,0.05,0.04,0.03,0.02,0.3), 
+                          signed=TRUE)
 
 # Now run the function using assigned genes
-results = overlapTableUsingKME(simDat1$datExpr, simDat2$datExpr, labels2colors(simDat1$allLabels), labels2colors(simDat2$allLabels), cutoffMethod="assigned")
+results = overlapTableUsingKME(simDat1$datExpr, simDat2$datExpr, 
+                   labels2colors(simDat1$allLabels), labels2colors(simDat2$allLabels), 
+                   cutoffMethod="assigned")
 results$PvaluesHypergeo
 
 # Now run the function using a p-value cutoff, and inputting the original MEs
 colnames(ME1) = standardColors(5);  colnames(ME2) = standardColors(7)
-results = overlapTableUsingKME(simDat1$datExpr, simDat2$datExpr, labels2colors(simDat1$allLabels), labels2colors(simDat2$allLabels), ME1, ME2, cutoffMethod="pvalue", cutoff=0.05)
+results = overlapTableUsingKME(simDat1$datExpr, simDat2$datExpr, 
+                      labels2colors(simDat1$allLabels), 
+                      labels2colors(simDat2$allLabels), 
+                      ME1, ME2, cutoffMethod="pvalue", cutoff=0.05)
 results$PvaluesHypergeo
 
-# Check which genes are in common between the black modules from set 1 and the green module from set 2
+# Check which genes are in common between the black modules from set 1 and 
+# the green module from set 2
 results$OverlappingGenes$MM1_green_MM2_black
 }
 

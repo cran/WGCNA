@@ -6,7 +6,11 @@
 This function takes as input the hierarchical clustering tree as well as a subset of genes in the network (generally corresponding to branches in the tree), then returns a semi-optimally ordered tree.  The idea is to maximize the correlations between adjacent branches in the dendrogram, in as much as that is possible by adjusting the arbitrary positionings of the branches by swapping and reflecting branches.
 }
 \usage{
-orderBranchesUsingHubGenes(hierTOM, datExpr = NULL, colorh = NULL, type = "signed", adj = NULL, iter = NULL, useReflections = FALSE, allowNonoptimalSwaps = FALSE)
+orderBranchesUsingHubGenes(
+  hierTOM, 
+  datExpr = NULL, colorh = NULL, 
+  type = "signed", adj = NULL, iter = NULL, 
+  useReflections = FALSE, allowNonoptimalSwaps = FALSE)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{

@@ -495,12 +495,55 @@ consensusMEDissimilarity = function(MEs, useAbs = FALSE, useSets = NULL, method 
   ConsDiss;
 }
 
-# This function merges modules whose MEs fall on one branch of a hierarchical clustering tree
+# Quantile normalization
+# normalize each column such that (column) quantiles are the same 
+# The final value for each quantile is the 'summaryType' of the corresponding quantiles across the columns
+
+
+
+.equalizeQuantiles = function(data, summaryType = c("median", "mean"))
+{
+  summaryType = match.arg(summaryType);
+  data.sorted = apply(data, 2, sort);
+ 
+  if (summaryType == "median")
+  {
+    refSample = rowMedians(data.sorted, na.rm = TRUE)
+  } else if (summaryType == "mean")
+    refSample = rowMeans(data.sorted, na.rm = TRUE);
+
+  ranks = round(colRanks(data, ties.method = "average", preserveShape = TRUE))
+  out = refSample [ ranks ];
+  dim(out) = dim(data);
+  dimnames(out) = dimnames(data);
+
+  out;
+}
+
+.turnVectorIntoDist = function(x, size, Diag, Upper)
+{
+   attr(x, "Size") = size;
+   attr(x, "Diag") = FALSE;
+   attr(x, "Upper") = FALSE;
+   class(x) = c("dist", class(x))
+   x;
+}
+
+.turnDistVectorIntoMatrix = function(x, size, Diag, Upper, diagValue)
+{
+  mat = as.matrix(.turnVectorIntoDist(x, size, Diag, Upper));
+  if (!Diag) diag(mat) = diagValue;
+  mat;
+}
+  
+# This function calculates consensus dissimilarity of module eigengenes
 
 .consensusMEDissimilarity = function(multiMEs, 
-                                     consensusQuantile = 0, useAbs = FALSE, 
-                                     corFnc = cor, corOptions = list(use = 'p'),
                                      useSets = NULL, 
+                                     corFnc = cor, corOptions = list(use = 'p'),
+                                     equalizeQuantiles = FALSE,
+                                     quantileSummary = "mean",
+                                     consensusQuantile = 0, useAbs = FALSE, 
                                      greyMEname = "ME0")
 {
   nSets = checkSets(multiMEs)$nSets;
@@ -513,7 +556,8 @@ consensusMEDissimilarity = function(MEs, useAbs = FALSE, useSets = NULL, method 
 #         "are correct.");
 
   if (is.null(useSets)) useSets = c(1:nSets);
-  MEDiss = array(NA, dim = c(nUseMEs, nUseMEs, nSets));
+  nUseSets = length(useSets);
+  MEDiss = array(NA, dim = c(nUseMEs, nUseMEs, nUseSets));
   for (set in useSets)
   {
     corOptions$x = multiMEs[[set]]$data[, useMEs];
@@ -525,10 +569,17 @@ consensusMEDissimilarity = function(MEs, useAbs = FALSE, useSets = NULL, method 
     }
     MEDiss[, , set] = diss;
   }
+
+  if (equalizeQuantiles)
+  {
+    distMat = apply(MEDiss, 3, function(x) {as.numeric(as.dist(x))} )
+    dim(distMat) = c( nUseMEs * (nUseMEs-1)/2, nUseSets);
+    normalized = .equalizeQuantiles(distMat, summaryType = quantileSummary);
+    MEDiss = apply(normalized, 2, .turnDistVectorIntoMatrix, size = nUseMEs, Diag = FALSE, Upper = FALSE,
+                                                             diagValue = 0);
+  }
  
-  dim(MEDiss) = c( nUseMEs * nUseMEs, nSets);
-  ConsDiss = apply(MEDiss, 1, quantile, probs = 1-consensusQuantile, names = FALSE, na.rm = TRUE);
-  dim(ConsDiss) = c(nUseMEs, nUseMEs)
+  ConsDiss = apply(MEDiss, c(1:2), quantile, probs = 1-consensusQuantile, names = FALSE, na.rm = TRUE);
   colnames(ConsDiss) = rownames(ConsDiss) = useNames;
   ConsDiss;
 }
@@ -896,20 +947,45 @@ multiSetMEs = function(exprData, colors, universalColors = NULL, useSets = NULL,
 #---------------------------------------------------------------------------------------------
                   
 
-mergeCloseModules = function(exprData, colors, consensusQuantile = 0, 
-                             cutHeight = 0.2, MEs = NULL, 
-                             impute = TRUE,
-                             useAbs = FALSE, 
-                             corFnc = cor, corOptions = list(use = 'p'),
-                             iterate = TRUE,
-                             relabel = FALSE, colorSeq = NULL, 
-                             getNewMEs = TRUE,
-                             getNewUnassdME = TRUE,
-                             useSets = NULL, 
-                             checkDataFormat = TRUE, 
-                             unassdColor = ifelse(is.numeric(colors), 0, "grey"), 
-                             trapErrors = FALSE,
-                             verbose = 1, indent = 0)
+mergeCloseModules = function(
+  # input data
+  exprData, colors,
+
+  # Optional starting eigengenes
+  MEs = NULL,  
+
+  # Optional restriction to a subset of all sets
+  useSets = NULL, 
+
+  # If missing data are present, impute them?
+  impute = TRUE,
+
+  # Input handling options
+  checkDataFormat = TRUE, 
+  unassdColor = ifelse(is.numeric(colors), 0, "grey"), 
+
+  # Options for eigengene network construction
+  corFnc = cor, corOptions = list(use = 'p'),
+  useAbs = FALSE, 
+
+  # Options for constructing the consensus
+  equalizeQuantiles = FALSE,
+  quantileSummary = "mean",
+  consensusQuantile = 0, 
+
+  # Merging options
+  cutHeight = 0.2, 
+  iterate = TRUE,
+
+  # Output options
+  relabel = FALSE, 
+  colorSeq = NULL, 
+  getNewMEs = TRUE,
+  getNewUnassdME = TRUE,
+
+  # Options controlling behaviour of the function
+  trapErrors = FALSE,
+  verbose = 1, indent = 0)
 {
 
   MEsInSingleFrame = FALSE;
@@ -1026,7 +1102,9 @@ mergeCloseModules = function(exprData, colors, consensusQuantile = 0,
   
       nOldMods = nlevels(as.factor(colors));
 
-      ConsDiss = .consensusMEDissimilarity(MEs, consensusQuantile = consensusQuantile, useAbs = useAbs,
+      ConsDiss = .consensusMEDissimilarity(MEs, equalizeQuantiles = equalizeQuantiles, 
+                                           quantileSummary = quantileSummary,
+                                           consensusQuantile = consensusQuantile, useAbs = useAbs,
                                            corFnc = corFnc, corOptions = corOptions, 
                                            useSets = useSets, greyMEname = greyMEname);
 
@@ -1116,7 +1194,10 @@ mergeCloseModules = function(exprData, colors, consensusQuantile = 0,
         newMEs = consensusOrderMEs(NewMEs, useAbs = useAbs, useSets = useSets, greyLast = TRUE,
                                    greyName = greyMEname);
 
-        ConsDiss = .consensusMEDissimilarity(newMEs, consensusQuantile = consensusQuantile, useAbs = useAbs,
+        ConsDiss = .consensusMEDissimilarity(newMEs, 
+                                             equalizeQuantiles = equalizeQuantiles,
+                                             quantileSummary = quantileSummary,
+                                             consensusQuantile = consensusQuantile, useAbs = useAbs,
                                              corFnc = corFnc, corOptions = corOptions, 
                                              useSets = useSets, greyMEname = greyMEname);
         if (length(ConsDiss) > 1)

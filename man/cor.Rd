@@ -18,6 +18,7 @@ cor(x, y = NULL,
     cosine = FALSE, 
     cosineX = cosine,
     cosineY = cosine, 
+    drop = FALSE,
     nThreads = 0, 
     verbose = 0, indent = 0)
 
@@ -54,6 +55,8 @@ and can be used to give a hybrid cosine-standard correlation. }
 
   \item{cosineY}{ logical: use the cosine calculation for \code{y}? This setting does not affect \code{x}
 and can be used to give a hybrid cosine-standard correlation. }
+
+  \item{drop}{logical: should the result be turned into a vector if it is effectively one-dimensional? }
 
   \item{nThreads}{ non-negative integer specifying the number of parallel threads to be used by certain
 parts of correlation calculations. This option only has an effect on systems on which a POSIX thread
@@ -148,7 +151,8 @@ system.time( {corFast = cor(data, use = 'p')} );
 
 all.equal(corStd, corFast)
 
-# Here the R's standard correlation slows down considerably, while corFast still retains it speed. Choosing
+# Here the R's standard correlation slows down considerably
+# while corFast still retains it speed. Choosing
 # higher ncol above will make the difference more pronounced.
 
 }

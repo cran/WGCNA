@@ -2,35 +2,11 @@
 
 # So that I don't forget: information about GO categories is contained in the GO.db package
 
-# evidence codes:
-#     IMP: inferred from mutant phenotype  
-#
-#     IGI: inferred from genetic interaction
-#
-#     IPI: inferred from physical interaction  
-#
-#     ISS: inferred from sequence similarity 
-#
-#     IDA: inferred from direct assay  
-#
-#     IEP: inferred from expression pattern  
-#
-#     IEA: inferred from electronic annotation  
-#
-#     TAS: traceable author statement  
-#
-#     NAS: non-traceable author statement  
-#
-#     ND: no biological data available  
-#
-#     IC: inferred by curator
-
-
 GOenrichmentAnalysis = function(labels, entrezCodes, 
                yeastORFs = NULL,
                organism = "human",
                ontologies = c("BP", "CC", "MF"),
-               evidence = c("IMP", "IGI", "IPI", "ISS", "IDA", "IEA", "TAS", "NAS", "ND", "IC"),
+               evidence = "all",
                includeOffspring = TRUE,
                backgroundType = "givenInGO",
                removeDuplicates = TRUE,
@@ -46,7 +22,9 @@ GOenrichmentAnalysis = function(labels, entrezCodes,
 
    organisms = c("human", "mouse", "rat", "malaria", "yeast", "fly", "bovine", "worm", "canine",
                  "zebrafish", "chicken");
-   allEvidence =  c("IMP", "IGI", "IPI", "ISS", "IDA", "IEA", "TAS", "NAS", "ND", "IC");
+   allEvidence =  c("EXP", "IDA", "IPI", "IMP", "IGI", "IEP", "ISS", "ISO", "ISA",
+                    "ISM", "IGC", "IBA", "IBD", "IKR", "IRD", "RCA", "TAS", "NAS", "IC", "ND", "IEA",
+                    "NR");
    allOntologies = c("BP", "CC", "MF");
 
    backgroundTypes = c("allGiven", "allInGO", "givenInGO");
@@ -61,6 +39,9 @@ GOenrichmentAnalysis = function(labels, entrezCodes,
      stop("At least one valid evidence code must be given in 'evidence'.");
    if (length(ontologies)==0)
      stop("At least one valid ontology code must be given in 'ontology'.");
+
+   if (evidence=="all")
+      evidence = allEvidence;
 
    evidInd = pmatch(evidence, allEvidence);
    if (sum(is.na(evidInd))!=0)
@@ -83,10 +64,10 @@ GOenrichmentAnalysis = function(labels, entrezCodes,
 
    missingPacks = NULL;
    packageName = paste("org.", orgCodes[orgInd], orgExtensions[orgInd], ".db", sep="");
-   if (!require(packageName, character.only = TRUE))
+   if (!eval(parse(text = "require(packageName, character.only = TRUE)")))
      missingPacks = c(missingPacks, packageName);
 
-   if (!require(GO.db))
+   if (!eval(parse(text="require(GO.db)")))
      missingPacks = c(missingPacks, "GO.db");
 
    if (!is.null(missingPacks)) 

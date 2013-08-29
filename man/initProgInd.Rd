@@ -21,12 +21,12 @@ typically redirected to a file. }
   A progress indicator is a simple inline display of progress intended to satisfy impatient users during
 lengthy operations. The function \code{initProgInd} initializes a progress indicator (at zero);
 \code{updateProgInd} updates it to a specified fraction. 
+
+Note that excessive use of \code{updateProgInd} may lead to a performance penalty (see examples). 
 }
 \value{
   Both functions return an object of class \code{progressIndicator} that holds information on the last
-printed value and should be used for subsequent updates of the
-indicator. Note that excessive use of \code{updateProgInd} may lead to a performance penalty if a
-substantial amount of CPU time has to be invested into console output. See examples.
+printed value and should be used for subsequent updates of the indicator. 
 }
 \author{ Peter Langfelder }
 \examples{
@@ -54,7 +54,7 @@ printFlush("");
 
 system.time( {a = 0; for (i in 1:10000) a = a+i; } )
 
-## With progress indicator, some 100 times slower:
+## With progress indicator, some 50 times slower:
 
 system.time( 
   {

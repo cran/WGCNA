@@ -20,13 +20,18 @@ recutBlockwiseTrees(
   detectCutHeight = 0.995, minModuleSize = min(20, ncol(datExpr)/2 ),
   maxCoreScatter = NULL, minGap = NULL,
   maxAbsCoreScatter = NULL, minAbsGap = NULL,
+
+  useBranchEigennodeDissim = FALSE,
+  minBranchEigennodeDissim = mergeCutHeight,
+
   pamStage = TRUE, pamRespectsDendro = TRUE,
   minCoreKME = 0.5, minCoreKMESize = minModuleSize/3,
   minKMEtoStay = 0.3,
   reassignThreshold = 1e-6,
   mergeCutHeight = 0.15, impute = TRUE,
   trapErrors = FALSE, numericLabels = FALSE,
-  verbose = 0, indent = 0)
+  verbose = 0, indent = 0,
+  ...)
 
 
 }
@@ -80,6 +85,14 @@ heights. If given, overrides \code{maxCoreScatter}. See \code{\link[dynamicTreeC
   \item{minAbsGap}{ minimum cluster gap given as absolute height difference. If given, overrides
 \code{minGap}. See \code{\link[dynamicTreeCut]{cutreeDynamic}} for more details. }
 
+   \item{useBranchEigennodeDissim}{Logical: should branch eigennode (eigengene) dissimilarity be considered
+when merging branches in Dynamic Tree Cut?}
+
+   \item{minBranchEigennodeDissim}{Minimum consensus branch eigennode (eigengene) dissimilarity for
+branches to be considerd separate. The branch eigennode dissimilarity in individual sets
+is simly 1-correlation of the
+eigennodes; the consensus is defined as quantile with probability \code{consensusQuantile}.}
+
   \item{pamStage}{ logical.  If TRUE, the second (PAM-like) stage of module detection will be performed.
      See \code{\link[dynamicTreeCut]{cutreeDynamic}} for more details. }
 
@@ -88,7 +101,6 @@ If \code{TRUE}, the PAM stage will
 respect the dendrogram in the sense an object can be PAM-assigned only to clusters that lie below it on
 the branch that the object is merged into.
      See \code{\link[dynamicTreeCut]{cutreeDynamic}} for more details. }
-
 
   \item{minCoreKME}{ a number between 0 and 1. If a detected module does not have at least
 \code{minModuleKMESize} genes with eigengene connectivity at least \code{minCoreKME}, the module is
@@ -116,6 +128,8 @@ progressively more and more verbose. }
 
   \item{indent}{ indentation for diagnostic messages. Zero means no indentation, each unit adds
 two spaces. }
+
+  \item{...}{Other arguments.}
 }
 \details{
 

@@ -6,23 +6,46 @@
 eigengenes.
 }
 \usage{
-mergeCloseModules(exprData, colors, 
-                  consensusQuantile = 0,
-                  cutHeight = 0.2, 
-                  MEs = NULL, 
-                  impute = TRUE,
-                  useAbs = FALSE, 
-                  corFnc = cor, corOptions = list(use = 'p'),
-                  iterate = TRUE, 
-                  relabel = FALSE, 
-                  colorSeq = NULL, 
-                  getNewMEs = TRUE, 
-                  getNewUnassdME = TRUE,
-                  useSets = NULL,
-                  checkDataFormat = TRUE,
-                  unassdColor = ifelse(is.numeric(colors), 0, "grey"),
-                  trapErrors = FALSE,
-                  verbose = 1, indent = 0)
+mergeCloseModules(
+ # input data
+  exprData, colors,
+
+  # Optional starting eigengenes
+  MEs = NULL,
+
+  # Optional restriction to a subset of all sets
+  useSets = NULL,
+
+  # If missing data are present, impute them?
+  impute = TRUE,
+
+  # Input handling options
+  checkDataFormat = TRUE,
+  unassdColor = ifelse(is.numeric(colors), 0, "grey"),
+
+  # Options for eigengene network construction
+  corFnc = cor, corOptions = list(use = 'p'),
+  useAbs = FALSE,
+
+  # Options for constructing the consensus
+  equalizeQuantiles = FALSE,
+  quantileSummary = "mean",
+  consensusQuantile = 0,
+
+  # Merging options
+  cutHeight = 0.2,
+  iterate = TRUE,
+
+  # Output options
+  relabel = FALSE,
+  colorSeq = NULL,
+  getNewMEs = TRUE,
+  getNewUnassdME = TRUE,
+
+  # Options controlling behaviour of the function
+  trapErrors = FALSE,
+  verbose = 1, indent = 0)
+
 
 }
 \arguments{
@@ -34,26 +57,43 @@ columns to genes, or in a multi-set format (see \code{\link{checkSets}}). See
 The method only makes sense when genes have the
 same color label in all sets, hence a single vector. }
 
-  \item{consensusQuantile}{A number giving the desired quantile to use in the consensus similarity
-calculation (see details).}
-
-  \item{cutHeight}{Maximum dissimilarity (i.e., 1-correlation) that qualifies modules for merging.}
-
   \item{MEs}{If module eigengenes have been calculated before, the user can save some computational time
 by inputting them. \code{MEs} should have the same format as \code{exprData}. 
 If they are not given, they will be calculated.}
+
+  \item{useSets}{A vector of scalar allowing the user to specify which sets will be used to calculate the
+consensus dissimilarity of module eigengenes. Defaults to all given sets. } 
 
   \item{impute}{Should missing values be imputed in eigengene calculation? If imputation is disabled, the
 presence of \code{NA} entries will cause the eigengene calculation to fail and eigengenes will be
 replaced by their hubgene approximation. See \code{\link{moduleEigengenes}} for more details.}
 
-  \item{useAbs}{Specifies whether absolute value of correlation or plain correlation (of module
-eigengenes) should be used in calculating module dissimilarity.}
+  \item{checkDataFormat}{If TRUE, the function will check \code{exprData} and \code{MEs} for correct
+multi-set structure. If single set data is given, it will be converted into a format usable for the
+function. If FALSE, incorrect structure of input data will trigger an error.}
+
+  \item{unassdColor}{Specifies the string that labels unassigned genes. Module of this color will
+not enter the module eigengene clustering and will not be merged with other modules.}
 
   \item{corFnc}{Correlation function to be used to calculate correlation of module eigengenes. }
 
   \item{corOptions}{Can be used to specify options to the correlation function, in addition to argument
 \code{x} which is used to pass the actual data to calculate the correlation of.}
+
+  \item{useAbs}{Specifies whether absolute value of correlation or plain correlation (of module
+eigengenes) should be used in calculating module dissimilarity.}
+
+  \item{equalizeQuantiles}{Logical: should quantiles of the eigengene dissimilarity matrix be equalized
+("quantile normalized")? The default is \code{FALSE} for reproducibility of old code, but better results
+will probably be achieved if quantile equalizatio is used.}
+
+  \item{quantileSummary}{One of \code{"mean"} or \code{"median"}. Controls how a reference dissimilarity
+is computed from the input ones (using mean or median, respectively).} 
+
+  \item{consensusQuantile}{A number giving the desired quantile to use in the consensus similarity
+calculation (see details).}
+
+  \item{cutHeight}{Maximum dissimilarity (i.e., 1-correlation) that qualifies modules for merging.}
 
   \item{iterate}{Controls whether the merging procedure should be repeated until there is no change. If
 FALSE, only one iteration will be executed.}
@@ -71,16 +111,6 @@ returned.}
 calculate the eigengene of the 'module' of unassigned ('grey') genes. Setting this option to
 \code{TRUE} will force the calculation of the unassigned eigengene in the returned newMEs, but not
 in the returned oldMEs.}
-
-  \item{useSets}{A vector of scalar allowing the user to specify which sets will be used to calculate the
-consensus dissimilarity of module eigengenes. Defaults to all given sets. } 
-
-  \item{checkDataFormat}{If TRUE, the function will check \code{exprData} and \code{MEs} for correct
-multi-set structure. If single set data is given, it will be converted into a format usable for the
-function. If FALSE, incorrect structure of input data will trigger an error.}
-
-  \item{unassdColor}{Specifies the string that labels unassigned genes. Module of this color will
-not enter the module eigengene clustering and will not be merged with other modules.}
 
   \item{trapErrors}{Controls whether computational errors in calculating module eigengenes, their
 dissimilarity, and merging trees should be trapped. If \code{TRUE}, errors will be trapped and the

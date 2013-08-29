@@ -100,6 +100,8 @@ Steve Horvath
 }
 
 \examples{
+
+require(survival) # For is.Surv in rcorr.cens
 m=50
 y=sample(c(1,2),m,replace=TRUE)
 datExprSignal=simulateModule(scale(y),30)

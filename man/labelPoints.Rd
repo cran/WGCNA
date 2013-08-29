@@ -12,7 +12,10 @@ while it will help in many cases, it is by no means perfect. Consider this funct
 improve the algorithm in the future to make it useful in a broader range of situations.
 }
 \usage{
-labelPoints(x, y, labels, cex = 0.7, offs = 0.01, xpd = TRUE, jiggle = 0, protectEdges = TRUE, ...)
+labelPoints(
+   x, y, labels, 
+   cex = 0.7, offs = 0.01, xpd = TRUE, 
+   jiggle = 0, protectEdges = TRUE, ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -79,12 +82,14 @@ within the plot. Sometimes this may cause some overlapping with other points or 
 
 # Create a basic scatterplot
    col = standardColors(n);
-   plot(x,y, pch = 21, col =1, bg = col, cex = 2.6, xlim = c(-0.1, 1.1), ylim = c(-0.1, 1.0));
+   plot(x,y, pch = 21, col =1, bg = col, cex = 2.6, 
+        xlim = c(-0.1, 1.1), ylim = c(-0.1, 1.0));
    labelPoints(x, y, paste("Pt", c(1:n), sep=""), offs = 0.10, cex = 1);
 
 # label points using longer text labels. Note the positioning is not perfect, but close enough.
 
-   plot(x,y, pch = 21, col =1, bg = col, cex = 2.6, xlim = c(-0.1, 1.1), ylim = c(-0.1, 1.0));
+   plot(x,y, pch = 21, col =1, bg = col, cex = 2.6, 
+        xlim = c(-0.1, 1.1), ylim = c(-0.1, 1.0));
    labelPoints(x, y, col, offs = 0.10, cex = 0.8);
 }
 \keyword{ plot }% __ONLY ONE__ keyword per line

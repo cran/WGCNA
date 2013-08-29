@@ -5,8 +5,16 @@
    This function performs gene screening based on a given trait and gene network properties
 }
 \usage{
-automaticNetworkScreening(datExpr, y, power = 6, networkType = "unsigned", detectCutHeight = 0.995,
-minModuleSize = min(20, ncol(as.matrix(datExpr))/2), datME = NULL, getQValues = TRUE, ...)
+automaticNetworkScreening(
+   datExpr, 
+   y, 
+   power = 6, 
+   networkType = "unsigned", 
+   detectCutHeight = 0.995,
+   minModuleSize = min(20, ncol(as.matrix(datExpr))/2), 
+   datME = NULL, 
+   getQValues = TRUE, 
+   ...)
 }
 \arguments{
   \item{datExpr}{ data frame containing the expression data, columns corresponding to genes and rows to

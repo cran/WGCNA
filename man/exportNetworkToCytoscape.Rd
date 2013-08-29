@@ -6,8 +6,16 @@
 Cytoscape.
 }
 \usage{
-exportNetworkToCytoscape(adjMat, edgeFile = NULL, nodeFile = NULL, weighted = TRUE, threshold = 0.5,
-nodeNames = NULL, altNodeNames = NULL, nodeAttr = NULL, includeColNames = TRUE)
+exportNetworkToCytoscape(
+   adjMat,
+   edgeFile = NULL,
+   nodeFile = NULL,
+   weighted = TRUE,
+   threshold = 0.5,
+   nodeNames = NULL,
+   altNodeNames = NULL,
+   nodeAttr = NULL,
+   includeColNames = TRUE)
 }
 \arguments{
   \item{adjMat}{ adjacency matrix giving connection strengths among the nodes in the network. }

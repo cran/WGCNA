@@ -17,7 +17,7 @@ GOenrichmentAnalysis(labels,
                      yeastORFs = NULL,
                      organism = "human", 
                      ontologies = c("BP", "CC", "MF"), 
-                     evidence = c("IMP", "IGI", "IPI", "ISS", "IDA", "IEA", "TAS", "NAS", "ND", "IC"), 
+                     evidence = "all",
                      includeOffspring = TRUE, 
                      backgroundType = "givenInGO",
                      removeDuplicates = TRUE,
@@ -52,12 +52,8 @@ in each specified category, plus a separate list of terms with best enrichment i
 combined. }
 
   \item{evidence}{ vector of character strings specifying admissible evidence for each gene in its
-specific term. GO uses the following codes: IMP: inferred from mutant phenotype; IGI: inferred
-from genetic interaction; IPI: inferred from physical interaction; ISS: inferred from
-sequence similarity; IDA: inferred from direct assay; IEP: inferred from expression
-pattern; IEA: inferred from electronic annotation; TAS: traceable author statement; 
-NAS: non-traceable author statement; ND: no biological data available; IC: inferred by
-curator. The default is to use all evidence types.  }
+specific term, or "all" for all evidence codes. See Details or http://www.geneontology.org/GO.evidence.shtml for
+available evidence codes and their meaning.}
 
   \item{includeOffspring}{ logical: should genes belonging to the offspring of each term be included in
 the term? As a default, only genes belonging directly to each term are associated with the term. Note
@@ -109,6 +105,43 @@ least one term in GO (in any of the ontologies).
 For best results, the newest annotation libraries should be used. Because of the way
 Bioconductor is set up, to get the newest annotation libraries you may have to use the current version of
 R. 
+
+According to http://www.geneontology.org/GO.evidence.shtml, the following codes are used by GO:
+\preformatted{
+  Experimental Evidence Codes
+      EXP: Inferred from Experiment
+      IDA: Inferred from Direct Assay
+      IPI: Inferred from Physical Interaction
+      IMP: Inferred from Mutant Phenotype
+      IGI: Inferred from Genetic Interaction
+      IEP: Inferred from Expression Pattern
+
+  Computational Analysis Evidence Codes
+      ISS: Inferred from Sequence or Structural Similarity
+      ISO: Inferred from Sequence Orthology
+      ISA: Inferred from Sequence Alignment
+      ISM: Inferred from Sequence Model
+      IGC: Inferred from Genomic Context
+      IBA: Inferred from Biological aspect of Ancestor
+      IBD: Inferred from Biological aspect of Descendant
+      IKR: Inferred from Key Residues
+      IRD: Inferred from Rapid Divergence
+      RCA: inferred from Reviewed Computational Analysis
+
+  Author Statement Evidence Codes
+      TAS: Traceable Author Statement
+      NAS: Non-traceable Author Statement
+
+  Curator Statement Evidence Codes
+      IC: Inferred by Curator
+      ND: No biological Data available
+
+  Automatically-assigned Evidence Codes
+      IEA: Inferred from Electronic Annotation
+
+  Obsolete Evidence Codes
+      NR: Not Recorded 
+}
 }
 \value{
   A list with the following components:

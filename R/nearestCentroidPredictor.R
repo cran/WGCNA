@@ -335,7 +335,7 @@ nearestCentroidPredictor = function(
 
   if (weighSimByPrediction > 0)
   {
-    pr = WGCNA:::.quickGeneVotingPredictor.CV(xSel, xtestSel, c(1:nSelect))
+    pr = .quickGeneVotingPredictor.CV(xSel, xtestSel, c(1:nSelect))
     dCV = sqrt(colMeans( (pr$CVpredicted - xSel)^2, na.rm = TRUE));
     dTS = sqrt(colMeans( (pr$predictedTest - xtestSel)^2, na.rm = TRUE));
     dTS[dTS==0] = min(dTS[dTS>0]);

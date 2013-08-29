@@ -125,6 +125,7 @@ static inline int pthread_join_c(pthread_t thread, void * * value_ptr, int threa
 #include <sys/time.h>
 
 #include <R.h>
+#include <Rinternals.h>
 #include <R_ext/BLAS.h>
 #include <R_ext/libextern.h>
 #define LDOUBLE 	long double
@@ -153,12 +154,6 @@ int nProcessors()
 #endif
   return (int) nProcessorsOnline;
 }
-
-void nProcessorsForR(int * result)
-{
-  *result = nProcessors();
-}
-
 
 #define MxThreads      128
 
@@ -623,6 +618,82 @@ int useNThreads(int n, int nThreadsRequested)
 
 //===================================================================================================
 
+
+// Re-write cor1Fast as a function that can be called using .Call
+// Since I don't know how to create and fill lists in C code, I will for now return the nNA and err results
+// via supplied arguments. Not ideal but will do.
+
+SEXP cor1Fast_call(SEXP x_s, SEXP quick_s, SEXP cosine_s,
+                       SEXP nNA_s, SEXP err_s,
+                       SEXP nThreads_s, SEXP verbose_s, SEXP indent_s)
+{
+  SEXP dim, cor_s; 
+  // SEXP out, nNA_s, err_s;
+
+  int nr, nc, *cosine, *nThreads, *verbose, *indent;
+  int *nNA, *err;
+
+  double *x, *corMat, *quick;
+
+  /* Get dimensions of 'x'. */
+  PROTECT(dim = getAttrib(x_s, R_DimSymbol));
+  nr = INTEGER(dim)[0];
+  nc = INTEGER(dim)[1];
+  // Rprintf("Matrix dimensions: %d %d\n", nr, nc);
+
+  x = REAL(x_s);
+
+  // Rprintf("First three elements of x: %f %f %f\n", x[0], x[1], x[2]);
+
+  quick = REAL(quick_s);
+  cosine = INTEGER(cosine_s);
+  nThreads = INTEGER(nThreads_s);
+  verbose = INTEGER(verbose_s);
+  indent = INTEGER(indent_s);
+
+  // Allocate space for the result
+  PROTECT(cor_s = allocMatrix(REALSXP, nc, nc));
+  // PROTECT(nNA_s = allocVector(REALSXP, 1));
+  // PROTECT(err_s = allocVector(REALSXP, 1));
+
+  corMat = REAL(cor_s);
+  nNA = INTEGER(nNA_s);
+  err = INTEGER(err_s);
+
+  // Rprintf("Calling cor1Fast...\n");
+  cor1Fast(x, &nr, &nc, quick, cosine, 
+           corMat, nNA, err,
+           nThreads, verbose, indent);
+
+  // Rprintf("Done...\n");
+  UNPROTECT(2);
+  return cor_s;
+} 
+
+// test function
+
+SEXP testFnc(SEXP a, SEXP b)
+{
+  SEXP ans;
+
+  PROTECT(ans=allocVector(REALSXP, 1));
+
+  double *aa, *bb, *sum;
+
+  aa = REAL(a);
+  bb = REAL(b);
+  sum = REAL(ans);
+
+  *sum = *aa + *bb;
+  *aa = *aa - *bb;
+
+  UNPROTECT(1);
+  return(ans);
+
+}
+
+
+// C-level correlation calculation
 
 void cor1Fast(double * x, int * nrow, int * ncol, double * quick, 
           int * cosine, 

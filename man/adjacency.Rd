@@ -6,12 +6,16 @@
   Calculates (correlation or distance) network adjacency from given expression data or from a similarity.
 }
 \usage{
-adjacency(datExpr, selectCols = NULL, 
-          type = "unsigned", power = if (type=="distance") 1 else 6,
+adjacency(datExpr, 
+          selectCols = NULL, 
+          type = "unsigned", 
+          power = if (type=="distance") 1 else 6,
           corFnc = "cor", corOptions = "use = 'p'",
           distFnc = "dist", distOptions = "method = 'euclidean'")
 
-adjacency.fromSimilarity(similarity, type = "unsigned", power = if (type=="distance") 1 else 6)
+adjacency.fromSimilarity(similarity, 
+                         type = "unsigned", 
+                         power = if (type=="distance") 1 else 6)
 
 }
 \arguments{

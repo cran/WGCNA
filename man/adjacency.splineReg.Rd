@@ -11,7 +11,11 @@ is typically non-symmetric. To arrive at a (symmetric) adjacency matrix, one can
 symmetrization methods with \code{symmetrizationMethod}. }
 
 \usage{
-adjacency.splineReg(datExpr, df = 6-(nrow(datExpr)<100)-(nrow(datExpr)<30), symmetrizationMethod = "mean", ...) 
+adjacency.splineReg(
+   datExpr, 
+   df = 6-(nrow(datExpr)<100)-(nrow(datExpr)<30), 
+   symmetrizationMethod = "mean", 
+   ...) 
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{

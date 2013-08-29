@@ -6,7 +6,11 @@
 all pairs of sets.
 }
 \usage{
-setCorrelationPreservation(multiME, setLabels, excludeGrey = TRUE, greyLabel = "grey", method = "absolute")
+setCorrelationPreservation(
+   multiME, 
+   setLabels, 
+   excludeGrey = TRUE, greyLabel = "grey", 
+   method = "absolute")
 }
 \arguments{
 

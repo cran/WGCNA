@@ -63,11 +63,6 @@
 
 .qValueFromP = function(p, summaryCols = NULL, summaryInd = NULL)
 {
-  reqExpr = parse(text = "require(qvalue)");
-  pkgAv = eval(reqExpr)
-  if (!pkgAv)
-    printFlush("Warning in modulePreservation: Package qvalue is not available, cannot calculate q values."); 
-
   q = p # This carries over all necessary names and missing values when ref==test
   nRef = length(p);
   for (ref in 1:nRef)
@@ -90,14 +85,12 @@
         range = c( (1+as.numeric(ignoreFirst)):ncol);
         for (col in range)
         {
-          xx = try(eval(parse(text = "qvalue(10^pp[,col])")), silent = TRUE)
+          xx = try(qvalue(10^pp[,col]), silent = TRUE)
           if (class(xx)=="try-error" || length(xx)==1)
           {
             q[[ref]][[test]][, col] = rep(NA, nrow);
-            if (pkgAv) 
-              printFlush(paste("Warning in modulePreservation: qvalue calculation failed for",
-                               "column", col, 
-                               "for reference set", ref, "and test set", test))
+            printFlush(paste("Warning in modulePreservation: qvalue calculation failed for",
+                             "column", col, "for reference set", ref, "and test set", test))
           } else 
             q[[ref]][[test]][, col] = xx$qvalues;
         }

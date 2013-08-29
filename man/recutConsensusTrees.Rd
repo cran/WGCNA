@@ -22,6 +22,10 @@ recutConsensusTrees(
   checkMinModuleSize = TRUE,
   maxCoreScatter = NULL, minGap = NULL,
   maxAbsCoreScatter = NULL, minAbsGap = NULL,
+
+  useBranchEigennodeDissim = FALSE,
+  minBranchEigennodeDissim = mergeCutHeight,
+
   pamStage = TRUE, pamRespectsDendro = TRUE,
   trimmingConsensusQuantile = 0,
   minCoreKME = 0.5, minCoreKMESize = minModuleSize/3,
@@ -88,6 +92,14 @@ heights. If given, overrides \code{maxCoreScatter}. See \code{\link[dynamicTreeC
 
   \item{minAbsGap}{ minimum cluster gap given as absolute height difference. If given, overrides
 \code{minGap}. See \code{\link[dynamicTreeCut]{cutreeDynamic}} for more details. }
+
+   \item{useBranchEigennodeDissim}{Logical: should branch eigennode (eigengene) dissimilarity be considered
+when merging branches in Dynamic Tree Cut?}
+
+   \item{minBranchEigennodeDissim}{Minimum consensus branch eigennode (eigengene) dissimilarity for
+branches to be considerd separate. The branch eigennode dissimilarity in individual sets
+is simly 1-correlation of the
+eigennodes; the consensus is defined as quantile with probability \code{consensusQuantile}.}
 
   \item{pamStage}{ logical.  If TRUE, the second (PAM-like) stage of module detection will be performed.
      See \code{\link[dynamicTreeCut]{cutreeDynamic}} for more details. }
