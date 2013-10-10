@@ -20,6 +20,7 @@ labeledHeatmap(
   xColorWidth = 0.05,
   yColorWidth = 0.05,
   colors = NULL, 
+  naColor = "grey",
   textMatrix = NULL, 
   cex.text = NULL, cex.lab = NULL, 
   cex.lab.x = cex.lab,
@@ -72,6 +73,8 @@ the range of the x and y axis. }
 
   \item{colors}{ color pallette to be used in the heatmap. Defaults to \code{\link{heat.colors}}. }
 
+  \item{naColor}{ color to be used for encoding missing data. }
+
   \item{textMatrix}{ optional matrix of text entries of the same dimensions as \code{Matrix}. }
 
   \item{cex.text}{ character expansion factor for \code{textMatrix}. }
@@ -122,8 +125,8 @@ annotation in the \code{xSymbols} and \code{ySymbols} arguments.
 
 # This example illustrates 4 main ways of annotating columns and rows of a heatmap.
 # Copy and paste the whole example into an R session with an interactive plot window;
-# alternatively, you may replace the command sizeGrWindow below by opening another graphical device such
-# as pdf.
+# alternatively, you may replace the command sizeGrWindow below by opening 
+# another graphical device such as pdf.
 
 # Generate a matrix to be plotted
 

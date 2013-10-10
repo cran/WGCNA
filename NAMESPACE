@@ -1,4 +1,14 @@
 useDynLib(WGCNA)
 
 exportPattern("^[^\\.]")
-import(grDevices, impute, dynamicTreeCut)
+
+
+import(foreach, doParallel, dynamicTreeCut, flashClust)
+importFrom(grDevices, dev.new)
+importFrom(utils, packageVersion, compareVersion)
+importFrom(parallel, detectCores)
+importFrom(matrixStats, rowWeightedMeans, colRanks, colQuantiles)
+importFrom(Hmisc, rcorr.cens, errbar)
+importFrom(impute, impute.knn)
+importFrom(reshape, cast, melt)
+importFrom(splines, ns)

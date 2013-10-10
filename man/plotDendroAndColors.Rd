@@ -11,6 +11,8 @@ plotDendroAndColors(
   colors, 
   groupLabels = NULL, 
   rowText = NULL,
+  rowTextAlignment = c("left", "center", "right"),
+  rowTextIgnore = NULL,
   textPositions = NULL,
   setLayout = TRUE, 
   autoColorHeight = TRUE, 
@@ -45,6 +47,13 @@ If given, must be either the same dimensions as \code{colors} or must have the s
 \code{textPositions} must be used to specify which columns of \code{colors} each column of \code{rowText}
 corresponds to. Each label that occurs will be displayed 
 once, under the largest continuous block of the corresponding \code{colors}.}
+
+  \item{rowTextAlignment}{Character string specifying whether the labels should be left-justified to the
+start of the largest block of each label, centered in the middle, or right-justified to the end of the 
+largest block.}
+
+  \item{rowTextIgnore}{Optional specifications of labels that should be ignored when displaying them using 
+\code{rowText} above. }
 
   \item{textPositions}{optional numeric vector of the same length as the number of columns in \code{rowText}
 giving the color rows under which the text rows should appear.} 

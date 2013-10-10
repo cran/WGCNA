@@ -8,9 +8,11 @@ Return pre-defined gene lists in several biomedical categories.
 This function returns gene sets for use with other R functions.  These gene sets can include inputted lists of genes and files containing user-defined lists of genes, as well as a pre-made collection of brain, blood, and other biological lists.  The function returns gene lists associated with each category for use with other enrichment strategies (i.e., GSVA).
 }
 \usage{
-returnGeneSetsAsList(fnIn = NULL, catNmIn = fnIn, useBrainLists = FALSE, useBloodAtlases = FALSE, 
-                     useStemCellLists = FALSE, useBrainRegionMarkers = FALSE, 
-					 useImmunePathwayLists = FALSE, geneSubset=NULL)
+returnGeneSetsAsList(
+   fnIn = NULL, catNmIn = fnIn, 
+   useBrainLists = FALSE, useBloodAtlases = FALSE, 
+   useStemCellLists = FALSE, useBrainRegionMarkers = FALSE, 
+   useImmunePathwayLists = FALSE, geneSubset=NULL)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{

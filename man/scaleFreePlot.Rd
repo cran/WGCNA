@@ -5,7 +5,12 @@
   A simple visula check of scale-free network ropology. 
 }
 \usage{
-scaleFreePlot(connectivity, nBreaks = 10, truncated = FALSE, removeFirst = FALSE, main = "", ...)
+scaleFreePlot(
+  connectivity, 
+  nBreaks = 10, 
+  truncated = FALSE,  
+  removeFirst = FALSE, 
+  main = "", ...)
 }
 \arguments{
   \item{connectivity}{ vector containing network connectivities. }

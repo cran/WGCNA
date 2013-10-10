@@ -25,6 +25,7 @@
 #include <sys/time.h>
 
 #include <R.h>
+#include <Rinternals.h>
 #include <R_ext/BLAS.h>
 #include <R_ext/libextern.h>
 #define LDOUBLE 	long double
@@ -59,6 +60,11 @@ const string 	AdjErrors[] = {"No error. Just a placeholder.",
                                "Unrecognized correlation type.",
                                "Unrecognized adjacency type."};
 
+void tomSimilarityFromAdj(double * adj, int * nGenes,
+                   int * tomType, int * denomType, double * tom,
+                   int * verbose, int * indent);
+
+
 //===============================================================================================
 
 // adjacency 
@@ -75,7 +81,8 @@ void adjacency(double * expr, int nSamples, int nGenes, int corType, int adjType
 
   // Rprintf("Received nGenes: %d, nSamples: %d\n", nGenes, nSamples);
 
-  // Rprintf("adjType: %d\n", adjType);
+  // Rprintf("adjacency: adjType: %d\n", adjType);
+  // Rprintf("adjacency: corType: %d\n", corType);
   int err = 0;
   switch (corType)
   {
@@ -186,177 +193,6 @@ void checkAvailableMemoryForR(double * size)
   *size = 1.0 *  checkAvailableMemory() ;
 }
   
-
-//===========================================================================================
-//
-// tomSimilarity
-//
-//===========================================================================================
-
-void tomSimilarity(double * expr, int * nSamples, int * nGenes, 
-                   int * corType, 
-                   int * adjType,
-                   double * power, 
-                   int * tomType, 
-                   int * denomType,
-                   double * maxPOutliers, 
-                   double * quick,
-                   int * fallback,
-                   int * cosine,
-                   double * tom, 
-                   int * warn,
-                   int * nThreads,
-                   int * verbose, int * indent)
-{
-  double 	* adj;
-
-  int		ng = *nGenes, ns = *nSamples;
-  int 		matSize = ng * ng;
-
-  int 		err = 0;
-
-  char		spaces[2* *indent+1];
-
-  for (int i=0; i<2* *indent; i++) spaces[i] = ' ';
-  spaces[2* *indent] = '\0';
-
-  int size=4000;
-  int success = 0;
-  double * pt;
-  while ( (pt=malloc(size*size*sizeof(double)))!=NULL )
-  {
-    size+=1000;
-    success = 1;
-    free(pt);
-  }
-
-  size -= 1000;
-  if ((*verbose > 0) && success) 
-     Rprintf("%sRough guide to maximum array size: about %d x %d array of doubles..\n", 
-            spaces, size, size);
-
-  if (*verbose > 0) Rprintf("%sTOM calculation: adjacency..\n", spaces);
-  if (* tomType==TomTypeNone)  // just calculate adjacency.
-  {
-    adjacency(expr, ns, ng, *corType, *adjType, *power, *maxPOutliers, *quick, *fallback, *cosine, 
-              tom, &err, warn, nThreads, *verbose, *indent);
-    if (*verbose > 0) Rprintf("\n");
-    if (err) error(AdjErrors[err]);
-    return;
-  }
-    
-  if ((adj = malloc(matSize * sizeof(double))) == NULL)
-    error("Memmory allocation error.");
-
-  if ((* tomType == TomTypeSigned) && (* adjType == AdjTypeUnsigned))
-    * adjType = AdjTypeUnsignedKeepSign;
-
-  if ((* tomType == TomTypeUnsigned) && (* adjType == AdjTypeUnsignedKeepSign))
-    * adjType = AdjTypeUnsigned;
-
-  adjacency(expr, ns, ng, * corType, * adjType, * power, * maxPOutliers, * quick, *fallback, *cosine, 
-            adj, & err, warn, nThreads, *verbose, *indent);
-
-  // Rprintf("TOM 1\n");
-  if (err) 
-  {
-     Rprintf("TOM: exit because adjacency set err.\n");
-     free(adj);
-     error(AdjErrors[err]);
-  }
-
-  // Rprintf("TOM 2\n");
-  double * conn;
-  // Rprintf("TOM allocating memory for conn..\n");
-  if ( (conn = malloc(ng * sizeof(double))) == NULL)
-  {
-    // Rprintf("TOM 3\n");
-    free(adj);
-    error("Memmory allocation error (connectivity)");
-  }
-
-  // Rprintf("    ..done\n");
-  if (*verbose > 0) Rprintf("%s..connectivity..\n", spaces);
-  for (int gene = 0; gene < ng; gene++)
-  {
-    double * adj2 = (adj + gene * ng);
-    double sum = 0.0;
-    for (int g2 = 0; g2 < ng; g2++)
-      sum += fabs(adj2[g2]);
-    conn[gene] = sum;
-  }
-
-  //Rprintf("checking diagonal adjacencies..");
-  //double sum = 0.0;
-  //for (int elem = 0; elem < ng; elem++) sum += adj[elem*ng + elem]-1;
-  //Rprintf("sum(diag-1)=%e", sum);
-
-  if (*verbose > 0) Rprintf("%s..matrix multiply..\n", spaces);
-  double alpha = 1.0, beta = 0.0;
-  dsyrk_("L", "N", nGenes, nGenes, & alpha, adj, nGenes, 
-         & beta, tom, nGenes);
-
-  if (*verbose > 0) Rprintf("%s..normalize..\n", spaces);
-  double * tom2;
-  double * adj2;
-  int ng1 = ng-1;
-  int nAbove1 = 0;
-  switch (* tomType)
-  {
-    case TomTypeUnsigned:
-      for (int j=0; j< ng1; j++)
-      {
-        tom2 = tom + (ng+1)*j + 1;  
-        adj2 = adj + (ng+1)*j + 1;
-        for (int i=j+1; i< ng; i++)
-        {
-          double den1;
-          if ((* denomType) == TomDenomMin)
-             den1 = fmin(conn[i], conn[j]);
-          else
-             den1 = (conn[i] + conn[j])/2;
-          *tom2 = ( *tom2 - *adj2) / ( den1 - * adj2 ) ;
-          *(tom + ng*i + j) = *tom2;
-          if (*tom2 > 1) nAbove1++;
-          tom2++;
-          adj2++;
-        }
-      }
-      break;
-    case TomTypeSigned:
-      for (int j=0; j< ng1; j++)
-      {
-        tom2 = tom + (ng+1)*j + 1;  
-        adj2 = adj + (ng+1)*j + 1;
-        for (int i=j+1; i< ng; i++)
-        {
-          double den1;
-          if ((* denomType) == TomDenomMin)
-             den1 = fmin(conn[i], conn[j]);
-          else
-             den1 = (conn[i] + conn[j])/2;
-          *tom2 = fabs( *tom2 - *adj2) / ( den1 - fabs(*adj2) );
-          if (*tom2 > 1) 
-          {
-	    Rprintf("TOM greater than 1: actual value: %f, i: %d, j: %d\n", *tom2, i, j);
-	    nAbove1++;
-	  }
-          *(tom + ng*i + j) = *tom2;
-          tom2++;
-          adj2++;
-        }
-      }
-      break;
-  }
-  if (nAbove1 > 0)
-    Rprintf("problem: %d adjacencies are larger than 1.\n", nAbove1);
-
-  free(conn);
-  free(adj);
-  if (*verbose > 0) Rprintf("%s..done.\n", spaces);
-}
-
-
 //====================================================================================================
 
 // TOM similarity from adjacency
@@ -389,12 +225,12 @@ void tomSimilarityFromAdj(double * adj, int * nGenes,
     conn[gene] = sum;
   }
 
-  if (*verbose > 0) Rprintf("%s..matrix multiply..\n", spaces);
+  if (*verbose > 0) Rprintf("%s..matrix multiplication..\n", spaces);
   double alpha = 1.0, beta = 0.0;
   dsyrk_("L", "N", nGenes, nGenes, & alpha, adj, nGenes, 
          & beta, tom, nGenes);
 
-  if (*verbose > 0) Rprintf("%s..normalize..\n", spaces);
+  if (*verbose > 0) Rprintf("%s..normalization..\n", spaces);
   // Rprintf("Using denomType %d\n", *denomType);
   double * tom2;
   double * adj2;
@@ -447,6 +283,11 @@ void tomSimilarityFromAdj(double * adj, int * nGenes,
       }
       break;
   }
+
+  // Set the diagonal of tom to 1
+  for (int i=0; i<ng; i++)
+    *(tom + ng*i + i) = 1;
+
   if (nAbove1 > 0)
     Rprintf("problem: %d TOM entries are larger than 1.\n", nAbove1);
 
@@ -454,12 +295,154 @@ void tomSimilarityFromAdj(double * adj, int * nGenes,
   if (*verbose > 0) Rprintf("%s..done.\n", spaces);
 }
 
+
+//===========================================================================================
+//
+// tomSimilarity
+//
+//===========================================================================================
+//
+
+void tomSimilarity(double * expr, int * nSamples, int * nGenes, 
+                   int * corType, 
+                   int * adjType,
+                   double * power, 
+                   int * tomType, 
+                   int * denomType,
+                   double * maxPOutliers, 
+                   double * quick,
+                   int * fallback,
+                   int * cosine,
+                   double * tom, 
+                   int * warn,
+                   int * nThreads,
+                   int * verbose, int * indent)
+{
+  double 	* adj;
+
+  int		ng = *nGenes, ns = *nSamples;
+  int 		matSize = ng * ng;
+
+  int 		err = 0;
+
+  char		spaces[2* *indent+1];
+
+  for (int i=0; i<2* *indent; i++) spaces[i] = ' ';
+  spaces[2* *indent] = '\0';
+
 /*
+  int size=4000;
+  int success = 0;
+  double * pt;
+  while ( (pt=malloc(size*size*sizeof(double)))!=NULL )
+  {
+    size+=1000;
+    success = 1;
+    free(pt);
+  }
+
+  size -= 1000;
+  if ((*verbose > 0) && success) 
+     Rprintf("%sRough guide to maximum array size: about %d x %d array of doubles..\n", 
+            spaces, size, size);
+*/
+
+  if (*verbose > 0) Rprintf("%sTOM calculation: adjacency..\n", spaces);
+  if (* tomType==TomTypeNone)  // just calculate adjacency.
+  {
+    adjacency(expr, ns, ng, *corType, *adjType, *power, *maxPOutliers, *quick, *fallback, *cosine, 
+              tom, &err, warn, nThreads, *verbose, *indent);
+    if (*verbose > 0) Rprintf("\n");
+    if (err) error(AdjErrors[err]);
+    return;
+  }
+    
+  if ((adj = malloc(matSize * sizeof(double))) == NULL)
+    error("Memmory allocation error.");
+
+  if ((* tomType == TomTypeSigned) && (* adjType == AdjTypeUnsigned))
+    * adjType = AdjTypeUnsignedKeepSign;
+
+  if ((* tomType == TomTypeUnsigned) && (* adjType == AdjTypeUnsignedKeepSign))
+    * adjType = AdjTypeUnsigned;
+
+  adjacency(expr, ns, ng, * corType, * adjType, * power, * maxPOutliers, * quick, *fallback, *cosine, 
+            adj, & err, warn, nThreads, *verbose, *indent);
+
+  // Rprintf("TOM 1\n");
+  if (err) 
+  {
+     Rprintf("TOM: exit because 'adjacency' reported an error.\n");
+     free(adj);
+     error(AdjErrors[err]);
+  }
+
+  tomSimilarityFromAdj(adj, nGenes, tomType, denomType, tom, verbose, indent);
+
+  free(adj);
+}
+
+// Version to be called via .Call
+//
+
+SEXP tomSimilarity_call(SEXP expr_s, 
+                        SEXP corType_s, SEXP adjType_s, SEXP power_s,
+                        SEXP tomType_s, SEXP denomType_s,
+                        SEXP maxPOutliers_s, SEXP quick_s,  
+                        SEXP fallback_s, SEXP cosine_s, 
+                        SEXP warn_s, // This is an "output" variable
+                        SEXP nThreads_s, SEXP verbose_s, SEXP indent_s)
+{
+  SEXP dim, tom_s;
+
+  int *nSamples, *nGenes, *fallback, *cosine, *warn, *nThreads, *verbose, *indent;
+  int *corType, *adjType, *tomType, *denomType;
+  int *nNA, *err;
+
+  double *expr, *power, *quick, *tom, *maxPOutliers;
+
+  /* Get dimensions of 'expr'. */
+  PROTECT(dim = getAttrib(expr_s, R_DimSymbol));
+  nSamples = INTEGER(dim);
+  nGenes = INTEGER(dim)+1;
+  expr = REAL(expr_s);
+
+  corType = INTEGER(corType_s);
+  adjType = INTEGER(adjType_s);
+  tomType = INTEGER(tomType_s);
+  denomType = INTEGER(denomType_s);
+  fallback = INTEGER(fallback_s);
+  cosine = INTEGER(cosine_s);
+  warn = INTEGER(warn_s);
+  nThreads = INTEGER(nThreads_s);
+  verbose = INTEGER(verbose_s);
+  indent = INTEGER(indent_s);
+
+  power = REAL(power_s);
+  quick = REAL(quick_s);
+  maxPOutliers = REAL(maxPOutliers_s);
+
+  PROTECT(tom_s = allocMatrix(REALSXP, *nGenes, *nGenes));   
+  tom = REAL(tom_s);
+
+  tomSimilarity(expr, nSamples, nGenes,
+                corType, adjType, power,
+                tomType, denomType, 
+                maxPOutliers, quick, fallback, cosine,
+                tom, warn, nThreads, verbose, indent);
+
+  UNPROTECT(2);
+
+  return tom_s;
+}
+
+
+/*======================================================================================================
 
   Function returning the column-wise minimum and minimum index. For easier integration with R, the index
 will also be stored as a double. NA's are ignored.
 
-*/
+========================================================================================================*/
 
 void minWhichMin(double * matrix, int * nRows, int * nColumns, double * min, double * whichMin)
 {

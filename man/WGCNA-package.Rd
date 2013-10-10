@@ -13,11 +13,11 @@ also be used for general association networks specified by a symmetric adjacency
 \details{
 \tabular{ll}{
 Package: \tab WGCNA\cr
-Version: \tab 1.27-1\cr
-Date: \tab 2013-04-01\cr
-Depends: \tab R (>= 2.10), stats, impute, grDevices, dynamicTreeCut (>= 1.20), utils, flashClust,
-Hmisc, splines, reshape \cr
-Suggests: AnnotationDbi, GO.db, org.*.eg.db, infotheo, entropy, minet
+Version: \tab 1.34\cr
+Date: \tab 2013-10-10\cr
+Depends: \tab R (>= 2.14), dynamicTreeCut (>= 1.60), flashClust, Hmisc \cr
+Imports: \tab stats, impute, grDevices, utils, splines, reshape, foreach, doParallel, matrixStats (>= 0.8.1) \cr
+Suggests: \tab GO.db, org.Hs.eg.db, org.Mm.eg.db, AnnotationDbi, infotheo, entropy, minet, survival \cr
 ZipData: \tab no\cr
 License: \tab GPL (>= 2)\cr
 URL: \tab http://www.genetics.ucla.edu/labs/horvath/CoexpressionNetwork/Rpackages/WGCNA/\cr

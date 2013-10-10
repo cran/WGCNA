@@ -6,7 +6,13 @@
 chooseTopHubInEachModule returns the gene in each module with the highest connectivity, looking at all genes in the expression file.
 }
 \usage{
-chooseTopHubInEachModule(datExpr, colorh, omitColors = "grey", power = 2, type = "signed", ...)
+chooseTopHubInEachModule(
+   datExpr, 
+   colorh, 
+   omitColors = "grey", 
+   power = 2, 
+   type = "signed", 
+   ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{

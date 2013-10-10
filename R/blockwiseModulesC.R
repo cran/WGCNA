@@ -32,15 +32,15 @@ TOMsimilarityFromExpr = function(datExpr, corType = "pearson", networkType = "un
                                  nThreads = 0,
                                  verbose = 1, indent = 0)
 {
-  corTypeC = pmatch(corType, .corTypes)-1;
+  corTypeC = as.integer(pmatch(corType, .corTypes)-1);
   if (is.na(corTypeC))
     stop(paste("Invalid 'corType'. Recognized values are", paste(.corTypes, collapse = ", ")))
 
-  TOMTypeC = pmatch(TOMType, .TOMTypes)-1;
+  TOMTypeC = as.integer(pmatch(TOMType, .TOMTypes)-1);
   if (is.na(TOMTypeC))
     stop(paste("Invalid 'TOMType'. Recognized values are", paste(.TOMTypes, collapse = ", ")))
 
-  TOMDenomC = pmatch(TOMDenom, .TOMDenoms)-1;
+  TOMDenomC = as.integer(pmatch(TOMDenom, .TOMDenoms)-1);
   if (is.na(TOMDenomC))
     stop(paste("Invalid 'TOMDenom'. Recognized values are", paste(.TOMDenoms, collapse = ", ")))
 
@@ -48,7 +48,7 @@ TOMsimilarityFromExpr = function(datExpr, corType = "pearson", networkType = "un
   if (quickCor < 0) stop("quickCor must be positive.");
   if ( (maxPOutliers < 0) | (maxPOutliers > 1)) stop("maxPOutliers must be between 0 and 1.");
 
-  fallback = pmatch(pearsonFallback, .pearsonFallbacks)
+  fallback = as.integer(pmatch(pearsonFallback, .pearsonFallbacks));
   if (is.na(fallback))
       stop(paste("Unrecognized 'pearsonFallback'. Recognized values are (unique abbreviations of)\n",
            paste(.pearsonFallbacks, collapse = ", ")))
@@ -58,7 +58,7 @@ TOMsimilarityFromExpr = function(datExpr, corType = "pearson", networkType = "un
 
   if ( (power<1) | (power>30) ) stop("power must be between 1 and 30.");
 
-  networkTypeC = charmatch(networkType, .networkTypes)-1;
+  networkTypeC = as.integer(charmatch(networkType, .networkTypes)-1);
   if (is.na(networkTypeC))
     stop(paste("Unrecognized networkType argument.", 
          "Recognized values are (unique abbreviations of)", paste(.networkTypes, collapse = ", ")));
@@ -66,29 +66,25 @@ TOMsimilarityFromExpr = function(datExpr, corType = "pearson", networkType = "un
   if (length(dimEx)!=2) stop("datExpr has incorrect dimensions.")
   nGenes = dimEx[2];
   nSamples = dimEx[1];
-  warn = 0;
+  warn = as.integer(0);
 
-  tom = matrix(0, nGenes, nGenes);
+  datExpr = as.matrix(datExpr);
 
-  tomResult = .C("tomSimilarity", as.double(as.matrix(datExpr)), as.integer(nSamples), as.integer(nGenes),
-        as.integer(corTypeC), as.integer(networkTypeC), as.double(power), as.integer(TOMTypeC), 
-        as.integer(TOMDenomC),
-        as.double(maxPOutliers),
-        as.double(quickCor),
-        as.integer(fallback),
-        as.integer(cosineCorrelation),
-        tom = as.double(tom), warn = as.integer(warn), as.integer(nThreads), 
-        as.integer(verbose), as.integer(indent), NAOK = TRUE, DUP = FALSE, PACKAGE = "WGCNA") 
+  tom = .Call("tomSimilarity_call", datExpr, 
+        as.integer(corTypeC), as.integer(networkTypeC), as.double(power), 
+        as.integer(TOMTypeC), as.integer(TOMDenomC),
+        as.double(maxPOutliers), as.double(quickCor),
+        as.integer(fallback), as.integer(cosineCorrelation),
+        warn, 
+        as.integer(nThreads), as.integer(verbose), as.integer(indent));
 
-  # FIXME: output warnings if necessary
-  tom[,] = tomResult$tom
   diag(tom) = 1;
-  rm(tomResult); collectGarbage();
   return (tom);
 }
 
 
-#===================================================================================================
+
+#==========================================================================================================
 #
 # TOMsimilarity (from adjacency)
 #
@@ -139,30 +135,6 @@ TOMdist = function(adjMat, TOMType = "unsigned", TOMDenom = "min", verbose = 1, 
 }
 
 
-#==================================================================================
-#
-# Helper functions
-#
-#==================================================================================
-
-# order labels by size
-
-.orderLabelsBySize = function(labels, exclude = NULL)
-{
-  levels.0 = sort(unique(labels));
-  levels = levels.0[ !levels.0 %in% exclude]
-  levels.excl = levels.0 [levels.0 %in% exclude]
-  rearrange = labels %in% levels;
-  tab = table(labels [ rearrange ]);
-  rank = rank(-tab);
-
-  oldOrder = c(levels.excl, names(tab));
-  newOrder = c(levels.excl, names(tab)[rank]);
-
-  newOrder[ match(labels, oldOrder) ]
-}
- 
-
 #==========================================================================================================
 #
 # blockwiseModules
@@ -182,7 +154,12 @@ blockwiseModules = function(datExpr, blocks = NULL,
                             detectCutHeight = 0.995, minModuleSize = min(20, ncol(datExpr)/2 ),
                             maxCoreScatter = NULL, minGap = NULL,
                             maxAbsCoreScatter = NULL, minAbsGap = NULL,
+
+                            useBranchEigennodeDissim = FALSE,
+                            minBranchEigennodeDissim = mergeCutHeight,
+
                             pamStage = TRUE, pamRespectsDendro = TRUE,
+
                             # minKMEtoJoin =0.7, 
                             minCoreKME = 0.5, minCoreKMESize = minModuleSize/3,
                             minKMEtoStay = 0.3,
@@ -198,7 +175,8 @@ blockwiseModules = function(datExpr, blocks = NULL,
                             pearsonFallback = "individual",
                             cosineCorrelation = FALSE,
                             nThreads = 0,
-                            verbose = 0, indent = 0)
+                            verbose = 0, indent = 0,
+                            ...)
 {
   spaces = indentSpaces(indent);
 
@@ -219,6 +197,7 @@ blockwiseModules = function(datExpr, blocks = NULL,
   intCorType = pmatch(corType, .corTypes);
   if (is.na(intCorType))
     stop(paste("Invalid 'corType'. Recognized values are", paste(.corTypes, collapse = ", ")))
+
   intTOMType = pmatch(TOMType, .TOMTypes);
   if (is.na(intTOMType))
     stop(paste("Invalid 'TOMType'. Recognized values are", paste(.TOMTypes, collapse = ", ")))
@@ -275,6 +254,46 @@ blockwiseModules = function(datExpr, blocks = NULL,
     gsg = list(goodSamples = rep(TRUE, nSamples), goodGenes = rep(TRUE, nGenes), allOK = TRUE);
   }
 
+  datExpr.scaled.imputed = t(impute.knn(t(scale(datExpr)))$data)
+  if (any(is.na(datExpr)))
+     datExpr.scaled.imputed = t(impute.knn(t(scale(datExpr)))$data)
+
+  corFnc = .corFnc[intCorType];
+  corOptions = list(use = 'p');
+  signed = networkType %in% c("signed", "signed hybrid");
+
+  # Set up advanced tree cut methods
+
+  otherArgs = list(...);
+
+  if (useBranchEigennodeDissim)
+  {
+    branchSplitFnc = list("branchEigengeneDissim");
+    externalSplitOptions = list(list( corFnc = corFnc, corOptions = corOptions,
+                                      signed = signed));
+    nExternalBranchSplitFnc = 1;
+    minExternalSplit = minBranchEigennodeDissim;
+  } else {
+    branchSplitFnc = list();
+    externalSplitOptions = list(list())
+    nExternalBranchSplitFnc = 0;
+    minExternalSplit = numeric(0);
+  }
+
+  if ("useBranchSplit" %in% names(otherArgs))
+  {
+    if (otherArgs$useBranchSplit)
+    {
+      nExternalBranchSplitFnc = nExternalBranchSplitFnc + 1;
+      branchSplitFnc[[nExternalBranchSplitFnc]] = "branchSplit"
+      externalSplitOptions[[nExternalBranchSplitFnc]] = list(discardProp = 0.08, minCentralProp = 0.75,
+                       nConsideredPCs = 3, signed = signed, getDetails = FALSE);
+      minExternalSplit[ nExternalBranchSplitFnc] = otherArgs$minBranchSplit;
+    }
+  }
+
+  # Split data into blocks if needed
+
   if (is.null(blocks))
   {
     if (nGGenes > maxBlockSize)
@@ -313,29 +332,28 @@ blockwiseModules = function(datExpr, blocks = NULL,
     block = c(1:nGGenes)[gBlocks==blockLevels[blockNo]];
     selExpr = as.matrix(datExpr[, block]);
     nBlockGenes = length(block);
-    dissTom = matrix(0, nBlockGenes, nBlockGenes);
     # Calculate TOM by calling a custom C function:
     callVerb = max(0, verbose - 1); callInd = indent + 2;
     CcorType = intCorType - 1;
     CnetworkType = intNetworkType - 1;
-    CTOMType = intTOMType - 1;
-    warn = 0;
-    tomResult = .C("tomSimilarity", as.double(selExpr), as.integer(nSamples), as.integer(nBlockGenes),
+    CTOMType = intTOMType -1;
+    
+    warn = as.integer(0);
+    tom = .Call("tomSimilarity_call", selExpr, 
         as.integer(CcorType), as.integer(CnetworkType), as.double(power), as.integer(CTOMType), 
         as.integer(TOMDenomC),
         as.double(maxPOutliers),
         as.double(quickCor),
         as.integer(fallback),
         as.integer(cosineCorrelation),
-        tom = as.double(dissTom), warn = as.integer(warn), as.integer(nThreads),
-        as.integer(callVerb), as.integer(callInd), NAOK = TRUE, DUP = FALSE, PACKAGE = "WGCNA") 
+        warn, as.integer(nThreads),
+        as.integer(callVerb), as.integer(callInd));
 
     # FIXME: warn if necessary
 
-    dim(tomResult$tom) = c(nBlockGenes, nBlockGenes);
     if (saveTOMs) 
     {
-      TOM = as.dist(tomResult$tom);
+      TOM = as.dist(tom);
       TOMFiles[blockNo] = paste(saveTOMFileBase, "-block.", blockNo, ".RData", sep="");
       if (verbose > 2)
         printFlush(paste(spaces, "  ..saving TOM for block", blockNo, "into file", TOMFiles[blockNo]));
@@ -343,30 +361,45 @@ blockwiseModules = function(datExpr, blocks = NULL,
       rm (TOM)
       collectGarbage();
     }
-    dissTom = 1-tomResult$tom;
+    dissTom = 1-tom;
     dim(dissTom) = c(nBlockGenes, nBlockGenes);
 
-    rm(tomResult); collectGarbage();
+    collectGarbage();
     if (verbose>2) printFlush(paste(spaces, "....clustering.."));
 
     dendros[[blockNo]] = flashClust(as.dist(dissTom), method = "average");
 
     if (verbose>2) printFlush(paste(spaces, "....detecting modules.."));
+    datExpr.scaled.imputed.block = datExpr.scaled.imputed[, block];
+    if (nExternalBranchSplitFnc > 0) for (extBSFnc in 1:nExternalBranchSplitFnc)
+      externalSplitOptions[[extBSFnc]]$expr = datExpr.scaled.imputed.block;
 
+    collectGarbage();
+   
     blockLabels = try(cutreeDynamic(dendro = dendros[[blockNo]], 
                            deepSplit = deepSplit,
                            cutHeight = detectCutHeight, minClusterSize = minModuleSize, 
-                           method ="hybrid", 
+                           method ="hybrid", distM = dissTom, 
                            maxCoreScatter = maxCoreScatter, minGap = minGap,
                            maxAbsCoreScatter = maxAbsCoreScatter, minAbsGap = minAbsGap,
+
+                           externalBranchSplitFnc = branchSplitFnc,
+                           minExternalSplit = minExternalSplit,
+                           externalSplitOptions = externalSplitOptions,
+                           assumeSimpleExternalSpecification = FALSE,
+
                            pamStage = pamStage, pamRespectsDendro = pamRespectsDendro,
-                           distM = dissTom, 
-                           verbose = verbose-3, indent = indent + 2), silent = TRUE);
+                           verbose = verbose-3, indent = indent + 2), silent = FALSE);
     collectGarbage();
     if (verbose > 8)
     {
+      labels0 = blockLabels
       if (interactive())
         plotDendroAndColors(dendros[[blockNo]], labels2colors(blockLabels), dendroLabels = FALSE, 
+           main = paste("Block", blockNo),
+           rowText = blockLabels, textPositions = 1, rowTextAlignment = "center");
+      if (FALSE) 
+        plotDendroAndColors(dendros[[blockNo]], labels2colors(allLabels), dendroLabels = FALSE, 
            main = paste("Block", blockNo));
     }
     if (class(blockLabels)=='try-error')
@@ -449,7 +482,7 @@ blockwiseModules = function(datExpr, blocks = NULL,
     for (mod in 1:ncol(propMEs))
     {
       modGenes = (blockLabels==blockLabelIndex[mod]);
-      corEval = parse(text = paste(.corFnc[intCorType], "(selExpr[, modGenes], propMEs[, mod]", 
+      corEval = parse(text = paste(corFnc, "(selExpr[, modGenes], propMEs[, mod]", 
                                    prepComma(.corOptions[intCorType]), ")"));
       KME = as.vector(eval(corEval));
       if (intNetworkType==1) KME = abs(KME);
@@ -553,11 +586,12 @@ blockwiseModules = function(datExpr, blocks = NULL,
 
   deleteModules = NULL;
   goodLabels = allLabels[gsg$goodGenes];
+  reassignIndex = rep(FALSE, length(goodLabels));
   if (sum(goodLabels!=0) > 0)
   {
      propLabels = goodLabels[goodLabels!=0];
-     assGenes = c(1:nGenes)[gsg$goodGenes[goodLabels!=0]];
-     corEval = parse(text = paste(.corFnc[intCorType], "(datExpr[, goodLabels!=0], AllMEs", 
+     assGenes = (c(1:nGenes)[gsg$goodGenes])[goodLabels!=0];
+     corEval = parse(text = paste(corFnc, "(datExpr[, goodLabels!=0], AllMEs", 
                                   prepComma(.corOptions[intCorType]), ")"));
      KME = eval(corEval);
      if (intNetworkType == 1) KME = abs(KME)
@@ -569,6 +603,14 @@ blockwiseModules = function(datExpr, blocks = NULL,
        KMEbest = apply(KME[modGenes, , drop = FALSE], 1, max);
        candidates = (KMEmodule < KMEbest);
        candidates[!is.finite(candidates)] = FALSE;
+   
+       if (FALSE)
+       {
+         modDiss = dissTom[goodLabels==allLabelIndex[mod], goodLabels==allLabelIndex[mod]];
+         mod.k = colSums(modDiss);
+         boxplot(mod.k~candidates)
+       }
+
        if (sum(candidates) > 0)
        {
          pModule = corPvalueFisher(KMEmodule[candidates], nSamples);
@@ -668,6 +710,29 @@ blockwiseModules = function(datExpr, blocks = NULL,
        MEsOK = MEsOK);
 }
 
+#==================================================================================
+#
+# Helper functions
+#
+#==================================================================================
+
+# order labels by size
+
+.orderLabelsBySize = function(labels, exclude = NULL)
+{
+  levels.0 = sort(unique(labels));
+  levels = levels.0[ !levels.0 %in% exclude]
+  levels.excl = levels.0 [levels.0 %in% exclude]
+  rearrange = labels %in% levels;
+  tab = table(labels [ rearrange ]);
+  rank = rank(-tab);
+
+  oldOrder = c(levels.excl, names(tab));
+  newOrder = c(levels.excl, names(tab)[rank]);
+
+  newOrder[ match(labels, oldOrder) ]
+}
+ 
 #======================================================================================================
 #
 # Re-cut trees for blockwiseModules
@@ -685,6 +750,10 @@ recutBlockwiseTrees = function(datExpr,
                       detectCutHeight = 0.995, minModuleSize = min(20, ncol(datExpr)/2 ),
                       maxCoreScatter = NULL, minGap = NULL,
                       maxAbsCoreScatter = NULL, minAbsGap = NULL,
+
+                      useBranchEigennodeDissim = FALSE,
+                      minBranchEigennodeDissim = mergeCutHeight,
+
                       pamStage = TRUE, pamRespectsDendro = TRUE,
                       # minKMEtoJoin =0.7, 
                       minCoreKME = 0.5, minCoreKMESize = minModuleSize/3,
@@ -692,13 +761,13 @@ recutBlockwiseTrees = function(datExpr,
                       reassignThreshold = 1e-6,
                       mergeCutHeight = 0.15, impute = TRUE, 
                       trapErrors = FALSE, numericLabels = FALSE,
-                      verbose = 0, indent = 0)
+                      verbose = 0, indent = 0, ...)
 {
   spaces = indentSpaces(indent);
 
   #if (verbose>0) 
   #   printFlush(paste(spaces, "Calculating module eigengenes block-wise from all genes"));
-
+  cutreeLabels = list()
   intCorType = pmatch(corType, .corTypes);
   if (is.na(intCorType))
     stop(paste("Invalid 'corType'. Recognized values are", paste(.corTypes, collapse = ", ")))
@@ -736,6 +805,43 @@ recutBlockwiseTrees = function(datExpr,
   blockSizes = table(gBlocks)
   nBlocks = length(blockLevels);
 
+  datExpr.scaled.imputed = t(impute.knn(t(scale(datExpr)))$data)
+  if (any(is.na(datExpr)))
+     datExpr.scaled.imputed = t(impute.knn(t(scale(datExpr)))$data)
+
+  corFnc = .corFnc[intCorType];
+  corOptions = list(use = 'p');
+
+  signed = networkType %in% c("signed", "signed hybrid");
+  # Set up advanced tree cut methods
+
+  otherArgs = list(...);
+
+  if (useBranchEigennodeDissim)
+  {
+    branchSplitFnc = list("branchEigengeneDissim");
+    externalSplitOptions = list(list( corFnc = corFnc, corOptions = corOptions,
+                                      signed = signed));
+    nExternalBranchSplitFnc = 1;
+    minExternalSplit = minBranchEigennodeDissim;
+  } else {
+    branchSplitFnc = list();
+    externalSplitOptions = list(list())
+    nExternalBranchSplitFnc = 0;
+    minExternalSplit = numeric(0);
+  }
+
+  if ("useBranchSplit" %in% names(otherArgs))
+  {
+    if (otherArgs$useBranchSplit)
+    {
+      nExternalBranchSplitFnc = nExternalBranchSplitFnc + 1;
+      branchSplitFnc[[nExternalBranchSplitFnc]] = "branchSplit"
+      externalSplitOptions[[nExternalBranchSplitFnc]] = list(discardProp = 0.08, minCentralProp = 0.75,
+                       nConsideredPCs = 3, signed = signed, getDetails = FALSE);
+      minExternalSplit[ nExternalBranchSplitFnc] = otherArgs$minBranchSplit;
+    }
+  }
 
   # Initialize various variables
 
@@ -769,16 +875,28 @@ recutBlockwiseTrees = function(datExpr,
 
     if (verbose>2) printFlush(paste(spaces, "....detecting modules.."));
 
+    datExpr.scaled.imputed.block = datExpr.scaled.imputed[, block];
+    if (nExternalBranchSplitFnc > 0) for (extBSFnc in 1:nExternalBranchSplitFnc)
+        externalSplitOptions[[extBSFnc]]$expr = datExpr.scaled.imputed.block;
+    
     blockLabels = try(cutreeDynamic(dendro = dendrograms[[blockNo]], 
                            deepSplit = deepSplit,
                            cutHeight = detectCutHeight, minClusterSize = minModuleSize, 
                            method ="hybrid", 
                            maxCoreScatter = maxCoreScatter, minGap = minGap,
                            maxAbsCoreScatter = maxAbsCoreScatter, minAbsGap = minAbsGap,
+
+                           externalBranchSplitFnc = branchSplitFnc,
+                           minExternalSplit = minExternalSplit,
+                           externalSplitOptions = externalSplitOptions,
+                           assumeSimpleExternalSpecification = FALSE,
+
                            pamStage = pamStage, pamRespectsDendro = pamRespectsDendro,
                            distM = dissTom, 
                            verbose = verbose-3, indent = indent + 2), silent = TRUE);
     collectGarbage();
+    cutreeLabels[[blockNo]] = blockLabels;
+
     if (class(blockLabels)=='try-error')
     {
       if (verbose>0) 
@@ -838,7 +956,7 @@ recutBlockwiseTrees = function(datExpr,
     for (mod in 1:ncol(propMEs))
     {
       modGenes = (blockLabels==blockLabelIndex[mod]);
-      corEval = parse(text = paste(.corFnc[intCorType], "(selExpr[, modGenes], propMEs[, mod]", 
+      corEval = parse(text = paste(corFnc, "(selExpr[, modGenes], propMEs[, mod]", 
                                    prepComma(.corOptions[intCorType]), ")"));
       KME = as.vector(eval(corEval));
       if (intNetworkType==1) KME = abs(KME);
@@ -920,8 +1038,8 @@ recutBlockwiseTrees = function(datExpr,
   if (sum(goodLabels!=0) > 0)
   {
      propLabels = goodLabels[goodLabels!=0];
-     assGenes = c(1:nGenes)[gsg$goodGenes[goodLabels!=0]];
-     corEval = parse(text = paste(.corFnc[intCorType], "(datExpr[, goodLabels!=0], AllMEs", 
+     assGenes = (c(1:nGenes)[gsg$goodGenes])[goodLabels!=0];
+     corEval = parse(text = paste(corFnc, "(datExpr[, goodLabels!=0], AllMEs", 
                                   prepComma(.corOptions[intCorType]), ")"));
      KME = eval(corEval);
      if (intNetworkType == 1) KME = abs(KME)
@@ -1018,6 +1136,7 @@ recutBlockwiseTrees = function(datExpr,
 
   list(colors = mergedAllColors, 
        unmergedColors = colors, 
+       cutreeLabels = cutreeLabels,
        MEs = allSampleMEs, 
        #goodSamples = gsg$goodSamples, 
        #goodGenes = gsg$goodGenes, 
@@ -1345,8 +1464,6 @@ lowerTri2matrix = function(x, diag = 1)
   mat;
 }
 
-  
-
 #==========================================================================================================
 #
 # blockwiseConsensusModules
@@ -1424,6 +1541,10 @@ blockwiseConsensusModules = function(multiExpr,
 
                             maxCoreScatter = NULL, minGap = NULL,
                             maxAbsCoreScatter = NULL, minAbsGap = NULL,
+
+                            useBranchEigennodeDissim = FALSE,
+                            minBranchEigennodeDissim = mergeCutHeight,
+
                             pamStage = TRUE,  pamRespectsDendro = TRUE,
 
                             # Gene joining and removal from a module, and module "significance" criteria
@@ -1441,8 +1562,11 @@ blockwiseConsensusModules = function(multiExpr,
 
                             # Module merging options
 
+                            equalizeQuantilesForModuleMerging = FALSE,
+                            quantileSummaryForModuleMerging = "mean",
                             mergeCutHeight = 0.15, 
                             mergeConsensusQuantile = consensusQuantile,
+                          
 
                             # Output options
 
@@ -1492,6 +1616,19 @@ blockwiseConsensusModules = function(multiExpr,
      printFlush(paste(spaces, "Calculating consensus modules and module eigengenes", 
                       "block-wise from all genes"));
 
+  # prepare scaled and imputed multiExpr.
+  multiExpr.scaled = mtd.apply(multiExpr, scale);
+  hasMissing = unlist(multiData2list(mtd.apply(multiExpr, function(x) { any(is.na(x)) })));
+  # Impute those that have missing data
+  multiExpr.scaled.imputed = mtd.mapply(function(x, doImpute) 
+                         { if (doImpute) t(impute.knn(t(x))$data) else x },
+                                   multiExpr.scaled, hasMissing);
+  if (useBranchEigennodeDissim)
+  {
+    branchSplitFnc = "mtd.branchEigengeneDissim";
+  } else 
+    branchSplitFnc = NULL;
+
   # If topological overlaps weren't calculated yet, calculate them.
 
   if (is.null(individualTOMInfo))
@@ -1538,6 +1675,9 @@ blockwiseConsensusModules = function(multiExpr,
 
   intNetworkType = individualTOMInfo$intNetworkType;
   intCorType = individualTOMInfo$intCorType;
+
+  corFnc = match.fun(.corFnc[intCorType]);
+  corOptions = list(use = 'p');
 
   fallback = pmatch(pearsonFallback, .pearsonFallbacks)
 
@@ -1641,7 +1781,7 @@ blockwiseConsensusModules = function(multiExpr,
     for (set in 1:nSets)
     {
       # Set up selExpr for later use in multiSetMEs
-      selExpr[[set]] = list(data = multiExpr[[set]]$data[ , gBlocks==blockLevels[blockNo] ]);
+      selExpr[[set]] = list(data = multiExpr[[set]]$data[ , block ]);
       if (verbose>2) printFlush(paste(spaces, "....Working on set", set))
       if (individualTOMInfo$TOMSavedInFiles)
       {
@@ -1784,16 +1924,28 @@ blockwiseConsensusModules = function(multiExpr,
     }
     collectGarbage();
     blockLabels = try(cutreeDynamic(dendro = dendros[[blockNo]], 
-                           deepSplit = deepSplit,
-                           cutHeight = detectCutHeight, minClusterSize = minModuleSize, 
-                           method ="hybrid", 
-                           maxCoreScatter = maxCoreScatter, minGap = minGap,
-                           maxAbsCoreScatter = maxAbsCoreScatter, minAbsGap = minAbsGap,
-                           pamStage = pamStage, pamRespectsDendro = pamRespectsDendro,
-                           distM = as.matrix(consTomDS), 
-                           verbose = verbose-3, indent = indent + 2), silent = TRUE);
+    #blockLabels = cutreeDynamic(dendro = dendros[[blockNo]], 
+                    distM = as.matrix(consTomDS), 
+                    deepSplit = deepSplit,
+                    cutHeight = detectCutHeight, minClusterSize = minModuleSize, 
+                    method ="hybrid", 
+                    maxCoreScatter = maxCoreScatter, minGap = minGap,
+                    maxAbsCoreScatter = maxAbsCoreScatter, minAbsGap = minAbsGap,
+
+                    externalBranchSplitFnc = if (useBranchEigennodeDissim)
+                                                branchSplitFnc else NULL, 
+                    minExternalSplit = minBranchEigennodeDissim,
+                    externalSplitOptions = list(multiExpr = mtd.subset(multiExpr.scaled.imputed,, block),
+                                                corFnc = corFnc, corOptions = corOptions,
+                                                consensusQuantile = consensusQuantile,
+                                                signed = networkType %in% c("signed", "signed hybrid")),
+
+                    pamStage = pamStage, pamRespectsDendro = pamRespectsDendro,
+                    #verbose = verbose, indent = indent + 2)
+                    verbose = verbose-3, indent = indent + 2), silent = TRUE);
     if (verbose > 8)
     {
+      print(table(blockLabels));
       if (interactive())
         plotDendroAndColors(dendros[[blockNo]], labels2colors(blockLabels), dendroLabels = FALSE, 
            main = paste("Block", blockNo));
@@ -1967,7 +2119,7 @@ blockwiseConsensusModules = function(multiExpr,
   if (sum(goodLabels!=0) > 0)
   {
      propLabels = goodLabels[goodLabels!=0];
-     assGenes = c(1:nGenes)[gsg$goodGenes[goodLabels!=0]]
+     assGenes = (c(1:nGenes)[gsg$goodGenes])[goodLabels!=0];
      corEval = parse(text = paste(.corFnc[intCorType], 
                                   "(multiExpr[[set]]$data[, goodLabels!=0], consMEs[[set]]$data",
                                   prepComma(.corOptions[intCorType]), ")"));
@@ -2045,6 +2197,8 @@ blockwiseConsensusModules = function(multiExpr,
   }
   mergedColors = colors;
   mergedMods = try(mergeCloseModules(multiExpr, colors[gsg$goodGenes], 
+                                     equalizeQuantiles = equalizeQuantilesForModuleMerging,
+                                     quantileSummary = quantileSummaryForModuleMerging,
                                      consensusQuantile = mergeConsensusQuantile,
                                      cutHeight = mergeCutHeight, 
                                      relabel = TRUE, impute = impute,
@@ -2128,6 +2282,10 @@ recutConsensusTrees = function(multiExpr,
                             checkMinModuleSize = TRUE,
                             maxCoreScatter = NULL, minGap = NULL,
                             maxAbsCoreScatter = NULL, minAbsGap = NULL,
+
+                            useBranchEigennodeDissim = FALSE,
+                            minBranchEigennodeDissim = mergeCutHeight,
+
                             pamStage = TRUE,  pamRespectsDendro = TRUE,
                             # minKMEtoJoin =0.7, 
                             trimmingConsensusQuantile = 0,
@@ -2155,6 +2313,20 @@ recutConsensusTrees = function(multiExpr,
   #   printFlush(paste(spaces, "Calculating consensus modules and module eigengenes", 
   #                    "block-wise from all genes"));
 
+  # If we're merging branches by correlation within cutreeHybrid, prepare scaled and imputed multiExpr.
+
+  if (useBranchEigennodeDissim)
+  {
+    multiExpr.scaled = mtd.apply(multiExpr, scale);
+    hasMissing = unlist(multiData2list(mtd.apply(multiExpr, function(x) { any(is.na(x)) })));
+    # Impute those that have missing data
+    multiExpr.scaled.imputed = mtd.mapply(function(x, doImpute)
+                           { if (doImpute) t(impute.knn(t(x))$data) else x },
+                                     multiExpr.scaled, hasMissing);
+    branchSplitFnc = "mtd.branchEigengeneDissim";
+  }
+
+    
   intCorType = pmatch(corType, .corTypes);
   if (is.na(intCorType))
     stop(paste("Invalid 'corType'. Recognized values are", paste(.corTypes, collapse = ", ")))
@@ -2168,6 +2340,9 @@ recutConsensusTrees = function(multiExpr,
 
   allLabels = rep(0, nGenes);
   allLabelIndex = NULL;
+
+  corFnc = match.fun(.corFnc[intCorType]);
+  corOptions = list(use = 'p');
 
   # Get rid of bad genes and bad samples
 
@@ -2193,6 +2368,19 @@ recutConsensusTrees = function(multiExpr,
   nBlocks = length(blockLevels);
   
   reassignThreshold = reassignThresholdPS^nSets;
+
+  # prepare scaled and imputed multiExpr.
+  multiExpr.scaled = mtd.apply(multiExpr, scale);
+  hasMissing = unlist(multiData2list(mtd.apply(multiExpr, function(x) { any(is.na(x)) })));
+  # Impute those that have missing data
+  multiExpr.scaled.imputed = mtd.mapply(function(x, doImpute) 
+                         { if (doImpute) t(impute.knn(t(x))$data) else x },
+                                   multiExpr.scaled, hasMissing);
+  if (useBranchEigennodeDissim)
+  {
+    branchSplitFnc = "mtd.branchEigengeneDissim";
+  } else 
+    branchSplitFnc = NULL;
 
   # Initialize various variables
 
@@ -2243,14 +2431,23 @@ recutConsensusTrees = function(multiExpr,
     errorOccured = FALSE;
 
     blockLabels = try(cutreeDynamic(dendro = dendrograms[[blockNo]], 
-                           deepSplit = deepSplit,
-                           cutHeight = detectCutHeight, minClusterSize = minModuleSize, 
-                           method ="hybrid", 
-                           maxCoreScatter = maxCoreScatter, minGap = minGap,
-                           maxAbsCoreScatter = maxAbsCoreScatter, minAbsGap = minAbsGap,
-                           pamStage = pamStage, pamRespectsDendro = pamRespectsDendro,
-                           distM = as.matrix(consTomDS), 
-                           verbose = verbose-3, indent = indent + 2), silent = TRUE);
+                    deepSplit = deepSplit,
+                    cutHeight = detectCutHeight, minClusterSize = minModuleSize, 
+                    method ="hybrid", 
+                    maxCoreScatter = maxCoreScatter, minGap = minGap,
+                    maxAbsCoreScatter = maxAbsCoreScatter, minAbsGap = minAbsGap,
+
+                    externalBranchSplitFnc = if (useBranchEigennodeDissim)
+                                                branchSplitFnc else NULL, 
+                    minExternalSplit = minBranchEigennodeDissim,
+                    externalSplitOptions = list(multiExpr = mtd.subset(multiExpr.scaled.imputed, , block),
+                                                corFnc = corFnc, corOptions = corOptions,
+                                                consensusQuantile = mergeConsensusQuantile,
+                                                signed = networkType %in% c("signed", "signed hybrid")),
+
+                    pamStage = pamStage, pamRespectsDendro = pamRespectsDendro,
+                    distM = as.matrix(consTomDS), 
+                    verbose = verbose-3, indent = indent + 2), silent = TRUE);
     if (class(blockLabels)=='try-error')
     {
       (if (verbose>0) printFlush else warning)
@@ -2421,7 +2618,7 @@ recutConsensusTrees = function(multiExpr,
   if (sum(goodLabels!=0) > 0)
   {
      propLabels = goodLabels[goodLabels!=0];
-     assGenes = c(1:nGenes)[gsg$goodGenes[goodLabels!=0]]
+     assGenes = (c(1:nGenes)[gsg$goodGenes])[goodLabels!=0];
      corEval = parse(text = paste(.corFnc[intCorType], 
                                   "(multiExpr[[set]]$data[, goodLabels!=0], consMEs[[set]]$data",
                                   prepComma(.corOptions[intCorType]), ")"));
@@ -2556,43 +2753,6 @@ recutConsensusTrees = function(multiExpr,
       );
 }
 
-
-#======================================================================================================
-#
-# Aligned svd: svd plus aligning the result along the average expression of the input data.
-#
-#======================================================================================================
-
-# CAUTION: this function assumes normalized x and no non-missing values.
-
-.alignedFirstPC = function(x, power = 6, verbose = 2, indent = 0)
-{
-  x = as.matrix(x);
-  # printFlush(paste(".alignedFirstPC: dim(x) = ", paste(dim(x), collapse = ", ")));
-  pc = try( svd(x, nu = 1, nv = 0)$u[,1] , silent = TRUE);
-  if (class(pc)=='try-error')
-  {
-    #file = "alignedFirstPC-svdError-inputData-x.RData";
-    #save(x, file = file);
-    #stop(paste("Error in .alignedFirstPC: svd failed with following message: \n    ",
-    #                 pc, "\n. Saving the offending data into file", file));
-    if (verbose > 0) 
-    {
-      spaces = indentSpaces(indent);
-      printFlush(paste(spaces, ".alignedFirstPC: FYI: svd failed, using a weighted mean instead.\n",
-                       spaces, "  ...svd reported:", pc))
-    }
-    pc = apply(x, 1, mean);
-    weight = matrix(abs(cor(x, pc))^power, nrow(x), ncol(x), byrow = TRUE);
-    pc = scale(apply(x * weight, 1, mean));
-  } else {
-    weight = matrix(abs(cor(x, pc))^power, nrow(x), ncol(x), byrow = TRUE);
-    meanX = apply(x * weight, 1, mean);
-    if (cov(pc, meanX) < 0) pc = -pc;
-  }
-  pc;
-}
-  
 
 
 #======================================================================================================

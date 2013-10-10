@@ -6,7 +6,12 @@
 This function takes an expression matrix which can be split using two separate splitting parameters (ie, control vs AD with multiple brain regions), and plots the results as a barplot. Group average, standard deviations, and relevant Kruskal-Wallis p-values are returned.
 }
 \usage{
-stratifiedBarplot(expAll, groups, split, subset, genes = NA, scale = "N", graph = TRUE, las1 = 2, cex1 = 1.5, ...)
+stratifiedBarplot(
+  expAll, 
+  groups, split, subset, 
+  genes = NA, 
+  scale = "N", graph = TRUE, 
+  las1 = 2, cex1 = 1.5, ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{

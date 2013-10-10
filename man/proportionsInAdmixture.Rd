@@ -9,7 +9,11 @@ population) and you want to estimate the proportion of each pure cell type in th
 \code{MarkerMeansPure} that reports the mean expression values of markers in each of the pure cell types.  
 }
 \usage{
-proportionsInAdmixture(MarkerMeansPure, datE.Admixture, calculateConditionNumber = FALSE, coefToProportion = TRUE)
+proportionsInAdmixture(
+  MarkerMeansPure, 
+  datE.Admixture, 
+  calculateConditionNumber = FALSE, 
+  coefToProportion = TRUE)
 }
 \arguments{
   \item{MarkerMeansPure}{ is a data frame whose first column reports the name of the marker and the

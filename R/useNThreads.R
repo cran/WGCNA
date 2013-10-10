@@ -12,7 +12,7 @@
 
     nt = suppressWarnings(as.numeric(nt.env));
 
-    if (is.na(nt)) return(1);
+    if (!is.finite(nt)) return(2);
 
     return(nt);
   } else
@@ -21,7 +21,11 @@
 
 .nProcessorsOnline = function()
 {
-  detectCores();
+  n = detectCores();
+  if (!is.numeric(n)) n = 2;
+  if (!is.finite(n)) n = 2;
+  if (n<1) n = 2;
+  n;
 }
 
 allowWGCNAThreads = function(nThreads = NULL)

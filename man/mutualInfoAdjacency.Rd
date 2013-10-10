@@ -9,7 +9,11 @@ between vectors (corresponding to the columns of the input data frame datE).  Th
 pairs of vectors is divided by an upper bound so that the resulting normalized measure lies between 0 and 1.
 } 
 \usage{
-mutualInfoAdjacency(datE, discretizeColumns = TRUE, entropyEstimationMethod = "MM", numberBins = NULL)
+mutualInfoAdjacency(
+   datE, 
+   discretizeColumns = TRUE, 
+   entropyEstimationMethod = "MM", 
+   numberBins = NULL)
 }
 \arguments{
   \item{datE}{ \code{datE} is a data frame or matrix whose columns correspond to variables and whose rows correspond to measurements. For example, the columns may correspond to genes while the rows correspond to microarrays. The number of nodes in the mutual information network equals the number of columns of \code{datE}.
@@ -85,10 +89,12 @@ Steve Horvath, Lin Song, Peter Langfelder
 }
 \examples{
 
-# Load requisite packages. These packages are considered "optional", so WGCNA does not load them
-# automatically.
+# Load requisite packages. These packages are considered "optional", 
+# so WGCNA does not load them automatically.
 
-if (require(infotheo, quietly = TRUE) && require(minet, quietly = TRUE) && require(entropy, quietly = TRUE))
+if (require(infotheo, quietly = TRUE) && 
+    require(minet, quietly = TRUE) && 
+    require(entropy, quietly = TRUE))
 {
   # Example can be executed.
   #Simulate a data frame datE which contains 5 columns and 50 observations
@@ -100,10 +106,12 @@ if (require(infotheo, quietly = TRUE) && require(minet, quietly = TRUE) && requi
   r=.3; x5=r*x4+sqrt(1-r^2)*rnorm(m)
   datE=data.frame(x1,x2,x3,x4,x5)
   
-  #calculate entropy, mutual information matrix and weighted adjacency matrices based on mutual information.
+  #calculate entropy, mutual information matrix and weighted adjacency 
+  # matrices based on mutual information.
   MIadj=mutualInfoAdjacency(datE=datE)
 } else 
-  printFlush("Please install packages infotheo, minet and entropy before running this example.");
+  printFlush(paste("Please install packages infotheo, minet and entropy",
+                   "before running this example."));
 
 }
 

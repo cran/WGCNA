@@ -11,7 +11,8 @@ plotClusterTreeSamples(
   y = NULL, 
   traitLabels = NULL, 
   yLabels = NULL,
-  main = if (is.null(y)) "Sample dendrogram" else "Sample dendrogram and trait indicator", 
+  main = if (is.null(y)) "Sample dendrogram" else 
+                         "Sample dendrogram and trait indicator", 
   setLayout = TRUE, autoColorHeight = TRUE, colorHeight = 0.3,
   dendroLabels = NULL, 
   addGuide = FALSE, guideAll = TRUE, 

@@ -5,7 +5,11 @@
   Simulates a set of eigengenes (vectors) from a given set of causal anchors and a causal matrix.
 }
 \usage{
-simulateEigengeneNetwork(causeMat, anchorIndex, anchorVectors, noise = 1, verbose = 0, indent = 0)
+simulateEigengeneNetwork(
+  causeMat, 
+  anchorIndex, anchorVectors, 
+  noise = 1, 
+  verbose = 0, indent = 0)
 }
 \arguments{
   \item{causeMat}{ causal matrix. The entry \code{[i,j]} is the influence (path coefficient) of

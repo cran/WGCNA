@@ -12,13 +12,14 @@ other accuracy measures. For quantitative prediction, the function calculates co
 measures, and the C-index.
 }
 \usage{
-accuracyMeasures(predicted, 
-                 observed = NULL, 
-                 type = c("auto", "binary", "quantitative"),
-                 levels = if (isTRUE(all.equal(dim(predicted), c(2,2)))) colnames(predicted)
-                                         else sort(unique(c(observed, predicted))),
-                 negativeLevel = levels[2], 
-                 positiveLevel = levels[1] )
+accuracyMeasures(
+  predicted, 
+  observed = NULL, 
+  type = c("auto", "binary", "quantitative"),
+  levels = if (isTRUE(all.equal(dim(predicted), c(2,2)))) colnames(predicted)
+                             else sort(unique(c(observed, predicted))),
+  negativeLevel = levels[2], 
+  positiveLevel = levels[1] )
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{

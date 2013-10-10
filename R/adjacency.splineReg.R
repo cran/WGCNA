@@ -1,6 +1,5 @@
 adjacency.splineReg = function(datExpr, df = 6-(nrow(datExpr)<100)-(nrow(datExpr)<30), symmetrizationMethod = "mean", ...) {
   
-  require(splines)
   if (!is.element(symmetrizationMethod, c("none", "min" ,"max", "mean"))) {
     stop("Unrecognized symmetrization method.")
   }

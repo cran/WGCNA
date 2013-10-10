@@ -76,12 +76,12 @@ userListEnrichment <- function (geneR, labelR, fnIn = NULL, catNmIn = fnIn, name
 		        "")
 	      glIn = rbind(glIn, cbind(ImmunePathwayLists, Type = rep("Immune", nrow(ImmunePathwayLists))))
     }
-	if (usePalazzoloWang) { 
+    if (usePalazzoloWang) { 
         if (!(exists("PWLists"))) PWLists = NULL;
         data("PWLists",envir=sys.frame(sys.nframe()));
         write("See help file for details regarding Palazzolo / Wang lists from CHDI.",
 		        "")
-		write("---- there are many of these gene sets so the function may take several (30-45+) minutes to run.",
+		write("---- there are many of these gene sets so the function may take several minutes to run.",
 		        "")
 	      glIn = rbind(glIn, cbind(PWLists, Type = rep("PW_Lists", nrow(PWLists))))
     }
@@ -91,10 +91,10 @@ userListEnrichment <- function (geneR, labelR, fnIn = NULL, catNmIn = fnIn, name
     #if (length(removeDups) < length(glIn[, 1])) 
     #    glIn = t(as.matrix(as.data.frame(strsplit(removeDups, "@#$%", fixed = TRUE))))
 
-    glIn = glIn[!duplicated(glIn), ]
+    glIn.2 = glIn[!duplicated(glIn), ]
 
-    geneIn = as.character(glIn[, 1])
-    labelIn = as.character(glIn[, 2])
+    geneIn = as.character(glIn.2[, 1])
+    labelIn = as.character(glIn.2[, 2])
     geneAll = sort(unique(geneR))
     keep = is.element(geneIn, geneAll)
     geneIn = geneIn[keep]
@@ -103,7 +103,7 @@ userListEnrichment <- function (geneR, labelR, fnIn = NULL, catNmIn = fnIn, name
     omitCategories = c(omitCategories, "background")      
     catsR = catsR[!is.element(catsR, omitCategories)]
     catsIn = sort(unique(labelIn))
-    typeIn = glIn[keep, ][match(catsIn, labelIn), 3];
+    typeIn = glIn.2[keep, ][match(catsIn, labelIn), 3];
     lenAll = length(geneAll)
     nCols.pValues = 5;
     nComparisons = length(catsR) * length(catsIn);
@@ -111,26 +111,25 @@ userListEnrichment <- function (geneR, labelR, fnIn = NULL, catNmIn = fnIn, name
     nR = length(catsR);
     index = 1; 
     nOverlap = rep(0, nComparisons);
-    pValues = rep(0, nComparisons);
+    pValues = rep(1, nComparisons);
     ovGenes = vector(mode = "list", length = nComparisons);
-    #isI = matrix(FALSE, lenAll, nIn);
-    #for (i in 1:nIn)
-    #{
-    #  isI[, i] = is.element(geneAll,geneIn[labelIn == catsIn[i]]);
-    #}
+    isI = matrix(FALSE, lenAll, nIn);
+    for (i in 1:nIn)
+    {
+      isI[, i] = is.element(geneAll,geneIn[labelIn == catsIn[i]]);
+    }
     for (r in 1:length(catsR)) 
     {
       isR  = is.element(geneAll,geneR[(labelR == catsR[r])])
       for (i in 1:length(catsIn)) 
       { 
-    #    isI.1 = isI[, i];
-        isI.1 = is.element(geneAll,geneIn[labelIn == catsIn[i]]);
+        isI.1 = isI[, i];
         lyn  = sum(isR&(!isI.1))
         lny  = sum(isI.1&(!isR))
         lyy  = sum(isR&isI.1)
         gyy  = geneAll[isR&isI.1]
         lnn  = lenAll - lyy - lyn - lny
-        pv   = fisher.test(matrix(c(lnn,lny,lyn,lyy), 2, 2))$p.value
+        pv   = fisher.test(matrix(c(lnn,lny,lyn,lyy), 2, 2), alternative = "greater")$p.value
         nOverlap[index] = lyy;
         pValues[index] = pv;
         ovGenes[[index]] = gyy

@@ -6,7 +6,11 @@
   Compare prediction success of several gene screening methods.
 }
 \usage{
-relativeCorPredictionSuccess(corPredictionNew, corPredictionStandard, corTestSet, topNumber = 100)
+relativeCorPredictionSuccess(
+  corPredictionNew, 
+  corPredictionStandard, 
+  corTestSet, 
+  topNumber = 100)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{

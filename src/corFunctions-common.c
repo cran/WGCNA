@@ -232,7 +232,7 @@ void prepareColBicor(double * col, int nr, double maxPOutliers, int fallback,
     double mad = median(aux, nr, 0, &err);
 
     // If mad is zero, value of fallback decides what is it we will do.
-    if ((mad==0))
+    if (mad==0)
     {
        *zeroMAD = 1;
        switch (fallback)
@@ -301,7 +301,7 @@ void prepareColBicor(double * col, int nr, double maxPOutliers, int fallback,
         sum += res[k]*res[k];
       } else
         res[k] = 0;
-    sum = sqrt(sum);
+    sum = sqrtl(sum);
     if (sum==0)
     {
        for (int k=0; k<nr; k++)
@@ -333,7 +333,7 @@ void prepareColCor(double * x, int nr, int cosine, double * res, int * nNAentrie
     if (!ISNAN(x[k]))
     {
       mean += x[k];
-      sum += x[k]*x[k];
+      sum += ((LDOUBLE) x[k])*( (LDOUBLE) x[k]);
       count ++;
     }
   if (count > 0)
@@ -341,15 +341,17 @@ void prepareColCor(double * x, int nr, int cosine, double * res, int * nNAentrie
     *NAmean = 0;
     *nNAentries = nr-count;
     if (cosine) mean = 0; else mean = mean/count;
-    sum = sqrt(sum - count * mean*mean);
+    sum = sqrtl(sum - count * mean*mean);
     if (sum > 0)
     {
+      // Rprintf("sum: %Le\n", sum);
        for (int k=0; k<nr; k++)
          if (!ISNAN(x[k]))
             res[k] = (x[k] - mean)/sum;
          else
             res[k] = 0;
     } else {
+       // Rprintf("prepareColCor: have zero variance.\n");
        *NAmean = 1;
        for (int k=0; k<nr; k++) res[k] = 0;
     }

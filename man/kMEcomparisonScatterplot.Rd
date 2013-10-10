@@ -6,10 +6,15 @@
 Plots the kME values of genes in two groups of expression data for each module in an inputted color vector.
 }
 \usage{
-kMEcomparisonScatterplot(datExpr1, datExpr2, colorh, inA = NULL, inB = NULL, MEsA = NULL, MEsB = NULL, nameA
-= "A", nameB = "B", plotAll = FALSE, noGrey = TRUE, maxPlot = 1000, pch = 19, 
-fileName = if (plotAll) paste("kME_correlations_between_",nameA,"_and_",nameB,"_all.pdf",sep="") else
-  paste("kME_correlations_between_",nameA,"_and_",nameB,"_inMod.pdf",sep=""), ...)
+kMEcomparisonScatterplot(
+   datExpr1, datExpr2, colorh, 
+   inA = NULL, inB = NULL, MEsA = NULL, MEsB = NULL, 
+   nameA = "A", nameB = "B", 
+   plotAll = FALSE, noGrey = TRUE, maxPlot = 1000, pch = 19, 
+   fileName = if (plotAll) paste("kME_correlations_between_",nameA,"_and_",
+                                 nameB,"_all.pdf",sep="") else
+                           paste("kME_correlations_between_",nameA,"_and_",
+                                 nameB,"_inMod.pdf",sep=""), ...)
 }
 \arguments{
   \item{datExpr1}{
@@ -67,8 +72,10 @@ The function "pdf", which can be found in the grDevices library, is required to 
 set.seed = 100
 ME=matrix(0,50,5)
 for (i in 1:5) ME[,i]=sample(1:100,50)
-simData1 = simulateDatExpr5Modules(MEturquoise=ME[,1],MEblue=ME[,2],MEbrown=ME[,3],MEyellow=ME[,4], MEgreen=ME[,5])
-simData2 = simulateDatExpr5Modules(MEturquoise=ME[,1],MEblue=ME[,2],MEbrown=ME[,3],MEyellow=ME[,4], MEgreen=ME[,5])
+simData1 = simulateDatExpr5Modules(MEturquoise=ME[,1],MEblue=ME[,2],
+                          MEbrown=ME[,3],MEyellow=ME[,4], MEgreen=ME[,5])
+simData2 = simulateDatExpr5Modules(MEturquoise=ME[,1],MEblue=ME[,2],
+                          MEbrown=ME[,3],MEyellow=ME[,4], MEgreen=ME[,5])
 kMEcomparisonScatterplot(simData1$datExpr,simData2$datExpr,simData1$truemodule)
 
 }

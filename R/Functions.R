@@ -226,7 +226,7 @@ pickSoftThreshold = function (data, dataIsExpr = TRUE, RsquaredCut = 0.85,
     }
     if (!dataIsExpr) 
     {
-      checkAdjMat(data);
+      checkSimilarity(data);
       if (any(diag(data)!=1)) diag(data) = 1;
     }
 
@@ -249,8 +249,7 @@ pickSoftThreshold = function (data, dataIsExpr = TRUE, RsquaredCut = 0.85,
     spaces = indentSpaces(indent)
     if (verbose > 0) {
         cat(paste(spaces, "pickSoftThreshold: calculating connectivity for given powers..."))
-        if (verbose == 1) 
-            pind = initProgInd()
+        if (verbose == 1) pind = initProgInd()
         else cat("\n")
     }
 
@@ -274,8 +273,7 @@ pickSoftThreshold = function (data, dataIsExpr = TRUE, RsquaredCut = 0.85,
       endG = min (startG + blockSize - 1, nGenes)
 
       if (verbose > 1) 
-          printFlush(paste(spaces, "  ..working on genes", 
-              startG, "through", endG, "of ", nGenes))
+          printFlush(paste(spaces, "  ..working on genes", startG, "through", endG, "of ", nGenes))
 
       nBlockGenes = endG - startG + 1;
       jobs = allocateJobs(nBlockGenes, nThreads);
@@ -734,6 +732,63 @@ adjacency = function(datExpr, selectCols=NULL, type = "unsigned", power = if (ty
   cor_mat^power;
 }
 
+.compiledAdjacency = function(expr, 
+                                 corType = "pearson", networkType = "unsigned",
+                                 power = 6, 
+                                 maxPOutliers = 1,
+                                 quickCor = 0,
+                                 pearsonFallback = "individual",
+                                 cosineCorrelation = FALSE,
+                                 nThreads = 0,
+                                 verbose = 1, indent = 0)
+
+{
+  corTypeC = as.integer(pmatch(corType, .corTypes)-1);
+  if (is.na(corTypeC))
+    stop(paste("Invalid 'corType'. Recognized values are", paste(.corTypes, collapse = ", ")))
+
+  if ( (maxPOutliers < 0) | (maxPOutliers > 1)) stop("maxPOutliers must be between 0 and 1.");
+  if (quickCor < 0) stop("quickCor must be positive.");
+  if ( (maxPOutliers < 0) | (maxPOutliers > 1)) stop("maxPOutliers must be between 0 and 1.");
+
+  fallback = as.integer(pmatch(pearsonFallback, .pearsonFallbacks));
+  if (is.na(fallback))
+      stop(paste("Unrecognized 'pearsonFallback'. Recognized values are (unique abbreviations of)\n",
+           paste(.pearsonFallbacks, collapse = ", ")))
+
+  if (nThreads < 0) stop("nThreads must be positive.");
+  if (is.null(nThreads) || (nThreads==0)) nThreads = .useNThreads();
+
+  if ( (power<1) | (power>30) ) stop("power must be between 1 and 30.");
+
+  networkTypeC = as.integer(charmatch(networkType, .networkTypes)-1);
+  if (is.na(networkTypeC))
+    stop(paste("Unrecognized networkType argument.",
+         "Recognized values are (unique abbreviations of)", paste(.networkTypes, collapse = ", ")));
+  dimEx = dim(expr);
+  if (length(dimEx)!=2) stop("expr has incorrect dimensions.")
+  nGenes = dimEx[2];
+  nSamples = dimEx[1];
+  warn = as.integer(0);
+
+  expr = as.matrix(expr);
+
+  adj = matrix(0, nGenes, nGenes);
+  err = as.integer(0);
+
+  res = .C("testAdjacency", as.double(expr), as.integer(nSamples), as.integer(nGenes),
+           as.integer(corTypeC), as.integer(networkTypeC), as.double(power), as.double(maxPOutliers),
+           as.double(quickCor), as.integer(fallback), as.integer(cosineCorrelation), adj = as.double(adj),
+           as.integer(err), as.integer(warn), as.integer(nThreads), NAOK = TRUE);
+
+  adj = res$adj;
+  dim(adj) = c(nGenes, nGenes);
+  adj;
+}
+
+
+
+
 # A presumably faster and less memory-intensive version, only for "unsigned" networks.
 
 unsignedAdjacency = function(datExpr, datExpr2 = NULL, power = 6,
@@ -762,17 +817,50 @@ cutreeStaticColor = function(dendro, cutHeight = 0.9, minSize = 50)
 }
 
  
+plotColorUnderTree = function( 
+  dendro, 
+   colors,
+   rowLabels = NULL,
+   rowWidths = NULL,
+   rowText = NULL,
+   rowTextAlignment = c("left", "center", "right"),
+   rowTextIgnore = NULL,
+   textPositions = NULL,
+   addTextGuide = TRUE,
+   cex.rowLabels = 1,
+   cex.rowText = 0.8,
+   ...)
+{
+  plotOrderedColors(
+   dendro$order,
+   colors = colors,
+   rowLabels = rowLabels,
+   rowWidths = rowWidths,
+   rowText = rowText,
+   rowTextAlignment = rowTextAlignment,
+   rowTextIgnore = rowTextIgnore,
+   textPositions = textPositions,
+   addTextGuide = addTextGuide,
+   cex.rowLabels = cex.rowLabels,
+   cex.rowText = cex.rowText,
+   startAt = 0,
+   ...);
+}
 
-plotColorUnderTree = function(
-   dendro, 
+
+plotOrderedColors = function(
+   order, 
    colors, 
    rowLabels = NULL, 
    rowWidths = NULL,
    rowText = NULL, 
+   rowTextAlignment = c("left", "center", "right"),
+   rowTextIgnore = NULL,
    textPositions = NULL, 
    addTextGuide = TRUE,
    cex.rowLabels = 1,
    cex.rowText = 0.8,
+   startAt = 0,
    ...)
 {
   colors = as.matrix(colors);
@@ -787,10 +875,10 @@ plotColorUnderTree = function(
   on.exit(options(stringsAsFactors = sAF[[1]]), TRUE)
 
   nColorRows = dimC[2];
-  if (length(dendro$order) != dimC[1] ) 
-    stop("ERROR: length of colors vector not compatible with number of objects in the hierarchical tree.");
-  C = colors[dendro$order, , drop = FALSE]; 
-  step = 1/(dimC[1]-1);
+  if (length(order) != dimC[1] ) 
+    stop("ERROR: length of colors vector not compatible with number of objects in 'order'.");
+  C = colors[order, , drop = FALSE]; 
+  step = 1/(dimC[1]-1 + 2*startAt);
   #barplot(height=1, col = "white", border=FALSE, space=0, axes=FALSE, ...)
   barplot(height=1, col = "white", border=FALSE, space=0, axes=FALSE)
   charWidth = strwidth("W")/2;
@@ -809,7 +897,7 @@ plotColorUnderTree = function(
   } else
   {
     if (length(rowWidths)!=nRows) 
-      stop("plotColorUnderTree: Length of 'rowWidths' must equal the total number of rows.")
+      stop("plotOrderedColors: Length of 'rowWidths' must equal the total number of rows.")
     rowWidths = rowWidths/sum(rowWidths);
   }
 
@@ -828,39 +916,48 @@ plotColorUnderTree = function(
 
   if (!is.null(rowText))
   {
-     charHeight = strheight("W");
+     rowTextAlignment = match.arg(rowTextAlignment);
      rowText = as.matrix(rowText)
      textPos = list();
      textPosY = list();
      textLevs = list();
      for (tr in 1:nTextRows) 
      {
+       charHeight = max(strheight(rowText[, tr]));
        width1 = rowWidths[ physicalTextRow[tr] ];
-       nCharFit = floor(width1/charHeight/cex.rowText/1.2/par("lheight"))
+       nCharFit = floor(width1/charHeight/cex.rowText/1.4/par("lheight"))
        if (nCharFit==0) stop("Rows are too narrow to fit text. Consider decreasing cex.rowText.");
        set = textPositions[tr];
        #colLevs = sort(unique(colors[, set]));
        #textLevs[[tr]] = rowText[match(colLevs, colors[, set]), tr];
        textLevs[[tr]] = sort(unique(rowText[, tr]));
+       textLevs[[tr]] = textLevs[[tr]] [ !textLevs[[tr]] %in% rowTextIgnore ];
        nLevs = length(textLevs[[tr]]);
        textPos[[tr]] = rep(0, nLevs);
-       orderedText = rowText[dendro$order, tr]
+       orderedText = rowText[order, tr]
        for (cl in 1:nLevs)
        {
          ind = orderedText == textLevs[[tr]][cl];
          sind = ind[-1];
          ind1 = ind[-length(ind)];
-         starts = c(1:length(ind))[!ind1 & sind];
-         ends = c(1:length(ind))[ind1 & !sind];
+         starts = c( 1[ind[1]], c(2:length(ind))[!ind1 & sind])
+         ends = c( c(1:(length(ind)-1))[ind1 & !sind], length(ind)[ ind[length(ind)] ]);
          if (length(starts)==0) starts = 1;
          if (length(ends)==0) ends = length(ind);
          if (ends[1] < starts[1]) starts = c(1, starts);
          if (ends[length(ends)] < starts[length(starts)]) ends = c(ends, length(ind));
          lengths = ends - starts;
          long = which.max(lengths);
-         textPos[[tr]][cl] = starts[long];
+         textPos[[tr]][cl] = switch(rowTextAlignment, 
+                    left = starts[long],
+                    center = (starts[long] + ends[long])/2,
+                    right = ends[long]);
        }
-       yPos = seq(from = 2, to = 2*nCharFit, by=2) / (2*nCharFit+2);
+       if (rowTextAlignment=="left") {
+          yPos = seq(from = 2, to=2*nCharFit, by=2) / (2*nCharFit+2);
+       } else {
+          yPos = seq(from = 2*nCharFit, to=2, by=-2) / (2*nCharFit+2);
+       }
        textPosY[[tr]] = rep(yPos, ceiling(nLevs/nCharFit)+5)[1:nLevs][rank(textPos[[tr]])];
      }
   } 
@@ -873,7 +970,7 @@ plotColorUnderTree = function(
   {
     jj = jIndex;
     ind = (1:dimC[1]);
-    xl = (ind-1.5) * step; xr = (ind-0.5) * step; 
+    xl = (ind-1.5+startAt) * step; xr = (ind-0.5+startAt) * step; 
     yb = rep(yBottom[jj], dimC[1]); yt = rep(yTop[jj], dimC[1]);
     if (is.null(dim(C))) {
        rect(xl, yb, xr, yt, col = as.character(C), border = as.character(C));
@@ -890,12 +987,14 @@ plotColorUnderTree = function(
       #printFlush(spaste("jIndex: ", jIndex, ", yBottom: ", yBottom[jIndex],
       #                  ", yTop: ", yTop[jIndex], ", min(textPosY): ", min(textPosY[[textRow]]),
       #                  ", max(textPosY): ", max(textPosY[[textRow]])));
-      yt = yBottom[jIndex] + (yTop[jIndex]-yBottom[jIndex]) * textPosY[[textRow]];
+      yt = yBottom[jIndex] + (yTop[jIndex]-yBottom[jIndex]) * (textPosY[[textRow]] + 1/(2*nCharFit+2));
       nt = length(textLevs[[textRow]]);
       # Add guide lines
       if (addTextGuide)
-        for (l in 1:nt) lines(c(xt[l], xt[l]), c(yt[l], yTop[jIndex]), col = "grey70", lty = 3);
-      text(textLevs[[textRow]], x = xt, y = yt, adj = c(0, 0.5), xpd = TRUE, cex = cex.rowText)
+        for (l in 1:nt) lines(c(xt[l], xt[l]), c(yt[l], yTop[jIndex]), col = "darkgrey", lty = 3);
+
+      textAdj = c(0, 0.5, 1)[ match(rowTextAlignment, c("left", "center", "right")) ];
+      text(textLevs[[textRow]], x = xt, y = yt, adj = c(textAdj, 1), xpd = TRUE, cex = cex.rowText)
       # printFlush("ok");
     }
     jIndex = jIndex - 1;
@@ -1431,85 +1530,99 @@ verboseBoxplot = function(x, g,
           xlab=xlab, ylab=ylab, cex=cex, cex.axis=cex.axis,cex.lab=cex.lab, cex.main=cex.main, ...)
 }
 
-
 verboseBarplot = function (x, g,  main = "",
     xlab = NA, ylab = NA, cex = 1, cex.axis = 1.5, cex.lab = 1.5,
     cex.main = 1.5, color="grey", numberStandardErrors=1,
     KruskalTest=TRUE,  AnovaTest=FALSE, two.sided=TRUE, 
-    horiz = FALSE, ...) 
+    addCellCounts=FALSE, horiz = FALSE, ...) 
 {
-  stderr1 = function(x){ sqrt( var(x,na.rm=TRUE)/sum(!is.na(x))   ) }
-  SE=tapply(x, factor(g), stderr1 )
-  err.bp=function(dd,error,two.sided=FALSE,numberStandardErrors, horiz = FALSE)
-  {
-      if(!is.numeric(dd)) {
-            stop("All arguments must be numeric")}
-      if(is.vector(dd)){
-          xval=(cumsum(c(0.7,rep(1.2,length(dd)-1))))
-      }else{
-          if (is.matrix(dd)){
-            xval=cumsum(array(c(1,rep(0,dim(dd)[1]-1)),
-                                dim=c(1,length(dd))))+0:(length(dd)-1)+.5
-          }else{
-              stop("First argument must either be a vector or a matrix") }
-      }
-      MW=0.25*(max(xval)/length(xval))
-      NoStandardErrors=1
-      ERR1=dd+numberStandardErrors*error
-      ERR2=dd- numberStandardErrors*error
-      if (horiz)
-      {
-        for(i in 1:length(dd))
-        {
-          segments(dd[i], xval[i], ERR1[i], xval[i])
-          segments(ERR1[i], xval[i]-MW, ERR1[i], xval[i]+MW)
-          if(two.sided)
-          {
-            segments(dd[i], xval[i], ERR2[i], xval[i])
-            segments(ERR2[i], xval[i]-MW, ERR2[i], xval[i]+MW)
-          }
+   stderr1 = function(x) {
+        sqrt(var(x, na.rm = TRUE)/sum(!is.na(x)))
+    }
+    SE = tapply(x, factor(g), stderr1)
+    err.bp = function(dd, error, two.sided = FALSE, numberStandardErrors, 
+        horiz = FALSE) {
+        if (!is.numeric(dd)) {
+            stop("All arguments must be numeric")
         }
-      } else {
-        for(i in 1:length(dd))
-        {
-          segments(xval[i],dd[i],xval[i],ERR1[i])
-          segments(xval[i]-MW,ERR1[i],xval[i]+MW,ERR1[i])
-          if(two.sided)
-          {
-            segments(xval[i],dd[i],xval[i],ERR2[i])
-            segments(xval[i]-MW,ERR2[i],xval[i]+MW,ERR2[i])
-          }
+        if (is.vector(dd)) {
+            xval = (cumsum(c(0.7, rep(1.2, length(dd) - 1))))
         }
-      }
-  } # end of function err.bp
-  if ( is.na(ylab) ) ylab= as.character(match.call(expand.dots = FALSE)$x)
-  if ( is.na(xlab) ) xlab= as.character( match.call(expand.dots = FALSE)$g)
+        else {
+            if (is.matrix(dd)) {
+                xval = cumsum(array(c(1, rep(0, dim(dd)[1] - 
+                  1)), dim = c(1, length(dd)))) + 0:(length(dd) - 
+                  1) + 0.5
+            }
+            else {
+                stop("First argument must either be a vector or a matrix")
+            }
+        }
+        MW = 0.25 * (max(xval)/length(xval))
+        NoStandardErrors = 1
+        ERR1 = dd + numberStandardErrors * error
+        ERR2 = dd - numberStandardErrors * error
+        if (horiz) {
+            for (i in 1:length(dd)) {
+                segments(dd[i], xval[i], ERR1[i], xval[i])
+                segments(ERR1[i], xval[i] - MW, ERR1[i], xval[i] + 
+                  MW)
+                if (two.sided) {
+                  segments(dd[i], xval[i], ERR2[i], xval[i])
+                  segments(ERR2[i], xval[i] - MW, ERR2[i], xval[i] + 
+                    MW)
+                }
+            }
+        }
+        else {
+            for (i in 1:length(dd)) {
+                segments(xval[i], dd[i], xval[i], ERR1[i])
+                segments(xval[i] - MW, ERR1[i], xval[i] + MW, 
+                  ERR1[i])
+                if (two.sided) {
+                  segments(xval[i], dd[i], xval[i], ERR2[i])
+                  segments(xval[i] - MW, ERR2[i], xval[i] + MW, 
+                    ERR2[i])
+                }
+            }
+        }
+    }
+    if (is.na(ylab)) 
+        ylab = as.character(match.call(expand.dots = FALSE)$x)
+    if (is.na(xlab)) 
+        xlab = as.character(match.call(expand.dots = FALSE)$g)
+    Means1 = tapply(x, factor(g), mean, na.rm = TRUE)
 
-  Means1= tapply(x, factor(g), mean, na.rm=TRUE)
-  if (length(unique(x)) > 2)
-  {
-    p1=signif(kruskal.test(x~factor(g) )$p.value,2)
-    if (AnovaTest)  p1=signif(  anova(lm(x~factor(g)))$Pr[[1]]    ,2)
-  } else {
-    p1 = tryCatch(signif(fisher.test(x, g, alternative = "two.sided")$p.value, 2), error = function(e) {NA})
-  }
-  if ( AnovaTest | KruskalTest)  main=paste(main, "p =", p1 )
-  ret = barplot(Means1, main=main,col=color, xlab=xlab,ylab=ylab, cex=cex, cex.axis=cex.axis,cex.lab=cex.lab,
-                cex.main=cex.main, horiz = horiz, ...)
-  abline(h=0)
-  if (numberStandardErrors >0) 
-  {
-      err.bp(as.vector(Means1), as.vector(SE), two.sided=two.sided,
-             numberStandardErrors= numberStandardErrors, horiz = horiz)
-  }
-  attr(ret, "height") = as.vector(Means1);
-  attr(ret, "stdErr") = as.vector(SE);
-  invisible(ret);
+    if (length(unique(x)) > 2) {
+        p1 = signif(kruskal.test(x ~ factor(g))$p.value, 2)
+        if (AnovaTest) 
+            p1 = signif(anova(lm(x ~ factor(g)))$Pr[[1]], 2)
+    }
+    else {
+        p1 = tryCatch(signif(fisher.test(x, g, alternative = "two.sided")$p.value, 
+            2), error = function(e) {
+            NA
+        })
+    }
+    if (AnovaTest | KruskalTest) 
+        main = paste(main, "p =", p1)
+    ret = barplot(Means1, main = main, col = color, xlab = xlab, 
+        ylab = ylab, cex = cex, cex.axis = cex.axis, cex.lab = cex.lab, 
+        cex.main = cex.main, horiz = horiz, ...)
+    if (addCellCounts) {
+       cellCountsF = function(x) {  sum(!is.na(x)) }
+       cellCounts=tapply(x, factor(g), cellCountsF)
+       mtext(text=cellCounts,side=ifelse(!horiz, 1,2) ,outer=F,at=ret, col="darkgrey",las=2,cex=.8,...)
+    } # end of if (addCellCounts)
+    abline(h = 0)
+    if (numberStandardErrors > 0) {
+        err.bp(as.vector(Means1), as.vector(SE), two.sided = two.sided, 
+            numberStandardErrors = numberStandardErrors, horiz = horiz)
+    }
+    attr(ret, "height") = as.vector(Means1)
+    attr(ret, "stdErr") = as.vector(SE)
+    invisible(ret)
 }
-
-
-
-
 
 #=============================================================================================
 #
@@ -1906,14 +2019,18 @@ updateProgInd = function(newFrac, progInd, quiet = !interactive())
     stop("Parameter progInd is not of class 'progressIndicator'. Use initProgInd() to initialize",
          "it prior to use.");
 
-  if (quiet) 
+  newStr = paste(progInd$leadStr, as.integer(newFrac*100), "% ", progInd$trailStr, sep = "");
+  if (newStr!=progInd$oldStr)
   {
-    progInd$oldStr = paste(progInd$leadStr, as.integer(newFrac*100), "% ", progInd$trailStr, sep = "")
-  } else {
-    cat(paste(rep("\b", nchar(progInd$oldStr)), collapse=""));
-    progInd$oldStr = paste(progInd$leadStr, as.integer(newFrac*100), "% ", progInd$trailStr, sep = "")
-    cat(progInd$oldStr);
-    if (exists("flush.console")) flush.console();
+    if (quiet) 
+    {
+      progInd$oldStr = newStr;
+    } else {
+      cat(paste(rep("\b", nchar(progInd$oldStr)), collapse=""));
+      cat(newStr);
+      if (exists("flush.console")) flush.console();
+      progInd$oldStr = newStr;
+    }
   }
   progInd;
 }
@@ -1926,6 +2043,8 @@ updateProgInd = function(newFrac, progInd, quiet = !interactive())
 #
 
 plotDendroAndColors = function(dendro, colors, groupLabels = NULL, rowText = NULL, 
+                               rowTextAlignment = c("left", "center", "right"),
+                               rowTextIgnore = NULL,
                                textPositions = NULL,
                                setLayout = TRUE, autoColorHeight = TRUE, colorHeight = 0.2,
                                rowWidths = NULL,
@@ -1952,6 +2071,7 @@ plotDendroAndColors = function(dendro, colors, groupLabels = NULL, rowText = NUL
   if (!is.null(abHeight)) abline(h=abHeight, col = abCol);
   par(mar = c(marAll[1], marAll[2], 0, marAll[4]));
   plotColorUnderTree(dendro, colors, groupLabels, cex.rowLabels = cex.colorLabels, rowText = rowText,
+                     rowTextAlignment = rowTextAlignment, rowTextIgnore = rowTextIgnore,
                      textPositions = textPositions, cex.rowText = cex.rowText, rowWidths = rowWidths,
                      addTextGuide = addTextGuide)
   if (saveMar) par(mar = oldMar);
@@ -3148,6 +3268,7 @@ labeledHeatmap = function (Matrix, xLabels, yLabels = NULL,
                            xColorWidth = 0.05,
                            yColorWidth = 0.05,
                            colors = NULL, 
+                           naColor = "grey",
                            textMatrix = NULL, cex.text = NULL, cex.lab = NULL, 
                            cex.lab.x = cex.lab,
                            cex.lab.y = cex.lab,
@@ -3191,7 +3312,7 @@ labeledHeatmap = function (Matrix, xLabels, yLabels = NULL,
 
   if (is.null(colors)) colors = heat.colors(30);
   if (invertColors) colors = .reverseVector(colors);
-  labPos = .heatmapWithLegend(Matrix, signed = FALSE, colors = colors, cex.legend = cex.lab, 
+  labPos = .heatmapWithLegend(Matrix, signed = FALSE, colors = colors, naColor = naColor, cex.legend = cex.lab, 
                               plotLegend = plotLegend, ...)
   #if (plotLegend)
   #{
@@ -3836,7 +3957,7 @@ plotEigengeneNetworks = function(
   if (is.null(heatmapColors)) 
     if (signed)
     {
-      heatmapColors = greenWhiteRed(50);
+      heatmapColors = blueWhiteRed(50);
     } else {
       heatmapColors = heat.colors(30);
     }

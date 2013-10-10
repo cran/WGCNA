@@ -66,7 +66,8 @@ the scale free topology fit \eqn{R^2} exceeds \code{RsquaredCut}. If \eqn{R^2} i
 cuts, \code{NA} is returned. }
 
   \item{fitIndices}{ a data frame containing the fit indices for scale free topology. The columns
-contain the hard threshold, adjusted \eqn{R^2} for the linear fit, the linear coefficient, adjusted
+contain the hard threshold, Student p-value for the correlation threshold, 
+ adjusted \eqn{R^2} for the linear fit, the linear coefficient, adjusted
 \eqn{R^2} for a more complicated fit models, mean connectivity, median connectivity and maximum
 connectivity.  If input \code{moreNetworkConcepts} is \code{TRUE}, 3 additional columns containing network
 density, centralization, and heterogeneity.}

@@ -121,8 +121,10 @@ True1=TrueTrait(datX=datX,y=y)
 datTrue=True1$datEstimates
 par(mfrow=c(2,2))
 for (i in 1:dim(datTrue)[[2]] ){
-meanAbsDev= mean(abs(yTRUE-datTrue[,i]))
-verboseScatterplot(datTrue[,i],yTRUE,xlab=names(datTrue)[i],  main=paste(i, "MeanAbsDev=", signif(meanAbsDev,3))    )  ; abline(0,1)
+  meanAbsDev= mean(abs(yTRUE-datTrue[,i]))
+  verboseScatterplot(datTrue[,i],yTRUE,xlab=names(datTrue)[i],  
+                     main=paste(i, "MeanAbsDev=", signif(meanAbsDev,3))); 
+  abline(0,1)
 }
 #compare the estimated standard deviation of y.true2
 True1[[2]]

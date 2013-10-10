@@ -6,8 +6,14 @@
 high gene significance
 }
 \usage{
-networkScreeningGS(datExpr, datME, GS, oddPower = 3, blockSize = 1000, minimumSampleSize = ..minNSamples, 
-addGS = TRUE)
+networkScreeningGS(
+  datExpr,
+  datME,
+  GS,
+  oddPower = 3,
+  blockSize = 1000,
+  minimumSampleSize = ..minNSamples, 
+  addGS = TRUE)
 }
 \arguments{
   \item{datExpr}{ data frame of expression data }

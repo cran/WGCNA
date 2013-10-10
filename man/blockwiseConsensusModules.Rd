@@ -76,6 +76,8 @@ blockwiseConsensusModules(
 
      maxCoreScatter = NULL, minGap = NULL,
      maxAbsCoreScatter = NULL, minAbsGap = NULL,
+     useBranchEigennodeDissim = FALSE,
+     minBranchEigennodeDissim = mergeCutHeight,
      pamStage = TRUE,  pamRespectsDendro = TRUE,
 
      # Gene reassignment and trimming from a module, and module "significance" criteria
@@ -92,6 +94,8 @@ blockwiseConsensusModules(
 
      #Module merging options
 
+     equalizeQuantilesForModuleMerging = FALSE,
+     quantileSummaryForModuleMerging = "mean",
      mergeCutHeight = 0.15, 
      mergeConsensusQuantile = consensusQuantile,
 
@@ -275,6 +279,14 @@ heights. If given, overrides \code{maxCoreScatter}. See \code{\link[dynamicTreeC
   \item{minAbsGap}{ minimum cluster gap given as absolute height difference. If given, overrides
 \code{minGap}. See \code{\link[dynamicTreeCut]{cutreeDynamic}} for more details. }
 
+   \item{useBranchEigennodeDissim}{Logical: should branch eigennode (eigengene) dissimilarity be considered
+when merging branches in Dynamic Tree Cut?}
+
+   \item{minBranchEigennodeDissim}{Minimum consensus branch eigennode (eigengene) dissimilarity for
+branches to be considerd separate. The branch eigennode dissimilarity in individual sets
+is simly 1-correlation of the
+eigennodes; the consensus is defined as quantile with probability \code{consensusQuantile}.}
+
   \item{pamStage}{ logical.  If TRUE, the second (PAM-like) stage of module detection will be performed.
      See \code{\link[dynamicTreeCut]{cutreeDynamic}} for more details. }
 
@@ -283,6 +295,7 @@ If \code{TRUE}, the PAM stage will
 respect the dendrogram in the sense an object can be PAM-assigned only to clusters that lie below it on
 the branch that the object is merged into.
      See \code{\link[dynamicTreeCut]{cutreeDynamic}} for more details. }
+
 
 %%%%%%%%%%%%%
 
@@ -309,6 +322,18 @@ disbanded (its genes are unlabeled and returned to the pool of genes waiting for
  \item{trapErrors}{ logical: should errors in calculations be trapped? }
 
 %%%%%%%%%%%%%
+
+  \item{equalizeQuantilesForModuleMerging}{Logical: equalize quantiles of the module eigengene networks
+before module merging? If \code{TRUE}, the quantiles of the eigengene correlation matrices (interpreted as a
+single vectors of non-redundant components) will be equalized across the input data sets. Note that
+although this seems like a reasonable option, it should be considered experimental and not necessarily
+recommended.}
+
+  \item{quantileSummaryForModuleMerging}{One of \code{"mean"} or \code{"median"}. 
+If quantile equalization of the module eigengene networks is
+performed, the resulting "normal" quantiles will be given by this function of the corresponding quantiles
+across the input data sets.}
+
 
   \item{mergeCutHeight}{ dendrogram cut height for module merging. }
 

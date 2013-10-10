@@ -1,4 +1,7 @@
-TrueTrait=function(datX, y,datXtest=NULL, corFnc = "cor", corOptions = "use = 'pairwise.complete.obs'", LeaveOneOut.CV=FALSE,skipMissingVariables=TRUE,addLinearModel=FALSE, Strata=NULL){
+TrueTrait=function(datX, y,datXtest=NULL, corFnc = "cor", corOptions = "use = 'pairwise.complete.obs'", 
+ LeaveOneOut.CV=FALSE,skipMissingVariables=TRUE,
+ addLinearModel=FALSE, Strata=NULL)
+{
 datX=as.matrix(datX)
 no.variables=dim(as.matrix(datX))[[2]]
 r.characteristic=NA
@@ -123,7 +126,7 @@ y.lmLOO[i]= sum(datXtest.LOO*lmLOO$coeff[-1])+lmLOO$coeff[[1]]
 }
 
 corX = parse(text = paste(corFnc, "(datX.LOO,y.LOO ", 
-                WGCNA:::prepComma(corOptions), ")"))
+             prepComma(corOptions), ")"))
 rVector= as.numeric(eval(corX))
 datCoef=t(coef(lm(datX.LOO~ y.LOO,na.action="na.exclude")))
 datX.LOOscaled=scale(datX.LOO,center=datCoef[,1],scale=datCoef[,2] )

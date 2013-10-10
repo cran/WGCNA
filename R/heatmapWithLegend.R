@@ -25,7 +25,7 @@
   ticks;
 }
 
-.heatmapWithLegend = function(data, signed, colors, zlim = NULL, 
+.heatmapWithLegend = function(data, signed, colors, naColor = "grey", zlim = NULL, 
                      reverseRows = TRUE,
                      plotLegend = TRUE,
                      cex.legend = 1, 
@@ -70,9 +70,10 @@
 
   if (reverseRows)
   {
-    colorMat = numbers2colors(.reverseRows(data), signed, colors = colors, lim = zlim)
+    colorMat = numbers2colors(.reverseRows(data), signed, colors = colors, lim = zlim,
+                              naColor = naColor)
   } else
-    colorMat = numbers2colors(data, signed, colors = colors, lim = zlim)
+    colorMat = numbers2colors(data, signed, colors = colors, lim = zlim, naColor = naColor)
 
   for (c in 1:nCols)
   {
