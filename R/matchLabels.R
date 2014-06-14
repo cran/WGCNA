@@ -2,12 +2,27 @@
 # same labels
 
 
-overlapTable = function(labels1, labels2)
+overlapTable = function(labels1, labels2, na.rm = TRUE, ignore = NULL,
+                        levels1 = NULL, levels2 = NULL)
 {
   labels1 = as.vector(labels1);
   labels2 = as.vector(labels2);
-  levels1 = sort(unique(labels1));
-  levels2 = sort(unique(labels2));
+  if (na.rm)
+  {
+    keep = !is.na(labels1) & !is.na(labels2);
+    labels1 = labels1[keep];
+    labels2 = labels2[keep];
+  }
+  if (is.null(levels1)) 
+  {
+    levels1 = sort(unique(labels1));
+    levels1 = levels1[!levels1 %in%ignore];
+  }
+  if (is.null(levels2))
+  {
+    levels2 = sort(unique(labels2));
+    levels2 = levels2[!levels2 %in%ignore];
+  }
   n1 = length(levels1);
   n2 = length(levels2);
   countMat = matrix(0, n1, n2);
@@ -33,42 +48,32 @@ overlapTable = function(labels1, labels2)
 }
  
 
-matchLabels = function(source, reference, pThreshold = 5e-2 )
+matchLabels = function(source, reference, pThreshold = 5e-2, na.rm = TRUE,
+                       ignoreLabels = if (is.numeric(reference)) 0 else "grey", 
+                       extraLabels = if (is.numeric(reference)) c(1:1000) else standardColors())
 {
-  if (suppressWarnings(is.na(as.numeric(levels(factor(reference))[1]))))
-  {
-    origSrc = source;
-    origRef = reference;
-    stdColorsX = c("grey", standardColors());
-    dimSource = dim(source)
-    source = match(source, stdColorsX) - 1;
-    dim(source) = dimSource;
-    reference = match(reference, stdColorsX) -1;
-    if (sum(is.na(source)) > 0)
-      stop("'source' contains non-numeric labels that do not match standard colors."); 
-    if (sum(is.na(reference)) > 0)
-      stop("'reference' contains non-numeric labels that do not match standard colors."); 
-    colorLabels = TRUE;
-  } else
-    colorLabels = FALSE;
 
   source = as.matrix(source);
   if (nrow(source)!=length(reference))
     stop("Number of rows of 'source' must equal the length of 'reference'.");
 
-  result = source;
-  refMods = as.numeric(sort(unique(reference)));
+  result = array(NA, dim = dim(source));
+  #refMods = as.numeric(sort(unique(reference)));
+  #refMods = refMods[!refMods %in% ignoreLabels];
   for (col in 1:ncol(source))
   {
     src = source[, col]
-    nsource = as.numeric(as.factor(src));
-    sourceMods = as.numeric(levels(as.factor(src)));
-    newLabels = rep(NA, length(sourceMods));
-    tab = overlapTable(src, reference);
+    tab = overlapTable(src, reference, na.rm = na.rm, ignore = ignoreLabels);
     pTab = tab$pTable;
     pOrder = apply(pTab, 2, order);
     bestOrder = order(apply(pTab, 2, min));
-    for (rm in 1:length(bestOrder)) if (refMods[bestOrder[rm]]!=0)
+
+    refMods = colnames(pTab);
+    if (is.numeric(reference)) refMods = as.numeric(refMods);
+    sourceMods = rownames(pTab);
+    newLabels = rep(NA, length(sourceMods));
+    names(newLabels) = sourceMods;
+    for (rm in 1:length(bestOrder)) 
     {
       bestInd = 1;
       done = FALSE;
@@ -76,35 +81,40 @@ matchLabels = function(source, reference, pThreshold = 5e-2 )
       while (!done && bestInd < length(sourceMods))
       {
         bm = pOrder[bestInd, bestOrder[rm]];
-        if (sourceMods[bm]!=0)
+        bp = pTab[bm, bestOrder[rm]];
+        if (bp > pThreshold)
         {
-          bp = pTab[bm, bestOrder[rm]];
-          if (bp > pThreshold)
-          {
             done = TRUE;
-          } else if (is.na(newLabels[bm]))
-          {
+        } else if (is.na(newLabels[bm])) {
             #newLabels[bm] = as.numeric(refMods[bestOrder[rm]]);
             #printFlush(paste("Labeling old module ", sourceMods[bm], "as new module",
             #                 refMods[bestOrder[rm]], "with p=", bp));
             newLabels[bm] = refMods[bestOrder[rm]];
             done = TRUE;
-          }
         }
         bestInd = bestInd + 1;
       }
     }
-    if (0 %in% sourceMods) newLabels[match(0, sourceMods)] = 0;
-    maxAssd = max(newLabels, refMods, na.rm = TRUE)
-    unassdSrcTab = table(source[is.na(newLabels[nsource]), col]);
-    unassdRank = rank(-unassdSrcTab, ties.method = "first");
+    if (length(ignoreLabels) > 0)
+    {
+      newLabels.ignore = ignoreLabels;
+      names(newLabels.ignore) = ignoreLabels;
+      newLabels = c(newLabels.ignore, newLabels);
+    }
 
-    newLabels[is.na(newLabels)] = unassdRank + maxAssd;
+    unassigned = src %in% names(newLabels)[is.na(newLabels)];
+    if (any(unassigned))
+    {
+      unassdSrcTab = table(src[!src %in% names(newLabels)]);
+      unassdRank = rank(-unassdSrcTab, ties.method = "first");
 
-    result[, col] = newLabels[nsource];
+      nExtra = sum(is.na(newLabels));
+      newLabels[is.na(newLabels)] = extraLabels[ !extraLabels %in% 
+                                       c(refMods, ignoreLabels, names(newLabels))] [1:nExtra]; 
+    }
+
+    result[, col] = newLabels[match(src, names(newLabels))];
   }
-
-  if (colorLabels) result = labels2colors(result);
 
   result;
 }

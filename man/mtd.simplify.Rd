@@ -40,6 +40,8 @@ The function is relatively fragile and may fail. Use at your own risk.
 }
 
 \seealso{
-\code{multiData2list} for converting multiData structures to plain lists.
+\code{\link{multiData}} to create a multiData structure;
+
+\code{\link{multiData2list}} for converting multiData structures to plain lists.
 }
 \keyword{ misc }% __ONLY ONE__ keyword per line

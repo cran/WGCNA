@@ -23,9 +23,9 @@
       printFlush(paste(spaces, ".alignedFirstPC: FYI: svd failed, using a weighted mean instead.\n",
                        spaces, "  ...svd reported:", pc))
     }
-    pc = apply(x, 1, mean);
-    weight = matrix(abs(cor(x, pc))^power, nrow(x), ncol(x), byrow = TRUE);
-    pc = scale(apply(x * weight, 1, mean));
+    pc = rowMeans(x, na.rm = TRUE);
+    weight = matrix(abs(cor(x, pc, use = 'p'))^power, nrow(x), ncol(x), byrow = TRUE);
+    pc = scale(rowMeans(x * weight, na.rm = TRUE));
   } else {
     weight = abs(cor(x, pc))^power;
     meanX = rowWeightedMeans(x, weight, na.rm = TRUE);

@@ -7,37 +7,80 @@ in a block-wise manner.
 }
 \usage{
 blockwiseModules(
+  # Input data
+
   datExpr, 
+
+  # Data checking options
+
+  checkMissingData = TRUE,
+
+  # Options for splitting data into blocks
+
   blocks = NULL,
   maxBlockSize = 5000,
   randomSeed = 12345,
+
+  # Network construction arguments: correlation options
+
   corType = "pearson",
+  maxPOutliers = 1, 
+  quickCor = 0,
+  pearsonFallback = "individual",
+  cosineCorrelation = FALSE,
+
+  # Adjacency function options
+
   power = 6,
   networkType = "unsigned",
+
+  # Topological overlap options
+
   TOMType = "signed",
   TOMDenom = "min",
+
+  # Saving or returning TOM
+
+  getTOMs = NULL,
+  saveTOMs = FALSE, 
+  saveTOMFileBase = "blockwiseTOM",
+
+  # Basic tree cut options
+
   deepSplit = 2,
-  detectCutHeight = 0.995, minModuleSize = min(20, ncol(datExpr)/2 ),
+  detectCutHeight = 0.995, 
+  minModuleSize = min(20, ncol(datExpr)/2 ),
+
+  # Advanced tree cut options
+
   maxCoreScatter = NULL, minGap = NULL,
   maxAbsCoreScatter = NULL, minAbsGap = NULL,
+  minSplitHeight = NULL, minAbsSplitHeight = NULL,
 
   useBranchEigennodeDissim = FALSE,
   minBranchEigennodeDissim = mergeCutHeight,
 
   pamStage = TRUE, pamRespectsDendro = TRUE,
-  minCoreKME = 0.5, minCoreKMESize = minModuleSize/3,
-  minKMEtoStay = 0.3,
+
+  # Gene reassignment, module trimming, and module "significance" criteria
+
   reassignThreshold = 1e-6,
-  mergeCutHeight = 0.15, impute = TRUE, 
-  getTOMs = NULL,
-  saveTOMs = FALSE, 
-  saveTOMFileBase = "blockwiseTOM",
-  trapErrors = FALSE, numericLabels = FALSE,
-  checkMissingData = TRUE,
-  maxPOutliers = 1, 
-  quickCor = 0,
-  pearsonFallback = "individual",
-  cosineCorrelation = FALSE,
+  minCoreKME = 0.5, 
+  minCoreKMESize = minModuleSize/3,
+  minKMEtoStay = 0.3,
+
+  # Module merging options
+
+  mergeCutHeight = 0.15, 
+  impute = TRUE, 
+  trapErrors = FALSE, 
+
+  # Output options
+
+  numericLabels = FALSE,
+
+  # Options controlling behaviour
+
   nThreads = 0,
   verbose = 0, indent = 0,
   ...)
@@ -46,6 +89,9 @@ blockwiseModules(
 \arguments{
   \item{datExpr}{ expression data. A data frame in which columns are genes and rows ar samples. NAs are
 allowed, but not too many. } 
+
+  \item{checkMissingData}{logical: should data be checked for excessive numbers of missing entries in
+genes and samples, and for genes with zero variance? See details. }
 
   \item{blocks}{ optional specification of blocks in which hierarchical clustering and module detection
 should be performed. If given, must be a numeric vector with one entry per column (gene) 
@@ -63,6 +109,30 @@ function will not save and restore the seed. }
 abbreviations of) \code{"pearson"} and \code{"bicor"}, corresponding to Pearson and bidweight
 midcorrelation, respectively. Missing values are handled using the \code{pairwise.complete.obs} option. }
 
+  \item{maxPOutliers}{ only used for \code{corType=="bicor"}. Specifies the maximum percentile of data 
+that can be considered outliers on either 
+side of the median separately. For each side of the median, if
+higher percentile than \code{maxPOutliers} is considered an outlier by the weight function based on
+\code{9*mad(x)}, the width of the weight function is increased such that the percentile of outliers on
+that side of the median equals \code{maxPOutliers}. Using \code{maxPOutliers=1} will effectively disable
+all weight function broadening; using \code{maxPOutliers=0} will give results that are quite similar (but
+not equal to) Pearson correlation. }
+
+  \item{quickCor}{ real number between 0 and 1 that controls the handling of missing data in the
+calculation of correlations. See details. } 
+
+  \item{pearsonFallback}{Specifies whether the bicor calculation, if used, should revert to Pearson when
+median absolute deviation (mad) is zero. Recongnized values are (abbreviations of) 
+\code{"none", "individual", "all"}. If set to
+\code{"none"}, zero mad will result in \code{NA} for the corresponding correlation. 
+If set to \code{"individual"}, Pearson calculation will be used only for columns that have zero mad. 
+If set to \code{"all"}, the presence of a single zero mad will cause the whole variable to be treated in 
+Pearson correlation manner (as if the corresponding \code{robust} option was set to \code{FALSE}). Has no 
+effect for Pearson correlation.  See \code{\link{bicor}}.}
+
+  \item{cosineCorrelation}{logical: should the cosine version of the correlation calculation be used? The
+cosine calculation differs from the standard one in that it does not subtract the mean. } 
+  
   \item{power}{ soft-thresholding power for network construction. }
 
   \item{networkType}{ network type. Allowed values are (unique abbreviations of) \code{"unsigned"},
@@ -81,6 +151,16 @@ better results but at this time should be considered experimental.}
 %variant
 %is preferrable and we recommend using it unless the user needs to reproduce older results obtained using
 %the standard, minimum denominator TOM. }
+
+  \item{getTOMs}{ deprecated, please use saveTOMs below. }
+
+  \item{saveTOMs}{ logical: should the consensus topological overlap matrices for each block be saved
+and returned?  } 
+
+  \item{saveTOMFileBase}{ character string containing the file name base for files containing the
+consensus topological overlaps. The full file names have \code{"block.1.RData"}, \code{"block.2.RData"}
+etc. appended. These files are standard R data files and can be loaded using the \code{\link{load}}
+function. }
 
 
   \item{deepSplit}{ integer value between 0 and 4. Provides a simplified control over how sensitive
@@ -106,6 +186,14 @@ heights. If given, overrides \code{maxCoreScatter}. See \code{\link[dynamicTreeC
   \item{minAbsGap}{ minimum cluster gap given as absolute height difference. If given, overrides
 \code{minGap}. See \code{\link[dynamicTreeCut]{cutreeDynamic}} for more details. }
 
+  \item{minSplitHeight}{Minimum split height given as the fraction of the difference between
+\code{cutHeight} and the 5th percentile of joining heights. Branches merging below this height will
+automatically be merged. Defaults to zero but is used only if \code{minAbsSplitHeight} below is
+\code{NULL}.}
+
+  \item{minAbsSplitHeight}{Minimum split height given as an absolute height.
+Branches merging below this height will automatically be merged. If not given (default), will be determined
+from \code{minSplitHeight} above.}
 
    \item{useBranchEigennodeDissim}{Logical: should branch eigennode (eigengene) dissimilarity be considered
 when merging branches in Dynamic Tree Cut?}
@@ -140,48 +228,11 @@ disbanded (its genes are unlabeled and returned to the pool of genes waiting for
   \item{impute}{ logical: should imputation be used for module eigengene calculation? See
 \code{\link{moduleEigengenes}} for more details. }
 
-  \item{getTOMs}{ deprecated, please use saveTOMs below. }
-
-  \item{saveTOMs}{ logical: should the consensus topological overlap matrices for each block be saved
-and returned?  } 
-
-  \item{saveTOMFileBase}{ character string containing the file name base for files containing the
-consensus topological overlaps. The full file names have \code{"block.1.RData"}, \code{"block.2.RData"}
-etc. appended. These files are standard R data files and can be loaded using the \code{\link{load}}
-function. }
-
   \item{trapErrors}{ logical: should errors in calculations be trapped? }
 
   \item{numericLabels}{ logical: should the returned modules be labeled by colors (\code{FALSE}), or by
 numbers (\code{TRUE})? }
 
-  \item{checkMissingData}{logical: should data be checked for excessive numbers of missing entries in
-genes and samples, and for genes with zero variance? See details. }
-
-  \item{maxPOutliers}{ only used for \code{corType=="bicor"}. Specifies the maximum percentile of data 
-that can be considered outliers on either 
-side of the median separately. For each side of the median, if
-higher percentile than \code{maxPOutliers} is considered an outlier by the weight function based on
-\code{9*mad(x)}, the width of the weight function is increased such that the percentile of outliers on
-that side of the median equals \code{maxPOutliers}. Using \code{maxPOutliers=1} will effectively disable
-all weight function broadening; using \code{maxPOutliers=0} will give results that are quite similar (but
-not equal to) Pearson correlation. }
-
-  \item{quickCor}{ real number between 0 and 1 that controls the handling of missing data in the
-calculation of correlations. See details. } 
-
-  \item{pearsonFallback}{Specifies whether the bicor calculation, if used, should revert to Pearson when
-median absolute deviation (mad) is zero. Recongnized values are (abbreviations of) 
-\code{"none", "individual", "all"}. If set to
-\code{"none"}, zero mad will result in \code{NA} for the corresponding correlation. 
-If set to \code{"individual"}, Pearson calculation will be used only for columns that have zero mad. 
-If set to \code{"all"}, the presence of a single zero mad will cause the whole variable to be treated in 
-Pearson correlation manner (as if the corresponding \code{robust} option was set to \code{FALSE}). Has no 
-effect for Pearson correlation.  See \code{\link{bicor}}.}
-
-  \item{cosineCorrelation}{logical: should the cosine version of the correlation calculation be used? The
-cosine calculation differs from the standard one in that it does not subtract the mean. } 
-  
   \item{nThreads}{ non-negative integer specifying the number of parallel threads to be used by certain
 parts of correlation calculations. This option only has an effect on systems on which a POSIX thread
 library is available (which currently includes Linux and Mac OSX, but excludes Windows). 

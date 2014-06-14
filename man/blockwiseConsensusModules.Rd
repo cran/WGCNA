@@ -76,6 +76,7 @@ blockwiseConsensusModules(
 
      maxCoreScatter = NULL, minGap = NULL,
      maxAbsCoreScatter = NULL, minAbsGap = NULL,
+     minSplitHeight = NULL, minAbsSplitHeight = NULL,
      useBranchEigennodeDissim = FALSE,
      minBranchEigennodeDissim = mergeCutHeight,
      pamStage = TRUE,  pamRespectsDendro = TRUE,
@@ -278,6 +279,15 @@ heights. If given, overrides \code{maxCoreScatter}. See \code{\link[dynamicTreeC
 
   \item{minAbsGap}{ minimum cluster gap given as absolute height difference. If given, overrides
 \code{minGap}. See \code{\link[dynamicTreeCut]{cutreeDynamic}} for more details. }
+
+  \item{minSplitHeight}{Minimum split height given as the fraction of the difference between
+\code{cutHeight} and the 5th percentile of joining heights. Branches merging below this height will
+automatically be merged. Defaults to zero but is used only if \code{minAbsSplitHeight} below is
+\code{NULL}.}
+
+  \item{minAbsSplitHeight}{Minimum split height given as an absolute height.
+Branches merging below this height will automatically be merged. If not given (default), will be determined
+from \code{minSplitHeight} above.}
 
    \item{useBranchEigennodeDissim}{Logical: should branch eigennode (eigengene) dissimilarity be considered
 when merging branches in Dynamic Tree Cut?}

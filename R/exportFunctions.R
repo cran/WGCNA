@@ -5,6 +5,7 @@ exportNetworkToVisANT = function(
   file = NULL,
   weighted = TRUE,
   threshold = 0.5,
+  maxNConnections = NULL,
   probeToGene = NULL)
 {
   adjMat = as.matrix(adjMat)
@@ -27,7 +28,10 @@ exportNetworkToVisANT = function(
   dstRows = as.dist(rowMat);
   dstCols = as.dist(colMat);
 
-  edges = abs(adjDst) > threshold
+  if (is.null(maxNConnections)) maxNConnections = length(adjDst);
+
+  ranks = rank(-abs(adjDst), na.last = TRUE, ties.method = "first")
+  edges = abs(adjDst) > threshold & ranks <= maxNConnections
   nEdges = sum(edges)
 
   visAntData = data.frame (
@@ -41,7 +45,7 @@ exportNetworkToVisANT = function(
   if (!is.null(file))
     write.table(visAntData, file = file, quote = FALSE, row.names = FALSE, col.names = FALSE)
 
-  visAntData;
+  invisible(visAntData);
 }
 
 exportNetworkToCytoscape = function(

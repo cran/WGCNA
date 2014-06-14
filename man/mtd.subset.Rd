@@ -7,7 +7,18 @@ Subset rows and columns in a multiData structure
 The function restricts each \code{data} component to the given columns and rows.
 }
 \usage{
-mtd.subset(multiData, rowIndex = NULL, colIndex = NULL, permissive = FALSE, drop = FALSE)
+mtd.subset(
+  # Input
+  multiData, 
+
+  # Rows and columns to keep
+  rowIndex = NULL, colIndex = NULL, 
+
+  # Strict or permissive checking of structure?
+  permissive = FALSE, 
+
+  # Output formatting options
+  drop = FALSE)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -47,6 +58,10 @@ dimension and other attributes.
 }
 \author{
 Peter Langfelder
+}
+
+\seealso{
+ \code{\link{multiData}} to create a multiData structure.
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

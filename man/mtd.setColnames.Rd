@@ -44,4 +44,9 @@ components.
 \author{
 Peter Langfelder
 }
+
+\seealso{
+\code{\link{multiData}} to create a multiData structure.
+}
+
 \keyword{ misc }% __ONLY ONE__ keyword per line

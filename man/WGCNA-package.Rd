@@ -13,9 +13,9 @@ also be used for general association networks specified by a symmetric adjacency
 \details{
 \tabular{ll}{
 Package: \tab WGCNA\cr
-Version: \tab 1.34\cr
-Date: \tab 2013-10-10\cr
-Depends: \tab R (>= 2.14), dynamicTreeCut (>= 1.60), flashClust, Hmisc \cr
+Version: \tab 1.41-1\cr
+Date: \tab 2014-06-13\cr
+Depends: \tab R (>= 2.14), dynamicTreeCut (>= 1.62), flashClust, Hmisc \cr
 Imports: \tab stats, impute, grDevices, utils, splines, reshape, foreach, doParallel, matrixStats (>= 0.8.1) \cr
 Suggests: \tab GO.db, org.Hs.eg.db, org.Mm.eg.db, AnnotationDbi, infotheo, entropy, minet, survival \cr
 ZipData: \tab no\cr
@@ -130,6 +130,7 @@ hubGeneSignificance     Hubgene significance
 ImmunePathwayLists      (data) Immune Pathways with Corresponding Gene Markers
 initProgInd             Inline display of progress
 intramodularConnectivity
+intramodularConnectivity.fromExpr
                         Calculation of intramodular connectivity
 keepCommonProbes        Keep probes that are shared among given data sets
 kMEcomparisonScatterplot

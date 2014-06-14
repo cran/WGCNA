@@ -119,6 +119,7 @@ modulePreservation = function(
    corFnc = "cor",
    corOptions = "use = 'p'",
    referenceNetworks = 1,
+   testNetworks = NULL,
    nPermutations = 100,
    includekMEallInSummary = FALSE,
    restrictSummaryForGeneralNetworks = TRUE,
@@ -139,6 +140,7 @@ modulePreservation = function(
    plotInterpolation = TRUE,
    interpolationPlotFile = "modulePreservationInterpolationPlots.pdf",
    discardInvalidOutput = TRUE,
+   parallelCalculation = FALSE,
    verbose = 1, indent = 0)
 {
    sAF = options("stringsAsFactors")
@@ -192,6 +194,32 @@ modulePreservation = function(
    if (any(referenceNetworks < 1) | any(referenceNetworks > nNets))
       stop("referenceNetworks contains elements outside of the allowed range. ");
 
+   nRefNets = length(referenceNetworks);
+
+   # Check testNetworks
+
+   if (is.null(testNetworks))
+   {
+      testNetworks = list();
+      for (ref in 1:nRefNets) testNetworks[[ref]] = c(1:nNets)[ -referenceNetworks[ref] ];
+   }
+
+   # Check that testNetworks was specified correctly
+   if (!is.list(testNetworks) && nRefNets > 1) 
+     stop("When there are more than 1 reference networks, 'testNetworks' must\n",
+          "  be a list with one component per reference network.");
+
+   if (!is.list(testNetworks)) testNetworks = list(testNetworks);
+
+   if (length(testNetworks)!=nRefNets) 
+     stop("Length of 'testNetworks' must be the same as length of 'referenceNetworks'.");
+
+   for (ref in 1:nRefNets)
+   {
+     if (any(testNetworks[[ref]] < 1 || testNetworks[[ref]] > nNets))
+       stop("Some entries of testNetworks[[", ref, "]] are out of range.");
+   }
+   
    # Check multiColor
 
    if (class(multiColor)!="list")
@@ -290,14 +318,14 @@ modulePreservation = function(
    permGoldName = 0.1;
    permGreyName = 0;
 
-   nRefNets = length(referenceNetworks);
-
    collectGarbage();
 
    if (verbose > 0) printFlush(paste(spaces, " ..calculating observed preservation values"))
    observed = .modulePreservationInternal(multiData, multiColor, dataIsExpr = dataIsExpr,
                      calculatePermutation = FALSE, networkType = networkType,
-                     referenceNetworks = referenceNetworks, densityOnly = useInterpolation,
+                     referenceNetworks = referenceNetworks, 
+                     testNetworks = testNetworks, 
+                     densityOnly = useInterpolation,
                      maxGoldModuleSize = maxGoldModuleSize,
                      maxModuleSize = maxModuleSize, 
                      corFnc = corFnc, corOptions = corOptions, 
@@ -369,7 +397,7 @@ modulePreservation = function(
                             "A permutation analysis is not meaningful for a single module; skipping."))
            next;
          }
-         for (tnet in 1:nNets) if (observed[[iref]]$netPresent[tnet]) #(tnet!=ref)   # Loop over test networks
+         for (tnet in 1:nNets) if (tnet %in% testNetworks[[iref]])
          {
             # Retain only genes that are shared between the reference and test networks
             if (verbose > 1) printFlush(paste(spaces, "....working with set", tnet, "as test set"));
@@ -499,7 +527,55 @@ modulePreservation = function(
             permColorsForAcc = list();
             permColorsForAcc[[1]] = colorRef;
             permColorsForAcc[[2]] = colorTest;
-            for (perm in 1:nPermutations ) 
+
+            # For reproducibility of previous results, write separate code for threaded and unthreaded
+            # calculations
+
+            if (parallelCalculation)
+            {
+               combineCalculations = function(...)
+               {
+                 list(...);
+               }
+               seed = sample(1e8, 1);
+               if (verbose > 2) 
+                  printFlush(paste(spaces, " ......parallel calculation of permuted statistics.."));
+               datout = foreach(perm = 1:nPermutations, .combine = combineCalculations,
+                                .multicombine = TRUE, .maxcombine = nPermutations+10)%dopar% 
+               {
+                      set.seed(seed + perm + perm^2); 
+                      collectGarbage();
+                      .modulePreservationInternal(permExpr, permColors, dataIsExpr = dataIsExpr,
+                                                  calculatePermutation = TRUE,
+                                                  multiColorForAccuracy = permColorsForAcc,
+                                                  networkType = networkType,
+                                                  corFnc = corFnc, corOptions = corOptions,
+                                                  referenceNetworks = 1, 
+                                                  testNetworks = list(2),
+                                                  densityOnly = useInterpolation,
+                                                  maxGoldModuleSize = maxGoldModuleSize,
+                                                  maxModuleSize = maxModuleSize, quickCor = quickCor,
+                                                  ccTupletSize = ccTupletSize,
+                                                  calculateCor.kIMall = calculateCor.kIMall,
+                                                  calculateClusterCoeff = calculateClusterCoeff,
+                                                  # calculateQuality = calculateQuality,
+                                                  greyName = greyName,
+                                                  checkData = FALSE,
+                                                  verbose = verbose -3, indent = indent + 3)
+               }
+               for (perm in 1:nPermutations)
+               {
+                 if (!datout[[perm]] [[1]]$netPresent[2])
+                 stop(paste("Internal error: no data in permuted set preservation measures. \n",
+                            "Please contact the package maintainers. Sorry!"))
+                 permOut[[iref]][[tnet]]$regStats[, , perm] = as.matrix(
+                           cbind(datout[[perm]] [[1]]$quality[[2]][, -1],
+                                 datout[[perm]] [[1]]$intra[[2]],
+                                 datout[[perm]] [[1]]$inter[[2]]));
+                 permOut[[iref]][[tnet]]$fixStats[, , perm] = as.matrix(datout[[perm]] [[1]]$accuracy[[2]]);
+               }
+               datout = datout[[1]] # For the name stting procedures that follow...
+            } else for (perm in 1:nPermutations ) 
             {
                if (verbose > 2) printFlush(paste(spaces, " ......working on permutation", perm));
                #newRNG = .Random.seed;
@@ -513,7 +589,9 @@ modulePreservation = function(
                                                   multiColorForAccuracy = permColorsForAcc, 
                                                   networkType = networkType,
                                                   corFnc = corFnc, corOptions = corOptions,
-                                                  referenceNetworks=1, densityOnly = useInterpolation,
+                                                  referenceNetworks=1, 
+                                                  testNetworks = list(2),
+                                                  densityOnly = useInterpolation,
                                                   maxGoldModuleSize = maxGoldModuleSize,
                                                   maxModuleSize = maxModuleSize, quickCor = quickCor,
                                                   ccTupletSize = ccTupletSize,
@@ -543,6 +621,10 @@ modulePreservation = function(
             dimnames(permOut[[iref]][[tnet]]$fixStats) = list(fixModuleNames, fixStatNames,
                                                              spaste("Permutation.", c(1:nPermutations)));
             permutationsPresent[tnet, iref] = TRUE
+          } else {
+            regModuleNames[[iref]][[tnet]] = NA;
+            regModuleSizes[[iref]][[tnet]] = NA;
+            permOut[[iref]][[tnet]] = NA;
           }
       }
          
@@ -576,8 +658,8 @@ modulePreservation = function(
       ref = referenceNetworks[iref];
       meanLM[[iref]]=list()
       seLM[[iref]]=list()
-      for (tnet in 1:nNets) if (observed[[iref]]$netPresent[tnet] & permutationsPresent[tnet, iref] &
-                                interpolationUsed[tnet, iref]) 
+      for (tnet in 1:nNets) if (observed[[iref]]$netPresent[tnet] & 
+                                permutationsPresent[tnet, iref] & interpolationUsed[tnet, iref]) 
       {
          NotGold = !is.element(regModuleNames[[iref]][[tnet]], OmitModule)
          meanLM[[iref]][[tnet]] = list()
@@ -1068,6 +1150,7 @@ modulePreservation = function(
                               corFnc = "cor", 
                               corOptions = "use = 'p'",
                               referenceNetworks=1,
+                              testNetworks,
                               densityOnly = FALSE,
                               maxGoldModuleSize = 1000, 
                               maxModuleSize = 1000, quickCor = 1,
@@ -1175,7 +1258,7 @@ modulePreservation = function(
        overlapTables = list();
 
        netPresent = rep(FALSE, nNets)
-       for (tnet in 1:nNets) if(tnet!=ref)
+       for (tnet in testNetworks[[iref]])
        {
           if (verbose > 1) printFlush(paste(spaces, "  ..working on test network",setNames[tnet]))
           overlap=intersect(colnames(multiData[[ref]]$data),colnames(multiData[[tnet]]$data))
@@ -1393,7 +1476,7 @@ modulePreservation = function(
           rownames(interPres[[tnet]])=colorLevels
           names(interPres)[[tnet]]=paste(name1,sep="")
           netPresent[tnet] = TRUE;
-      } # of for (s in 1:nNets)
+      } # of for (test in testNetworks[[iref]])
               
       datout[[iref]]=list(netPresent = netPresent, quality = quality, 
                           intra = intraPres, inter = interPres, accuracy = accuracy,

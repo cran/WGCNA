@@ -25,6 +25,13 @@
   ticks;
 }
 
+.extend = function(x, n)
+{
+  nRep = ceiling(n/length(x));
+  rep(x, nRep)[1:n];
+}
+
+
 .heatmapWithLegend = function(data, signed, colors, naColor = "grey", zlim = NULL, 
                      reverseRows = TRUE,
                      plotLegend = TRUE,
@@ -35,10 +42,18 @@
                      legendGap = 0.02,
                      frame = TRUE,
                      frameTicks = FALSE, tickLen = 0.02,
+                     verticalSeparator.x = NULL,
+                     verticalSeparator.col = 1, 
+                     verticalSeparator.lty = 1,
+                     verticalSeparator.lwd = 1,
                      ...)
 {
   data = as.matrix(data); nCols = ncol(data); nRows = nrow(data);
-  if (is.null(zlim)) zlim = c(min(data, na.rm = TRUE), max(data, na.rm = TRUE));
+  if (is.null(zlim)) 
+  {
+    zlim = range(data, na.rm = TRUE);
+    if (signed) zlim = c(-max(abs(zlim)), max(abs(zlim)));
+  }
 
   barplot(1, col = "white", border = "white", axisnames = FALSE,
                   axes = FALSE, ...);
@@ -81,6 +96,19 @@
          ybottom = yBot, ytop = yTop, col = colorMat[, c], border = colorMat[, c]);
   }
   if (frame) lines( c(xmin, xmax, xmax, xmin, xmin), c(ymin, ymin, ymax, ymax, ymin) );
+
+  if (!is.null(verticalSeparator.x))
+  {
+    nLines = length(verticalSeparator.x);
+    vs.col = .extend(verticalSeparator.col, nLines);
+    vs.lty = .extend(verticalSeparator.lty, nLines);
+    vs.lwd = .extend(verticalSeparator.lwd, nLines);
+    if (any(verticalSeparator.x < 1 | verticalSeparator.x > nCols))
+      stop("If given. 'verticalSeparator.x' must all be between 1 and the number of columns.");
+    x.lines = xRight[verticalSeparator.x];
+    for (l in 1:nLines)
+      lines(rep(x.lines[l], 2), c(ymin, ymax), col = vs.col[l], lty = vs.lty[l], lwd = vs.lwd[l]);
+  }
 
   if (plotLegend)
   {

@@ -14,12 +14,13 @@ bicor = function(x, y = NULL, robustX = TRUE, robustY = TRUE, use = 'all.obs', m
           "'all.obs', 'pairwise.complete.obs'"))
   if (na.method==1)
   {
-    if (is.null(y))
+    if (sum(is.na(x))> 0)
+      stop("Missing values present in input variable 'x'. Consider using use = 'pairwise.complete.obs'.");
+    if (!is.null(y))
     {
-        sumNAy = 0
-    } else sumNAy = sum(is.na(y));
-    if (sum(is.na(x)) + sumNAy > 0)
-      stop("Missing values present in input data. Consider using use = 'pairwise.complete.obs'.");
+      if (sum(is.na(y)) > 0)
+        stop("Missing values present in input variable 'y'. Consider using use = 'pairwise.complete.obs'.");
+    }
   }
 
   fallback = pmatch(pearsonFallback, .pearsonFallbacks)
@@ -53,7 +54,7 @@ bicor = function(x, y = NULL, robustX = TRUE, robustY = TRUE, use = 'all.obs', m
                err = as.integer(err), 
                warn = as.integer(warnX), nThreads = as.integer(nThreads),
                verbose = as.integer(verbose), indent = as.integer(indent),
-               DUP = FALSE, NAOK = TRUE, PACKAGE = "WGCNA");
+               NAOK = TRUE, PACKAGE = "WGCNA");
     }
     dim(res$res) = dim(bi);
     if (!is.null(dimnames(x)[[2]])) dimnames(res$res) = list(dimnames(x)[[2]],  dimnames(x)[[2]] );
@@ -80,7 +81,7 @@ bicor = function(x, y = NULL, robustX = TRUE, robustY = TRUE, use = 'all.obs', m
              warnX = as.integer(warnX), 
              warnY = as.integer(warnY), 
              nThreads = as.integer(nThreads),
-             verbose = as.integer(verbose), indent = as.integer(indent), DUP = FALSE, NAOK = TRUE,
+             verbose = as.integer(verbose), indent = as.integer(indent), NAOK = TRUE,
              PACKAGE = "WGCNA");
     dim(res$res) = dim(bi);
     if (!is.null(dimnames(x)[[2]]) || !is.null(dimnames(y)[[2]]))
@@ -140,8 +141,13 @@ cor = function(x, y = NULL, use = "all.obs", method = c("pearson", "kendall", "s
               "'all.obs', 'pairwise.complete.obs'"))
       if (na.method==1)
       {
-        if (sum(is.na(x)) > 0)
-          stop("Missing values present in input data. Consider using use = 'pairwise.complete.obs'.");
+         if (sum(is.na(x))> 0)
+           stop("Missing values present in input variable 'x'. Consider using use = 'pairwise.complete.obs'.");
+         if (!is.null(y))
+         {
+           if (sum(is.na(y)) > 0)
+             stop("Missing values present in input variable 'y'. Consider using use = 'pairwise.complete.obs'.");
+         }
       }
       
       if (quick < 0) stop("quick must be non-negative.");
@@ -175,7 +181,7 @@ cor = function(x, y = NULL, use = "all.obs", method = c("pearson", "kendall", "s
                  cosineY = as.integer(cosineY),
                  res = as.double(bi), nNA = as.integer(nNA), err = as.integer(err),
                  nThreads = as.integer(nThreads),
-                 verbose = as.integer(verbose), indent = as.integer(indent), DUP = FALSE, NAOK = TRUE,
+                 verbose = as.integer(verbose), indent = as.integer(indent), NAOK = TRUE,
                  PACKAGE = "WGCNA");
          res = res$res;
          dim(res) = dim(bi);

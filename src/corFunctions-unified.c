@@ -722,7 +722,7 @@ void cor1Fast(double * x, int * nrow, int * ncol, double * quick,
   if ( (multMat = malloc(nc*nr * sizeof(double)))==NULL )
   {
     *err = 1;
-    Rprintf("cor1: memmory allocation error. If possible, please decrease block size.\n");
+    Rprintf("cor1: memory allocation error. If possible, please decrease block size.\n");
     return;
   }
 
@@ -732,7 +732,7 @@ void cor1Fast(double * x, int * nrow, int * ncol, double * quick,
   {
     free(multMat);
     *err = 1;
-    Rprintf("cor1: memmory allocation error. The needed block is relatively small... suspicious.\n");
+    Rprintf("cor1: memory allocation error. The needed block is relatively small... suspicious.\n");
     return;
   }
 
@@ -742,7 +742,7 @@ void cor1Fast(double * x, int * nrow, int * ncol, double * quick,
   {
     free(nNAentries); free(multMat); 
     *err = 1;
-    Rprintf("cor1: memmory allocation error. The needed block is relatively small... suspicious.\n");
+    Rprintf("cor1: memory allocation error. The needed block is relatively small... suspicious.\n");
     return;
   }
 
@@ -764,7 +764,7 @@ void cor1Fast(double * x, int * nrow, int * ncol, double * quick,
      // if ( (aux[t] = malloc(6*nr * sizeof(double)))==NULL)
      // {
        // *err = 1;
-       // Rprintf("cor1: memmory allocation error. The needed block is very small... suspicious.\n");
+       // Rprintf("cor1: memory allocation error. The needed block is very small... suspicious.\n");
        // for (int tt = t-1; tt>=0; tt--) free(aux[tt]);
        // free(NAmean); free(nNAentries); free(multMat);
        // return;
@@ -954,7 +954,7 @@ void bicor1Fast(double * x, int * nrow, int * ncol, double * maxPOutliers,
   if ( (multMat = malloc(nc*nr * sizeof(double)))==NULL )
   {
     *err = 1;
-    Rprintf("cor1: memmory allocation error. If possible, please decrease block size.\n");
+    Rprintf("cor1: memory allocation error. If possible, please decrease block size.\n");
     return;
   }
 
@@ -964,7 +964,7 @@ void bicor1Fast(double * x, int * nrow, int * ncol, double * maxPOutliers,
   {
     free(multMat);
     *err = 1;
-    Rprintf("cor1: memmory allocation error. The needed block is relatively small... suspicious.\n");
+    Rprintf("cor1: memory allocation error. The needed block is relatively small... suspicious.\n");
     return;
   }
 
@@ -974,7 +974,7 @@ void bicor1Fast(double * x, int * nrow, int * ncol, double * maxPOutliers,
   {
     free(nNAentries); free(multMat); 
     *err = 1;
-    Rprintf("cor1: memmory allocation error. The needed block is relatively small... suspicious.\n");
+    Rprintf("cor1: memory allocation error. The needed block is relatively small... suspicious.\n");
     return;
   }
 
@@ -996,7 +996,7 @@ void bicor1Fast(double * x, int * nrow, int * ncol, double * maxPOutliers,
      if ( (aux[t] = malloc(6*nr * sizeof(double)))==NULL)
      {
        *err = 1;
-       Rprintf("cor1: memmory allocation error. The needed block is very small... suspicious.\n");
+       Rprintf("cor1: memory allocation error. The needed block is very small... suspicious.\n");
        for (int tt = t-1; tt>=0; tt--) free(aux[tt]);
        free(NAmed); free(nNAentries); free(multMat);
        return;
@@ -1477,7 +1477,7 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
   if ( (multMatX = malloc(ncx*nr * sizeof(double)))==NULL )
   {
     *err = 1;
-    Rprintf("bicor: memmory allocation error. If possible, please decrease block size.\n");
+    Rprintf("bicor: memory allocation error. If possible, please decrease block size.\n");
     return;
   }
 
@@ -1485,7 +1485,7 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
   {
     free(multMatX);
     *err = 1;
-    Rprintf("bicor: memmory allocation error. If possible, please decrease block size.\n");
+    Rprintf("bicor: memory allocation error. If possible, please decrease block size.\n");
     return;
   }
 
@@ -1493,7 +1493,7 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
   {
     free(multMatY); free(multMatX);
     *err = 1;
-    Rprintf("bicor: memmory allocation error. The needed block is relatively small... suspicious.\n");
+    Rprintf("bicor: memory allocation error. The needed block is relatively small... suspicious.\n");
     return;
   }
 
@@ -1501,7 +1501,7 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
   {
     free(nNAentriesX); free(multMatY); free(multMatX);
     *err = 1;
-    Rprintf("bicor: memmory allocation error. The needed block is relatively small... suspicious.\n");
+    Rprintf("bicor: memory allocation error. The needed block is relatively small... suspicious.\n");
     return;
   }
 
@@ -1509,7 +1509,7 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
   {
     free(nNAentriesY); free(nNAentriesX); free(multMatY); free(multMatX);
     *err = 1;
-    Rprintf("bicor: memmory allocation error. The needed block is relatively small... suspicious.\n");
+    Rprintf("bicor: memory allocation error. The needed block is relatively small... suspicious.\n");
     return;
   }
 
@@ -1517,7 +1517,7 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
   {
     free(NAmedX); free(nNAentriesY); free(nNAentriesX); free(multMatY); free(multMatX);
     *err = 1;
-    Rprintf("bicor: memmory allocation error. The needed block is relatively small... suspicious.\n");
+    Rprintf("bicor: memory allocation error. The needed block is relatively small... suspicious.\n");
     return;
   }
 
@@ -1539,7 +1539,7 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
      if ( (aux[t] = malloc(6*nr * sizeof(double)))==NULL)
      {
        *err = 1;
-       Rprintf("cor1: memmory allocation error. The needed block is very small... suspicious.\n");
+       Rprintf("cor1: memory allocation error. The needed block is very small... suspicious.\n");
        for (int tt = t-1; tt>=0; tt--) free(aux[tt]);
        free(NAmedY); free(NAmedX); free(nNAentriesY); free(nNAentriesX); free(multMatY); free(multMatX);
        return;
@@ -1978,7 +1978,7 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
   if ( (multMatX = malloc(ncx*nr * sizeof(double)))==NULL )
   {
     *err = 1;
-    Rprintf("cor(x,y): memmory allocation error. If possible, please decrease block size.\n");
+    Rprintf("cor(x,y): memory allocation error. If possible, please decrease block size.\n");
     return;
   }
 
@@ -1986,7 +1986,7 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
   {
     free(multMatX);
     *err = 1;
-    Rprintf("cor(x,y): memmory allocation error. If possible, please decrease block size.\n");
+    Rprintf("cor(x,y): memory allocation error. If possible, please decrease block size.\n");
     return;
   }
 
@@ -1994,7 +1994,7 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
   {
     free(multMatY); free(multMatX);
     *err = 1;
-    Rprintf("cor(x,y): memmory allocation error. The needed block is relatively small... suspicious.\n");
+    Rprintf("cor(x,y): memory allocation error. The needed block is relatively small... suspicious.\n");
     return;
   }
 
@@ -2002,7 +2002,7 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
   {
     free(nNAentriesX); free(multMatY); free(multMatX);
     *err = 1;
-    Rprintf("cor(x,y): memmory allocation error. The needed block is relatively small... suspicious.\n");
+    Rprintf("cor(x,y): memory allocation error. The needed block is relatively small... suspicious.\n");
     return;
   }
 
@@ -2010,7 +2010,7 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
   {
     free(nNAentriesY); free(nNAentriesX); free(multMatY); free(multMatX);
     *err = 1;
-    Rprintf("cor(x,y): memmory allocation error. The needed block is relatively small... suspicious.\n");
+    Rprintf("cor(x,y): memory allocation error. The needed block is relatively small... suspicious.\n");
     return;
   }
 
@@ -2018,7 +2018,7 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
   {
     free(NAmeanX); free(nNAentriesY); free(nNAentriesX); free(multMatY); free(multMatX);
     *err = 1;
-    Rprintf("cor(x,y): memmory allocation error. The needed block is relatively small... suspicious.\n");
+    Rprintf("cor(x,y): memory allocation error. The needed block is relatively small... suspicious.\n");
     return;
   }
 

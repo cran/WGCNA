@@ -318,6 +318,7 @@ void tomSimilarity(double * expr, int * nSamples, int * nGenes,
                    int * nThreads,
                    int * verbose, int * indent)
 {
+  // Rprintf("Starting tomSimilarity...\n");
   double 	* adj;
 
   int		ng = *nGenes, ns = *nSamples;
@@ -375,11 +376,10 @@ void tomSimilarity(double * expr, int * nSamples, int * nGenes,
      Rprintf("TOM: exit because 'adjacency' reported an error.\n");
      free(adj);
      error(AdjErrors[err]);
+  } else {
+    tomSimilarityFromAdj(adj, nGenes, tomType, denomType, tom, verbose, indent);
+    free(adj);
   }
-
-  tomSimilarityFromAdj(adj, nGenes, tomType, denomType, tom, verbose, indent);
-
-  free(adj);
 }
 
 // Version to be called via .Call
@@ -393,13 +393,14 @@ SEXP tomSimilarity_call(SEXP expr_s,
                         SEXP warn_s, // This is an "output" variable
                         SEXP nThreads_s, SEXP verbose_s, SEXP indent_s)
 {
+  // Rprintf("Step 1\n");
   SEXP dim, tom_s;
 
   int *nSamples, *nGenes, *fallback, *cosine, *warn, *nThreads, *verbose, *indent;
   int *corType, *adjType, *tomType, *denomType;
-  int *nNA, *err;
 
   double *expr, *power, *quick, *tom, *maxPOutliers;
+  // Rprintf("Step 2\n");
 
   /* Get dimensions of 'expr'. */
   PROTECT(dim = getAttrib(expr_s, R_DimSymbol));
@@ -407,6 +408,7 @@ SEXP tomSimilarity_call(SEXP expr_s,
   nGenes = INTEGER(dim)+1;
   expr = REAL(expr_s);
 
+  // Rprintf("Step 3\n");
   corType = INTEGER(corType_s);
   adjType = INTEGER(adjType_s);
   tomType = INTEGER(tomType_s);
@@ -422,15 +424,18 @@ SEXP tomSimilarity_call(SEXP expr_s,
   quick = REAL(quick_s);
   maxPOutliers = REAL(maxPOutliers_s);
 
+  // Rprintf("Step 4\n");
   PROTECT(tom_s = allocMatrix(REALSXP, *nGenes, *nGenes));   
   tom = REAL(tom_s);
 
+  // Rprintf("Calling tomSimilarity...\n");
   tomSimilarity(expr, nSamples, nGenes,
                 corType, adjType, power,
                 tomType, denomType, 
                 maxPOutliers, quick, fallback, cosine,
                 tom, warn, nThreads, verbose, indent);
 
+  // Rprintf("Returned from tomSimilarity...\n");
   UNPROTECT(2);
 
   return tom_s;

@@ -13,7 +13,7 @@ mtd.subset = function(multiData, rowIndex = NULL, colIndex = NULL, permissive = 
 {
   size = checkSets(multiData, checkStructure = permissive);
   if (!size$structureOK && !is.null(colIndex))
-    warning(immdiate. = TRUE,
+    warning(immediate. = TRUE,
             paste("mtd.subset: applying column selection on data sets that do not have\n",
                   " the same number of columns. This is treacherous territory; proceed with caution."));
   if (is.null(colIndex)) colIndex.1 = c(1:size$nGenes) else colIndex.1 = colIndex;
@@ -33,7 +33,7 @@ mtd.subset = function(multiData, rowIndex = NULL, colIndex = NULL, permissive = 
 
 multiData2list = function(multiData)
 {
-  lapply(multiData, `[[`, 'data');
+  lapply(multiData, getElement, 'data');
 }
 
 list2multiData = function(data)
@@ -50,8 +50,54 @@ mtd.colnames = function(multiData)
   colnames(multiData[[1]]$data);
 }
 
-mtd.apply = function(multiData, FUN, ..., mdaSimplify = FALSE, mdaCopyNonData = FALSE)
+.calculateIndicator = function(nSets, mdaExistingResults, mdaUpdateIndex)
 {
+  if (length(mdaUpdateIndex)==0) mdaUpdateIndex = NULL;
+  calculate = rep(TRUE, nSets);
+  if (!is.null(mdaExistingResults))
+  {
+    nSets.existing = length(mdaExistingResults);
+    if (nSets.existing>nSets)
+      stop("Number of sets in 'mdaExistingResults' is higher than the number of sets in 'multiData'.\n",
+           "  Please supply a valid 'mdaExistingResults' or NULL to recalculate all results.");
+    if (nSets.existing==0)
+      stop("Number of sets in 'mdaExistingResults' is zero.\n",
+           "  Please supply a valid 'mdaExistingResults' or NULL to recalculate all results.");
+    if (is.null(mdaUpdateIndex))
+    {
+      calculate[1:length(mdaExistingResults)] = FALSE;
+    } else {
+      if (any(! mdaUpdateIndex %in% c(1:nSets)))
+        stop("All entries in 'mdaUpdateIndex' must be between 1 and the number of sets in 'multiData'.");
+      calculateIndex = sort(unique(c(mdaUpdateIndex,
+                                      if (nSets.existing<nSets) c((nSets.existing+1):nSets) else NULL)));
+      calculate[ c(1:nSets)[-calculateIndex] ] = FALSE;
+    }
+  }
+
+  calculate;
+}
+
+  
+
+mtd.apply = function(
+    # What to do
+    multiData, FUN, ...,
+
+    # Pre-existing results and update options
+    mdaExistingResults = NULL, mdaUpdateIndex = NULL,
+    mdaCopyNonData = FALSE,
+
+    # Output formatting options
+    mdaSimplify = FALSE,
+    returnList = FALSE,
+
+    # Internal behaviour options
+    mdaVerbose = 0, mdaIndent = 0
+)
+{
+  printSpaces = indentSpaces(mdaIndent);
+
   if (!isMultiData(multiData, strict = FALSE))
     stop("Supplied 'multiData' is not a valid multiData structure.");
 
@@ -60,19 +106,55 @@ mtd.apply = function(multiData, FUN, ..., mdaSimplify = FALSE, mdaCopyNonData = 
 
   nSets = length(multiData);
   if (mdaCopyNonData) out = multiData else out = vector(mode = "list", length = nSets);
-  FUN = match.fun(FUN);
-  for (set in 1:nSets)
-    out[[set]]$data = FUN(multiData[[set]]$data, ...)
 
-  if (mdaSimplify) return (mtd.simplify(out));
+  calculate = .calculateIndicator(nSets, mdaExistingResults, mdaUpdateIndex);
+
+  FUN = match.fun(FUN);
+  for (set in 1:nSets) 
+  {
+    if (calculate[set])
+    {
+      if (mdaVerbose > 0)
+        printFlush(spaste(printSpaces, "mtd.apply: working on set ", set)); 
+      out[[set]]$data = FUN(multiData[[set]]$data, ...)
+    } else
+      out[set] = mdaExistingResults[set];
+  }
+
+
+  if (mdaSimplify) 
+  {
+    if (mdaVerbose > 0)
+      printFlush(spaste(printSpaces, "mtd.apply: attempting to simplify...")); 
+    return (mtd.simplify(out));
+  } else if (returnList) {
+    return (multiData2list(out));
+  }
 
   out;
 }
 
-mtd.applyToSubset = function(multiData, FUN, ..., 
-                             mdaRowIndex = NULL, mdaColIndex = NULL, 
-                             mdaSimplify = FALSE, mdaCopyNonData = FALSE)
+mtd.applyToSubset = function(
+    # What to do
+    multiData, FUN, ...,
+
+    # Which rows and cols to keep
+    mdaRowIndex = NULL, mdaColIndex = NULL,
+
+    # Pre-existing results and update options
+    mdaExistingResults = NULL, mdaUpdateIndex = NULL,
+    mdaCopyNonData = FALSE,
+
+    # Output formatting options
+    mdaSimplify = FALSE,
+    returnList = FALSE,
+
+    # Internal behaviour options
+    mdaVerbose = 0, mdaIndent = 0
+)
 {
+  printSpaces = indentSpaces(mdaIndent);
+
   size = checkSets(multiData);
   if (mdaSimplify && mdaCopyNonData)
     stop("Non-data copying is not compatible with simplification.");
@@ -100,12 +182,30 @@ mtd.applyToSubset = function(multiData, FUN, ...,
     mdaRowIndex = lapply(size$nSamples, function(n) { c(1:n) });
   }
     
+  calculate = .calculateIndicator(nSets, mdaExistingResults, mdaUpdateIndex);
+
   fun = match.fun(FUN) 
   for (set in 1:size$nSets)
-    res[[set]] = list(data = fun( 
-             if (doSelection) multiData[[set]] $ data[mdaRowIndex[[set]], mdaColIndex, drop = FALSE] else
-                              multiData[[set]] $ data, ...));
-  if (mdaSimplify) return (mtd.simplify(res));
+  {
+    if (calculate[set])
+    {
+       if (mdaVerbose > 0)
+         printFlush(spaste(printSpaces, "mtd.applyToSubset: working on set ", set));
+       res[[set]] = list(data = fun( 
+                if (doSelection) multiData[[set]] $ data[mdaRowIndex[[set]], mdaColIndex, drop = FALSE] else
+                                 multiData[[set]] $ data, ...));
+    } else
+       res[set] = mdaExistingResults[set];
+  }
+
+  if (mdaSimplify) 
+  {
+    if (mdaVerbose > 0)
+      printFlush(spaste(printSpaces, "mtd.applyToSubset: attempting to simplify..."));
+    return (mtd.simplify(res));
+  } else if (returnList) {
+    return (multiData2list(res));
+  }
 
   return(res);
 }
@@ -160,9 +260,26 @@ isMultiData = function(x, strict = TRUE)
   }
 }
 
-mtd.mapply = function(FUN, ..., MoreArgs = NULL, mdmaSimplify = FALSE, mdma.doCollectGarbage = FALSE,
-                            mdma.argIsMultiData = NULL)
+mtd.mapply = function(
+  # What to do
+  FUN, ..., MoreArgs = NULL,
+
+  # How to interpret the input
+  mdma.argIsMultiData = NULL,
+
+  # Copy previously known results?
+  mdmaExistingResults = NULL, mdmaUpdateIndex = NULL,
+
+  # How to format output
+  mdmaSimplify = FALSE,
+  returnList = FALSE,
+
+  # Options controlling internal behaviour
+  mdma.doCollectGarbage = FALSE,
+  mdmaVerbose = 0, mdmaIndent = 0)
+
 {
+  printSpaces = indentSpaces(mdmaIndent);
   dots = list(...);
   if (length(dots)==0) 
     stop("No arguments were specified. Please type ?mtd.mapply to see the help page.");
@@ -175,22 +292,38 @@ mtd.mapply = function(FUN, ..., MoreArgs = NULL, mdmaSimplify = FALSE, mdma.doCo
   res = list();
   if (is.null(mdma.argIsMultiData)) mdma.argIsMultiData = sapply(dots, isMultiData, strict = FALSE);
 
-  FUN = match.fun(FUN);
   nSets = dotLengths[1];
+
+  calculate = .calculateIndicator(nSets, mdmaExistingResults, mdmaUpdateIndex);
+
+  FUN = match.fun(FUN);
   for (set in 1:nSets)
   {
-    localArgs = list();
-    for (arg in 1:nArgs)
-      localArgs[[arg]] = if (mdma.argIsMultiData[arg]) dots[[arg]] [[set]] $ data else dots[[arg]] [[set]];
-    names(localArgs) = names(dots);
-    res[[set]] = list(data = do.call(FUN, c(localArgs, MoreArgs)));
-    if (mdma.doCollectGarbage) collectGarbage();
+    if (calculate[set])
+    {
+      if (mdmaVerbose > 0)
+        printFlush(spaste(printSpaces, "mtd.mapply: working on set ", set));
+
+      localArgs = list();
+      for (arg in 1:nArgs)
+        localArgs[[arg]] = if (mdma.argIsMultiData[arg]) dots[[arg]] [[set]] $ data else dots[[arg]] [[set]];
+      names(localArgs) = names(dots);
+      res[[set]] = list(data = do.call(FUN, c(localArgs, MoreArgs)));
+      if (mdma.doCollectGarbage) collectGarbage();
+    } else
+      res[set] = mdmaExistingResults[set];
   }
 
   names(res) = names(dots[[1]]);
 
   if (mdmaSimplify)
-    return(mtd.simplify(res));
+  {
+    if (mdmaVerbose > 0)
+      printFlush(spaste(printSpaces, "mtd.mapply: attempting to simplify..."));
+    return (mtd.simplify(res));
+  } else if (returnList) {
+    return (multiData2list(res));
+  }
 
   return(res);
 }
@@ -201,7 +334,7 @@ mtd.rbindSelf = function(multiData)
   size = checkSets(multiData);
   out = NULL;
   colnames = mtd.colnames(multiData);
-  for (set in 1:nSets)
+  for (set in 1:size$nSets)
   {
     if (!is.null(colnames(multiData[[set]]$data)) && 
         !isTRUE(all.equal(colnames, colnames(multiData[[set]]$data))) )
@@ -231,5 +364,11 @@ mtd.setColnames = function(multiData, colnames)
     colnames(multiData[[set]]$data) = colnames
   multiData
 }
+
+
+multiData = function(...)
+{
+  list2multiData(list(...));
+}  
 
 

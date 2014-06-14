@@ -1,6 +1,109 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
 
+2014/06/13: 1.41-1
+
+	. DUP = FALSE removed from all .C calls since the argument is
+	  deprecated. This means that memory requirements may increase in some
+	  situations.
+
+
+2014/06/12: 1.41
+
+	. New function shortenStrings 
+
+	. Changed several packages we depend on from Depends: to Imports:
+
+	. New functions prependZeros and formatLabels
+
+	. Bugfix in userListEnrichment: function no longer crashes when there
+	  are no "significant" overlaps
+
+	. New function intramodularConnectivity.fromExpr 
+
+2014/05/07: 1.40
+
+	. Functions blockwise[Consensus]Modules and
+	  recut[Blockwise,Consensus]Trees get new arguments minSplitHeight and
+	  minAbsSplitHeight that get passed to cutreeDynamic.
+
+	. Arguments for blockwiseModules have been re-ordered to group them
+	  and make it easier to find the right setting.
+
+2014/04/28: 1.39
+
+	. Function exportNetworkToVisANT can now restrict connections to a
+	  given number of top connections. 
+
+	. Function exportNetworkToVisANT returns the resulting data frame
+	  invisibly.
+
+	. Function modulePreservation gains the ability to run the
+	  calculations in parallel, controlled by argument
+	  'parallelCalculation'.
+
+	. Function modulePreservation gains the ability to explicitly specify
+	  test sets for each reference network, via parameter testNetworks.
+
+	. Functions matchLabels and overlapTable have been expanded with new
+	  functionality and arguments. matchLabels now works with any labels
+	  (not just numeric or color labels) and can handle missing labels by
+	  removing them.
+
+	. Bug in function multiData2list fixed: function now returns a simpler
+	  (and correct) list.
+
+	. Crash-causing bug in mtd.rbindSelf fixed.
+
+2014/01/08: 1.37
+
+	. New functions multiUnion and multiIntersect
+
+	. New function labeledHeatmap.multiPage produces labeled heatmaps
+	  divided into multiple plots (pages).
+
+	. plotColorUnderTree and plotOrderedColorsnow produce more precise
+	  "center" and "right" text alignment.
+
+	. Maximum block size in blockwiseModules, blockwiseConsensusModules
+	  and blockwiseIndividualTOMs (argument 'maxBlockSize') is now limited
+	  to be less than sqrt(2^31) to prevent problems with C and Fortran
+	  routines. The same limitation also applies to the 'preferredSize'
+	  argument of projectiveKMeans and consensusProjectiveKMeans.
+
+	. Occasional bug when saving and loading permutation test results in
+	  modulePreservation fixed.
+
+2013/11/22: 1.36
+
+	. Needs dynamicTreeCut 1.61 or higher.
+
+	. Bugfix in mtd.mapply fixes a crash.
+
+	. Warning message in mtd.subset cleaned up.
+
+	. New function multiData to conveniently create multiData structures.
+
+	. The color palette of blueWhiteRed has been tweaked to provide
+	  lighter extreme colors which makes it easier to read black text
+	  superimposed on the strongest colors.
+
+	. More descriptive error message in cor() and bicor() when input
+	  contains missing data and 'use = "all.observations"'. 
+
+2013/11/04: 1.35
+
+	. Function accuracyMeasures now works also with factors.
+
+	. Function moduleEigengenes calls impute.knn only if there are any
+	  missing data.
+
+	. Functions mtd.apply, mtd.applyToSubset, and mtd.mapply gain
+	  arguments controling whether and how progress should be displayed;
+	  they also gain arguments that let the user specify calculation on
+	  only a subset of the input sets. 
+
+
 2013/10/10: 1.34
 
 	. Function verboseBarplot gains argument addCellCounts that enables

@@ -115,7 +115,7 @@ TOMsimilarity = function(adjMat, TOMType = "unsigned", TOMDenom = "min", verbose
   tomResult = .C("tomSimilarityFromAdj", as.double(as.matrix(adjMat)), as.integer(nGenes),
         as.integer(TOMTypeC), 
         as.integer(TOMDenomC),
-        tom = as.double(tom), as.integer(verbose), as.integer(indent), DUP = FALSE, PACKAGE = "WGCNA") 
+        tom = as.double(tom), as.integer(verbose), as.integer(indent), PACKAGE = "WGCNA") 
 
   tom[,] = tomResult$tom;
   diag(tom) = 1;
@@ -142,41 +142,83 @@ TOMdist = function(adjMat, TOMType = "unsigned", TOMDenom = "min", verbose = 1, 
 #==========================================================================================================
 # Function to calculate modules and eigengenes from all genes.
 
-blockwiseModules = function(datExpr, blocks = NULL, 
-                            maxBlockSize = 5000,
-                            randomSeed = 12345,
-                            corType = "pearson",
-                            power = 6, 
-                            networkType = "unsigned",
-                            TOMType = "signed",
-                            TOMDenom = "min",
-                            deepSplit = 2, 
-                            detectCutHeight = 0.995, minModuleSize = min(20, ncol(datExpr)/2 ),
-                            maxCoreScatter = NULL, minGap = NULL,
-                            maxAbsCoreScatter = NULL, minAbsGap = NULL,
+blockwiseModules = function(
+  # Input data
 
-                            useBranchEigennodeDissim = FALSE,
-                            minBranchEigennodeDissim = mergeCutHeight,
+  datExpr, 
 
-                            pamStage = TRUE, pamRespectsDendro = TRUE,
+  # Data checking options
 
-                            # minKMEtoJoin =0.7, 
-                            minCoreKME = 0.5, minCoreKMESize = minModuleSize/3,
-                            minKMEtoStay = 0.3,
-                            reassignThreshold = 1e-6,
-                            mergeCutHeight = 0.15, impute = TRUE, 
-                            getTOMs = NULL,
-                            saveTOMs = FALSE, 
-                            saveTOMFileBase = "blockwiseTOM",
-                            trapErrors = FALSE, numericLabels = FALSE,
-                            checkMissingData = TRUE,
-                            maxPOutliers = 1,
-                            quickCor = 0,
-                            pearsonFallback = "individual",
-                            cosineCorrelation = FALSE,
-                            nThreads = 0,
-                            verbose = 0, indent = 0,
-                            ...)
+  checkMissingData = TRUE,
+
+  # Options for splitting data into blocks
+
+  blocks = NULL,
+  maxBlockSize = 5000,
+  randomSeed = 12345,
+
+  # Network construction arguments: correlation options
+
+  corType = "pearson",
+  maxPOutliers = 1, 
+  quickCor = 0,
+  pearsonFallback = "individual",
+  cosineCorrelation = FALSE,
+
+  # Adjacency function options
+
+  power = 6,
+  networkType = "unsigned",
+
+  # Topological overlap options
+
+  TOMType = "signed",
+  TOMDenom = "min",
+
+  # Saving or returning TOM
+
+  getTOMs = NULL,
+  saveTOMs = FALSE, 
+  saveTOMFileBase = "blockwiseTOM",
+
+  # Basic tree cut options
+
+  deepSplit = 2,
+  detectCutHeight = 0.995, 
+  minModuleSize = min(20, ncol(datExpr)/2 ),
+
+  # Advanced tree cut options
+
+  maxCoreScatter = NULL, minGap = NULL,
+  maxAbsCoreScatter = NULL, minAbsGap = NULL,
+  minSplitHeight = NULL, minAbsSplitHeight = NULL,
+  useBranchEigennodeDissim = FALSE,
+  minBranchEigennodeDissim = mergeCutHeight,
+
+  pamStage = TRUE, pamRespectsDendro = TRUE,
+
+  # Gene reassignment, module trimming, and module "significance" criteria
+
+  reassignThreshold = 1e-6,
+  minCoreKME = 0.5, 
+  minCoreKMESize = minModuleSize/3,
+  minKMEtoStay = 0.3,
+
+  # Module merging options
+
+  mergeCutHeight = 0.15, 
+  impute = TRUE, 
+  trapErrors = FALSE, 
+
+  # Output options
+
+  numericLabels = FALSE,
+
+  # Options controlling behaviour
+
+  nThreads = 0,
+  verbose = 0, indent = 0,
+  ...)
 {
   spaces = indentSpaces(indent);
 
@@ -234,6 +276,9 @@ blockwiseModules = function(datExpr, blocks = NULL,
   AllMEs = NULL;
   allLabelIndex = NULL;
 
+  if (maxBlockSize >= floor(sqrt(2^31)) )
+    stop("'maxBlockSize must be less than ", floor(sqrt(2^31)), ". Please decrease it and try again.")
+
   if (!is.null(blocks) && (length(blocks)!=nGenes))
     stop("Input error: the length of 'geneRank' does not equal the number of genes in given 'datExpr'.");
 
@@ -254,9 +299,11 @@ blockwiseModules = function(datExpr, blocks = NULL,
     gsg = list(goodSamples = rep(TRUE, nSamples), goodGenes = rep(TRUE, nGenes), allOK = TRUE);
   }
 
-  datExpr.scaled.imputed = t(impute.knn(t(scale(datExpr)))$data)
-  if (any(is.na(datExpr)))
+  if (any(is.na(datExpr))) 
+  {
      datExpr.scaled.imputed = t(impute.knn(t(scale(datExpr)))$data)
+  } else 
+     datExpr.scaled.imputed = scale(datExpr);
 
   corFnc = .corFnc[intCorType];
   corOptions = list(use = 'p');
@@ -272,10 +319,12 @@ blockwiseModules = function(datExpr, blocks = NULL,
     externalSplitOptions = list(list( corFnc = corFnc, corOptions = corOptions,
                                       signed = signed));
     nExternalBranchSplitFnc = 1;
+    externalSplitFncNeedsDistance = FALSE;
     minExternalSplit = minBranchEigennodeDissim;
   } else {
     branchSplitFnc = list();
     externalSplitOptions = list(list())
+    externalSplitFncNeedsDistance = logical(0);
     nExternalBranchSplitFnc = 0;
     minExternalSplit = numeric(0);
   }
@@ -288,6 +337,7 @@ blockwiseModules = function(datExpr, blocks = NULL,
       branchSplitFnc[[nExternalBranchSplitFnc]] = "branchSplit"
       externalSplitOptions[[nExternalBranchSplitFnc]] = list(discardProp = 0.08, minCentralProp = 0.75,
                        nConsideredPCs = 3, signed = signed, getDetails = FALSE);
+      externalSplitFncNeedsDistance[nExternalBranchSplitFnc] = FALSE;
       minExternalSplit[ nExternalBranchSplitFnc] = otherArgs$minBranchSplit;
     }
   }
@@ -362,8 +412,7 @@ blockwiseModules = function(datExpr, blocks = NULL,
       collectGarbage();
     }
     dissTom = 1-tom;
-    dim(dissTom) = c(nBlockGenes, nBlockGenes);
-
+    rm(tom);
     collectGarbage();
     if (verbose>2) printFlush(paste(spaces, "....clustering.."));
 
@@ -382,10 +431,11 @@ blockwiseModules = function(datExpr, blocks = NULL,
                            method ="hybrid", distM = dissTom, 
                            maxCoreScatter = maxCoreScatter, minGap = minGap,
                            maxAbsCoreScatter = maxAbsCoreScatter, minAbsGap = minAbsGap,
-
+                           minSplitHeight = minSplitHeight, minAbsSplitHeight = minAbsSplitHeight,
                            externalBranchSplitFnc = branchSplitFnc,
                            minExternalSplit = minExternalSplit,
                            externalSplitOptions = externalSplitOptions,
+                           externalSplitFncNeedsDistance = externalSplitFncNeedsDistance,
                            assumeSimpleExternalSpecification = FALSE,
 
                            pamStage = pamStage, pamRespectsDendro = pamRespectsDendro,
@@ -750,6 +800,7 @@ recutBlockwiseTrees = function(datExpr,
                       detectCutHeight = 0.995, minModuleSize = min(20, ncol(datExpr)/2 ),
                       maxCoreScatter = NULL, minGap = NULL,
                       maxAbsCoreScatter = NULL, minAbsGap = NULL,
+                      minSplitHeight = NULL, minAbsSplitHeight = NULL,
 
                       useBranchEigennodeDissim = FALSE,
                       minBranchEigennodeDissim = mergeCutHeight,
@@ -822,11 +873,13 @@ recutBlockwiseTrees = function(datExpr,
     branchSplitFnc = list("branchEigengeneDissim");
     externalSplitOptions = list(list( corFnc = corFnc, corOptions = corOptions,
                                       signed = signed));
+    externalSplitFncNeedsDistance = FALSE;
     nExternalBranchSplitFnc = 1;
     minExternalSplit = minBranchEigennodeDissim;
   } else {
     branchSplitFnc = list();
     externalSplitOptions = list(list())
+    externalSplitFncNeedsDistance = logical(0);
     nExternalBranchSplitFnc = 0;
     minExternalSplit = numeric(0);
   }
@@ -840,6 +893,7 @@ recutBlockwiseTrees = function(datExpr,
       externalSplitOptions[[nExternalBranchSplitFnc]] = list(discardProp = 0.08, minCentralProp = 0.75,
                        nConsideredPCs = 3, signed = signed, getDetails = FALSE);
       minExternalSplit[ nExternalBranchSplitFnc] = otherArgs$minBranchSplit;
+      externalSplitFncNeedsDistance[ nExternalBranchSplitFnc] = FALSE;
     }
   }
 
@@ -885,10 +939,12 @@ recutBlockwiseTrees = function(datExpr,
                            method ="hybrid", 
                            maxCoreScatter = maxCoreScatter, minGap = minGap,
                            maxAbsCoreScatter = maxAbsCoreScatter, minAbsGap = minAbsGap,
+                           minSplitHeight = minSplitHeight, minAbsSplitHeight = minAbsSplitHeight,
 
                            externalBranchSplitFnc = branchSplitFnc,
                            minExternalSplit = minExternalSplit,
                            externalSplitOptions = externalSplitOptions,
+                           externalSplitFncNeedsDistance = externalSplitFncNeedsDistance,
                            assumeSimpleExternalSpecification = FALSE,
 
                            pamStage = pamStage, pamRespectsDendro = pamRespectsDendro,
@@ -1247,6 +1303,9 @@ blockwiseIndividualTOMs = function(multiExpr,
     set.seed(randomSeed);
   }
 
+  if (maxBlockSize >= floor(sqrt(2^31)) )
+    stop("'maxBlockSize must be less than ", floor(sqrt(2^31)), ". Please decrease it and try again.")
+
   if (!is.null(blocks) && (length(blocks)!=nGenes))
     stop("Input error: length of 'blocks' must equal number of genes in 'multiExpr'.");
 
@@ -1402,7 +1461,7 @@ blockwiseIndividualTOMs = function(multiExpr,
           as.integer(fallback),
           as.integer(cosineCorrelation), 
           tom = as.double(tom), as.integer(warn), as.integer(nThreads),
-          as.integer(callVerb), as.integer(callInd), NAOK = TRUE, DUP = FALSE, PACKAGE = "WGCNA")
+          as.integer(callVerb), as.integer(callInd), NAOK = TRUE, PACKAGE = "WGCNA")
   
       #FIXME: warn if necessary
 
@@ -1541,6 +1600,7 @@ blockwiseConsensusModules = function(multiExpr,
 
                             maxCoreScatter = NULL, minGap = NULL,
                             maxAbsCoreScatter = NULL, minAbsGap = NULL,
+                            minSplitHeight = NULL, minAbsSplitHeight = NULL,
 
                             useBranchEigennodeDissim = FALSE,
                             minBranchEigennodeDissim = mergeCutHeight,
@@ -1868,7 +1928,7 @@ blockwiseConsensusModules = function(multiExpr,
           which = rep(0, ncol(setChunks));
           whichmin = .C("minWhichMin", as.double(setChunks), 
                         as.integer(nrow(setChunks)), as.integer(ncol(setChunks)),
-                        as.double(min), as.double(which), DUP = FALSE, PACKAGE = "WGCNA");
+                        as.double(min), as.double(which), PACKAGE = "WGCNA");
           min = whichmin[[4]];
           which = whichmin[[5]] + 1;
           rm(whichmin); 
@@ -1886,7 +1946,7 @@ blockwiseConsensusModules = function(multiExpr,
           which = rep(0, ncol(setTomDS));
           whichmin = .C("minWhichMin", as.double(setTomDS),
                         as.integer(nrow(setTomDS)), as.integer(ncol(setTomDS)),
-                        as.double(min), as.double(which), DUP = FALSE, PACKAGE = "WGCNA");
+                        as.double(min), as.double(which), PACKAGE = "WGCNA");
           min = whichmin[[4]];
           which = whichmin[[5]] + 1;
           rm(whichmin); 
@@ -1931,6 +1991,7 @@ blockwiseConsensusModules = function(multiExpr,
                     method ="hybrid", 
                     maxCoreScatter = maxCoreScatter, minGap = minGap,
                     maxAbsCoreScatter = maxAbsCoreScatter, minAbsGap = minAbsGap,
+                    minSplitHeight = minSplitHeight, minAbsSplitHeight = minAbsSplitHeight,
 
                     externalBranchSplitFnc = if (useBranchEigennodeDissim)
                                                 branchSplitFnc else NULL, 
@@ -1939,6 +2000,7 @@ blockwiseConsensusModules = function(multiExpr,
                                                 corFnc = corFnc, corOptions = corOptions,
                                                 consensusQuantile = consensusQuantile,
                                                 signed = networkType %in% c("signed", "signed hybrid")),
+                    externalSplitFncNeedsDistance = FALSE,
 
                     pamStage = pamStage, pamRespectsDendro = pamRespectsDendro,
                     #verbose = verbose, indent = indent + 2)
@@ -2282,6 +2344,7 @@ recutConsensusTrees = function(multiExpr,
                             checkMinModuleSize = TRUE,
                             maxCoreScatter = NULL, minGap = NULL,
                             maxAbsCoreScatter = NULL, minAbsGap = NULL,
+                            minSplitHeight = NULL, minAbsSplitHeight = NULL,
 
                             useBranchEigennodeDissim = FALSE,
                             minBranchEigennodeDissim = mergeCutHeight,
@@ -2436,6 +2499,7 @@ recutConsensusTrees = function(multiExpr,
                     method ="hybrid", 
                     maxCoreScatter = maxCoreScatter, minGap = minGap,
                     maxAbsCoreScatter = maxAbsCoreScatter, minAbsGap = minAbsGap,
+                    minSplitHeight = minSplitHeight, minAbsSplitHeight = minAbsSplitHeight,
 
                     externalBranchSplitFnc = if (useBranchEigennodeDissim)
                                                 branchSplitFnc else NULL, 
@@ -2444,6 +2508,7 @@ recutConsensusTrees = function(multiExpr,
                                                 corFnc = corFnc, corOptions = corOptions,
                                                 consensusQuantile = mergeConsensusQuantile,
                                                 signed = networkType %in% c("signed", "signed hybrid")),
+                    externalSplitFncNeedsDistance = FALSE,
 
                     pamStage = pamStage, pamRespectsDendro = pamRespectsDendro,
                     distM = as.matrix(consTomDS), 
@@ -2824,6 +2889,9 @@ projectiveKMeans = function (
 
   datExpr = scale(as.matrix(datExpr));
 
+  if (preferredSize >= floor(sqrt(2^31)) )
+    stop("'preferredSize must be less than ", floor(sqrt(2^31)), ". Please decrease it and try again.")
+
   if (exists(".Random.seed"))
   {
      seedSaved = TRUE;
@@ -2881,7 +2949,7 @@ projectiveKMeans = function (
     nearestDist = rep(0, nGenes);
     nearest = rep(0, nGenes);
     minRes = .C("minWhichMin", as.double(dst), as.integer(nCenters), as.integer(nGenes), 
-                as.double(nearestDist), as.double(nearest), DUP = FALSE, PACKAGE = "WGCNA");
+                as.double(nearestDist), as.double(nearest), PACKAGE = "WGCNA");
     nearestDist = minRes[[4]];
     nearest = minRes[[5]]+1;
     rm(minRes); collectGarbage();
@@ -3031,11 +3099,11 @@ consensusProjectiveKMeans = function (
       if (useMean)
       {
         minRes = .C("mean", as.double(dstX), as.integer(nSets), as.integer(nGenes * nChanged), 
-                    as.double(dst), DUP = FALSE, PACKAGE = "WGCNA");
+                    as.double(dst), PACKAGE = "WGCNA");
       } else {
         which = array(0, c(nChanged, nGenes));
         minRes = .C("minWhichMin", as.double(dstX), as.integer(nSets), as.integer(nGenes * nChanged), 
-                    as.double(dst), as.double(which), DUP = FALSE, PACKAGE = "WGCNA");
+                    as.double(dst), as.double(which), PACKAGE = "WGCNA");
       }
       dstAll[changed, ] = -minRes[[4]];
     }
@@ -3076,6 +3144,9 @@ consensusProjectiveKMeans = function (
   nSamples = allSize$nSamples;
   nGenes = allSize$nGenes;
   nSets = allSize$nSets;
+
+  if (preferredSize >= floor(sqrt(2^31)) )
+    stop("'preferredSize must be less than ", floor(sqrt(2^31)), ". Please decrease it and try again.")
 
   if (exists(".Random.seed"))
   {
@@ -3145,7 +3216,7 @@ consensusProjectiveKMeans = function (
     nearestDist = rep(0, nGenes);
     nearest = rep(0, nGenes);
     minRes = .C("minWhichMin", as.double(dst), as.integer(nCenters), as.integer(nGenes), 
-                as.double(nearestDist), as.double(nearest), DUP = FALSE, PACKAGE = "WGCNA");
+                as.double(nearestDist), as.double(nearest), PACKAGE = "WGCNA");
     nearestDist = minRes[[4]];
     nearest = minRes[[5]]+1;
     changed = NULL;
@@ -3305,7 +3376,7 @@ consensusProjectiveKMeans = function (
   #bestDst = rep(0, nGenes);
   #best = rep(0, nGenes);
   #minRes = .C("minWhichMin", as.double(dst), as.integer(nCenters), as.integer(nGenes), 
-  #            as.double(bestDst), as.double(best), DUP = FALSE);
+  #            as.double(bestDst), as.double(best));
   #centerDist = minRes[[4]];
   #membership = minRes[[5]]+1;
   #rm(minRes); collectGarbage();
@@ -3335,7 +3406,7 @@ consensusProjectiveKMeans = function (
 #  bestDst = rep(0, nGenes);
 #  best = rep(0, nGenes);
 #  minRes = .C("minWhichMin", as.double(dst), as.integer(nCenters), as.integer(nGenes),
-#              as.double(bestDst), as.double(best), DUP = FALSE);
+#              as.double(bestDst), as.double(best));
 #  centerDist = minRes[[4]];
 #  membership = minRes[[5]]+1;
 #  rm(minRes); collectGarbage();

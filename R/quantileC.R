@@ -17,7 +17,7 @@ colQuantileC = function(data, p)
     stop(paste("Probability", p, "is out of the allowed range between 0 and 1."));
 
   res = .C("quantileC", data = as.double(data), nrow = as.integer(nrow), ncol = as.integer(ncol), 
-           p = as.double(p), quantiles = as.double(quantiles), DUP = FALSE, NAOK = TRUE);
+           p = as.double(p), quantiles = as.double(quantiles), NAOK = TRUE);
 
   res$quantiles;
 }

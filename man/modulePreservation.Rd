@@ -13,6 +13,7 @@ modulePreservation(
    corFnc = "cor",
    corOptions = "use = 'p'",
    referenceNetworks = 1, 
+   testNetworks = NULL,
    nPermutations = 100, 
    includekMEallInSummary = FALSE,
    restrictSummaryForGeneralNetworks = TRUE,
@@ -34,6 +35,7 @@ modulePreservation(
    plotInterpolation = TRUE, 
    interpolationPlotFile = "modulePreservationInterpolationPlots.pdf", 
    discardInvalidOutput = TRUE,
+   parallelCalculation = FALSE,
    verbose = 1, indent = 0)
 }
 \arguments{
@@ -66,6 +68,12 @@ by \code{corFnc}. Use \code{"use = 'p', method = 'spearman'"} to obtain Spearman
 
   \item{referenceNetworks}{ a vector giving the indices of expression data to be used as reference networks.
 Reference networks must have their module labels given in \code{multiColor}. }
+
+  \item{testNetworks}{a list with one component per each entry in \code{referenceNetworks} above, giving
+the test networks in which to evaluate module preservation for the corresponding reference network. If not
+given, preservation will be evaluated in all networks (except each reference network). If
+\code{referenceNetworks} is of length 1, \code{testNetworks} can also be a vector (instead of a list
+containing the single vector).} 
 
   \item{nPermutations}{ specifies the number of permutations that will be calculated in the permutation test. }
 
@@ -133,6 +141,11 @@ assess whether the interpolation makes sense. }
   \item{discardInvalidOutput}{logical: should output columns containing no valid data be discarded? This
 option may be useful when input \code{dataIsExpr} is \code{FALSE} and some of the output statistics cannot
 be calculated. This option causes such statistics to be dropped from output.}
+
+  \item{parallelCalculation}{logical: should calculations be done in parallel? Note that parallel
+calculations are turned off by default and will lead to somewhat DIFFERENT results than serial calculations
+because the random seed is set differently. For the calculation to actually run in parallel mode, a call to
+\code{\link{enableWGCNAThreads}} must be made before this function is called.} 
 
   \item{verbose}{ integer level of verbosity. Zero means silent, higher values make the output
 progressively more and more verbose. }

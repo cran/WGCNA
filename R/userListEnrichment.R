@@ -91,7 +91,8 @@ userListEnrichment <- function (geneR, labelR, fnIn = NULL, catNmIn = fnIn, name
     #if (length(removeDups) < length(glIn[, 1])) 
     #    glIn = t(as.matrix(as.data.frame(strsplit(removeDups, "@#$%", fixed = TRUE))))
 
-    glIn.2 = glIn[!duplicated(glIn), ]
+    
+    glIn.2 = glIn[!duplicated(as.data.frame(glIn)), ]
 
     geneIn = as.character(glIn.2[, 1])
     labelIn = as.character(glIn.2[, 2])
@@ -158,23 +159,26 @@ userListEnrichment <- function (geneR, labelR, fnIn = NULL, catNmIn = fnIn, name
     row.names(results$sigOverlaps) = NULL;
     
     rSig  = results$sigOverlaps
-    rCats = paste(rSig$InputCategories,"--",rSig$UserDefinedCategories)
     nSig = nrow(rSig);
-    rNums <- rep(0, nSig);
-    rGenes <- rep("", nSig);
-    for (i in 1:dim(rSig)[1])
+    if (nSig > 0)
     {
-      rGn    = results$ovGenes[[which(names(results$ovGenes)==rCats[i])]]
-      rNums[i]  = length(rGn);
-      rGenes[i] = paste(rGn,collapse=", ");
+       rCats = paste(rSig$InputCategories,"--",rSig$UserDefinedCategories)
+       rNums <- rep(0, nSig);
+       rGenes <- rep("", nSig);
+       for (i in 1:nSig)
+       {
+         rGn    = results$ovGenes[[which(names(results$ovGenes)==rCats[i])]]
+         rNums[i]  = length(rGn);
+         rGenes[i] = paste(rGn,collapse=", ");
+       }
+       rSig$NumGenes = rNums
+       rSig$CategoryGenes = rGenes
+       rSig = rSig[rSig$NumGenes>=minGenesInCategory,]
+       if(!outputGenes) rSig = rSig[,1:4]
+       results$sigOverlaps = rSig
+       write.csv(results$sigOverlaps, file = nameOut, row.names = FALSE)
     }
-    rSig$NumGenes = rNums
-    rSig$CategoryGenes = rGenes
-    rSig = rSig[rSig$NumGenes>=minGenesInCategory,]
-    if(!outputGenes) rSig = rSig[,1:4]
-    results$sigOverlaps = rSig
- 
-    write.csv(results$sigOverlaps, nameOut, row.names = FALSE)
+
     write(paste(length(namesOv), "comparisons were successfully performed."), 
         "")
     return(results)

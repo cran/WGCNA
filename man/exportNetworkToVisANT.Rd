@@ -10,6 +10,7 @@ exportNetworkToVisANT(
   file = NULL, 
   weighted = TRUE, 
   threshold = 0.5, 
+  maxNConnections = NULL,
   probeToGene = NULL)
 }
 \arguments{
@@ -23,6 +24,9 @@ If not given, no file will be created. The file is in a plain text format. }
 
   \item{threshold}{ adjacency threshold for including edges in the output. }
 
+  \item{maxNConnections}{maximum number of exported adjacency edges. This can be used as another filter on
+the exported edges.}
+
   \item{probeToGene}{ optional specification of a conversion between probe names (that label columns and
 rows of \code{adjacency}) and gene names (that should label nodes in the output). }
 
@@ -33,7 +37,8 @@ matrix is expected to also have valid \code{names} or \code{dimnames[[2]]} that 
 of the corresponding edges. 
 
   Whether the output is a weighted network or not, only edges whose (absolute value of) adjacency are
-above \code{threshold} will be included in the output.
+above \code{threshold} will be included in the output. If \code{maxNConnections} is given, at most
+\code{maxNConnections} will be included in the output.
 
 If \code{probeToGene} is given, it is expected to have two columns, the first one corresponding to the
 probe names, the second to their corresponding gene names that will be used in the output. 

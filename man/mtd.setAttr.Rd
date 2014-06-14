@@ -29,6 +29,8 @@ The input multiData with the attribute set on each \code{data} component.
 Peter Langfelder
 }
 \seealso{
+\code{\link{multiData}} to create a multiData structure;
+
 \code{isMultiData} for a description of the multiData structure.
 }
 \keyword{misc}% __ONLY ONE__ keyword per line

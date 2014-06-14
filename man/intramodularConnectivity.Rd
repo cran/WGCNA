@@ -1,5 +1,6 @@
 \name{intramodularConnectivity}
 \alias{intramodularConnectivity}
+\alias{intramodularConnectivity.fromExpr}
 \title{ Calculation of intramodular connectivity }
 \description{
   Calculates intramodular connectivity, i.e., connectivity of nodes to other nodes within the same
@@ -7,6 +8,15 @@ module.
 }
 \usage{
 intramodularConnectivity(adjMat, colors, scaleByMax = FALSE)
+
+intramodularConnectivity.fromExpr(datExpr, colors, 
+              corFnc = "cor", corOptions = "use = 'p'",
+              distFnc = "dist", distOptions = "method = 'euclidean'",
+              networkType = "unsigned", power = if (networkType=="distance") 1 else 6,
+              scaleByMax = FALSE,
+              ignoreColors = if (is.numeric(colors)) 0 else "grey",
+              getWholeNetworkConnectivity = TRUE)
+
 }
 \arguments{
   \item{adjMat}{ adjacency matrix, a square, symmetric matrix with entries between 0 and 1. }
@@ -14,6 +24,38 @@ intramodularConnectivity(adjMat, colors, scaleByMax = FALSE)
 gene (node) of the network.}
   \item{scaleByMax}{ logical: should intramodular connectivities be scaled by the maximum IM connectivity
 in each module? }
+
+  \item{datExpr}{ data frame containing expression data. Columns correspond to genes and rows to
+samples.}
+
+  \item{corFnc}{ character string specifying the function to be used to calculate co-expression
+similarity for correlation networks.
+Defaults to Pearson correlation. Any function returning values between -1 and 1 can be used. }
+
+  \item{corOptions}{ character string specifying additional arguments to be passed to the function given
+by \code{corFnc}. Use \code{"use = 'p', method = 'spearman'"} to obtain Spearman correlation.   }
+
+  \item{distFnc}{ character string specifying the function to be used to calculate co-expression
+similarity for distance networks. Defaults to the function \code{\link{dist}}.
+Any function returning non-negative values can be used.}
+
+  \item{distOptions}{ character string specifying additional arguments to be passed to the function given
+by \code{distFnc}. For example, when the function  \code{\link{dist}} is used, the argument \code{method}
+can be used to specify various ways of computing the distance. }
+
+  \item{networkType}{network type. Allowed values are (unique abbreviations of) \code{"unsigned"},
+\code{"signed"}, \code{"signed hybrid"}, \code{"distance"}. }
+
+  \item{power}{soft thresholding power. }
+
+  \item{ignoreColors}{level(s) of \code{colors} that identifies unassigned genes. The intramodular
+connectivity in this "module" will not be calculated.} 
+
+  \item{getWholeNetworkConnectivity}{logical: should whole-network connectivity be computed as well? For
+large networks, this can be quite time-consuming.}
+
+
+
 }
 \details{
   The module labels can be numeric or character. For each node (gene), the function sums adjacency
@@ -21,8 +63,9 @@ entries (excluding the diagonal) to other nodes within the same module. Optional
 can be scaled by the maximum connectivy in each module. 
 }
 \value{
-  A data frame with 4 columns giving the total connectivity, intramodular connectivity, extra-modular
-connectivity, and the difference of the intra- and extra-modular connectivities for all genes.
+  If input \code{getWholeNetworkConnectivity} is \code{TRUE}, a data frame with 4 columns giving the total connectivity, intramodular connectivity, extra-modular
+connectivity, and the difference of the intra- and extra-modular connectivities for all genes; otherwise a
+vector of intramodular connectivities, 
 }
 \references{ Dong J, Horvath S (2007) Understanding Network Concepts in Modules, BMC Systems Biology
 2007, 1:24 }

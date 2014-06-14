@@ -17,7 +17,9 @@ accuracyMeasures(
   observed = NULL, 
   type = c("auto", "binary", "quantitative"),
   levels = if (isTRUE(all.equal(dim(predicted), c(2,2)))) colnames(predicted)
-                             else sort(unique(c(observed, predicted))),
+            else if (is.factor(predicted))
+              sort(unique(c(as.character(predicted), as.character(observed))))
+            else sort(unique(c(observed, predicted))),
   negativeLevel = levels[2], 
   positiveLevel = levels[1] )
 }
