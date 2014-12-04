@@ -121,10 +121,10 @@ GOenrichmentAnalysis = function(labels, entrezCodes,
 
    if (orgInd==5)
    {
-      mapped_genes = as.character(mappedkeys(egGO));
+      mapped_genes = as.character(do.call(match.fun("mappedkeys"), list(egGO)));
       encodes2mapped = match(as.character(entrezCodes), mapped_genes);
    } else {
-      mapped_genes = as.numeric(as.character(mappedkeys(egGO)));
+      mapped_genes = as.numeric(as.character(match.fun("mappedkeys"), list(egGO)));
       encodes2mapped = match(as.numeric(entrezCodes), mapped_genes);
    }
    encMapped = is.finite(encodes2mapped);
@@ -143,6 +143,8 @@ GOenrichmentAnalysis = function(labels, entrezCodes,
    nTerms = length(Go2eg);
 
    goInfo = eval(parse(text = "AnnotationDbi::as.list(GO.db:::GOTERM)"));
+   GOID = match.fun(spaste("GO.db:", ":", ":Ontology"));
+   Ontology = match.fun(spaste("GO.db:", ":", ":Ontology"));
    if (length(goInfo) > 0)
    {
       orgGoNames = names(Go2eg);

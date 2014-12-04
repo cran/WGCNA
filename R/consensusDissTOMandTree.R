@@ -47,7 +47,7 @@ consensusDissTOMandTree <- function (multiExpr, softPower, TOM=NULL){
 	
 	consensusTOM = 1-consensusTOM
 	write("Starting dendrogram tree.","")
-	consTree     = flashClust(as.dist(consensusTOM), method = "average");
+	consTree     = fastcluster::hclust(as.dist(consensusTOM), method = "average");
 	write("DONE!!!!","")
 	out = list(consensusTOM,consTree)
 	names(out) = c("consensusTOM","consTree")

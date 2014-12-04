@@ -1,5 +1,62 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
+2014/11/25: 1.42
+
+	. Function TrueTrait has been re-worked and the argument Strata to it
+	  is no longer accepted.
+
+	. labeledHeatmap.multiPage now works with 1-column or 1-row matrices.
+
+	. The textMatrix argument to labeledHeatmap and
+	  labeledHeatmap.multiPage is now allowed to be a (dimensionless)
+	  vector as long as its length is consistent with the dimensions of
+	  the input Matrix.
+
+	. Bugfix in function formatLabels fixes sometimes incorrect start of
+	  formatted labels.
+
+	. Bugfixes in function TrueTrait
+
+	. DIFF: Bugfix in mtd.branchEigengeneDissim that primarilly affects 
+	  blockwiseConsensusModules. The consensus quantile was incorrectly
+	  applied, which led to overly aggressive module merging. The bugfix
+	  will lead to a different final modules if useBranchEigengeneDissim
+	  was TRUE. To reproduce old behavior, use argument
+	  reproduceBranchEigennodeQuantileError = TRUE.
+
+	. New function consensusTOM implements calculation of consensus TOM
+	  in a stand-alone function; this calculation was previously hidden
+	  inside blockwiseConsensusModules. 
+
+	. Network calibration methods in consensusTOM now include full
+	  quantile normalization
+
+	. DIFF: bugfix in blockwiseIndividualTOMs that affects
+	  blockwiseIndividualTOMs as well as blockwiseConsensusModules: The
+	  soft-thresholding power for set 1 was used for all sets. This bug
+	  has bow been fixed; to reproduce old calculations, change the old
+	  code to use the same power for all sets. I apologize for this rather
+	  serious omission.
+
+	. blockwiseIndividualTOMs gains additional output components.
+	  
+	. Internal C code changed some index variables from int to size_t.
+
+	. Function individualTOMs now uses a more memory-efficient way to call
+	  the internal compiled code.
+
+	. Bugfix in mtd.apply fixes occasional spurious crashes
+
+	. Function mtd.apply now copies the 'names' attribute from input to
+	  the output
+
+	. Function mtd.subset can now subset columns based on column names,
+	  not just numeric indices.
+
+	. Function votingLinearPredictor can now tolerate missing data in the
+	  predictor variables (features).
+
+	. blockwiseModules gains a new argument loadTOM.
 
 2014/06/13: 1.41-1
 

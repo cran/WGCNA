@@ -177,9 +177,9 @@ strings giving the file names in which each block TOM is saved. Rows correspond 
 blocks.}
 
   \item{TOMSimilarities}{Only returned if input \code{saveTOMs} is \code{FALSE}. A list in which each
-component corresponds to one block. Each component is a matrix of dimensions ( (number of sets) times N), where
+component corresponds to one block. Each component is a matrix of dimensions (N times (number of sets)), where
 N is the length of a distance structure corresponding to the block. That is, if the block contains n genes,
-N=n*(n-1)/2. Each row of the matrix contains the topological overlap of variables in the corresponding set (
+N=n*(n-1)/2. Each column of the matrix contains the topological overlap of variables in the corresponding set (
 and the corresponding block), arranged as a distance structure. Do note however that the topological overlap
 is a similarity (not a distance). }
 
@@ -212,11 +212,14 @@ The following components are present mostly to streamline the interaction of thi
 
   \item{nThreads}{ number of threads used to calculate correlation and TOM matrices. }
 
-  \item{TOMSavedInFiles}{ logical: were calculated matrices saved in files (\code{TRUE}) or returned in the
+  \item{saveTOMs}{ logical: were calculated matrices saved in files (\code{TRUE}) or returned in the
 return value (\code{FALSE})?}
 
   \item{intNetworkType, intCorType}{integer codes for network and  correlation type. }
 
+  \item{nSets}{number of sets in input data.}
+
+  \item{setNames}{the \code{names} attribute of input \code{multiExpr}.}
 }
 
 \references{

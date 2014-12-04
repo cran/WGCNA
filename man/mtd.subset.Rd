@@ -33,7 +33,8 @@ setting individual elements of \code{rowIndex} to \code{NULL} will lead to error
 }
   \item{colIndex}{
 A vector giving the columns to be retained. All indexing methods recognized by R can be used (numeric,
-logical, negative indexing, etc). If \code{NULL}, all columns will be retained.
+logical, negative indexing, etc). In addition, column names of the retained columns may be given; if a given
+name cannot be matched to a column, an error will be thrown. If \code{NULL}, all columns will be retained.
 }
   \item{permissive}{logical: should the function tolerate "loose" \code{multiData} input? Note that the subsetting
 may lead to cryptic errors if the input \code{multiData} does not follow the "strict" format. }

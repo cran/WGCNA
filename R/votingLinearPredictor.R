@@ -290,28 +290,44 @@ votingLinearPredictor = function(x, y, xtest = NULL,
     validationWeights[select] = w; 
   } 
 
+  finiteX = (is.finite(x) + 1)-1
+  x.fin = x;
+  x.fin[!is.finite(x)] = 0;
+
+  if (doTest)
+  {
+    finiteXTest =  (is.finite(xtest) + 1)-1;
+    xtest.fin = xtest;
+    xtest.fin[!is.finite(xtest)] = 0;
+  }
+
   for (power in 1:nPredWPowers)
   {
     prWM = priorWeights[, power, ];
     dim(prWM) = c(nTraits, nVars);
+
     weights = abs(r)^featureWeightPowers[power] * t(prWM) * validationWeights;
-    weightSum = apply(weights, 2, sum);
+    #weightSum = apply(weights, 2, sum);
+    weightSum = finiteX %*% weights;
     RWeights = sign(r) * weights;
 
     predictMat[ , , power] = 
-         x %*% RWeights / matrix(weightSum, nrow = nSamples, ncol = nTraits, byrow = TRUE);
+         x.fin %*% RWeights / weightSum;
     predMean = apply(.dropThirdDim(predictMat[ , , power, drop = FALSE]), 2, mean, na.rm = TRUE);
     predSD = apply(.dropThirdDim(predictMat[, , power, drop = FALSE]), 2, sd, na.rm = TRUE);
     predictMat[, , power] = scale(predictMat[, , power]) *
                       matrix(obsSD, nrow = nSamples, ncol = nTraits, byrow = TRUE) +
                       matrix(obsMean, nrow = nSamples, ncol = nTraits, byrow = TRUE);
     if (doTest) 
+    {
+      weightSum.test = finiteXTest %*% weights;
       predictTestMat[, , power] = 
-         (xtest %*% RWeights /  matrix(weightSum, nrow = nTestSamples, ncol = nTraits, byrow = TRUE) -
+         (xtest.fin %*% RWeights /  weightSum.test -
                   matrix(predMean, nrow = nTestSamples, ncol = nTraits, byrow = TRUE) ) /
                   matrix(predSD, nrow = nTestSamples, ncol = nTraits, byrow = TRUE) * 
                   matrix(obsSD, nrow = nTestSamples, ncol = nTraits, byrow = TRUE) +
                   matrix(obsMean, nrow = nTestSamples, ncol = nTraits, byrow = TRUE); 
+    }
     varImportance[ , power, ] = RWeights;
 
   }

@@ -76,7 +76,7 @@ MEred	    = c(MEbrown [1:20], sample(1:100,30))
 ME   = data.frame(MEturquoise, MEblue, MEbrown, MEyellow, MEgreen, MEred)#, MEblack)
 dat1 = simulateDatExpr(ME, 400, c(0.15,0.13,0.12,0.10,0.09,0.09,0.1), signed=TRUE)
 TOM1  = TOMsimilarityFromExpr(dat1$datExpr, networkType="signed")
-tree1 = flashClust(as.dist(1-TOM1),method="average")
+tree1 = fastcluster::hclust(as.dist(1-TOM1),method="average")
 
 ## Here is an example using different mergePercentages, 
 # setting an inclusive threshPercent (91)

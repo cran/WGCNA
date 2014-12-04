@@ -402,7 +402,7 @@ orderMEs = function(MEs, greyLast = TRUE,
      clusterMEs = (greyName!=distNames);
      if (sum(clusterMEs)>1)
      {
-       h = flashClust(as.dist(distM[clusterMEs, clusterMEs]), method = "average");
+       h = fastcluster::hclust(as.dist(distM[clusterMEs, clusterMEs]), method = "average");
        order = h$order;
        if (sum(order>=greyInd)>0) order[order>=greyInd] = order[order>=greyInd]+1;
        order = c(order, greyInd);
@@ -416,7 +416,7 @@ orderMEs = function(MEs, greyLast = TRUE,
   } else {
      if (length(distM)>1)
      {
-       h = flashClust(as.dist(distM), method = "average");
+       h = fastcluster::hclust(as.dist(distM), method = "average");
        order = h$order;
      } else order = 1;
   }
@@ -1113,7 +1113,7 @@ mergeCloseModules = function(
                                            corFnc = corFnc, corOptions = corOptions, 
                                            useSets = useSets, greyMEname = greyMEname);
 
-      Tree = flashClust(as.dist(ConsDiss), method = "average");
+      Tree = fastcluster::hclust(as.dist(ConsDiss), method = "average");
       if (iteration==1) oldTree = Tree;
       TreeBranches = as.factor(moduleNumber(dendro = Tree, cutHeight = cutHeight, minSize = 1));
       UniqueBranches = levels(TreeBranches);
@@ -1207,7 +1207,7 @@ mergeCloseModules = function(
                                              useSets = useSets, greyMEname = greyMEname);
         if (length(ConsDiss) > 1)
         {
-          Tree = flashClust(as.dist(ConsDiss), method = "average");
+          Tree = fastcluster::hclust(as.dist(ConsDiss), method = "average");
         } else Tree = NULL;
       } else {
         newMEs = MEs;
@@ -2233,7 +2233,7 @@ plotClusterTreeSamples=function(datExpr, y = NULL, traitLabels = NULL, yLabels =
          cex.dendroLabels = 0.9, marAll = c(1,5,3,1),  saveMar = TRUE,
          abHeight = NULL, abCol = "red", ...) 
 {
-  dendro = flashClust( dist( datExpr  ), method="average" )
+  dendro = fastcluster::hclust( dist( datExpr  ), method="average" )
   if (is.null(y) ) 
   {
     oldMar = par("mar");
@@ -2340,7 +2340,7 @@ plotNetworkHeatmap = function(datExpr,  plotGenes, useTOM = TRUE, power = 6 ,
        diss1 = 1-ADJ1;
     }
     diag(diss1)=NA
-    hier1=flashClust(as.dist(diss1), method="average" )
+    hier1=fastcluster::hclust(as.dist(diss1), method="average" )
     colors1=rep("white", nGenes)
     labeltree = names(data.frame(datErest))
     labelrow  = names(data.frame(datErest))
@@ -3353,7 +3353,7 @@ plotMEpairs=function(datME, y=NULL, main="Relationship between module eigengenes
     if (clusterMEs & dim(as.matrix(datME))[[1]] >1 ) 
     {
       dissimME=(1-t(cor(datME, method="p", use="p")))/2
-      hclustdatME=flashClust(as.dist(dissimME), method="average" )
+      hclustdatME=fastcluster::hclust(as.dist(dissimME), method="average" )
       datMEordered=datME[,hclustdatME$order]
     } # end of if
     if ( !is.null(y) ) 
@@ -4631,6 +4631,8 @@ labeledHeatmap = function (Matrix, xLabels, yLabels = NULL,
   if (!is.null(textMatrix))
   {
     if (is.null(cex.text)) cex.text = par("cex");
+    if (is.null(dim(textMatrix)))
+      if (length(textMatrix)==prod(dim(Matrix))) dim(textMatrix)=dim(Matrix);
     if (!isTRUE(all.equal(dim(textMatrix), dim(Matrix))))
       stop("labeledHeatmap: textMatrix was given, but has dimensions incompatible with Matrix.");
     for (rw in 1:dim(Matrix)[1])
@@ -4704,10 +4706,10 @@ labeledHeatmap.multiPage = function(
     cols = colsPerPage[[page.col]];
     main.1 = main;
     if (addPageNumberToMain & multiPage) main.1 = spaste(main, "(page ", page, ")");
-    labeledHeatmap(Matrix = Matrix[rows, cols],
+    labeledHeatmap(Matrix = Matrix[rows, cols, drop = FALSE],
                    xLabels = xLabels[cols], xSymbols = xSymbols[cols],
                    yLabels = yLabels[rows], ySymbols = ySymbols[rows],
-                   textMatrix = textMatrix[rows, cols],
+                   textMatrix = textMatrix[rows, cols, drop = FALSE],
                    zlim = zlim, main = main.1, ...);
     page = page + 1;
   }
@@ -5316,7 +5318,7 @@ plotEigengeneNetworks = function(
     corME = cor(multiME[[set]]$data[substring(labels,3)!=greyLabel,
                                  substring(labels,3)!=greyLabel], use="p");
     disME = as.dist(1-corME);
-    clust = flashClust(disME, method = "average");
+    clust = fastcluster::hclust(disME, method = "average");
     if (letterSubPlots) {
       main = paste(substring(Letters, letter.ind, letter.ind), ". ", setLabels[set], sep="");
     } else {
@@ -5840,7 +5842,7 @@ goodSamplesGenesMS = function(multiExpr, minFraction = 1/2, minNSamples = ..minN
 #
 #============================================================================================
 .heatmap = function (x, Rowv = NULL, Colv = if (symm) "Rowv" else NULL, 
-    distfun = dist, hclustfun = flashClust, reorderfun = function(d, 
+    distfun = dist, hclustfun = fastcluster::hclust, reorderfun = function(d, 
         w) reorder(d, w), add.expr, symm = FALSE, revC = identical(Colv, 
         "Rowv"), scale = c("row", "column", "none"), na.rm = TRUE, 
     margins = c(1.2, 1.2), ColSideColors, RowSideColors, cexRow = 0.2 + 
@@ -6965,7 +6967,7 @@ formatLabels = function(labels, maxCharPerLine = 14, split = " ", fixed = TRUE, 
     if (nchar(labels[l]) > 0) for (s in 1:length(splitX[[l]]))
     {
       newLen = nchar(line) + nchar(splitX [[l]] [s]);
-      if (nchar(line) < 5 | newLen < maxCharPerLine)
+      if (nchar(line) < 5 | newLen <= maxCharPerLine)
       {
         nl = paste(nl, splitX[[l]] [s], sep = newsplit)
         line = paste(line, splitX[[l]] [s], sep = newsplit);
@@ -6976,7 +6978,7 @@ formatLabels = function(labels, maxCharPerLine = 14, split = " ", fixed = TRUE, 
     }
     newLabels[l] = nl;
   }
-  substring(newLabels, 2);
+  substring(newLabels, nchar(newsplit)+1);
 }
 
 #==================================================================================================

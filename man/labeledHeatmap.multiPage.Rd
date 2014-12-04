@@ -39,7 +39,9 @@ labeledHeatmap.multiPage(
 
   \item{ySymbols}{ additional labels used when \code{yLabels} are interpreted as colors. See Details. }
 
-  \item{textMatrix}{ optional matrix of text entries of the same dimensions as \code{Matrix}. }
+  \item{textMatrix}{ optional text entries for each cell. Either a matrix of the same dimensions as 
+\code{Matrix} or a vector of the same length as the number of entries in \code{Matrix}. }
+
 
   \item{rowsPerPage}{ optional list in which each component is a vector specifying which rows should appear
 together in each plot. If not given, will be generated automatically based on \code{maxRowsPerPage} below

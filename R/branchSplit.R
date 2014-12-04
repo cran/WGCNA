@@ -62,14 +62,15 @@ branchEigengeneDissim = function(expr, branch1, branch2,
 
 mtd.branchEigengeneDissim = function(multiExpr, branch1, branch2, 
                             corFnc = cor, corOptions = list(use = 'p'),
-                            consensusQuantile = 0, signed = TRUE, ...)
+                            consensusQuantile = 0, signed = TRUE, reproduceQuantileError = FALSE, ...)
 {
   setSplits.list = mtd.apply(multiExpr, branchEigengeneDissim, 
                         branch1 = branch1, branch2 = branch2,
                         corFnc = corFnc, corOptions = corOptions,
                         signed = signed);
   setSplits = unlist(multiData2list(setSplits.list));
-  quantile(setSplits, prob = consensusQuantile, na.rm = TRUE, names = FALSE);
+  quantile(setSplits, prob = if (reproduceQuantileError) consensusQuantile else 1-consensusQuantile, 
+           na.rm = TRUE, names = FALSE);
 }
 
 
@@ -375,4 +376,57 @@ branchSplit.dissim = function(dissimMat, branch1, branch2, upperP,
   out
 }
 
+#========================================================================================================
+#
+# Branch dissimilarity based on a series of alternate branch labels
+#
+#========================================================================================================
+
+# this function measures the split of branch1 and branch2 based on alternate labels, typically derived from
+# resampled or otherwise perturbed data (but could also be derived from an independent data set).
+
+# Basic idea: if two branches are separate, their membership should be predictable from the alternate
+# labels. 
+
+# For each module in the alternate labeling: assign it to the branch in which |module ^ branch|/|branch| is
+# bigger; then calculate |module ^ branch|/|branch| for the other branch as a classification error. Add all
+# classification errors for a single alternate labeling and average them over labelings. 
+
+# This method is invariant under splitting of alternate module as long as the branch to which the modules are
+# assigned does not change. So in this sense the splitting settings in the resampling study shouldn't
+# matter too much but to some degree they still do.
+
+# stabilityLabels: a matrix of dimensions (nGenes) x (number of alternate labels)
+
+branchSplitFromStabilityLabels = function(
+            branch1, branch2, 
+            stabilityLabels, ignoreLabels = 0, ...)
+{
+  nLabels = ncol(stabilityLabels);
+  n1 = length(branch1);
+  n2 = length(branch2);
+
+  sim = 0;
+  for (l in 1:nLabels)
+  {
+    lab1 = stabilityLabels[branch1, l];
+    lab2 = stabilityLabels[branch2, l];
+    commonLevels = intersect(unique(lab1), unique(lab2));
+    commonLevels = setdiff(commonLevels, ignoreLabels);
+    if (length(commonLevels) > 0) for (cl in commonLevels)
+    {
+      #printFlush(spaste("Common level ", cl, " in clustering ", l))
+      r1 = sum(lab1==cl)/n1;
+      r2 = sum(lab2==cl)/n2;
+      sim = sim + min(r1, r2)
+    }
+  }
+
+  1-sim/nLabels
+}
+
+
+ 
+  
+  
 

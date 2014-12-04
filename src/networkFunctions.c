@@ -468,6 +468,26 @@ void minWhichMin(double * matrix, int * nRows, int * nColumns, double * min, dou
   }
 }
 
+void minWhichMin_row(double * matrix, int * nRows, int * nColumns, double * min, double * whichMin)
+{
+  int nrows = *nRows, ncols = *nColumns;
+
+  for (int i=0; i<nrows; i++)
+  {
+    double * val = matrix + i;
+    double curmin = *val;
+    double curwhich = 0;
+    for (int j=1; j<ncols; j++)
+    {
+      val+=nrows;
+      if ( ISNAN(curmin) || (!ISNAN(*val) && (*val < curmin))) { curmin = *val; curwhich = (double) j; }
+    }
+    min[i] = curmin;
+    whichMin[i] = curwhich;
+  }
+}
+
+
 /*
 
   Function returning the column-wise mean. NAs are ignored.

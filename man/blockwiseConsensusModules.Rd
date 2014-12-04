@@ -1,6 +1,6 @@
 \name{blockwiseConsensusModules}
 \alias{blockwiseConsensusModules}
-\title{ Find consensus modules across several datasets. }
+\title{Find consensus modules across several datasets.}
 \description{
   Perform network construction and consensus module detection across several datasets.
 }
@@ -39,7 +39,7 @@ blockwiseConsensusModules(
 
      # Topological overlap options
 
-     TOMType = "unsigned",           
+     TOMType = "unsigned",
      TOMDenom = "min",
 
      # Save individual TOMs?
@@ -47,24 +47,37 @@ blockwiseConsensusModules(
      saveIndividualTOMs = TRUE,
      individualTOMFileNames = "individualTOM-Set\%s-Block\%b.RData",
 
-     # Consensus calculation options 
+     # Consensus calculation options: network calibration
+
+     networkCalibration = c("single quantile", "full quantile", "none"),
+
+     # Simple quantile calibration options
+
+     calibrationQuantile = 0.95,
+     sampleForCalibration = TRUE, sampleForCalibrationFactor = 1000,
+     getNetworkCalibrationSamples = FALSE,
+
+     # Consensus definition
 
      consensusQuantile = 0,
-     scaleTOMs = TRUE, scaleQuantile = 0.95,
+     useMean = FALSE,
+     setWeights = NULL,
 
-     # Sampling for scaling (speeds up calculation)
+     # Saving the consensus TOM
 
-     sampleForScaling = TRUE, sampleForScalingFactor = 1000,
-     getTOMScalingSamples = FALSE, 
-                   
-     # Returning the consensus TOM
-     saveTOMs = FALSE, 
+     saveConsensusTOMs = FALSE,
      consensusTOMFileNames = "consensusTOM-block.\%b.RData",
 
      # Internal handling of TOMs
 
      useDiskCache = TRUE, chunkSize = NULL,
      cacheBase = ".blockConsModsCache",
+
+     # Alternative consensus TOM input from a previous calculation 
+
+     consensusTOMInfo = NULL,
+
+     # Basic tree cut options 
 
      # Basic tree cut options 
 
@@ -79,6 +92,9 @@ blockwiseConsensusModules(
      minSplitHeight = NULL, minAbsSplitHeight = NULL,
      useBranchEigennodeDissim = FALSE,
      minBranchEigennodeDissim = mergeCutHeight,
+     stabilityLabels = NULL,
+     minStabilityDissim = NULL,
+
      pamStage = TRUE,  pamRespectsDendro = TRUE,
 
      # Gene reassignment and trimming from a module, and module "significance" criteria
@@ -107,7 +123,7 @@ blockwiseConsensusModules(
      # General options
 
      nThreads = 0,
-     verbose = 2, indent = 0)
+     verbose = 2, indent = 0, ...)
 }
 \arguments{
   \item{multiExpr}{ expression data in the multi-set format (see \code{\link{checkSets}}). A vector of
@@ -173,7 +189,7 @@ cosine calculation differs from the standard one in that it does not subtract th
 
 %%%%%%%%%%%%%%
 
-  \item{power}{ soft-thresholding power for netwoek construction. }
+  \item{power}{ soft-thresholding power for network construction. }
 
   \item{networkType}{ network type. Allowed values are (unique abbreviations of) \code{"unsigned"},
 \code{"signed"}, \code{"signed hybrid"}. See \code{\link{adjacency}}. }
@@ -208,29 +224,40 @@ out to be non-unique, an error will be generated.}
 
 %%%%%%%%%%%%%%
 
-  \item{consensusQuantile}{ qunatile at which consensus is to be defined. See details. }
+  \item{networkCalibration}{network calibration method. One of "single quantile", "full quantile", "none"
+(or a unique abbreviation of one of them).}
 
-  \item{scaleTOMs}{ should set-specific TOM matrices be scaled to the same scale?}
-
-  \item{scaleQuantile}{ if \code{scaleTOMs} is \code{TRUE}, topological overlaps (or adjacencies if
-TOMs are not computed) will be scaled such that their \code{scaleQuantile} quantiles will agree. }
 
 %%%%%%%%%%%%%%
 
-  \item{sampleForScaling}{ if \code{TRUE}, scale quantiles will be determined from a sample of network
+  \item{calibrationQuantile}{ if \code{networkCalibration} is \code{"single quantile"}, 
+topological overlaps (or adjacencies if
+TOMs are not computed) will be scaled such that their \code{calibrationQuantile} quantiles will agree. }
+
+  \item{sampleForCalibration}{ if \code{TRUE}, calibration quantiles will be determined from a sample of network
 similarities. Note that using all data can double the memory footprint of the function and the function
 may fail. }
 
-  \item{sampleForScalingFactor}{ determines the number of samples for scaling: the number is
- \code{1/scaleQuantile * sampleForScalingFactor}. Should be set well above 1 to ensure accuracy of the
+  \item{sampleForCalibrationFactor}{ determines the number of samples for calibration: the number is
+ \code{1/calibrationQuantile * sampleForCalibrationFactor}. Should be set well above 1 to ensure accuracy of the
 sampled quantile. }
 
- \item{getTOMScalingSamples}{ logical: should samples used for TOM scaling be saved for future analysis?
-This option is only available when \code{sampleForScaling} is \code{TRUE}. }
+ \item{getNetworkCalibrationSamples}{ logical: should samples used for TOM calibration be saved for future analysis?
+This option is only available when \code{sampleForCalibration} is \code{TRUE}. }
 
 %%%%%%%%%%%%%%
 
-  \item{saveTOMs}{ logical: should the consensus topological overlap matrices for each block be saved
+  \item{consensusQuantile}{ quantile at which consensus is to be defined. See details. }
+
+  \item{useMean}{logical: should the consensus be determined from a (possibly weighted) mean across the
+data sets rather than a quantile?}
+
+  \item{setWeights}{Optional vector (one component per input set) of weights to be used for weighted mean
+consensus. Only used when \code{useMean} above is \code{TRUE}.}
+
+%%%%%%%%%%%%%%
+
+  \item{saveConsensusTOMs}{ logical: should the consensus topological overlap matrices for each block be saved
 and returned?  } 
 
   \item{consensusTOMFileNames}{ character string containing the file namefiles containing the
@@ -250,6 +277,12 @@ many sets the memory footprint may be too big. }
 
   \item{cacheBase}{ character string containing the desired name for the cache files. The actual file
 names will consists of \code{cacheBase} and a suffix to make the file names unique. }
+
+%%%%%%%%%%%%%%
+
+  \item{consensusTOMInfo}{optional list summarizing consensus TOM, output of \code{\link{consensusTOM}}. It
+contains information about pre-calculated consensus TOM. Supplying this argument replaces TOM calculation,
+so none of the individual or consensus TOM calculation arguments are taken into account.}
 
 %%%%%%%%%%%%%%
 
@@ -296,6 +329,16 @@ when merging branches in Dynamic Tree Cut?}
 branches to be considerd separate. The branch eigennode dissimilarity in individual sets
 is simly 1-correlation of the
 eigennodes; the consensus is defined as quantile with probability \code{consensusQuantile}.}
+
+   \item{stabilityLabels}{Optional matrix of cluster labels that are to be used for calculating branch
+dissimilarity based on split stability. The number of rows must equal the number of genes in
+\code{multiExpr}; the number of columns (clusterings) is arbitrary. See
+\code{\link{branchSplitFromStabilityLabels}} for details.}
+
+   \item{minStabilityDissim}{Minimum stability dissimilarity criterion for two branches to be considered
+separate. Should be a number between 0 (essentially no dissimilarity required) and 1 (perfect dissimilarity
+or distinguishability based on \code{stabilityLabels}). See 
+\code{\link{branchSplitFromStabilityLabels}} for details.}
 
   \item{pamStage}{ logical.  If TRUE, the second (PAM-like) stage of module detection will be performed.
      See \code{\link[dynamicTreeCut]{cutreeDynamic}} for more details. }
@@ -366,6 +409,11 @@ progressively more and more verbose. }
 
   \item{indent}{ indentation for diagnostic messages. Zero means no indentation, each unit adds
 two spaces. }
+
+  \item{...}{Other arguments. At present these can include \code{reproduceBranchEigennodeQuantileError} that
+instructs the function to reproduce a bug in branch eigennode dissimilarity calculations for purposes if
+reproducing old reults. }
+
 }
 \details{
   The function starts by optionally filtering out samples that have too many missing entries and genes
@@ -379,8 +427,29 @@ the number of genes exceeds \code{maxBlockSize}, genes are pre-clustered into bl
 
 For each block of genes, the network is constructed and (if requested) topological overlap is calculated
 in each set. To minimize memory usage, calculated topological overlaps are optionally saved to disk in
-chunks until they are needed again for the calculation of the consensus network topological overlap. If
-requested, the consensus topological overlaps are saved to disk for later use.
+chunks until they are needed again for the calculation of the consensus network topological overlap. 
+
+Before calculation of the consensus Topological Overlap, individual TOMs are optionally calibrated.
+Calibration methods include single quantile scaling and full quantile normalization. 
+
+Single quantile
+scaling raises individual TOM in sets 2,3,... to a power such that the quantiles given by 
+\code{calibrationQuantile} agree with the quantile in set 1. Since the high TOMs are usually the most important
+for module identification, the value of \code{calibrationQuantile} is close to (but not equal) 1. To speed up
+quantile calculation, the quantiles can be determined on a randomly-chosen component subset of the TOM matrices.
+
+Full quantile normalization, implemented in \code{\link[preprocessCore]{normalize.quantiles}}, adjusts the
+TOM matrices such that all quantiles equal each other (and equal to the quantiles of the component-wise 
+average of the individual TOM matrices). 
+
+Note that network calibration is performed separately in each block, i.e., the normalizing transformation
+may differ between blocks. This is necessary to avoid manipulating a full TOM in memory.
+
+The consensus TOM is calculated as the component-wise \code{consensusQuantile} quantile of the individual
+(set) TOMs; that is, for each gene pair (TOM entry), the \code{consensusQuantile} quantile across all input
+sets. Alternatively, one can also use (weighted) component-wise mean across all imput data sets.
+If requested, the consensus topological overlaps are saved to disk for later use.
+
 Genes are then clustered using average linkage hierarchical clustering and modules are identified in the
 resulting dendrogram by the Dynamic Hybrid tree cut. Found modules are trimmed of genes whose
 consensus module membership kME (that is, correlation with module eigengene) 
@@ -443,7 +512,7 @@ basic quality control criteria in all sets.}
 hierarchical clustering dendrogram obtained by clustering the consensus gene dissimilarity in the
 corresponding block. }
 
-  \item{TOMFiles}{ if \code{saveTOMs==TRUE}, 
+  \item{TOMFiles}{ if \code{saveConsensusTOMs==TRUE}, 
 a vector of character strings, one string per block, giving the file names of files
 (relative to current directory) in which blockwise  topological overlaps were saved. }
 
@@ -463,12 +532,12 @@ first-processed block. }
 many times each set contributed the consensus gene similarity value. If the counts are highly unbalanced,
 the consensus may be biased. }
 
-  \item{TOMScalingSamples}{if the input \code{getTOMScalingSamples} is \code{TRUE}, this component is a
+  \item{networkCalibrationSamples}{if the input \code{getNetworkCalibrationSamples} is \code{TRUE}, this component is a
 list with one component per block. Each component is again a list with two components:
 \code{sampleIndex} contains indices of the distance structure in which TOM is stored that were sampled,
 and \code{TOMSamples} is a matrix whose rows correspond to TOM samples and columns to individual set.
-Hence, \code{TOMScalingSamples[[blockNo]]$TOMSamples[index, setNo]} contains the TOM entry that
-corresponds to element \code{TOMScalingSamples[[blockNo]]$sampleIndex[index]} of the TOM distance
+Hence, \code{networkCalibrationSamples[[blockNo]]$TOMSamples[index, setNo]} contains the TOM entry that
+corresponds to element \code{networkCalibrationSamples[[blockNo]]$sampleIndex[index]} of the TOM distance
 structure in block \code{blockNo} and set \code{setNo}. (For details on the distance structure, see
 \code{\link{dist}}.)}
 

@@ -21,6 +21,10 @@ blockwiseModules(
   maxBlockSize = 5000,
   randomSeed = 12345,
 
+ # load TOM from previously saved file?
+
+  loadTOM = FALSE,
+
   # Network construction arguments: correlation options
 
   corType = "pearson",
@@ -93,19 +97,26 @@ allowed, but not too many. }
   \item{checkMissingData}{logical: should data be checked for excessive numbers of missing entries in
 genes and samples, and for genes with zero variance? See details. }
 
-  \item{blocks}{ optional specification of blocks in which hierarchical clustering and module detection
+  \item{blocks}{optional specification of blocks in which hierarchical clustering and module detection
 should be performed. If given, must be a numeric vector with one entry per column (gene) 
 of \code{exprData} giving the number of the block to which the corresponding gene belongs. }
 
-  \item{maxBlockSize}{ integer giving maximum block size for module detection. Ignored if \code{blocks}
+  \item{maxBlockSize}{integer giving maximum block size for module detection. Ignored if \code{blocks}
 above is non-NULL. Otherwise, if the number of genes in \code{datExpr} exceeds \code{maxBlockSize}, genes
 will be pre-clustered into blocks whose size should not exceed \code{maxBlockSize}. }
 
- \item{randomSeed}{ integer to be used as seed for the random number generator before the function
+ \item{randomSeed}{integer to be used as seed for the random number generator before the function
 starts. If a current seed exists, it is saved and restored upon exit. If \code{NULL} is given, the 
 function will not save and restore the seed. }
 
-  \item{corType}{ character string specifying the correlation to be used. Allowed values are (unique
+  \item{loadTOM}{logical: should Topological Overlap Matrices be loaded from previously saved files (\code{TRUE}) 
+or calculated (\code{FALSE})? It may be useful to load previously saved TOM matrices if these have been
+calculated previously, since TOM calculation is often the most computationally expensive part of network
+construction and module identification. See \code{saveTOMs} and \code{saveTOMFileBase} below for when and how TOM
+files are saved, and what the file names are. If \code{loadTOM} is \code{TRUE} but the files cannot be
+found, or do not contain the correct TOM data, TOM will be recalculated.}
+
+  \item{corType}{character string specifying the correlation to be used. Allowed values are (unique
 abbreviations of) \code{"pearson"} and \code{"bicor"}, corresponding to Pearson and bidweight
 midcorrelation, respectively. Missing values are handled using the \code{pairwise.complete.obs} option. }
 

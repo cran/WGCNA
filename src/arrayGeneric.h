@@ -5,19 +5,19 @@ class CLASS_NAME
   protected:
 
     TYPE 	* data_;
-    int 	size_;
+    size_t 	size_;
     int 	allocated;
-    vector <int> dims;
+    vector <size_t> dims;
     string	name_;
 
   public:
 
   #ifdef CheckDimensions
-    TYPE value(int i)
+    TYPE value(size_t i)
        { if (i<dims[1]) return data_[i]; 
          else throw (Exception(string("Index out of range in variable" + name_).c_str())); 
        }
-    TYPE value(int i, int j) 
+    TYPE value(size_t i, size_t j) 
        { if (dims.size()==2)
            if ( (i<dims[0]) && (j<dims[1]) )
               return data_[j*dims[0] + i]; 
@@ -26,7 +26,7 @@ class CLASS_NAME
          else
             throw (Exception(string("incorrect number of dimensions accessing variable" + name_)));
        }
-    TYPE value(int i, int j, int k) 
+    TYPE value(size_t i, size_t j, size_t k) 
        { if (dims.size()==3)
            if ((k < dims[2]) && (j<dims[1]) && (i<dims[0])) 
               return data_[(k*dims[1]+j)*dims[0] + i]; 
@@ -36,21 +36,21 @@ class CLASS_NAME
             throw (Exception(string("Incorrect number of dimensions accessing variable" + name_)));
        }
 
-    TYPE linValue(int i)
+    TYPE linValue(size_t i)
        {
-         int max = 1;
-         for (unsigned di=0; di < dims.size(); di++) max *= dims[di];
+         size_t max = 1;
+         for (size_t di=0; di < dims.size(); di++) max *= dims[di];
          if (i<max)
             return data_[i];
          else 
             throw (Exception(string("Linear index out of range in variable" + name_)));
        }
          
-    void setValue(int i, TYPE r)
+    void setValue(size_t i, TYPE r)
        { if (i<dims[0]) data_[i] = r;
          else throw (Exception(string("Index out of range in variable" + name_)));
        }
-    void setValue(int i, int j, TYPE r)
+    void setValue(size_t i, size_t j, TYPE r)
        { if (dims.size()==2)
            if ( (i<dims[0]) && (j<dims[1]) )
               data_[j*dims[0] + i] = r;
@@ -59,7 +59,7 @@ class CLASS_NAME
          else
             throw (Exception(string("incorrect number of dimensions accessing variable" + name_)));
        }
-    void setValue(int i, int j, int k, TYPE r)
+    void setValue(size_t i, size_t j, size_t k, TYPE r)
        { if (dims.size()==3)
            if ((k < dims[2]) && (j<dims[1]) && (i<dims[0])) 
               data_[(k*dims[1]+j)*dims[0] + i] = r; 
@@ -69,36 +69,36 @@ class CLASS_NAME
             throw (Exception(string("Incorrect number of dimensions accessing variable" + name_)));
        }
 
-    void linValue(int i, TYPE r)
+    void linValue(size_t i, TYPE r)
        {
-         int max = 1;
-         for (unsigned di=0; di < dims.size(); di++) max *= dims[di];
+         size_t max = 1;
+         for (size_t di=0; di < dims.size(); di++) max *= dims[di];
          if (i<max)
             data_[i] = r;
          else
             throw (Exception(string("Linear index out of range in variable" + name_)));
        }
 
-    // void copyData(CLASS_NAME arr, int start = 0, int length = -1)
+    // void copyData(CLASS_NAME arr, size_t start = 0, size_t length = -1)
 
   #else
 
-    TYPE linValue(int i)
+    TYPE linValue(size_t i)
        { return data_[i]; }
-    TYPE value(int i)
+    TYPE value(size_t i)
        { return data_[i]; }
-    TYPE value(int i, int j) 
+    TYPE value(size_t i, size_t j) 
        { return (data_[j*dims[0] + i]); }
-    TYPE value(int i, int j, int k) 
+    TYPE value(size_t i, size_t j, size_t k) 
        { return (data_[(k*dims[1]+j)*dims[0] + i]); }
 
-    void linValue(int i, TYPE r)
+    void linValue(size_t i, TYPE r)
        { data_[i] = r; }
-    void value(int i, TYPE r)
+    void value(size_t i, TYPE r)
        { data_[i]; }
-    void value(int i, int j, TYPE r) 
+    void value(size_t i, size_t j, TYPE r) 
        { data_[j*dims[0] + i] = r; }
-    void value(int i, int j, int k, TYPE r) 
+    void value(size_t i, size_t j, size_t k, TYPE r) 
        { data_[(k*dims[1]+j)*dims[0] + i] = r; }
     
 
@@ -107,28 +107,28 @@ class CLASS_NAME
     void name(string n) {name_ = n; }
     string name() {return name_; }
 
-    void initData(int size);
-    void initData(int size, TYPE val);
+    void initData(size_t size);
+    void initData(size_t size, TYPE val);
 
-    void setDim(int length);
-    void setDim(int nrow, int ncol);
-    void setDim(int nrow, int ncol, int k);
+    void setDim(size_t length);
+    void setDim(size_t nrow, size_t ncol);
+    void setDim(size_t nrow, size_t ncol, size_t k);
 
-    void setDim(vector <int> dims, int start=0);
+    void setDim(vector <size_t> dims, size_t start=0);
 
-    int nDim() { return dims.size(); }
+    size_t nDim() { return dims.size(); }
 
-    vector <int> dim() { return dims; }
+    vector <size_t> dim() { return dims; }
 
-    int size() { return size_; }
-    int length() 
+    size_t size() { return size_; }
+    size_t length() 
        { 
           if (dims.size()==0) return 0; 
-          int prod = 1; for (unsigned i=0; i<dims.size(); i++) prod *= dims[i];
+          size_t prod = 1; for (size_t i=0; i<dims.size(); i++) prod *= dims[i];
           return prod;
        }
 
-    void wrap(TYPE * data, int len)	// Points the data_ pointer to given data. Will make sure the
+    void wrap(TYPE * data, size_t len)	// Points the data_ pointer to given data. Will make sure the
                                         // data will not be deallocated in the destructor.
        {
           if (allocated) delete data_;
@@ -138,13 +138,13 @@ class CLASS_NAME
           setDim(len);
        }
 
-    void wrap(TYPE * data, int nrow, int ncol)	
+    void wrap(TYPE * data, size_t nrow, size_t ncol)	
        {
          wrap(data, nrow*ncol);
          setDim(nrow, ncol);
        }
 
-    void wrap(TYPE * data, int nrow, int ncol, int k)	
+    void wrap(TYPE * data, size_t nrow, size_t ncol, size_t k)	
        {
          wrap(data, nrow*ncol*k);
          setDim(nrow, ncol, k);
@@ -155,25 +155,26 @@ class CLASS_NAME
 
     TYPE max();
     TYPE min();
-    vector <int> table();	// returns frequencies but no values
-    vector <int> table(vector <TYPE> & values); // returns frequencies and values
+    vector <size_t> table();	// returns frequencies but no values
+    vector <size_t> table(vector <TYPE> & values); // returns frequencies and values
 
-    void copy2vector(int start, int length, vector <int> & result);
-    void copy2vector(int start, int length, vector <double> & result);
+    void copy2vector(size_t start, size_t length, vector <int> & result);
+    void copy2vector(size_t start, size_t length, vector <double> & result);
     void colMWM(CLASS_NAME & minVal, INT_CLASS & which);
     void colQuantile(double q, dArray & quantile);
+    void rowQuantile(double q, dArray & quantile);
 
-    void sample(int size, CLASS_NAME & values, int replace = 0);
+    void sample(size_t size, CLASS_NAME & values, int replace = 0);
 
     // void sort();
-    // vector <int> order();
-    // vector <int> rank();
+    // vector <size_t> order();
+    // vector <size_t> rank();
 
     CLASS_NAME() { allocated = 0; data_ = (TYPE *) NULL; dims.clear(); }
 
-    CLASS_NAME(int size) { initData(size); setDim(size); }
+    CLASS_NAME(size_t size) { initData(size); setDim(size); }
 
-    CLASS_NAME(int size, TYPE value) { initData(size, value); setDim(size); }
+    CLASS_NAME(size_t size, TYPE value) { initData(size, value); setDim(size); }
 
     // CLASS_NAME(CLASS_NAME arr);	// This constructor will copy the data from arr into *this
 
@@ -181,7 +182,7 @@ class CLASS_NAME
 
 };
 
-void CLASS_NAME::initData(int size)
+void CLASS_NAME::initData(size_t size)
 {
   size_ = size;
   data_ = new TYPE[size];
@@ -190,13 +191,13 @@ void CLASS_NAME::initData(int size)
   dims.push_back(size_);
 }
 
-void CLASS_NAME::initData(int size, TYPE val)
+void CLASS_NAME::initData(size_t size, TYPE val)
 {
   initData(size);
-  for (int i=0; i<size; i++) data_[i] = val;
+  for (size_t i=0; i<size; i++) data_[i] = val;
 }
 
-void CLASS_NAME::setDim(int length)
+void CLASS_NAME::setDim(size_t length)
 {
   if (length > size_)
     throw (Exception("attempt to set linear dimension " + NumberToString(length)  + " higher than size "
@@ -208,7 +209,7 @@ void CLASS_NAME::setDim(int length)
   }
 }
 
-void CLASS_NAME::setDim(int nrow, int ncol)
+void CLASS_NAME::setDim(size_t nrow, size_t ncol)
 {
   if (nrow*ncol > size())
     throw (Exception("attempt to set matrix dimensions " + NumberToString(nrow)  + ", " +
@@ -222,7 +223,7 @@ void CLASS_NAME::setDim(int nrow, int ncol)
   }
 }
 
-void CLASS_NAME::setDim(int nrow, int ncol, int k)
+void CLASS_NAME::setDim(size_t nrow, size_t ncol, size_t k)
 {
   if (nrow*ncol*k > size_)
     throw (Exception("attempt to set 3-dim CLASS_NAME dimensions " + NumberToString(nrow)  + ", " +
@@ -239,7 +240,7 @@ void CLASS_NAME::setDim(int nrow, int ncol, int k)
 
 /*
 
-void CLASS_NAME::copyData(CLASS_NAME arr, int start, int length)
+void CLASS_NAME::copyData(CLASS_NAME arr, size_t start, size_t length)
 {
   if (start >= arr.length())
     throw(Exception("attempt to copy non-existent data from variable" + arr.name()));
@@ -255,7 +256,7 @@ TYPE CLASS_NAME::max()
   if (length()==0)
     throw(Exception(string("attempt to calculate max of an empty array.")));
   TYPE max = linValue(0);
-  for (int i=1; i<length(); i++)
+  for (size_t i=1; i<length(); i++)
     if (!ISNAN(linValue(i)) && (linValue(i) > max)) max = linValue(i);
   return max;
 }
@@ -265,20 +266,20 @@ TYPE CLASS_NAME::min()
   if (length()==0)
     throw(Exception(string("attempt to calculate min of an empty array.")));
   TYPE min = linValue(0);
-  for (int i=1; i<length(); i++)
+  for (size_t i=1; i<length(); i++)
     if (!ISNAN(linValue(i)) && (linValue(i) < min)) min = linValue(i);
   return min;
 }
 
-vector <int> CLASS_NAME::table(vector <TYPE> & values)
+vector <size_t> CLASS_NAME::table(vector <TYPE> & values)
 {
-  vector <int> counts;
+  vector <size_t> counts;
   counts.clear();
   values.clear();
-  for (int i=0; i<length(); i++)
+  for (size_t i=0; i<length(); i++)
   {
     TYPE v = linValue(i);
-    unsigned j;
+    size_t j;
     for (j=0; (j<values.size()) && (values[j]!=v); j++)
     if (j==values.size())
     {
@@ -290,41 +291,41 @@ vector <int> CLASS_NAME::table(vector <TYPE> & values)
   return counts;
 }
 
-vector <int> CLASS_NAME::table()
+vector <size_t> CLASS_NAME::table()
 {
   vector <TYPE> values;    
   return table(values);
 }
 
-void CLASS_NAME::setDim(vector <int> dims, int start)
+void CLASS_NAME::setDim(vector <size_t> dims, size_t start)
 {
-  int len = 1;
-  for (unsigned i=start; i<dims.size(); i++) len *= dims[i];
+  size_t len = 1;
+  for (size_t i=start; i<dims.size(); i++) len *= dims[i];
   if (len > size())
     throw(Exception(string("setDim: not enough space to accomodate given dimensions.")));
   this->dims.clear();
   this->dims.reserve(dims.size()-start);
-  for (unsigned i=start; i<dims.size(); i++) this->dims.push_back(dims[i]);
+  for (size_t i=start; i<dims.size(); i++) this->dims.push_back(dims[i]);
 }
   
 
-void CLASS_NAME::copy2vector(int start, int length, vector <int> & result)
+void CLASS_NAME::copy2vector(size_t start, size_t length, vector <int> & result)
 {
   if (start + length > this->length())
     throw(Exception(string("copy2vector: start+length exceed the actual length of the array.")));
   result.clear();
   // result.reserve(length);
-  for (int i=start; i<start + length; i++)
+  for (size_t i=start; i<start + length; i++)
     result.push_back((int) *(data_+i));
 }
 
-void CLASS_NAME::copy2vector(int start, int length, vector <double> & result)
+void CLASS_NAME::copy2vector(size_t start, size_t length, vector <double> & result)
 {
   if (start + length > this->length())
     throw(Exception(string("copy2vector: start+length exceed the actual length of the array.")));
   result.clear();
   // result.reserve(length);
-  for (int i=start; i<start + length; i++)
+  for (size_t i=start; i<start + length; i++)
     result.push_back((double) *(data_+i));
 }
 
@@ -342,16 +343,16 @@ void CLASS_NAME::colMWM(CLASS_NAME & minVal, INT_CLASS & which)
     which.setDim(dim(), 1);
   }
 
-  int colLen = dim()[0], totLen = length();
+  size_t colLen = dim()[0], totLen = length();
 
   if (colLen==0)
     throw(Exception(string("colMWM: Column length is zero in variable") + name()));
-  int col = 0; 
-  for (int i=0; i<totLen; i+=colLen, col++)
+  size_t col = 0; 
+  for (size_t i=0; i<totLen; i+=colLen, col++)
   {
     TYPE cmin = linValue(i);
-    int wmin = 0;
-    for (int j=i+1; j<i+colLen; j++)
+    size_t wmin = 0;
+    for (size_t j=i+1; j<i+colLen; j++)
       if (linValue(j) < cmin)
       {
          cmin = linValue(j);
@@ -367,25 +368,25 @@ void CLASS_NAME::colMWM(CLASS_NAME & minVal, INT_CLASS & which)
    replace is honored exactly. Using this function on samples that are relatively large will be quite
    slow.
 */
-void CLASS_NAME::sample(int size, CLASS_NAME & values, int replace)
+void CLASS_NAME::sample(size_t size, CLASS_NAME & values, int replace)
 {
-  int len = length();
+  size_t len = length();
   if (replace)
   {
     if (size > length())
       throw(Exception(string("Attempt to sample too many samples without replacement.")));
     values.setDim(size);
-    for (int i=0; i<size; i++)
+    for (size_t i=0; i<size; i++)
     {
-      int s = (int) (floor(unif_rand() * len));
+      size_t s = (size_t) (floor(unif_rand() * len));
       values.linValue(i, linValue(s));
     }
   } else {
     indArray taken(length(), false);
     values.setDim(size);
-    for (int nSampled=0; nSampled < size; )
+    for (size_t nSampled=0; nSampled < size; )
     {
-      int s = (int) (floor(unif_rand() * len));
+      size_t s = (size_t) (floor(unif_rand() * len));
       if (!taken.value(s))
       {
         values.linValue(nSampled, linValue(s));

@@ -18,7 +18,7 @@ selectBranch(hierTOM, g1, g2)
 }
 \arguments{
   \item{hierTOM}{
-A hierarchical clustering object (or gene tree) that is used to plot the dendrogram.  For example, the output object from the function hclust or flashClust.  Note that elements of hierTOM$order MUST be named (for example, with the corresponding gene name).
+A hierarchical clustering object (or gene tree) that is used to plot the dendrogram.  For example, the output object from the function hclust or fastcluster::hclust.  Note that elements of hierTOM$order MUST be named (for example, with the corresponding gene name).
 }
   \item{g1}{
 Any gene in the branch of interest.
@@ -53,7 +53,7 @@ dat1   = simulateDatExpr(ME,400 ,c(0.16,0.12,0.11,0.10,0.10,0.09,0.15),
                          signed=TRUE)
 TOM1   = TOMsimilarityFromExpr(dat1$datExpr, networkType="signed")
 colnames(TOM1) <- rownames(TOM1) <- colnames(dat1$datExpr)
-tree1  = flashClust(as.dist(1-TOM1),method="average")
+tree1  = fastcluster::hclust(as.dist(1-TOM1),method="average")
 colorh = labels2colors(dat1$allLabels)
 
 plotDendroAndColors(tree1,colorh,dendroLabels=FALSE)

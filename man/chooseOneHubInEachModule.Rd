@@ -60,7 +60,7 @@ dat1   = simulateDatExpr(ME,300,c(0.2,0.1,0.08,0.051,0.05,0.042,0.041,0.3),
                          signed=TRUE)
 TOM1   = TOMsimilarityFromExpr(dat1$datExpr, networkType="signed")
 colnames(TOM1) <- rownames(TOM1) <- colnames(dat1$datExpr)
-tree1 <- tree2 <- flashClust(as.dist(1-TOM1),method="average")
+tree1 <- tree2 <- fastcluster::hclust(as.dist(1-TOM1),method="average")
 colorh = labels2colors(dat1$allLabels)
 hubs    = chooseOneHubInEachModule(dat1$datExpr, colorh)
 hubs

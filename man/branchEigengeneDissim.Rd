@@ -23,7 +23,7 @@ mtd.branchEigengeneDissim(
   branch1, branch2,
   corFnc = cor, corOptions = list(use = 'p'),
   consensusQuantile = 0, 
-  signed = TRUE, ...)
+  signed = TRUE, reproduceQuantileError = FALSE, ...)
 
 }
 %- maybe also 'usage' for other objects documented here.
@@ -52,6 +52,11 @@ Consensus quantile.
   \item{signed}{
 Should the network be considered signed?
 }
+
+  \item{reproduceQuantileError}{Logical: should an error in the calculation from previous versions, which
+caused the true consensus quantile to be \code{1-consensusQuantile} rather than \code{consensusQuantile},
+be reproduced? Use this only to reproduce old calculations.}
+
   \item{\dots}{
 Other arguments for compatibility; currently unused.
 }

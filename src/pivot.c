@@ -7,32 +7,35 @@
 
 #include <stdlib.h>
 #include <R.h>
+#include <Rinternals.h>
+
+#include "pivot.h"
 
 
-void RprintV(double * v, int l)
+void RprintV(double * v, size_t l)
 {
-  for (int i=0; i<l; i++) Rprintf("%5.3f ", v[i]);
+  for (size_t i=0; i<l; i++) Rprintf("%5.3f ", v[i]);
   Rprintf("\n");
 }
 
-double vMax(double * v, int len)
+double vMax(double * v, size_t len)
 {
   double mx = v[0];
-  for (int i=1; i<len; i++)
+  for (size_t i=1; i<len; i++)
     if (v[i] > mx) mx = v[i];
   return mx;
 }
 
-double vMin(double * v, int len)
+double vMin(double * v, size_t len)
 {
   double mn = v[0];
-  for (int i=1; i<len; i++)
+  for (size_t i=1; i<len; i++)
     if (v[i] < mn) mn = v[i];
   return mn;
 }
 
 
-double pivot(double * v, int len, double target)
+double pivot(double * v, size_t len, double target)
 {
   // Rprintf("Entering pivot with len=%d and target=%f\n   ", len, target);
   // RprintV(v, len);
@@ -40,7 +43,7 @@ double pivot(double * v, int len, double target)
   if (len > 2)
   {
     // pick the pivot, say as the median of the first, middle and last
-    int i1 = 0, i2 = len-1, i3 = (len-1)/2, ip;
+    size_t i1 = 0, i2 = len-1, i3 = (len-1)/2, ip;
     if (v[i1] <= v[i2])
     {
       if (v[i2] <= v[i3])
@@ -66,8 +69,8 @@ double pivot(double * v, int len, double target)
     // Rprintf("   pivot value: %5.3f, index: %d\n", vp, ip);
 
     // pivot everything else
-    int bound = 0;
-    for (int i=0; i<len; i++) if (v[i] < vp)
+    size_t bound = 0;
+    for (size_t i=0; i<len; i++) if (v[i] < vp)
     {
       double x = v[bound];
       v[bound] = v[i];
@@ -123,9 +126,68 @@ double pivot(double * v, int len, double target)
  * This isn't needed for now.
  *
  *
-void testPivot(double * v, int * len, double * target, double * result)
+void testPivot(double * v, size_t * len, double * target, double * result)
 {
    * result = pivot(v, *len, *target);
 }
 */
+
+/*****************************************************************************************************
+ *
+ * Implement order via qsort.
+ *
+ *****************************************************************************************************/
+
+int compareOrderStructure(const orderStructure * os1, const orderStructure * os2)
+{
+  if (ISNAN(os1->val)) return 1;
+  if (ISNAN(os2->val)) return -1;
+  if (os1->val < os2->val) return -1;
+  if (os1->val > os2->val) return 1;
+  return 0;
+}
+
+void qorder_internal(double * x, size_t n, orderStructure * os)
+{
+  for (R_xlen_t i = 0; i<n; i++)
+  {
+    (os+i)->val = *(x+i);
+    (os+i)->index = i;
+  }
+
+  // Rprintf("qorder: calling qsort..");
+  qsort(os, (size_t) n, sizeof(orderStructure), 
+           ((int (*) (const void *, const void *)) compareOrderStructure));
+}
+  
+
+SEXP qorder(SEXP data)
+{
+  R_xlen_t n = Rf_xlength(data);
+
+  // Rprintf("qorder: length of input data is %ld.\n", n);
+
+  double * x = REAL(data);
+
+  orderStructure * os = Calloc((size_t) n, orderStructure);
+
+  qorder_internal(x, (size_t) n, os);
+
+  SEXP ans;
+  if (n<(size_t) 0x80000000)
+  {
+    // Rprintf("..returning integer order.\n");
+    PROTECT (ans = allocVector(INTSXP, n));
+    int * ansp = INTEGER(ans);
+    for (R_xlen_t i = 0; i<n; i++) ansp[i] = (int) ( (os+i)->index+1);
+  } else {
+    // Rprintf("..returning floating point (double) order.\n");
+    PROTECT (ans = allocVector(REALSXP, n));
+    double * ansp = REAL(ans);
+    for (R_xlen_t i = 0; i<n; i++) ansp[i] = (double) ((os+i)->index+1);
+  }
+  Free(os);
+  UNPROTECT(1);
+  return ans;
+}
 

@@ -157,6 +157,10 @@ blockwiseModules = function(
   maxBlockSize = 5000,
   randomSeed = 12345,
 
+  # load TOM from previously saved file?
+
+  loadTOM = FALSE,
+
   # Network construction arguments: correlation options
 
   corType = "pearson",
@@ -382,41 +386,77 @@ blockwiseModules = function(
     block = c(1:nGGenes)[gBlocks==blockLevels[blockNo]];
     selExpr = as.matrix(datExpr[, block]);
     nBlockGenes = length(block);
-    # Calculate TOM by calling a custom C function:
-    callVerb = max(0, verbose - 1); callInd = indent + 2;
-    CcorType = intCorType - 1;
-    CnetworkType = intNetworkType - 1;
-    CTOMType = intTOMType -1;
-    
-    warn = as.integer(0);
-    tom = .Call("tomSimilarity_call", selExpr, 
-        as.integer(CcorType), as.integer(CnetworkType), as.double(power), as.integer(CTOMType), 
-        as.integer(TOMDenomC),
-        as.double(maxPOutliers),
-        as.double(quickCor),
-        as.integer(fallback),
-        as.integer(cosineCorrelation),
-        warn, as.integer(nThreads),
-        as.integer(callVerb), as.integer(callInd));
-
-    # FIXME: warn if necessary
-
-    if (saveTOMs) 
+    TOMFiles[blockNo] = spaste(saveTOMFileBase, "-block.", blockNo, ".RData");
+    if (loadTOM)
     {
-      TOM = as.dist(tom);
-      TOMFiles[blockNo] = paste(saveTOMFileBase, "-block.", blockNo, ".RData", sep="");
       if (verbose > 2)
-        printFlush(paste(spaces, "  ..saving TOM for block", blockNo, "into file", TOMFiles[blockNo]));
-      save(TOM, file =TOMFiles[blockNo]);
-      rm (TOM)
-      collectGarbage();
+        printFlush(paste(spaces, "  ..loading TOM for block", blockNo, "from file", TOMFiles[blockNo]));
+      x = try(load(file =TOMFiles[blockNo]), silent = TRUE);
+      if (x!="TOM") 
+      {
+        loadTOM = FALSE
+        printFlush(spaste("Loading of TOM in block ", blockNo, " failed:\n file ", 
+                          TOMFiles[blockNo], 
+                          "\n  either does not exist or does not contain the object 'TOM'.\n", 
+                          "  Will recalculate TOM."));
+      } else if (!inherits(TOM, "dist")) {
+         printFlush(spaste("TOM file ", TOMFiles[blockNo], 
+                           " does not contain object of the right type or size.\n",
+                           " Will recalculate TOM."))
+      } else {
+        size.1 = attr(TOM, "Size");
+        if (length(size.1)!=1 || size.1!=nBlockGenes)
+        {
+           printFlush(spaste("TOM file ", TOMFiles[blockNo], 
+                             " does not contain object of the right type or size.\n",
+                            " Will recalculate TOM."))
+           loadTOM = FALSE
+        } else {
+           tom = as.matrix(TOM);
+           rm(TOM);
+           collectGarbage();
+        }
+      }
+    } 
+
+    if (!loadTOM) 
+    {
+      # Calculate TOM by calling a custom C function:
+      callVerb = max(0, verbose - 1); callInd = indent + 2;
+      CcorType = intCorType - 1;
+      CnetworkType = intNetworkType - 1;
+      CTOMType = intTOMType -1;
+    
+      warn = as.integer(0);
+      tom = .Call("tomSimilarity_call", selExpr, 
+          as.integer(CcorType), as.integer(CnetworkType), as.double(power), as.integer(CTOMType), 
+          as.integer(TOMDenomC),
+          as.double(maxPOutliers),
+          as.double(quickCor),
+          as.integer(fallback),
+          as.integer(cosineCorrelation),
+          warn, as.integer(nThreads),
+          as.integer(callVerb), as.integer(callInd));
+
+      # FIXME: warn if necessary
+
+      if (saveTOMs) 
+      {
+        TOM = as.dist(tom);
+        TOMFiles[blockNo] = paste(saveTOMFileBase, "-block.", blockNo, ".RData", sep="");
+        if (verbose > 2)
+          printFlush(paste(spaces, "  ..saving TOM for block", blockNo, "into file", TOMFiles[blockNo]));
+        save(TOM, file =TOMFiles[blockNo]);
+        rm (TOM)
+        collectGarbage();
+      }
     }
     dissTom = 1-tom;
     rm(tom);
     collectGarbage();
     if (verbose>2) printFlush(paste(spaces, "....clustering.."));
 
-    dendros[[blockNo]] = flashClust(as.dist(dissTom), method = "average");
+    dendros[[blockNo]] = fastcluster::hclust(as.dist(dissTom), method = "average")
 
     if (verbose>2) printFlush(paste(spaces, "....detecting modules.."));
     datExpr.scaled.imputed.block = datExpr.scaled.imputed[, block];
@@ -1280,9 +1320,19 @@ blockwiseIndividualTOMs = function(multiExpr,
 {
   spaces = indentSpaces(indent);
 
-  dataSize = checkSets(multiExpr);
-  nSets = dataSize$nSets;
-  nGenes = dataSize$nGenes;
+  dataSize = checkSets(multiExpr, checkStructure = TRUE);
+  if (dataSize$structureOK)
+  {
+    nSets = dataSize$nSets;
+    nGenes = dataSize$nGenes;
+    multiFormat = TRUE;
+  } else {
+    multiExpr = multiData(multiExpr);
+    nSets = dataSize$nSets;
+    nGenes = dataSize$nGenes;
+    multiFormat = FALSE;
+  }
+
 
   if (length(power)!=1)
   {
@@ -1310,8 +1360,7 @@ blockwiseIndividualTOMs = function(multiExpr,
     stop("Input error: length of 'blocks' must equal number of genes in 'multiExpr'.");
 
   if (verbose>0) 
-     printFlush(paste(spaces, "Calculating consensus topological overlaps", 
-                      "block-wise from all genes"));
+     printFlush(paste(spaces, "Calculating topological overlaps block-wise from all genes"));
 
   intCorType = pmatch(corType, .corTypes);
   if (is.na(intCorType))
@@ -1425,61 +1474,54 @@ blockwiseIndividualTOMs = function(multiExpr,
     # Set up file names or memory space to hold the set TOMs
     if (!saveTOMs)
     {
-      setTomDS[[blockNo]] = array(0, dim = c(nSets, nBlockGenes*(nBlockGenes-1)));
+      setTomDS[[blockNo]] = array(0, dim = c(nBlockGenes*(nBlockGenes-1)/2, nSets));
     } 
 
     # For each set: calculate and save TOM
 
-    tom = matrix(0, nBlockGenes, nBlockGenes);
     for (set in 1:nSets)
     {
       if (verbose>2) printFlush(paste(spaces, "....Working on set", set))
-      selExpr = multiExpr[[set]]$data[, block];
+      selExpr = as.matrix(multiExpr[[set]]$data[, block]);
 
       # Calculate TOM by calling a custom C function:
       callVerb = max(0, verbose - 1); callInd = indent + 2;
       CcorType = intCorType - 1;
       CnetworkType = intNetworkType - 1;
       CTOMType = intTOMType - 1;
-      tempExpr = as.double(as.matrix(selExpr));
-      warn = 0;
+      # tempExpr = as.double(as.matrix(selExpr));
+      warn = 0L;
 
-      collectGarbage();
-
-#void tomSimilarity(double * expr, int * nSamples, int * nGenes,
-#                   int * corType,
-#                   int * adjType,
-#                   double * power, int * tomType, double * tom,
-#                   int * verbose, int * indent)
-
-      tomResult = .C("tomSimilarity", tempExpr, as.integer(nGSamples[set]), 
-          as.integer(nBlockGenes),
-          as.integer(CcorType), as.integer(CnetworkType), as.double(power), as.integer(CTOMType), 
+      tom = .Call("tomSimilarity_call", selExpr,
+          as.integer(CcorType), as.integer(CnetworkType), as.double(power[set]), as.integer(CTOMType),
           as.integer(TOMDenomC),
-          as.double(maxPOutliers), 
+          as.double(maxPOutliers),
           as.double(quickCor),
           as.integer(fallback),
-          as.integer(cosineCorrelation), 
-          tom = as.double(tom), as.integer(warn), as.integer(nThreads),
-          as.integer(callVerb), as.integer(callInd), NAOK = TRUE, PACKAGE = "WGCNA")
-  
-      #FIXME: warn if necessary
+          as.integer(cosineCorrelation),
+          warn, as.integer(nThreads),
+          as.integer(callVerb), as.integer(callInd));
 
-      rm(tempExpr); 
-      dim(tomResult$tom) = c(nBlockGenes, nBlockGenes);
-      tomDS = as.dist(tomResult$tom);
+      # FIXME: warn if necessary
+
+      tomDS = as.dist(tom);
       # dim(tom) = c(nBlockGenes, nBlockGenes);
-      rm(tomResult); 
+      rm(tom); 
 
       # Save the calculated TOM either to disk in chunks or to memory.
       if (saveTOMs) 
       {
         save(tomDS, file = actualFileNames[set, blockNo]); 
       } else {
-        setTomDS[[blockNo]] [set, ] = tomDS[];
+        setTomDS[[blockNo]] [, set] = tomDS[];
       }
     }
     rm(tomDS); collectGarbage();
+  }
+
+  if (!multiFormat)
+  {
+    gsg$goodSamples = gsg$goodSamples[[1]];
   }
 
   # Re-set random number generator if necessary
@@ -1493,10 +1535,11 @@ blockwiseIndividualTOMs = function(multiExpr,
        nGGenes = nGGenes,
        gBlocks = gBlocks,
        nThreads = nThreads,
-       TOMSavedInFiles = saveTOMs,
+       saveTOMs = saveTOMs,
        intNetworkType = intNetworkType,
        intCorType = intCorType,
-       nSets = nSets
+       nSets = nSets,
+       setNames = names(multiExpr)
        )
 }
 
@@ -1528,113 +1571,143 @@ lowerTri2matrix = function(x, diag = 1)
 # blockwiseConsensusModules
 #
 #==========================================================================================================
+
+
+.checkComponents = function(object, names)
+{
+  objNames = names(object);
+  inObj = names %in% objNames;
+  if (!all(inObj))
+    stop(".checkComponents: object is missing the following components:\n",
+         paste(names[!inObj], collapse = ", "));
+}
+
 # Function to calculate consensus modules and eigengenes from all genes.
 
 blockwiseConsensusModules = function(multiExpr, 
 
-                            # Data checking options
+         # Data checking options
 
-                            checkMissingData = TRUE,
+         checkMissingData = TRUE,
 
-                            # Blocking options
+         # Blocking options
 
-                            blocks = NULL, 
-                            maxBlockSize = 5000, 
-                            randomSeed = 12345,
+         blocks = NULL, 
+         maxBlockSize = 5000, 
+         randomSeed = 12345,
 
-                            # individual TOM information
+         # individual TOM information
 
-                            individualTOMInfo = NULL,
-                            useIndivTOMSubset = NULL,
+         individualTOMInfo = NULL,
+         useIndivTOMSubset = NULL,
 
-                            # Network construction arguments: correlation options
+         # Network construction arguments: correlation options
 
-                            corType = "pearson",
-                            maxPOutliers = 1,
-                            quickCor = 0,
-                            pearsonFallback = "individual", 
-                            cosineCorrelation = FALSE,
+         corType = "pearson",
+         maxPOutliers = 1,
+         quickCor = 0,
+         pearsonFallback = "individual", 
+         cosineCorrelation = FALSE,
 
-                            # Adjacency function options
+         # Adjacency function options
 
-                            power = 6, 
-                            networkType = "unsigned", 
-                            checkPower = TRUE,
+         power = 6, 
+         networkType = "unsigned", 
+         checkPower = TRUE,
 
-                            # Topological overlap options
+         # Topological overlap options
 
-                            TOMType = "unsigned",           
-                            TOMDenom = "min",
+         TOMType = "unsigned",           
+         TOMDenom = "min",
 
-                            # Save individual TOMs?
+         # Save individual TOMs?
 
-                            saveIndividualTOMs = TRUE,
-                            individualTOMFileNames = "individualTOM-Set%s-Block%b.RData",
+         saveIndividualTOMs = TRUE,
+         individualTOMFileNames = "individualTOM-Set%s-Block%b.RData",
 
-                            # Consensus calculation options 
+         # Consensus calculation options: network calibration
 
-                            consensusQuantile = 0,
-                            scaleTOMs = TRUE, scaleQuantile = 0.95,
+         networkCalibration = c("single quantile", "full quantile", "none"),
 
-                            # Sampling for scaling (speeds up calculation)
+         ## Save scaled TOMs? <-- leave this option for users willing to run consensusTOM on its own
+         #saveScaledIndividualTOMs = FALSE,
+         #scaledIndividualTOMFilePattern = "scaledIndividualTOM-Set%s-Block%b.RData",
 
-                            sampleForScaling = TRUE, sampleForScalingFactor = 1000,
-                            getTOMScalingSamples = FALSE, 
-                   
-                            # Returning the consensus TOM
-                            saveTOMs = FALSE, 
-                            consensusTOMFileNames = "consensusTOM-block.%b.RData",
+         # Simple quantile calibration options
 
-                            # Internal handling of TOMs
+         calibrationQuantile = 0.95,
+         sampleForCalibration = TRUE, sampleForCalibrationFactor = 1000,
+         getNetworkCalibrationSamples = FALSE, 
+         
+         # Consensus definition
 
-                            useDiskCache = TRUE, chunkSize = NULL,
-                            cacheBase = ".blockConsModsCache",
+         consensusQuantile = 0,
+         useMean = FALSE,
+         setWeights = NULL,
 
-                            # Basic tree cut options 
+         # Saving the consensus TOM
 
-                            deepSplit = 2, 
-                            detectCutHeight = 0.995, minModuleSize = 20,
-                            checkMinModuleSize = TRUE,
+         saveConsensusTOMs = FALSE, 
+         consensusTOMFileNames = "consensusTOM-block.%b.RData",
 
-                            # Advanced tree cut opyions
+         # Internal handling of TOMs
 
-                            maxCoreScatter = NULL, minGap = NULL,
-                            maxAbsCoreScatter = NULL, minAbsGap = NULL,
-                            minSplitHeight = NULL, minAbsSplitHeight = NULL,
+         useDiskCache = TRUE, chunkSize = NULL,
+         cacheBase = ".blockConsModsCache",
 
-                            useBranchEigennodeDissim = FALSE,
-                            minBranchEigennodeDissim = mergeCutHeight,
+         # Alternative consensus TOM input from a previous calculation 
 
-                            pamStage = TRUE,  pamRespectsDendro = TRUE,
+         consensusTOMInfo = NULL,
 
-                            # Gene joining and removal from a module, and module "significance" criteria
+         # Basic tree cut options 
 
-                            reassignThresholdPS = 1e-4,
-                            trimmingConsensusQuantile = consensusQuantile,
-                            # minKMEtoJoin =0.7, 
-                            minCoreKME = 0.5, minCoreKMESize = minModuleSize/3,
-                            minKMEtoStay = 0.2,
+         deepSplit = 2, 
+         detectCutHeight = 0.995, minModuleSize = 20,
+         checkMinModuleSize = TRUE,
 
-                            # Module eigengene calculation options
+         # Advanced tree cut opyions
 
-                            impute = TRUE,
-                            trapErrors = FALSE,
+         maxCoreScatter = NULL, minGap = NULL,
+         maxAbsCoreScatter = NULL, minAbsGap = NULL,
+         minSplitHeight = NULL, minAbsSplitHeight = NULL,
 
-                            # Module merging options
+         useBranchEigennodeDissim = FALSE,
+         minBranchEigennodeDissim = mergeCutHeight,
 
-                            equalizeQuantilesForModuleMerging = FALSE,
-                            quantileSummaryForModuleMerging = "mean",
-                            mergeCutHeight = 0.15, 
-                            mergeConsensusQuantile = consensusQuantile,
+         stabilityLabels = NULL,
+         minStabilityDissim = NULL,
+
+         pamStage = TRUE,  pamRespectsDendro = TRUE,
+
+         # Gene joining and removal from a module, and module "significance" criteria
+
+         reassignThresholdPS = 1e-4,
+         trimmingConsensusQuantile = consensusQuantile,
+         # minKMEtoJoin =0.7, 
+         minCoreKME = 0.5, minCoreKMESize = minModuleSize/3,
+         minKMEtoStay = 0.2,
+
+         # Module eigengene calculation options
+
+         impute = TRUE,
+         trapErrors = FALSE,
+
+         # Module merging options
+
+         equalizeQuantilesForModuleMerging = FALSE,
+         quantileSummaryForModuleMerging = "mean",
+         mergeCutHeight = 0.15, 
+         mergeConsensusQuantile = consensusQuantile,
                           
 
-                            # Output options
+         # Output options
 
-                            numericLabels = FALSE,
+         numericLabels = FALSE,
 
-                            # General options
-                            nThreads = 0,
-                            verbose = 2, indent = 0)
+         # General options
+         nThreads = 0,
+         verbose = 2, indent = 0,
+         ...)
 {
   spaces = indentSpaces(indent);
 
@@ -1683,34 +1756,79 @@ blockwiseConsensusModules = function(multiExpr,
   multiExpr.scaled.imputed = mtd.mapply(function(x, doImpute) 
                          { if (doImpute) t(impute.knn(t(x))$data) else x },
                                    multiExpr.scaled, hasMissing);
+  branchSplitFnc = NULL;
+  minBranchDissimilarities = numeric(0);
+  externalSplitFncNeedsDistance = logical(0);
   if (useBranchEigennodeDissim)
   {
     branchSplitFnc = "mtd.branchEigengeneDissim";
-  } else 
-    branchSplitFnc = NULL;
+    minBranchDissimilarities = minBranchEigennodeDissim;
+    externalSplitFncNeedsDistance = FALSE;
+  } 
+
+  if (!is.null(stabilityLabels))
+  {
+    branchSplitFnc = c(branchSplitFnc, "branchSplitFromStabilityLabels");
+    minBranchDissimilarities = c(minBranchDissimilarities, minStabilityDissim);
+    externalSplitFncNeedsDistance = c(externalSplitFncNeedsDistance, FALSE);
+  }
+
+  # Basic checks on consensusTOMInfo
+
+  if (!is.null(consensusTOMInfo))
+  {
+
+    .checkComponents(consensusTOMInfo, c("saveConsensusTOMs", "individualTOMInfo", "goodSamplesAndGenes"));
+
+    if (length(consensusTOMInfo$individualTOMInfo$blocks)!=nGenes)
+      stop("Inconsistent number of genes in 'consensusTOMInfo$individualTOMInfo$blocks'.");
+
+    if (!is.null(consensusTOMInfo$consensusQuantile) &&
+              (consensusQuantile!=consensusTOMInfo$consensusQuantile) )
+       warning(immediate. = TRUE,
+              "blockwiseConsensusModules: given (possibly default) 'consensusQuantile' is different\n",
+              "from the value recorded in 'consensusTOMInfo'. This is normally undesirable and may\n",
+              "indicate a mistake in the function call.");
+  }
+
+  # Handle "other arguments"
+
+  args = list(...);
+  if (is.null(args$reproduceBranchEigennodeQuantileError))
+  {
+     reproduceBranchEigennodeQuantileError = FALSE;
+  } else reproduceBranchEigennodeQuantileError = args$reproduceBranchEigennodeQuantileError;
 
   # If topological overlaps weren't calculated yet, calculate them.
 
+  removeIndividualTOMsOnExit = FALSE;
+  nBlocks.0 = length(unique(blocks));
+
   if (is.null(individualTOMInfo))
   {
-    individualTOMInfo = blockwiseIndividualTOMs(multiExpr = multiExpr, 
-                         checkMissingData = checkMissingData,
-                         blocks = blocks,
-                         maxBlockSize = maxBlockSize,
-                         randomSeed = NULL,
-                         corType = corType,
-                         maxPOutliers = maxPOutliers,
-                         quickCor = quickCor,
-                         pearsonFallback = pearsonFallback,
-                         cosineCorrelation = cosineCorrelation,
-                         power = power,
-                         networkType = networkType, 
-                         TOMType = TOMType,
-                         TOMDenom = TOMDenom,
-                         saveTOMs = useDiskCache,
-                         individualTOMFileNames = individualTOMFileNames,
-                         nThreads = nThreads,
-                         verbose = verbose, indent = indent);
+    if (is.null(consensusTOMInfo))
+    {
+      individualTOMInfo = blockwiseIndividualTOMs(multiExpr = multiExpr, 
+                           checkMissingData = checkMissingData,
+                           blocks = blocks,
+                           maxBlockSize = maxBlockSize,
+                           randomSeed = NULL,
+                           corType = corType,
+                           maxPOutliers = maxPOutliers,
+                           quickCor = quickCor,
+                           pearsonFallback = pearsonFallback,
+                           cosineCorrelation = cosineCorrelation,
+                           power = power,
+                           networkType = networkType, 
+                           TOMType = TOMType,
+                           TOMDenom = TOMDenom,
+                           saveTOMs = useDiskCache | nBlocks.0>1,
+                           individualTOMFileNames = individualTOMFileNames,
+                           nThreads = nThreads,
+                           verbose = verbose, indent = indent);
+      removeIndividualTOMsOnExit = TRUE;
+    } else
+      individualTOMInfo = consensusTOMInfo$individualTOMInfo;
   } 
 
   if (is.null(useIndivTOMSubset))
@@ -1754,11 +1872,7 @@ blockwiseConsensusModules = function(multiExpr,
 
   gsg$goodSamples = gsg$goodSamples[useIndivTOMSubset];
   if (!gsg$allOK)
-  {
-    for (set in 1:nSets) 
-      multiExpr[[set]]$data = multiExpr[[set]] $ data [gsg$goodSamples[[set ]], 
-                                                        gsg$goodGenes];
-  }
+    multiExpr = mtd.subset(multiExpr, gsg$goodSamples, gsg$goodGenes);
 
   nGGenes = sum(gsg$goodGenes);
   nGSamples = rep(0, nSets);
@@ -1775,216 +1889,133 @@ blockwiseConsensusModules = function(multiExpr,
 
   reassignThreshold = reassignThresholdPS^nSets;
 
-  # Initialize various variables
-
-  if (getTOMScalingSamples)
-  {
-    if (!sampleForScaling)
-      stop(paste("Incompatible input options: TOMScalingSamples can only be returned", 
-                 "if sampleForScaling is TRUE."));
-    TOMScalingSamples = list();
-  }
-
   consMEs = vector(mode = "list", length = nSets);
   dendros = list();
-
-  originCount = rep(0, nSets);
-
-  TOMFiles = rep("", nBlocks);
 
   maxUsedLabel = 0;
   collectGarbage();
   # Here's where the analysis starts
 
+  removeConsensusTOMOnExit = FALSE;
+
+  if (is.null(consensusTOMInfo) && (nBlocks==1 || saveConsensusTOMs || getNetworkCalibrationSamples))
+  {
+    consensusTOMInfo = consensusTOM(
+         individualTOMInfo = individualTOMInfo,
+         useIndivTOMSubset = useIndivTOMSubset,
+
+         networkCalibration = networkCalibration,
+         saveCalibratedIndividualTOMs = FALSE,
+
+         calibrationQuantile = calibrationQuantile,
+         sampleForCalibration = sampleForCalibration,
+         sampleForCalibrationFactor = sampleForCalibrationFactor,
+         getNetworkCalibrationSamples = getNetworkCalibrationSamples,
+
+         consensusQuantile = consensusQuantile,
+         useMean = useMean,
+         setWeights = setWeights,
+
+         # Return options
+         saveConsensusTOMs = saveConsensusTOMs,
+         consensusTOMFileNames = consensusTOMFileNames,
+         returnTOMs = nBlocks==1,
+
+         # Internal handling of TOMs
+         useDiskCache = useDiskCache, 
+         chunkSize = chunkSize,
+         cacheBase = cacheBase,
+         verbose = verbose, indent = indent);
+     removeConsensusTOMOnExit = !saveConsensusTOMs;
+  }
+
   for (blockNo in 1:nBlocks)
   {
     if (verbose>1) printFlush(paste(spaces, "..Working on block", blockNo, "."));
-    # Select most connected genes
+    # Select block genes
     block = c(1:nGGenes)[gBlocks==blockLevels[blockNo]];
     nBlockGenes = length(block);
-    # blockGenes[[blockNo]] = c(1:nGenes)[gsg$goodGenes][gBlocks==blockLevels[blockNo]];
-    scaleQuant = rep(1, nSets);
-    scalePowers = rep(1, nSets);
-    selExpr = vector(mode = "list", length = nSets);
+
+    selExpr = mtd.subset(multiExpr, , block);
     errorOccurred = FALSE;
 
-    # Set up file names or memory space to hold the set TOMs
-    if (useDiskCache)
+    if (is.null(consensusTOMInfo)) 
     {
-      nChunks = ceiling(nBlockGenes * (nBlockGenes-1)/2/chunkSize);
-      TOMfileNames = array("", dim = c(nChunks, nSets));
-      chunkLengths = rep(0, nChunks);
+       # This code is only reached if input saveConsensusTOMs is FALSE and there are at least 2 blocks.
+       consensusTOMInfo = consensusTOM(
+         individualTOMInfo = individualTOMInfo,
+         useIndivTOMSubset = useIndivTOMSubset,
+
+         useBlocks = blockNo,
+
+         networkCalibration = networkCalibration,
+         saveCalibratedIndividualTOMs = FALSE,
+
+         calibrationQuantile = calibrationQuantile,
+         sampleForCalibration = sampleForCalibration,
+         sampleForCalibrationFactor = sampleForCalibrationFactor,
+         getNetworkCalibrationSamples = FALSE,
+
+         consensusQuantile = consensusQuantile,
+         useMean = useMean,
+         setWeights = setWeights,
+
+         saveConsensusTOMs = FALSE,
+         returnTOMs = TRUE,
+
+         useDiskCache = useDiskCache, 
+         chunkSize = chunkSize,
+         cacheBase = cacheBase);
+
+       consTomDS = consensusTOMInfo$consensusTOM[[1]];
+       # Remove the consensus TOM from the structure.
+       consensusTOMInfo$consensusTOM[[1]] = NULL;
+       consensusTOMInfo$consensusTOM = NULL;
     } else {
-      # Note: setTomDS will contained the scaled set TOM matrices.
-      setTomDS = array(0, dim = c(nSets, nBlockGenes*(nBlockGenes-1)/2));
-    } 
-
-    # create a bogus consTomDS distance structure.
-
-    consTomDS = as.dist(matrix(0, nBlockGenes, nBlockGenes));
-
-    # sample entry indices from the distance structure for TOM scaling, if requested
-
-    if (sampleForScaling)
-    {
-      qx = min(scaleQuantile, 1-scaleQuantile);
-      nScGenes = min(sampleForScalingFactor * 1/qx, length(consTomDS));
-      nTOMEntries = length(consTomDS)
-      scaleSample = sample(nTOMEntries, nScGenes);
-      if (getTOMScalingSamples)
-        TOMScalingSamples[[blockNo]] = list(sampleIndex = scaleSample,
-                                            TOMSamples = matrix(NA, nScGenes, nSets));
+       if (consensusTOMInfo$saveConsensusTOMs)
+       {
+         consTomDS = .loadObject(file = consensusTOMInfo$TOMFiles[blockNo],
+                                 size = nBlockGenes * (nBlockGenes-1)/2);
+       } else 
+         consTomDS = consensusTOMInfo$consensusTOM[[blockNo]];
     }
 
-    # For each set: Read the pre-calculated TOM from disk.
+    # Temporary "cast" so fastcluster::hclust doesn't complain about non-integer size.
 
-    for (set in 1:nSets)
-    {
-      # Set up selExpr for later use in multiSetMEs
-      selExpr[[set]] = list(data = multiExpr[[set]]$data[ , block ]);
-      if (verbose>2) printFlush(paste(spaces, "....Working on set", set))
-      if (individualTOMInfo$TOMSavedInFiles)
-      {
-         # Load the appropriate file
-         x = load(file = individualTOMInfo$ actualTOMFileNames[useIndivTOMSubset[set], blockNo]);
-         # Basic checks of validity
-         if (x!="tomDS")
-           stop(paste("File", individualTOMInfo$ actualTOMFileNames[useIndivTOMSubset[set], blockNo], 
-                      "does not contain the correct content (variable names)"));
-         if (length(tomDS)!=nBlockGenes*(nBlockGenes-1)/2)
-           stop(paste("File", individualTOMInfo$ actualTOMFileNames[useIndivTOMSubset[set], blockNo],
-                      "contains data of correct type but incorrect length."));
-      } else {
-        tomDS = as.dist(matrix(0, nBlockGenes, nBlockGenes));
-        tomDS[] = individualTOMInfo$TOMsimilarities[[blockNo]] [useIndivTOMSubset[set], ]
-      }
-        
-      if (scaleTOMs)
-      {
-        # Scale TOMs so that scaleQuantile agree in each set
-        if (sampleForScaling)
-        {
-          if (getTOMScalingSamples)
-          { 
-            TOMScalingSamples[[blockNo]]$TOMSamples[, set] = tomDS[scaleSample];
-            scaleQuant[set] = quantile(TOMScalingSamples[[blockNo]]$TOMSamples[, set], 
-                                       probs = scaleQuantile, type = 8);
-          } else {
-            scaleQuant[set] = quantile(tomDS[scaleSample], probs = scaleQuantile, type = 8);
-          }
-        } else
-          scaleQuant[set] = quantile(x = tomDS, probs = scaleQuantile, type = 8);
-        if (set>1) 
-        {
-           scalePowers[set] = log(scaleQuant[1])/log(scaleQuant[set]);
-           tomDS = tomDS^scalePowers[set];
-        }
-      }
+    attr(consTomDS, "Size") = as.integer(attr(consTomDS, "Size"));
 
-      # Save the calculated TOM either to disk in chunks or to memory.
-      
-      if (useDiskCache)
-      {
-        if (verbose > 3) printFlush(paste(spaces, "......saving TOM similarity to disk cache.."));
-        start = 1;
-        for (chunk in 1:nChunks)
-        {
-          if (verbose > 4) printFlush(paste(spaces, "........saving chunk", chunk, "of", nChunks));
-          end = min(start + chunkSize-1, length(tomDS));
-          chunkLengths[chunk] = end - start + 1;
-          TOMfileNames[chunk, set] = tempfile(cacheBase, ".");
-          temp = tomDS[start:end];
-          save(temp, file = TOMfileNames[chunk, set]);
-          start = end + 1;
-        }
-        rm(temp); collectGarbage();
-      } else {
-        setTomDS[set, ] = tomDS[];
-      }
-      rm(tomDS); collectGarbage();
-    }
-
-    # Calculate consensus network
-    if (verbose > 2)
-      printFlush(paste(spaces, "....Calculating consensus network using quantile", 
-                                    consensusQuantile));
-    if (useDiskCache)
-    {
-      start = 1;
-      for (chunk in 1:nChunks)
-      {
-        if (verbose > 3) printFlush(paste(spaces, "......working on chunk", chunk));
-        end = start + chunkLengths[chunk] - 1;
-        setChunks = array(0, dim = c(nSets, chunkLengths[chunk]));
-        for (set in 1:nSets)
-        {
-          load(file = TOMfileNames[chunk, set]);
-          setChunks[set, ] = temp;
-          file.remove(TOMfileNames[chunk, set]);
-        }
-        if (consensusQuantile == 0)
-        {
-          min = rep(0, ncol(setChunks));
-          which = rep(0, ncol(setChunks));
-          whichmin = .C("minWhichMin", as.double(setChunks), 
-                        as.integer(nrow(setChunks)), as.integer(ncol(setChunks)),
-                        as.double(min), as.double(which), PACKAGE = "WGCNA");
-          min = whichmin[[4]];
-          which = whichmin[[5]] + 1;
-          rm(whichmin); 
-          consTomDS[start:end] = min;
-          originCount = originCount + as.vector(table(as.integer(which)));
-        } else { 
-          consTomDS[start:end] = colQuantileC(setChunks, p = consensusQuantile);
-        }
-        start = end + 1;
-      }
-    } else {
-      if (consensusQuantile == 0)
-      {
-          min = rep(0, ncol(setTomDS));
-          which = rep(0, ncol(setTomDS));
-          whichmin = .C("minWhichMin", as.double(setTomDS),
-                        as.integer(nrow(setTomDS)), as.integer(ncol(setTomDS)),
-                        as.double(min), as.double(which), PACKAGE = "WGCNA");
-          min = whichmin[[4]];
-          which = whichmin[[5]] + 1;
-          rm(whichmin); 
-          consTomDS[] = min;
-          originCount = as.vector(table(as.integer(which)));
-         #consTomDS[] = apply(setTomDS, 2, min)
-      } else {
-         #consTomDS[] = apply(setTomDS, 2, quantile, 
-         #                    probs = consensusQuantile,  na.rm = TRUE, names = FALSE, type = 8);
-         consTomDS[] = colQuantileC(setTomDS, p = consensusQuantile);
-      }
-    }
-    
-    # Save the consensus TOM if requested
-
-    if (saveTOMs)
-    {
-       TOMFiles[blockNo] = .substituteTags(consensusTOMFileNames, "%b", blockNo);
-       if (sum(TOMFiles[1:blockNo]==TOMFiles[blockNo])>1)
-         stop(paste("File names to save blocks of consensus TOM are not unique.\n",
-                    "  Please make sure you use the tag %b somewhere in the file name -\n",
-                    "   - this tag will be replaced by the block number. "));
-       save(consTomDS, file = TOMFiles[blockNo]);
-    }
     consTomDS = 1-consTomDS;
+    
     collectGarbage();
 
     if (verbose>2) printFlush(paste(spaces, "....clustering and detecting modules.."));
     errorOccured = FALSE;
-    dendros[[blockNo]] = flashClust(consTomDS, method = "average");
+    dendros[[blockNo]] = fastcluster::hclust(consTomDS, method = "average");
     if (verbose > 8)
     {
       if (interactive())
         plot(dendros[[blockNo]], labels = FALSE, main = paste("Block", blockNo));
     }
+
+    externalSplitOptions = list();
+    e.index = 1;
+    if (useBranchEigennodeDissim)
+    {
+      externalSplitOptions[[e.index]] = list(multiExpr = mtd.subset(multiExpr.scaled.imputed,, block),
+                                      corFnc = corFnc, corOptions = corOptions,
+                                      consensusQuantile = consensusQuantile,
+                                      signed = networkType %in% c("signed", "signed hybrid"),
+                                      reproduceQuantileError = reproduceBranchEigennodeQuantileError);
+      e.index = e.index +1;
+    }
+    if (!is.null(stabilityLabels))
+    {
+      externalSplitOptions[[e.index]] = list(stabilityLabels = stabilityLabels);
+      e.index = e.index + 1;
+    }
     collectGarbage();
-    blockLabels = try(cutreeDynamic(dendro = dendros[[blockNo]], 
-    #blockLabels = cutreeDynamic(dendro = dendros[[blockNo]], 
+    #blockLabels = try(cutreeDynamic(dendro = dendros[[blockNo]], 
+    blockLabels = cutreeDynamic(dendro = dendros[[blockNo]], 
                     distM = as.matrix(consTomDS), 
                     deepSplit = deepSplit,
                     cutHeight = detectCutHeight, minClusterSize = minModuleSize, 
@@ -1993,18 +2024,15 @@ blockwiseConsensusModules = function(multiExpr,
                     maxAbsCoreScatter = maxAbsCoreScatter, minAbsGap = minAbsGap,
                     minSplitHeight = minSplitHeight, minAbsSplitHeight = minAbsSplitHeight,
 
-                    externalBranchSplitFnc = if (useBranchEigennodeDissim)
-                                                branchSplitFnc else NULL, 
-                    minExternalSplit = minBranchEigennodeDissim,
-                    externalSplitOptions = list(multiExpr = mtd.subset(multiExpr.scaled.imputed,, block),
-                                                corFnc = corFnc, corOptions = corOptions,
-                                                consensusQuantile = consensusQuantile,
-                                                signed = networkType %in% c("signed", "signed hybrid")),
-                    externalSplitFncNeedsDistance = FALSE,
+                    externalBranchSplitFnc = branchSplitFnc, 
+                    minExternalSplit = minBranchDissimilarities,
+                    externalSplitOptions = externalSplitOptions,
+                    externalSplitFncNeedsDistance = externalSplitFncNeedsDistance,
+                    assumeSimpleExternalSpecification = FALSE,
 
                     pamStage = pamStage, pamRespectsDendro = pamRespectsDendro,
-                    #verbose = verbose, indent = indent + 2)
-                    verbose = verbose-3, indent = indent + 2), silent = TRUE);
+                    verbose = verbose-3, indent = indent + 2)
+                    #verbose = verbose-3, indent = indent + 2), silent = TRUE);
     if (verbose > 8)
     {
       print(table(blockLabels));
@@ -2308,7 +2336,21 @@ blockwiseConsensusModules = function(multiExpr,
 
   if (seedSaved) .Random.seed <<- savedSeed;
 
-  if (!saveTOMs) TOMFiles = NULL;
+  if (removeConsensusTOMOnExit) 
+  {
+    .checkAndDelete(consensusTOMInfo$TOMFiles);
+    consensusTOMInfo$TOMFiles = NULL;
+  }
+
+  if (removeIndividualTOMsOnExit)
+  {
+    .checkAndDelete(individualTOMInfo$actualTOMFileNames);
+    individualTOMInfo$actualTOMFileNames = NULL;
+  }
+
+  # Under no circumstances return consensus TOM or individual TOM similarities within the returned list.
+  consensusTOMInfo$consensusTOM = NULL;
+  individualTOMInfo$TOMSimilarities = NULL
 
   list(colors = mergedColors, 
        unmergedColors = colors,
@@ -2316,12 +2358,14 @@ blockwiseConsensusModules = function(multiExpr,
        goodSamples = gsg$goodSamples, 
        goodGenes = gsg$goodGenes, 
        dendrograms = dendros,
-       TOMFiles = TOMFiles,
+       TOMFiles = consensusTOMInfo$TOMFiles,
        blockGenes = individualTOMInfo$blockGenes,
        blocks = blocks,
-       originCount = originCount,
-       TOMScalingSamples = if (getTOMScalingSamples) TOMScalingSamples else NULL,
-       individualTOMInfo = individualTOMInfo
+       originCount = consensusTOMInfo$originCount,
+       networkCalibrationSamples = consensusTOMInfo$networkCalibrationSamples, 
+       individualTOMInfo = individualTOMInfo,
+       consensusTOMInfo = if (saveConsensusTOMs) consensusTOMInfo else NULL,
+       consensusQuantile = consensusQuantile
       )
 }
 

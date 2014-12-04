@@ -5,9 +5,9 @@
 Assume an imprecisely measured trait \code{y} that is related to  the true, unobserved trait yTRUE as follows yTRUE=y+noise where noise is assumed to have mean zero and a constant variance. Assume you have 1 or more surrogate markers for yTRUE corresponding to the columns of \code{datX}. The function implements several approaches for estimating yTRUE based on the inputs \code{y} and/or \code{datX}.
 }
 \usage{ TrueTrait(datX, y, datXtest=NULL, 
-        corFnc = "cor", corOptions = "use = 'pairwise.complete.obs'",
+        corFnc = "bicor", corOptions = "use = 'pairwise.complete.obs'",
         LeaveOneOut.CV=FALSE, skipMissingVariables=TRUE, 
-        addLinearModel=FALSE, Strata=NULL)
+        addLinearModel=FALSE)
 }
 \arguments{
   \item{datX}{ is a vector or data frame whose columns correspond to the surrogate markers (variables) for the true underlying trait. The number of rows of \code{datX} equals the number of observations, i.e. it should equal the length of \code{y} }
@@ -30,9 +30,7 @@ function can be specified using \code{corOptions}.}
 
 \item{addLinearModel}{logical. If TRUE then the function also estimates the true trait based on the predictions of the linear model \code{lm(y~., data=datX)} }
 
-\item{Strata}{vector whose length show equal the number of rows of \code{datX}. This vector allows one to specify subsets of observations (called strata or batches or independent data sets) to which the function should be applied. For example, if the observations were measured in different batches then one can apply the function to each individual batch of data. No estimates will be calculated for \code{Strata} components that equal \code{NA} or "exclude". }
 }
-
 \details{
 This R function implements formulas described in Klemera and Doubal  (2006). The assumptions underlying these formulas are described in Klemera et al. But briefly,
 the function provides several estimates of the true underlying trait under the following assumptions:

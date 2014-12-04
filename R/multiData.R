@@ -25,6 +25,15 @@ mtd.subset = function(multiData, rowIndex = NULL, colIndex = NULL, permissive = 
   {
     if (permissive)
       if (is.null(colIndex)) colIndex.1 = c(1:ncol(multiData[[set]]$data)) else colIndex.1 = colIndex;
+    if (is.character(colIndex.1))
+    { 
+      colIndex.1 = match(colIndex.1, colnames(multiData[[set]]$data));
+      n1 = length(colIndex.1)
+      if (any(is.na(colIndex.1)))
+        stop("Cannot match the following entries in 'colIndex' to column names in set ", set, ":\n",
+             paste( colIndex[is.na(colIndex.1)] [1:min(n1, 5)], collapse = ", "),
+             if (n1>5) ", ... [output truncated]" else "");
+    }
     out[[set]] = list(data = multiData[[set]]$data[rowIndex[[set]], colIndex.1, drop = drop]);
   }
   names(out) = names(multiData);
@@ -116,11 +125,12 @@ mtd.apply = function(
     {
       if (mdaVerbose > 0)
         printFlush(spaste(printSpaces, "mtd.apply: working on set ", set)); 
-      out[[set]]$data = FUN(multiData[[set]]$data, ...)
+      out[[set]] = list(data = FUN(multiData[[set]]$data, ...))
     } else
       out[set] = mdaExistingResults[set];
   }
 
+  names(out) = names(multiData);
 
   if (mdaSimplify) 
   {
@@ -197,6 +207,8 @@ mtd.applyToSubset = function(
     } else
        res[set] = mdaExistingResults[set];
   }
+
+  names(res) = names(multiData);
 
   if (mdaSimplify) 
   {

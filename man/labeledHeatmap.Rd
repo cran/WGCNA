@@ -75,7 +75,8 @@ the range of the x and y axis. }
 
   \item{naColor}{ color to be used for encoding missing data. }
 
-  \item{textMatrix}{ optional matrix of text entries of the same dimensions as \code{Matrix}. }
+  \item{textMatrix}{ optional text entries for each cell. Either a matrix of the same dimensions as
+\code{Matrix} or a vector of the same length as the number of entries in \code{Matrix}. }
 
   \item{cex.text}{ character expansion factor for \code{textMatrix}. }
 
