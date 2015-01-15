@@ -4496,6 +4496,14 @@ networkScreening = function(
   Vector[ind];
   #Vector
 }
+
+.extend = function(x, n)
+{
+  nRep = ceiling(n/length(x));
+  rep(x, nRep)[1:n];
+}
+
+
   
 #--------------------------------------------------------------------------
 #
@@ -4511,31 +4519,52 @@ networkScreening = function(
 # The x,yLabels are expected to have the form "..color" as in "MEgrey" or "PCturquoise".
 # xSymbol, ySymbols are additional markers that can be placed next to color labels
 
-labeledHeatmap = function (Matrix, xLabels, yLabels = NULL, 
-                           xSymbols = NULL, ySymbols = NULL, 
-                           colorLabels = NULL, 
-                           xColorLabels = FALSE, yColorLabels = FALSE,
-                           checkColorsValid = TRUE,
-                           invertColors = FALSE, 
-                           setStdMargins = TRUE,
-                           xLabelsPosition = "bottom",
-                           xLabelsAngle = 45,
-                           xLabelsAdj = 1,
-                           xColorWidth = 0.05,
-                           yColorWidth = 0.05,
-                           colors = NULL, 
-                           naColor = "grey",
-                           textMatrix = NULL, cex.text = NULL, cex.lab = NULL, 
-                           cex.lab.x = cex.lab,
-                           cex.lab.y = cex.lab,
-                           colors.lab.x = 1,
-                           colors.lab.y = 1,
-                           plotLegend = TRUE, ... ) 
+labeledHeatmap = function (
+  Matrix, 
+  xLabels, yLabels = NULL, 
+  xSymbols = NULL, ySymbols = NULL, 
+  colorLabels = NULL, 
+  xColorLabels = FALSE, yColorLabels = FALSE,
+  checkColorsValid = TRUE,
+  invertColors = FALSE, 
+  setStdMargins = TRUE,
+  xLabelsPosition = "bottom",
+  xLabelsAngle = 45,
+  xLabelsAdj = 1,
+  xColorWidth = 0.05,
+  yColorWidth = 0.05,
+  # Content of heatmap
+  colors = NULL, 
+  naColor = "grey",
+  textMatrix = NULL, cex.text = NULL, cex.lab = NULL, 
+  cex.lab.x = cex.lab,
+  cex.lab.y = cex.lab,
+  colors.lab.x = 1,
+  colors.lab.y = 1,
+  bg.lab.x = NULL,
+  bg.lab.y = NULL,
+  plotLegend = TRUE, 
+  # Separator line specification                   
+  verticalSeparator.x = NULL,
+  verticalSeparator.col = 1,  
+  verticalSeparator.lty = 1,
+  verticalSeparator.lwd = 1,
+  verticalSeparator.ext = 0,
+
+  horizontalSeparator.y = NULL,
+  horizontalSeparator.col = 1,  
+  horizontalSeparator.lty = 1,
+  horizontalSeparator.lwd = 1,
+  horizontalSeparator.ext = 0,
+  ... ) 
 {
   if (!is.null(colorLabels)) {xColorLabels = colorLabels; yColorLabels = colorLabels; }
   
   if (is.null(yLabels) & (!is.null(xLabels)) & (dim(Matrix)[1]==dim(Matrix)[2])) 
     yLabels = xLabels; 
+
+  nCols = ncol(Matrix);
+  nRows = nrow(Matrix);
 
   if (checkColorsValid)
   {
@@ -4569,7 +4598,7 @@ labeledHeatmap = function (Matrix, xLabels, yLabels = NULL,
   if (is.null(colors)) colors = heat.colors(30);
   if (invertColors) colors = .reverseVector(colors);
   labPos = .heatmapWithLegend(Matrix, signed = FALSE, colors = colors, naColor = naColor, cex.legend = cex.lab, 
-                              plotLegend = plotLegend, ...)
+                              plotLegend = plotLegend,  ...)
   #if (plotLegend)
   #{
   #  image.plot(t(.reverseRows(Matrix)), xaxt = "n", xlab="", yaxt="n", ylab="", col=colors, ...);
@@ -4580,6 +4609,10 @@ labeledHeatmap = function (Matrix, xLabels, yLabels = NULL,
   plotbox = labPos$box;
   xmin = plotbox[1]; xmax = plotbox[2]; ymin = plotbox[3]; yrange = plotbox[4]-ymin;
   ymax = plotbox[4]; xrange = xmax - xmin;
+  xLeft = labPos$xLeft;
+  xRight = labPos$xRight;
+  yTop = labPos$yTop;
+  yBot = labPos$yBot;
 
   xspacing = labPos$xMid[2] - labPos$xMid[1];
   yspacing = abs(labPos$yMid[2] - labPos$yMid[1]);
@@ -4590,6 +4623,65 @@ labeledHeatmap = function (Matrix, xLabels, yLabels = NULL,
   # Transform fractional widths into coordinate widths
   xColW = min(xmax - xmin, ymax - ymin) * xColorWidth;
   yColW = min(xmax - xmin, ymax - ymin) * yColorWidth;
+
+  if (any(xValidColors)) offsety = offsety + xColW;
+  if (any(yValidColors)) offsetx = offsetx + yColW;
+
+  # Create the background for column and row labels.
+
+  extension.left = par("mai")[2] * # left margin width in inches
+                   par("cxy")[1] / par("cin")[1]   # charcter size in user corrdinates/character size in inches
+
+  extension.bottom = par("mai")[1] * 
+                   par("cxy")[2] / par("cin")[2]- # charcter size in user corrdinates/character size in inches
+                      offsety   
+                     
+  extension.top = par("mai")[3] * 
+                   par("cxy")[2] / par("cin")[2]-   # charcter size in user corrdinates/character size in inches
+                     offsety
+
+  if (!is.null(bg.lab.x))
+  {
+    bg.lab.x = .extend(bg.lab.x, nCols);
+    if (xLabPos==1)
+    {
+      y0 = ymin;
+      ext = extension.bottom;
+      sign = 1;
+    } else {
+      y0 = ymax;
+      ext = extension.top;
+      sign = -1;
+    }
+    figureDims = par("fin");
+    angle = xLabelsAngle/180*pi;
+    ratio = figureDims[1]/figureDims[2] * yrange/xrange;
+    ext.x = -sign * extension.bottom * tan(angle)/ratio;
+    ext.y = sign * extension.bottom * sign(cos(angle))
+    for (c in 1:nCols)
+       polygon(x = c(xLeft[c], xLeft[c], xLeft[c] + ext.x, xRight[c] + ext.x, xRight[c], xRight[c]),
+               y = c(y0, y0-sign*offsety, y0-sign*offsety - ext.y, y0-sign*offsety - ext.y, 
+                     y0-sign*offsety, y0), 
+               border = bg.lab.x[c], col = bg.lab.x[c], xpd = TRUE);
+  }
+
+  if (!is.null(bg.lab.y))
+  {
+    bg.lab.y = .extend(bg.lab.y, nCols);
+    reverseRows = TRUE;
+    if (reverseRows)
+    {
+      bg.lab.y = rev(bg.lab.y);
+    }
+    for (r in 1:nRows)
+      rect(xmin-extension.left, yBot[r], xmin, yTop[r],
+           col = bg.lab.y[r], border = bg.lab.y[r], xpd = TRUE);
+  }
+
+
+  
+
+  # Write out labels
   if (sum(!xValidColors)>0)
   {
     xLabYPos = ifelse(xLabPos==1, ymin - offsety, ymax + offsety)
@@ -4599,7 +4691,7 @@ labeledHeatmap = function (Matrix, xLabels, yLabels = NULL,
   }
   if (sum(xValidColors)>0)
   {
-    baseY = ifelse(xLabPos==1, ymin-offsety-xColW, ymax + offsety + xColW);
+    baseY = ifelse(xLabPos==1, ymin-offsety, ymax + offsety);
     deltaY = ifelse(xLabPos==1, xColW, -xColW);
     rect(xleft = labPos$xMid[xColorLabInd] - xspacing/2, ybottom = baseY,
          xright = labPos$xMid[xColorLabInd] + xspacing/2, ytop = baseY + deltaY,
@@ -4618,14 +4710,70 @@ labeledHeatmap = function (Matrix, xLabels, yLabels = NULL,
   } 
   if (sum(yValidColors)>0)
   {
-    rect(xleft = xmin- yColW - offsetx, ybottom = labPos$yMid[yColorLabInd] - yspacing/2,
-         xright = xmin- offsetx, ytop = labPos$yMid[yColorLabInd] + yspacing/2, 
+    rect(xleft = xmin- offsetx, ybottom = labPos$yMid[yColorLabInd] - yspacing/2,
+         xright = xmin- offsetx+yColW, ytop = labPos$yMid[yColorLabInd] + yspacing/2, 
          density = -1,  col = substring(yLabels[yColorLabInd], 3), 
          border = substring(yLabels[yColorLabInd], 3), xpd = TRUE)
     if (!is.null(ySymbols))
-      text (xmin- yColW - 2*offsetx, 
+      text (xmin+ yColW - 2*offsetx, 
             labPos$yMid[yColorLabInd], ySymbols[yColorLabInd], 
             adj = c(1, 0.5), xpd = TRUE, cex = cex.lab.y, col = colors.lab.y);
+  }
+
+  # Draw separator lines, if requested
+
+  if (!is.null(verticalSeparator.x))
+  {
+    nLines = length(verticalSeparator.x);
+    vs.col = .extend(verticalSeparator.col, nLines);
+    vs.lty = .extend(verticalSeparator.lty, nLines);
+    vs.lwd = .extend(verticalSeparator.lwd, nLines);
+    vs.ext = .extend(verticalSeparator.ext, nLines);
+    if (any(verticalSeparator.x < 0 | verticalSeparator.x > nCols))
+      stop("If given. 'verticalSeparator.x' must all be between 0 and the number of columns.");
+    x.lines = ifelse(verticalSeparator.x>0, labPos$xRight[verticalSeparator.x], labPos$xLeft[1]);
+    for (l in 1:nLines)
+      lines(rep(x.lines[l], 2), c(ymin, ymax), col = vs.col[l], lty = vs.lty[l], lwd = vs.lwd[l]);
+
+    angle = xLabelsAngle/180*pi;
+    if (xLabelsPosition =="bottom") 
+    {
+      sign = 1;
+      y0 = ymin;
+    } else {
+      sign = -1;
+      y0 = ymax;
+    }
+    figureDims = par("fin");
+    ratio = figureDims[1]/figureDims[2] * yrange/xrange;
+    ext.x = -sign * extension.bottom * tan(angle)/ratio;
+    ext.y = sign * extension.bottom * sign(cos(angle))
+    for (l in 1:nLines)
+         lines(c(x.lines[l], x.lines[l], x.lines[l] + vs.ext * ext.x), 
+               c(y0, y0-sign*offsety, y0-sign*offsety - vs.ext * ext.y),  
+                 col = vs.col[l], lty = vs.lty[l], lwd = vs.lwd[l], xpd = TRUE);
+  }
+
+  if (!is.null(horizontalSeparator.y))
+  {
+    if (any(horizontalSeparator.y < 0 | horizontalSeparator.y > nRows))
+      stop("If given. 'horizontalSeparator.y' must all be between 0 and the number of rows.");
+    reverseRows = TRUE;
+    if (reverseRows) 
+    {
+      horizontalSeparator.y = nRows - horizontalSeparator.y+1;
+      y.lines = ifelse( horizontalSeparator.y <=nRows, labPos$yBot[horizontalSeparator.y], labPos$yTop[nRows]);
+    } else {
+      y.lines = ifelse( horizontalSeparator.y > 0, labPos$yBot[horizontalSeparator.y], labPos$yTop[1]);
+    }
+    nLines = length(horizontalSeparator.y);
+    vs.col = .extend(horizontalSeparator.col, nLines);
+    vs.lty = .extend(horizontalSeparator.lty, nLines);
+    vs.lwd = .extend(horizontalSeparator.lwd, nLines);
+    vs.ext = .extend(horizontalSeparator.ext, nLines);
+    for (l in 1:nLines)
+      lines(c(xmin-vs.ext[l]*extension.left, xmax), rep(y.lines[l], 2), 
+            col = vs.col[l], lty = vs.lty[l], lwd = vs.lwd[l], xpd = TRUE);
   }
 
   if (!is.null(textMatrix))
@@ -4860,10 +5008,12 @@ redWhiteGreen = function(n, gamma = 1)
 #
 #======================================================================================================
 
-blueWhiteRed = function(n, gamma = 1)
+blueWhiteRed = function(n, gamma = 1, endSaturation = 1)
 {
-  blueEnd = c(0.05, 0.55, 1.00);
-  redEnd = c(1.0, 0.2, 0);
+  if (endSaturation >1  | endSaturation < 0) stop("'endSaturation' must be between 0 and 1.");
+  es = 1-endSaturation;
+  blueEnd = c(0.05 + es * 0.45 , 0.55 + es * 0.25, 1.00);
+  redEnd = c(1.0, 0.2 + es * 0.6, 0.6*es);
   middle = c(1,1,1);
 
   half = as.integer(n/2);

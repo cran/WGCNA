@@ -5,11 +5,13 @@
   Generate a blue-white-red color sequence of a given length.
 }
 \usage{
-blueWhiteRed(n, gamma = 1)
+blueWhiteRed(n, gamma = 1, endSaturation = 1)
 }
 \arguments{
-  \item{n}{ number of colors to be returned }
-  \item{gamma}{ color change power }
+  \item{n}{ number of colors to be returned. }
+  \item{gamma}{ color change power. }
+  \item{endSaturation}{ a number between 0 and 1 giving the saturation of the colors that will represent the
+ends of the scale. Lower numbers mean less saturation (lighter colors).}
 }
 \details{
   The function returns a color vector that starts with blue, gradually turns into white and then to

@@ -1,11 +1,11 @@
-96694ec6f2a1219b46339d373e3281f0 *Changelog
-4297eebe529a61410593b28a9d8da4c1 *DESCRIPTION
-b276a676b324a8ce4b09833d1fdb16ea *NAMESPACE
+dc35795cfef889b7259ea837923ca70f *Changelog
+57c67fe5dafa1e417e6888736392acc0 *DESCRIPTION
+e3ef9d97b88d8e1fe3969a8882d4152a *NAMESPACE
 2640fb7286cab45b6de425c01109f80e *R/AFcorMI.R
 ea14a2a861b238bbb31d9f54117b7fdb *R/Functions-fromSimilarity.R
 f0a23a7cf2d4b05f06b2b1dbe29eeb21 *R/Functions-multiData.R
-a494bb25d694ca1c586e27bff3eccb37 *R/Functions.R
-9edd98a98d6b3a68b04d044534e3c3cb *R/GOenrichmentAnalysis.R
+884e2c07495bd75fe52625f0458e27bc *R/Functions.R
+bb535d83a367bb2dd829521fe1767e7e *R/GOenrichmentAnalysis.R
 a741dd19796b763560aba5d13f00fc48 *R/TrueTrait.R
 3747f2e4a71105d8e3ac4c54914b6bd4 *R/accuracyMeasures.R
 6694f89a89e904eb1bc90d28cf28fc37 *R/adjacency.polyReg.R
@@ -24,7 +24,7 @@ c098bc97e04a191c1ffb419ab71b7209 *R/corFunctions.R
 f5dfb236765806a3eb39bd028bff071b *R/coxRegressionResiduals.R
 aa9c7ff1a228742079e2cbd4a1f4c28e *R/dendrogramAdjustmentFunctions.R
 7b754c1d2485ab9d7766ad6f76530059 *R/exportFunctions.R
-38fa0441451832fc5cccee2cc69d2f16 *R/heatmapWithLegend.R
+0392b9d698ef950196bb9315f1b66868 *R/heatmapWithLegend.R
 56b90422530e57a60e3806324b27a1bc *R/internalConstants.R
 da2729744a42bda91cc02ddf3714a612 *R/kMEcomparisonScatterplot.R
 11de7ae02e23f7e0b8fb1881cbcc214b *R/labelPoints.R
@@ -72,7 +72,7 @@ a1c383c7c833d5d3e336f02b5fead2f6 *man/SCsLists.Rd
 674cff64a1778713173951060078736c *man/TOMsimilarity.Rd
 502131e33c1e9b1c66d48d90aba59b22 *man/TOMsimilarityFromExpr.Rd
 21b9aa92bf787c203518a52b9fc4c486 *man/TrueTrait.Rd
-2b99a169a6f0a11ea062f4cd6ec28c34 *man/WGCNA-package.Rd
+113de1176529c9f699d9fe1e463c7911 *man/WGCNA-package.Rd
 f3daf1abc96634906122136454ee140b *man/accuracyMeasures.Rd
 051b9a0b6e3d224367101ae392fdee22 *man/addErrorBars.Rd
 2703e1c680bae62e4c5aaecdcfbbd424 *man/addGrid.Rd
@@ -92,7 +92,7 @@ d8d457ca480b2835dabeffbf989e3ed7 *man/blockSize.Rd
 a82be81f4dd38ef3e0789c03adbfca01 *man/blockwiseConsensusModules.Rd
 788891a638b282238cf9721f963278b0 *man/blockwiseIndividualTOMs.Rd
 b0f55206901f2e3864843479b420b5c1 *man/blockwiseModules.Rd
-7de45e730f52e3ea215e128fc0831e32 *man/blueWhiteRed.Rd
+14bb292cc65cc5a633416667c939a390 *man/blueWhiteRed.Rd
 6c77cf6c04f40696f0a0c508cc0a8c14 *man/branchEigengeneDissim.Rd
 bffaf7af5a6432a63c4d5513d71aef5d *man/branchSplit.Rd
 816a353ce3eab35ade1dab4755fb16d6 *man/branchSplit.dissim.Rd
@@ -148,7 +148,7 @@ e4481641ca0ff1c2a648e3427f60ca2e *man/kMEcomparisonScatterplot.Rd
 367c8efa7aff57c91f508f4d6993ee0c *man/keepCommonProbes.Rd
 70afd1e950798cbea0cad4cf6efcd89c *man/labelPoints.Rd
 4ed4ad8fb3eefb8fb3ebc018d50f24c1 *man/labeledBarplot.Rd
-7eebd459873ec68938bc5ba859a4cf5e *man/labeledHeatmap.Rd
+062da06775f3255f5f6814bdf1a18b25 *man/labeledHeatmap.Rd
 458929d8c85dd459e52091baf5f1b1bd *man/labeledHeatmap.multiPage.Rd
 4bbe76c64e465dd5d480f649370d8c31 *man/labels2colors.Rd
 7fc163ef52818f5539648901398c4449 *man/list2multiData.Rd

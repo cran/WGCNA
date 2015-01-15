@@ -124,7 +124,7 @@ GOenrichmentAnalysis = function(labels, entrezCodes,
       mapped_genes = as.character(do.call(match.fun("mappedkeys"), list(egGO)));
       encodes2mapped = match(as.character(entrezCodes), mapped_genes);
    } else {
-      mapped_genes = as.numeric(as.character(match.fun("mappedkeys"), list(egGO)));
+      mapped_genes = as.numeric(as.character(do.call(match.fun("mappedkeys"), list(egGO))));
       encodes2mapped = match(as.numeric(entrezCodes), mapped_genes);
    }
    encMapped = is.finite(encodes2mapped);
@@ -142,9 +142,7 @@ GOenrichmentAnalysis = function(labels, entrezCodes,
                                            reverseMap[orgInd],")", sep = "")));
    nTerms = length(Go2eg);
 
-   goInfo = eval(parse(text = "AnnotationDbi::as.list(GO.db:::GOTERM)"));
-   GOID = match.fun(spaste("GO.db:", ":", ":Ontology"));
-   Ontology = match.fun(spaste("GO.db:", ":", ":Ontology"));
+   goInfo = as.list(GO.db::GOTERM);
    if (length(goInfo) > 0)
    {
       orgGoNames = names(Go2eg);
@@ -156,9 +154,9 @@ GOenrichmentAnalysis = function(labels, entrezCodes,
    goOffSpr = list();
    if (includeOffspring)
    {
-     goOffSpr[[1]] = eval(parse(text = "AnnotationDbi::as.list(GO.db:::GOBPOFFSPRING)"));
-     goOffSpr[[2]] = eval(parse(text = "AnnotationDbi::as.list(GO.db:::GOCCOFFSPRING)"));
-     goOffSpr[[3]] = eval(parse(text = "AnnotationDbi::as.list(GO.db:::GOMFOFFSPRING)"));
+     goOffSpr[[1]] = as.list(GOBPOFFSPRING);
+     goOffSpr[[2]] = as.list(GOCCOFFSPRING);
+     goOffSpr[[3]] = as.list(GOMFOFFSPRING);
    }
    term2info = match(names(Go2eg), names(goInfo));
    termOntologies = dbGoOntologies[term2info];

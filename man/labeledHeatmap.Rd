@@ -27,7 +27,24 @@ labeledHeatmap(
   cex.lab.y = cex.lab,
   colors.lab.x = 1,
   colors.lab.y = 1,
-  plotLegend = TRUE, ...)
+  bg.lab.x = NULL,
+  bg.lab.y = NULL,
+
+  plotLegend = TRUE, 
+
+  # Separator line specification                   
+  verticalSeparator.x = NULL,
+  verticalSeparator.col = 1,
+  verticalSeparator.lty = 1,
+  verticalSeparator.lwd = 1,
+  verticalSeparator.ext = 0,
+
+  horizontalSeparator.y = NULL,
+  horizontalSeparator.col = 1,
+  horizontalSeparator.lty = 1,
+  horizontalSeparator.lwd = 1,
+  horizontalSeparator.ext = 0,
+  ...)
 }
 \arguments{
   \item{Matrix}{ numerical matrix to be plotted in the heatmap. }
@@ -92,7 +109,28 @@ above. }
 
   \item{colors.lab.y}{colors for character labels or symbols along y axis.} 
 
+  \item{bg.lab.x}{background color for the margin along the x axis.}
+  \item{bg.lab.y}{background color for the margin along the y axs.}
+
+
   \item{plotLegend}{ logical: should a color legend be plotted? }
+
+  \item{verticalSeparator.x}{indices of columns after which separator lines (vertical lines between columns) 
+      should be drawn. \code{NULL} means no lines will be drawn.}
+  \item{verticalSeparator.col}{color(s) of the vertical separator lines. Recycled if need be. }
+  \item{verticalSeparator.lty}{line type of the vertical separator lines. Recycled if need be. }
+  \item{verticalSeparator.lwd}{line width of the vertical separator lines. Recycled if need be. }
+  \item{verticalSeparator.ext}{number giving the extension of the separator line into the margin as a fraction
+of the margin width. 0 means no extension, 1 means extend all the way through the margin. }
+
+  \item{horizontalSeparator.y}{indices of columns after which separator lines (horizontal lines between columns) 
+      should be drawn. \code{NULL} means no lines will be drawn.}
+  \item{horizontalSeparator.col}{ color(s) of the horizontal separator lines. Recycled if need be. }
+  \item{horizontalSeparator.lty}{line type of the horizontal separator lines. Recycled if need be. }
+  \item{horizontalSeparator.lwd}{line width of the horizontal separator lines. Recycled if need be. }
+  \item{horizontalSeparator.ext}{number giving the extension of the separator line into the margin as a
+fraction 
+of the margin width. 0 means no extension, 1 means extend all the way through the margin. }
 
   \item{\dots}{ other arguments to function \code{\link{heatmap}}. }
 }

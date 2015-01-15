@@ -2,7 +2,7 @@ useDynLib(WGCNA)
 
 exportPattern("^[^\\.]")
 
-import(foreach, doParallel, dynamicTreeCut, fastcluster)
+import(foreach, doParallel, dynamicTreeCut, fastcluster, GO.db, AnnotationDbi)
 importFrom(survival, is.Surv, coxph, Surv)
 importFrom(parallel, stopCluster)
 #importFrom(AnnotationDbi, mappedkeys)

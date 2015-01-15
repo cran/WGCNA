@@ -1,5 +1,20 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
+
+2015/01/15: 1.43
+
+	. Package now imports AnnotationDbi and GO.db
+
+	. Function blueWhiteRed gains argument endSaturation that allows the
+	  user to lighten the colors at the end of the range, at the expense of
+	  saturation.
+
+	. Function labeledHeatmap gains additional arguments allowing the user
+	  to place horizontal and vertical divider lines into the heatmap.
+
+	. Bugs introduced into GOenrichmentAnalysis in the previous release
+	  are now fixed.  
+
 2014/11/25: 1.42
 
 	. Function TrueTrait has been re-worked and the argument Strata to it
