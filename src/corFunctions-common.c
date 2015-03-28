@@ -36,7 +36,7 @@
 // Here I first put all NAs to the end, then call the pivot function to find the median of the remaining
 // (finite) entries.
 
-double median(double * x, int n, int copy, int * err)
+double median(double * x, size_t n, int copy, int * err)
 {
   double * xx, res;
   if (copy)
@@ -54,22 +54,26 @@ double median(double * x, int n, int copy, int * err)
     
   *err = 0;
   // Put all NA's at the end.
-  int bound = n-1;
-  for (int i=n-1; i>=0; i--) if (ISNAN(xx[i]))
+  size_t bound = n;
+  for (size_t i=n; i>0; ) 
   {
-     xx[i] = xx[bound];
-     xx[bound] = NA_REAL;
-     bound--;
+    i--;
+    if (ISNAN(xx[i]))
+    {
+       bound--;
+       xx[i] = xx[bound];
+       xx[bound] = NA_REAL;
+    }
   }
 
   // Rprintf("Median: n: %d, bound: %d\n", n, bound);
   // Any non-NA's left?
 
-  if (bound<0)
+  if (bound==0)
     res = NA_REAL;
   else 
   // yes, return the appropriate pivot. 
-    res = pivot(xx, bound+1, ( 1.0 * bound)/2);
+    res = pivot(xx, bound, ( 1.0 * (bound-1))/2);
 
   if (copy) free(xx);
 
@@ -89,7 +93,7 @@ double median(double * x, int n, int copy, int * err)
 
 // q is the quantile: 1/2 will give exactly the median above.
 
-double quantile(double * x, int n, double q, int copy, int * err)
+double quantile(double * x, size_t n, double q, int copy, int * err)
 {
   double * xx;
   double res;
@@ -109,22 +113,26 @@ double quantile(double * x, int n, double q, int copy, int * err)
     
   *err = 0;
   // Put all NA's at the end.
-  int bound = n-1;
-  for (int i=n-1; i>=0; i--) if (ISNAN(xx[i]))
+  size_t bound = n;
+  for (size_t i=n; i>0; ) 
   {
-     xx[i] = xx[bound];
-     xx[bound] = NA_REAL;
-     bound--;
+    i--;
+    if (ISNAN(xx[i]))
+    {
+       bound--;
+       xx[i] = xx[bound];
+       xx[bound] = NA_REAL;
+    }
   }
 
   // Rprintf("Quantile: q: %f, n: %d, bound: %d\n", q, n, bound);
   // Any non-NA's left?
 
-  if (bound<0)
+  if (bound==0)
     res = NA_REAL;
   else
   // yes, return the appropriate pivot. 
-    res = pivot(xx, bound+1, ( 1.0 * bound)*q);
+    res = pivot(xx, bound, ( 1.0 * (bound-1))*q);
 
   if (copy) free(xx);
 
@@ -144,7 +152,7 @@ double quantile(double * x, int n, double q, int copy, int * err)
 void testMedian(double *x, int * n, double * res)
 {
   int err;
-  *res = median(x, *n, 0, &err);
+  *res = median(x, (size_t) *n, 0, &err);
 } 
 
 /*==========================================================================================
@@ -157,7 +165,7 @@ void testMedian(double *x, int * n, double * res)
 void testQuantile(double *x, int *n, double *q, double *res)
 {
   int err;
-  *res = quantile(x, *n, *q, 0, &err);
+  *res = quantile(x, (size_t) *n, *q, 0, &err);
 } 
 
 
@@ -180,9 +188,9 @@ void testQuantile(double *x, int *n, double *q, double *res)
 
 // In this case: Pearson pre-calculation entails normalizing columns by mean and variance. 
 
-void prepareColBicor(double * col, int nr, double maxPOutliers, int fallback,
+void prepareColBicor(double * col, size_t nr, double maxPOutliers, int fallback,
                      int cosine,
-                     double * res, int * nNAentries, 
+                     double * res, size_t * nNAentries, 
                      int * NAmed, volatile int * zeroMAD,
                      double * aux, double * aux2)
 {
@@ -213,11 +221,11 @@ void prepareColBicor(double * col, int nr, double maxPOutliers, int fallback,
   if (ISNAN(med))
   {
     *NAmed = 1;
-    for (int k=0; k<nr; k++) *(res + k) = 0;
+    for (size_t k=0; k<nr; k++) *(res + k) = 0;
   } else {
     *NAmed = 0;
     *nNAentries = 0;
-    for (int k=0; k<nr; k++)
+    for (size_t k=0; k<nr; k++)
       if (ISNAN(col[k]))
       {
         (*nNAentries)++;
@@ -240,7 +248,7 @@ void prepareColBicor(double * col, int nr, double maxPOutliers, int fallback,
           case 1: 
           {
              // Return after zeoring out results and setting the NAmed flag
-             for (int k=0; k<nr; k++) res[k] = 0;
+             for (size_t k=0; k<nr; k++) res[k] = 0;
              *NAmed = 1;
              return;
           }
@@ -259,7 +267,7 @@ void prepareColBicor(double * col, int nr, double maxPOutliers, int fallback,
     // Rprintf("median: %6.4f, mad: %6.4f, cosine: %d\n", med, mad, cosine);
 
     double denom = 9.0 * mad;
-    for (int k=0; k<nr; k++)
+    for (size_t k=0; k<nr; k++)
       if (!ISNAN(col[k]))
         aux[k] = (col[k] - med) / denom;
       else
@@ -280,7 +288,7 @@ void prepareColBicor(double * col, int nr, double maxPOutliers, int fallback,
     if (hiQ < RefUX) hiQ = RefUX;
     lowQ = fabs(lowQ);
 
-    for (int k=0; k<nr; k++) if (!ISNAN(aux[k]))
+    for (size_t k=0; k<nr; k++) if (!ISNAN(aux[k]))
     {
       if (aux[k] < 0)
         aux[k] = aux[k] * RefUX / lowQ;
@@ -291,7 +299,7 @@ void prepareColBicor(double * col, int nr, double maxPOutliers, int fallback,
     // Calculate the (1-ux^2)^2 * (x-median(x)) 
 
     LDOUBLE sum = 0;
-    for (int k=0; k<nr; k++)
+    for (size_t k=0; k<nr; k++)
       if (!ISNAN(res[k]))
       {
         double ux = aux[k];
@@ -304,11 +312,11 @@ void prepareColBicor(double * col, int nr, double maxPOutliers, int fallback,
     sum = sqrtl(sum);
     if (sum==0)
     {
-       for (int k=0; k<nr; k++)
+       for (size_t k=0; k<nr; k++)
           res[k] = 0;
        *NAmed = 1;
     } else {
-       for (int k=0; k<nr; k++)
+       for (size_t k=0; k<nr; k++)
           res[k] = res[k] / sum;
     }
   }
@@ -324,12 +332,12 @@ void prepareColBicor(double * col, int nr, double maxPOutliers, int fallback,
 // and when bicor is called with robustsX or robustY = 0
 // if cosine is not zero, the cosine correlation will be calculated.
 
-void prepareColCor(double * x, int nr, int cosine, double * res, int * nNAentries, int * NAmean)
+void prepareColCor(double * x, size_t nr, int cosine, double * res, size_t * nNAentries, int * NAmean)
 {
   *nNAentries = 0;
-  int count = 0;
+  size_t count = 0;
   LDOUBLE mean = 0, sum = 0;
-  for (int k = 0; k < nr; k++)
+  for (size_t k = 0; k < nr; k++)
     if (!ISNAN(x[k]))
     {
       mean += x[k];
@@ -345,7 +353,7 @@ void prepareColCor(double * x, int nr, int cosine, double * res, int * nNAentrie
     if (sum > 0)
     {
       // Rprintf("sum: %Le\n", sum);
-       for (int k=0; k<nr; k++)
+       for (size_t k=0; k<nr; k++)
          if (!ISNAN(x[k]))
             res[k] = (x[k] - mean)/sum;
          else
@@ -353,12 +361,12 @@ void prepareColCor(double * x, int nr, int cosine, double * res, int * nNAentrie
     } else {
        // Rprintf("prepareColCor: have zero variance.\n");
        *NAmean = 1;
-       for (int k=0; k<nr; k++) res[k] = 0;
+       for (size_t k=0; k<nr; k++) res[k] = 0;
     }
   } else {
     *NAmean = 1;
     *nNAentries = nr;
-    for (int k=0; k<nr; k++)
+    for (size_t k=0; k<nr; k++)
        res[k] = 0;
   }
 }

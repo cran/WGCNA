@@ -19,10 +19,14 @@ labeledHeatmap(
   xLabelsAdj = 1,
   xColorWidth = 0.05,
   yColorWidth = 0.05,
+  xColorOffset = par("cxy")[1]/3,
+  yColorOffset = par("cxy")[2]/3,
   colors = NULL, 
   naColor = "grey",
   textMatrix = NULL, 
-  cex.text = NULL, cex.lab = NULL, 
+  cex.text = NULL, 
+  textAdj = c(0.5, 0.5),
+  cex.lab = NULL, 
   cex.lab.x = cex.lab,
   cex.lab.y = cex.lab,
   colors.lab.x = 1,
@@ -31,6 +35,7 @@ labeledHeatmap(
   bg.lab.y = NULL,
 
   plotLegend = TRUE, 
+  keepLegendSpace = plotLegend,
 
   # Separator line specification                   
   verticalSeparator.x = NULL,
@@ -88,6 +93,9 @@ the range of the x and y axis. }
   \item{yColorWidth}{ width of the color labels for the y axis expressed as a fraction of the smaller of
 the range of the x and y axis. }
 
+  \item{xColorOffset}{ gap between the y axis and color labels as a fraction of the range of x axis. }
+  \item{yColorOffset}{ gap between the x axis and color labels as a fraction of the range of y axis. }
+
   \item{colors}{ color pallette to be used in the heatmap. Defaults to \code{\link{heat.colors}}. }
 
   \item{naColor}{ color to be used for encoding missing data. }
@@ -96,6 +104,9 @@ the range of the x and y axis. }
 \code{Matrix} or a vector of the same length as the number of entries in \code{Matrix}. }
 
   \item{cex.text}{ character expansion factor for \code{textMatrix}. }
+
+  \item{textAdj}{Adjustment for the entries in the text matrix. See the \code{adj} argument to
+\code{\link{text}}.}
 
   \item{cex.lab}{ character expansion factor for text labels labeling the axes. }
 
@@ -114,6 +125,8 @@ above. }
 
 
   \item{plotLegend}{ logical: should a color legend be plotted? }
+  \item{keepLegendSpace}{ logical: if the color legend is not drawn, should the space be left empty
+(\code{TRUE}), or should the heatmap fill the space (\code{FALSE})?}
 
   \item{verticalSeparator.x}{indices of columns after which separator lines (vertical lines between columns) 
       should be drawn. \code{NULL} means no lines will be drawn.}

@@ -1,6 +1,39 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
 
+2015/03/28: 1.46
+
+	. Functions inherited from the now-defunct package sma have been
+	  removed.
+
+2015/03/27: 1.45
+
+	. New function empiricalBayesLM for removing unwanted variation due to
+	  given covariates from high-dimensional data
+	. New function bicovWeights for assigning weights to observations
+	  based on whether they are suspected outliers
+	. labeledHeatmap and friends now accept argument keepLegendSpace
+	. labeledHeatmap now returns information about positions of individual
+	  boxes in the heatmap.
+	. labeledHeatmap now accepts argumens xColorOffset and yColorOffset
+	  controling the gap between color labels and the heatmap itself.
+
+2015/02/06: 1.43-11
+
+	. Bugfix in C code fixes memory allocation errors with large data
+	  sets. The C code was also made more consistent in the use of 
+	  size_t whenever needed and possible.
+
+	. Bugfix in labeledHeatmap fixes the direction of extended separator
+	  lines for x-axis labels with angle other than the default 45
+	  degrees.
+
+2015/01/23: 1.43-10
+
+	. Bugfix in function blockwiseIndividualTOMs and functions that use it
+	  (blockwiseConsensusModules, consensusTOM) fixes a bug that caused
+	  crashes when more than one blocks were used.
+
 2015/01/15: 1.43
 
 	. Package now imports AnnotationDbi and GO.db

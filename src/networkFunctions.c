@@ -322,7 +322,7 @@ void tomSimilarity(double * expr, int * nSamples, int * nGenes,
   double 	* adj;
 
   int		ng = *nGenes, ns = *nSamples;
-  int 		matSize = ng * ng;
+  size_t	matSize = ( (size_t)ng) * ( (size_t) ng);
 
   int 		err = 0;
 

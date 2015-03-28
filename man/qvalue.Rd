@@ -64,8 +64,6 @@ Our copy does not require Tcl/Tk.}
   conservative point estimation, and simultaneous conservative
   consistency of false discovery rates: A unified approach. Journal of
   the Royal Statistical Society, Series B, 66: 187-205.
-  
-  QVALUE Manual \url{http://faculty.washington.edu/~jstorey/qvalue/manual.pdf}
 }
 \author{John D. Storey \email{jstorey@u.washington.edu}, adapted for WGCNA by Peter Langfelder}
 \keyword{misc}

@@ -819,6 +819,7 @@ blockwiseModules = function(
 
   oldOrder = c(levels.excl, names(tab));
   newOrder = c(levels.excl, names(tab)[rank]);
+  if (is.numeric(labels)) newOrder = as.numeric(newOrder);
 
   newOrder[ match(labels, oldOrder) ]
 }
@@ -1897,7 +1898,6 @@ blockwiseConsensusModules = function(multiExpr,
   # Here's where the analysis starts
 
   removeConsensusTOMOnExit = FALSE;
-
   if (is.null(consensusTOMInfo) && (nBlocks==1 || saveConsensusTOMs || getNetworkCalibrationSamples))
   {
     consensusTOMInfo = consensusTOM(
@@ -1929,6 +1929,8 @@ blockwiseConsensusModules = function(multiExpr,
      removeConsensusTOMOnExit = !saveConsensusTOMs;
   }
 
+  blockwiseConsensusCalculation = is.null(consensusTOMInfo);
+
   for (blockNo in 1:nBlocks)
   {
     if (verbose>1) printFlush(paste(spaces, "..Working on block", blockNo, "."));
@@ -1939,7 +1941,7 @@ blockwiseConsensusModules = function(multiExpr,
     selExpr = mtd.subset(multiExpr, , block);
     errorOccurred = FALSE;
 
-    if (is.null(consensusTOMInfo)) 
+    if (blockwiseConsensusCalculation)
     {
        # This code is only reached if input saveConsensusTOMs is FALSE and there are at least 2 blocks.
        consensusTOMInfo = consensusTOM(

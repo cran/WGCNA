@@ -29,6 +29,7 @@
 .heatmapWithLegend = function(data, signed, colors, naColor = "grey", zlim = NULL, 
                      reverseRows = TRUE,
                      plotLegend = TRUE,
+                     keepLegendSpace = plotLegend,
                      cex.legend = 1, 
                      legendShrink = 0.94,
                      legendSpace = 0.10,
@@ -53,7 +54,8 @@
   xmaxAll = box[2]; 
   yminAll = box[3]; 
   ymaxAll = box[4]; 
-  if (!plotLegend)
+
+  if (!keepLegendSpace && !plotLegend)
   {
      legendSpace = 0;
      legendWidth = 0;
@@ -79,6 +81,8 @@
                               naColor = naColor)
   } else
     colorMat = numbers2colors(data, signed, colors = colors, lim = zlim, naColor = naColor)
+
+  dim(colorMat) = dim(data);
 
   for (c in 1:nCols)
   {

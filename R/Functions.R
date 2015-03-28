@@ -4533,10 +4533,14 @@ labeledHeatmap = function (
   xLabelsAdj = 1,
   xColorWidth = 0.05,
   yColorWidth = 0.05,
+  xColorOffset = par("cxy")[1]/3,
+  yColorOffset = par("cxy")[2]/3,
   # Content of heatmap
   colors = NULL, 
   naColor = "grey",
-  textMatrix = NULL, cex.text = NULL, cex.lab = NULL, 
+  textMatrix = NULL, cex.text = NULL, 
+  textAdj = c(0.5, 0.5),
+  cex.lab = NULL, 
   cex.lab.x = cex.lab,
   cex.lab.y = cex.lab,
   colors.lab.x = 1,
@@ -4544,6 +4548,7 @@ labeledHeatmap = function (
   bg.lab.x = NULL,
   bg.lab.y = NULL,
   plotLegend = TRUE, 
+  keepLegendSpace = plotLegend,
   # Separator line specification                   
   verticalSeparator.x = NULL,
   verticalSeparator.col = 1,  
@@ -4598,7 +4603,7 @@ labeledHeatmap = function (
   if (is.null(colors)) colors = heat.colors(30);
   if (invertColors) colors = .reverseVector(colors);
   labPos = .heatmapWithLegend(Matrix, signed = FALSE, colors = colors, naColor = naColor, cex.legend = cex.lab, 
-                              plotLegend = plotLegend,  ...)
+                              plotLegend = plotLegend,  keepLegendSpace = keepLegendSpace, ...)
   #if (plotLegend)
   #{
   #  image.plot(t(.reverseRows(Matrix)), xaxt = "n", xlab="", yaxt="n", ylab="", col=colors, ...);
@@ -4618,8 +4623,8 @@ labeledHeatmap = function (
   yspacing = abs(labPos$yMid[2] - labPos$yMid[1]);
 
   nylabels = length(yLabels)
-  offsetx = par("cxy")[1] / 3;
-  offsety = par("cxy")[2] / 3;
+  offsetx = yColorOffset;
+  offsety = xColorOffset;
   # Transform fractional widths into coordinate widths
   xColW = min(xmax - xmin, ymax - ymin) * xColorWidth;
   yColW = min(xmax - xmin, ymax - ymin) * yColorWidth;
@@ -4640,6 +4645,9 @@ labeledHeatmap = function (
                    par("cxy")[2] / par("cin")[2]-   # charcter size in user corrdinates/character size in inches
                      offsety
 
+  figureBox = par("usr");
+  figXrange = figureBox[2] - figureBox[1];
+  figYrange = figureBox[4] - figureBox[3];
   if (!is.null(bg.lab.x))
   {
     bg.lab.x = .extend(bg.lab.x, nCols);
@@ -4653,11 +4661,11 @@ labeledHeatmap = function (
       ext = extension.top;
       sign = -1;
     }
-    figureDims = par("fin");
+    figureDims = par("pin");
     angle = xLabelsAngle/180*pi;
-    ratio = figureDims[1]/figureDims[2] * yrange/xrange;
-    ext.x = -sign * extension.bottom * tan(angle)/ratio;
-    ext.y = sign * extension.bottom * sign(cos(angle))
+    ratio = figureDims[1]/figureDims[2] * figYrange/figXrange;
+    ext.x = -sign * ext * 1/tan(angle)/ratio;
+    ext.y = sign * ext * sign(sin(angle))
     for (c in 1:nCols)
        polygon(x = c(xLeft[c], xLeft[c], xLeft[c] + ext.x, xRight[c] + ext.x, xRight[c], xRight[c]),
                y = c(y0, y0-sign*offsety, y0-sign*offsety - ext.y, y0-sign*offsety - ext.y, 
@@ -4667,7 +4675,7 @@ labeledHeatmap = function (
 
   if (!is.null(bg.lab.y))
   {
-    bg.lab.y = .extend(bg.lab.y, nCols);
+    bg.lab.y = .extend(bg.lab.y, nRows);
     reverseRows = TRUE;
     if (reverseRows)
     {
@@ -4710,10 +4718,15 @@ labeledHeatmap = function (
   } 
   if (sum(yValidColors)>0)
   {
-    rect(xleft = xmin- offsetx, ybottom = labPos$yMid[yColorLabInd] - yspacing/2,
-         xright = xmin- offsetx+yColW, ytop = labPos$yMid[yColorLabInd] + yspacing/2, 
-         density = -1,  col = substring(yLabels[yColorLabInd], 3), 
-         border = substring(yLabels[yColorLabInd], 3), xpd = TRUE)
+    rect(xleft = xmin- offsetx, ybottom = rev(labPos$yMid[yColorLabInd]) - yspacing/2,
+         xright = xmin- offsetx+yColW, ytop = rev(labPos$yMid[yColorLabInd]) + yspacing/2, 
+         density = -1,  col = substring(rev(yLabels[yColorLabInd]), 3), 
+         border = substring(rev(yLabels[yColorLabInd]), 3), xpd = TRUE)
+    #for (i in yColorLabInd)
+    #{
+    #  lines(c(xmin- offsetx, xmin- offsetx+yColW), y = rep(labPos$yMid[i] - yspacing/2, 2), col = i, xpd = TRUE)
+    #  lines(c(xmin- offsetx, xmin- offsetx+yColW), y = rep(labPos$yMid[i] + yspacing/2, 2), col = i, xpd = TRUE)
+    #}
     if (!is.null(ySymbols))
       text (xmin+ yColW - 2*offsetx, 
             labPos$yMid[yColorLabInd], ySymbols[yColorLabInd], 
@@ -4744,10 +4757,10 @@ labeledHeatmap = function (
       sign = -1;
       y0 = ymax;
     }
-    figureDims = par("fin");
-    ratio = figureDims[1]/figureDims[2] * yrange/xrange;
-    ext.x = -sign * extension.bottom * tan(angle)/ratio;
-    ext.y = sign * extension.bottom * sign(cos(angle))
+    figureDims = par("pin");
+    ratio = figureDims[1]/figureDims[2] * figYrange/figXrange;
+    ext.x = -sign * extension.bottom * 1/tan(angle)/ratio;
+    ext.y = sign * extension.bottom * sign(sin(angle))
     for (l in 1:nLines)
          lines(c(x.lines[l], x.lines[l], x.lines[l] + vs.ext * ext.x), 
                c(y0, y0-sign*offsety, y0-sign*offsety - vs.ext * ext.y),  
@@ -4787,13 +4800,14 @@ labeledHeatmap = function (
       for (cl in 1:dim(Matrix)[2])
       {
         text(labPos$xMid[cl], labPos$yMid[rw],
-             as.character(textMatrix[rw,cl]), xpd = TRUE, cex = cex.text, adj = c(0.5, 0.5));
+             as.character(textMatrix[rw,cl]), xpd = TRUE, cex = cex.text, adj = textAdj);
       }
   }
   axis(1, labels = FALSE, tick = FALSE)
   axis(2, labels = FALSE, tick = FALSE)
   axis(3, labels = FALSE, tick = FALSE)
   axis(4, labels = FALSE, tick = FALSE)
+  invisible(labPos)
 }
 
 #===================================================================================================

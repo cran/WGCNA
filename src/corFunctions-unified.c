@@ -159,7 +159,7 @@ int nProcessors()
 
 typedef struct 
 {
-   volatile int i, n;
+   volatile size_t i, n;
 }  progressCounter;
 
 /* For each parallel operation will presumably need a separate structure to hold its
@@ -173,10 +173,11 @@ typedef struct
 typedef struct
 {
    double * x;
-   int nr, nc;
+   size_t nr, nc;
    double * multMat, * result;
    double * aux;
-   int *nNAentries, *NAme;
+   size_t *nNAentries;
+   int *NAme;
    int zeroMAD;
    int * warn;
    double maxPOutliers;
@@ -218,7 +219,7 @@ typedef struct
 {
    cor1ThreadData * x;
    progressCounter * pci, * pcj;
-   int * nSlow, * nNA;
+   size_t * nSlow, * nNA;
    pthread_mutex_t * lock;
 }  slowCalcThreadData;
 
@@ -241,7 +242,7 @@ void * threadPrepColBicor(void * par)
       pthread_mutex_lock_c( td->lock, x->threaded);
       if (td->pc->i < td->pc->n)
       {
-         int col = td->pc->i;
+         size_t col = td->pc->i;
          // Rprintf("...working on column %d in thread %d\n", col, td->x->id);
          td->pc->i++;
          pthread_mutex_unlock_c( td->lock, x->threaded );
@@ -325,10 +326,10 @@ void * threadSymmetrize(void * par)
   symmThreadData * td = (symmThreadData *) par;
   cor1ThreadData * x = td->x;
 
-  int nc = x->nc;
+  size_t nc = x->nc;
   double * result = x->result;
   int * NAmean = x->NAme;
-  int col = 0;
+  size_t col = 0;
   while ( (col = td->pc->i) < nc)
   {
       // Symmetrize the column
@@ -339,7 +340,7 @@ void * threadSymmetrize(void * par)
       {
         double * resx = result + col*nc + col;
         // Rprintf("Symmetrizing column %d to the same row.\n", col);
-        for (int j=col; j<nc; j++) 
+        for (size_t j=col; j<nc; j++) 
         {
           if (NAmean[j] == 0)
           {
@@ -354,7 +355,7 @@ void * threadSymmetrize(void * par)
         }
       } else {
         // Rprintf("NA-ing out column and row %d\n", col);
-        for (int j=0; j<nc; j++)
+        for (size_t j=0; j<nc; j++)
         {
            result[col*nc + j] = NA_REAL;
            result[j*nc + col] = NA_REAL;
@@ -377,16 +378,16 @@ void * threadSymmetrize(void * par)
 void * threadSlowCalcBicor(void * par)
 {
   slowCalcThreadData * td = (slowCalcThreadData *) par;
-  int * nSlow = td->nSlow;
-  int * nNA = td->nNA;
+  size_t * nSlow = td->nSlow;
+  size_t * nNA = td->nNA;
   double * x = td->x->x;
   double * multMat = td->x->multMat;
   double * result = td->x->result;
   int fbx = td->x->fallback;
   int cosine = td->x->cosine;
-  int nc = td->x->nc, nc1 = nc-1, nr = td->x->nr;
+  size_t nc = td->x->nc, nc1 = nc-1, nr = td->x->nr;
   int * NAmean = td->x->NAme;
-  int * nNAentries = td->x->nNAentries;
+  size_t * nNAentries = td->x->nNAentries;
   progressCounter * pci = td->pci, * pcj = td->pcj;
 
   double maxPOutliers = td->x->maxPOutliers;
@@ -395,7 +396,7 @@ void * threadSlowCalcBicor(void * par)
   double * xxx = xx + 2*nr, * yyy = xx + 3*nr;
   double * xx2 = xx + 4*nr, * yy2 = xx + 5*nr;
 
-  int maxDiffNA = (int) (td->x->quick * nr);
+  size_t maxDiffNA = (size_t) (td->x->quick * nr);
 
   if (fbx==3) fbx = 2; // For these calculations can't go back and redo everything
 
@@ -405,8 +406,8 @@ void * threadSlowCalcBicor(void * par)
   while (pci->i < nc1)
   {
      pthread_mutex_lock_c( td->lock, td->x->threaded );
-     int i = pci->i, ii = i;
-     int j = pcj->i, jj = j;
+     size_t i = pci->i, ii = i;
+     size_t j = pcj->i, jj = j;
      do
      {
        i = ii;
@@ -430,8 +431,8 @@ void * threadSlowCalcBicor(void * par)
         memcpy((void *)xx, (void *)(x + i*nr), nr * sizeof(double));
         memcpy((void *)yy, (void *)(x + j*nr), nr * sizeof(double));
 
-        int nNAx = 0, nNAy = 0;    
-        for (int k=0; k<nr; k++)
+        size_t nNAx = 0, nNAy = 0;    
+        for (size_t k=0; k<nr; k++)
         {
            if (ISNAN(xx[k])) yy[k] = NA_REAL;
            if (ISNAN(yy[k])) xx[k] = NA_REAL;
@@ -443,7 +444,8 @@ void * threadSlowCalcBicor(void * par)
         if ((nNAx - nNAentries[i] > maxDiffNA) || (nNAy-nNAentries[j] > maxDiffNA))
         {
             // must recalculate the auxiliary variables for both columns
-            int temp = 0, zeroMAD = 0;
+            size_t temp = 0;
+            int zeroMAD = 0;
             if (nNAx - nNAentries[i] > maxDiffNA)
                {
                   prepareColBicor(xx, nr, maxPOutliers, fbx, cosine, xxx, &temp, &NAx, &zeroMAD, xx2, yy2);
@@ -461,8 +463,8 @@ void * threadSlowCalcBicor(void * par)
             if (NAx + NAy==0)
             {
                LDOUBLE sumxy = 0;
-               int count = 0;
-               for (int k=0; k<nr; k++)
+               size_t count = 0;
+               for (size_t k=0; k<nr; k++)
                {
                  double vx = *(xxx + k), vy = *(yyy +  k);
                  // Rprintf("i: %d, j: %d, k: %d: vx: %e, vy: %e\n", i,j,k,vx,vy);
@@ -504,20 +506,20 @@ void * threadSlowCalcBicor(void * par)
 void * threadSlowCalcCor(void * par)
 {
   slowCalcThreadData * td = (slowCalcThreadData *) par;
-  int * nSlow = td->nSlow;
-  int * nNA = td->nNA;
+  size_t * nSlow = td->nSlow;
+  size_t * nNA = td->nNA;
   double * x = td->x->x;
   double * result = td->x->result;
-  int nc = td->x->nc, nc1 = nc-1, nr = td->x->nr;
+  size_t nc = td->x->nc, nc1 = nc-1, nr = td->x->nr;
   int cosine = td->x->cosine;
   int * NAmean = td->x->NAme;
-  int * nNAentries = td->x->nNAentries;
+  size_t * nNAentries = td->x->nNAentries;
   progressCounter * pci = td->pci, * pcj = td->pcj;
 
   double *xx, *yy;
   double vx, vy;
 
-  int maxDiffNA = (int) (td->x->quick * nr);
+  size_t maxDiffNA = (size_t) (td->x->quick * nr);
 
   // Rprintf("quick:%f\n", td->x->quick);
 
@@ -527,8 +529,8 @@ void * threadSlowCalcCor(void * par)
   while (pci->i < nc1)
   {
      pthread_mutex_lock_c( td->lock, td->x->threaded );
-     int i = pci->i, ii = i;
-     int j = pcj->i, jj = j;
+     size_t i = pci->i, ii = i;
+     size_t j = pcj->i, jj = j;
      do
      {
        i = ii;
@@ -552,9 +554,9 @@ void * threadSlowCalcCor(void * par)
         // Rprintf("Recalculating row %d and column %d, column size %d\n", i, j, nr);
         xx = x + i * nr; yy = x + j * nr;
         LDOUBLE sumxy = 0, sumx = 0, sumy = 0, sumxs = 0, sumys = 0;
-        int count = 0;
+        size_t count = 0;
        
-        for (int k=0; k<nr; k++)
+        for (size_t k=0; k<nr; k++)
         {
            vx = *xx; vy = *yy;
            if (!ISNAN(vx) && !ISNAN(vy))
@@ -591,7 +593,7 @@ void * threadSlowCalcCor(void * par)
 
 // Function to calculate suitable number of threads to use.
 
-int useNThreads(int n, int nThreadsRequested)
+int useNThreads(size_t n, int nThreadsRequested)
 {
 #ifdef WITH_THREADS
   int nt = nThreadsRequested;
@@ -630,8 +632,9 @@ SEXP cor1Fast_call(SEXP x_s, SEXP quick_s, SEXP cosine_s,
   SEXP dim, cor_s; 
   // SEXP out, nNA_s, err_s;
 
-  int nr, nc, *cosine, *nThreads, *verbose, *indent;
-  int *nNA, *err;
+  int nr, nc;
+  int *cosine, *err, *nThreads, *verbose, *indent;
+  int *nNA;
 
   double *x, *corMat, *quick;
 
@@ -701,7 +704,7 @@ void cor1Fast(double * x, int * nrow, int * ncol, double * quick,
           int * nThreads,
           int * verbose, int * indent)
 {
-  int nr = *nrow, nc = *ncol;
+  size_t nr = (size_t) *nrow, nc = (size_t) *ncol;
 
   char          spaces[2* *indent+1];
 
@@ -709,12 +712,14 @@ void cor1Fast(double * x, int * nrow, int * ncol, double * quick,
   spaces[2* *indent] = '\0';
 
   *err = 0;
-  *nNA = 0;
+
+  size_t nNA_ext = 0;
 
   // Allocate space for various variables
 
   double * multMat;
-  int * nNAentries, *NAmean;
+  size_t * nNAentries;
+  int *NAmean;
 
   // This matrix will hold preprocessed entries that can be simply multiplied together to get the
   // numerator
@@ -728,7 +733,7 @@ void cor1Fast(double * x, int * nrow, int * ncol, double * quick,
 
   // Number of NA entries in each column
 
-  if ( (nNAentries = malloc(nc * sizeof(int)))==NULL )
+  if ( (nNAentries = malloc(nc * sizeof(size_t)))==NULL )
   {
     free(multMat);
     *err = 1;
@@ -747,7 +752,7 @@ void cor1Fast(double * x, int * nrow, int * ncol, double * quick,
   }
 
   // Decide how many threads to use
-  int nt = useNThreads(nc*nc, *nThreads);
+  int nt = useNThreads( nc*nc, *nThreads);
   
   if (*verbose)
   {
@@ -834,7 +839,7 @@ void cor1Fast(double * x, int * nrow, int * ncol, double * quick,
   double alpha = 1.0, beta = 0.0;
   dsyrk_("L", "T", ncol, nrow, & alpha, multMat, nrow, & beta, result, ncol);
 
-  int nSlow = 0;
+  size_t nSlow = 0;
 
   // Rprintf("nNAentries values: ");
   // for (int i = 0; i < nc; i++) Rprintf("%d, ", nNAentries[i]);
@@ -863,7 +868,7 @@ void cor1Fast(double * x, int * nrow, int * ncol, double * quick,
         sctd[t].pci = &pci;
         sctd[t].pcj = &pcj;
         sctd[t].nSlow = &nSlow;
-        sctd[t].nNA = nNA;
+        sctd[t].nNA = &nNA_ext;
         sctd[t].lock = &mutexSC;
         status[t] = pthread_create_c(&thr3[t], NULL, threadSlowCalcCor, (void *) &sctd[t], thrdInfo[t].threaded);
         if (status[t]!=0)
@@ -913,6 +918,8 @@ void cor1Fast(double * x, int * nrow, int * ncol, double * quick,
   // Here I need to recalculate results that have NA's in them.
 
   // for (int t=nt-1; t >= 0; t--) free(aux[t]);
+
+  *nNA = (int) nNA_ext;
   free(NAmean);
   free(nNAentries);
   free(multMat);
@@ -935,7 +942,7 @@ void bicor1Fast(double * x, int * nrow, int * ncol, double * maxPOutliers,
             int * nThreads,
             int * verbose, int * indent)
 {
-  int nr = *nrow, nc = *ncol;
+  size_t nr = *nrow, nc = *ncol;
 
   char          spaces[2* *indent+1];
 
@@ -946,10 +953,13 @@ void bicor1Fast(double * x, int * nrow, int * ncol, double * maxPOutliers,
   *warn = noWarning;
   *err = 0;
 
+  size_t nNA_ext = 0;
+
   // Allocate space for various variables
 
   double * multMat;
-  int * nNAentries, *NAmed;
+  size_t * nNAentries;
+  int  *NAmed;
 
   if ( (multMat = malloc(nc*nr * sizeof(double)))==NULL )
   {
@@ -960,7 +970,7 @@ void bicor1Fast(double * x, int * nrow, int * ncol, double * maxPOutliers,
 
   // Number of NA entries in each column
 
-  if ( (nNAentries = malloc(nc * sizeof(int)))==NULL )
+  if ( (nNAentries = malloc(nc * sizeof(size_t)))==NULL )
   {
     free(multMat);
     *err = 1;
@@ -979,7 +989,7 @@ void bicor1Fast(double * x, int * nrow, int * ncol, double * maxPOutliers,
   }
 
   // Decide how many threads to use
-  int nt = useNThreads(nc*nc, *nThreads);
+  int nt = useNThreads( nc*nc, *nThreads);
   
   if (*verbose)
   {
@@ -1107,7 +1117,7 @@ void bicor1Fast(double * x, int * nrow, int * ncol, double * maxPOutliers,
 
   // Here I need to recalculate results that have NA's in them.
 
-  int nSlow = 0;
+  size_t nSlow = 0;
 
   // Rprintf("nNAentries values: ");
   // for (int i = 0; i < nc; i++) Rprintf("%d, ", nNAentries[i]);
@@ -1136,7 +1146,7 @@ void bicor1Fast(double * x, int * nrow, int * ncol, double * maxPOutliers,
         sctd[t].pci = &pci;
         sctd[t].pcj = &pcj;
         sctd[t].nSlow = &nSlow;
-        sctd[t].nNA = nNA;
+        sctd[t].nNA = &nNA_ext;
         sctd[t].lock = &mutexSC;
         status[t] = pthread_create_c(&thr3[t], NULL, threadSlowCalcBicor, (void *) &sctd[t], 
                     thrdInfo[t].threaded);
@@ -1184,6 +1194,9 @@ void bicor1Fast(double * x, int * nrow, int * ncol, double * maxPOutliers,
       if (status[t]==0) pthread_join_c(thr2[t], NULL, thrdInfo[t].threaded);
 
   for (int t=nt-1; t >= 0; t--) free(aux[t]); 
+
+  *nNA = (int) nNA_ext;
+
   free(NAmed);
   free(nNAentries);
   free(multMat);
@@ -1201,7 +1214,7 @@ typedef struct
 {
    cor2ThreadData * x;
    progressCounter * pci, *pcj;
-   int * nSlow, * nNA;
+   size_t * nSlow, * nNA;
    pthread_mutex_t * lock;
    double quick;
 }  slowCalc2ThreadData;
@@ -1228,10 +1241,10 @@ void * threadNAing(void * par)
   NA2ThreadData * td = (NA2ThreadData *) par;
 
   double * result = td->x->x->result;
-  int ncx = td->x->x->nc;
+  size_t ncx = td->x->x->nc;
   int * NAmedX = td->x->x->NAme;
 
-  int ncy = td->x->y->nc;
+  size_t ncy = td->x->y->nc;
   int * NAmedY = td->x->y->NAme;
 
   progressCounter * pci = td->pci;
@@ -1239,7 +1252,7 @@ void * threadNAing(void * par)
 
   // Go row by row
 
-  int row = 0, col = 0;
+  size_t row = 0, col = 0;
 
   while  ((row = pci->i) < ncx)
   {
@@ -1247,7 +1260,7 @@ void * threadNAing(void * par)
       if (NAmedX[row])
       {
          // Rprintf("NA-ing out column and row %d\n", col);
-         for (int j=0; j<ncy; j++)
+         for (size_t j=0; j<ncy; j++)
               result[row + j * ncx] = NA_REAL;
       } 
   }
@@ -1260,11 +1273,11 @@ void * threadNAing(void * par)
          if (NAmedY[col])
          {
             // Rprintf("NA-ing out column and row %d\n", col);
-            for (int i=0; i<ncx; i++)
+            for (size_t i=0; i<ncx; i++)
                  result[i + col * ncx] = NA_REAL;
          } else {
             double *resx = result + col*ncx;
-            for (int i=0; i<ncx; i++) 
+            for (size_t i=0; i<ncx; i++) 
             {
                if (!ISNAN(*resx))
                {
@@ -1293,24 +1306,24 @@ void * threadNAing(void * par)
 void * threadSlowCalcBicor2(void * par)
 {
   slowCalc2ThreadData * td = (slowCalc2ThreadData *) par;
-  int * nSlow = td->nSlow;
-  int * nNA = td->nNA;
+  size_t * nSlow = td->nSlow;
+  size_t * nNA = td->nNA;
 
   double * x = td->x->x->x;
   double * multMatX = td->x->x->multMat;
   double * result = td->x->x->result;
-  int ncx = td->x->x->nc, nr = td->x->x->nr;
+  size_t ncx = td->x->x->nc, nr = td->x->x->nr;
   int * NAmeanX = td->x->x->NAme;
-  int * nNAentriesX = td->x->x->nNAentries;
+  size_t * nNAentriesX = td->x->x->nNAentries;
   int robustX = td->x->x->robust;
   int fbx = td->x->x->fallback;
   int cosineX = td->x->x->cosine;
 
   double * y = td->x->y->x;
   double * multMatY = td->x->y->multMat;
-  int ncy = td->x->y->nc;
+  size_t ncy = td->x->y->nc;
   int * NAmeanY = td->x->y->NAme;
-  int * nNAentriesY = td->x->y->nNAentries;
+  size_t * nNAentriesY = td->x->y->nNAentries;
   int robustY = td->x->y->robust;
   int fby = td->x->y->fallback;
   int cosineY = td->x->y->cosine;
@@ -1344,8 +1357,8 @@ void * threadSlowCalcBicor2(void * par)
   while (pci->i < ncx)
   {
      pthread_mutex_lock_c( td->lock, td->x->x->threaded );
-     int i = pci->i, ii = i;
-     int j = pcj->i, jj = j;
+     size_t i = pci->i, ii = i;
+     size_t j = pcj->i, jj = j;
      do
      {
        i = ii;
@@ -1368,8 +1381,8 @@ void * threadSlowCalcBicor2(void * par)
         memcpy((void *)xx, (void *)(x + i*nr), nr * sizeof(double));
         memcpy((void *)yy, (void *)(y + j*nr), nr * sizeof(double));
 
-        int nNAx = 0, nNAy = 0;    
-        for (int k=0; k<nr; k++)
+        size_t nNAx = 0, nNAy = 0;    
+        for (size_t k=0; k<nr; k++)
         {
            if (ISNAN(xx[k])) yy[k] = NA_REAL;
            if (ISNAN(yy[k])) xx[k] = NA_REAL;
@@ -1383,7 +1396,8 @@ void * threadSlowCalcBicor2(void * par)
             // Rprintf("Recalculating row %d and column %d, column size %d in thread %d\n", i, j, nr,
             //         td->x->x->id);
             // must recalculate the auxiliary variables for both columns
-            int temp = 0, zeroMAD = 0;
+            size_t temp = 0;
+            int zeroMAD = 0;
             if (nNAx - nNAentriesX[i] > maxDiffNA)
             {
                // Rprintf("...Recalculating row... \n");
@@ -1410,8 +1424,8 @@ void * threadSlowCalcBicor2(void * par)
             {
                // LDOUBLE sumxy = 0;
                double sumxy = 0;
-               int count = 0;
-               for (int k=0; k<nr; k++)
+               size_t count = 0;
+               for (size_t k=0; k<nr; k++)
                {
                  double vx = *(xx3 + k), vy = *(yy3 +  k);
                  // Rprintf("i: %d, j: %d, k: %d: vx: %e, vy: %e\n", i,j,k,vx,vy);
@@ -1459,19 +1473,20 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
            int * nThreads,
            int * verbose, int * indent)
 {
-  int nr = *nrow, ncx = *ncolx, ncy = *ncoly;
+  size_t nr = *nrow, ncx = *ncolx, ncy = *ncoly;
 
   char          spaces[2* *indent+1];
   for (int i=0; i<2* *indent; i++) spaces[i] = ' ';
   spaces[2* *indent] = '\0';
 
-  *nNA = 0;
   *warnX = noWarning;
   *warnY = noWarning;
   *err = 0;
 
+  size_t nNA_ext = 0;
+
   double * multMatX, * multMatY;
-  int * nNAentriesX, * nNAentriesY;
+  size_t * nNAentriesX, * nNAentriesY;
   int *NAmedX, *NAmedY;
 
   if ( (multMatX = malloc(ncx*nr * sizeof(double)))==NULL )
@@ -1489,7 +1504,7 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
     return;
   }
 
-  if ( (nNAentriesX = malloc(ncx * sizeof(int)))==NULL )
+  if ( (nNAentriesX = malloc(ncx * sizeof(size_t)))==NULL )
   {
     free(multMatY); free(multMatX);
     *err = 1;
@@ -1497,7 +1512,7 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
     return;
   }
 
-  if ( (nNAentriesY = malloc(ncy * sizeof(int)))==NULL )
+  if ( (nNAentriesY = malloc(ncy * sizeof(size_t)))==NULL )
   {
     free(nNAentriesX); free(multMatY); free(multMatX);
     *err = 1;
@@ -1522,7 +1537,7 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
   }
 
   // Decide how many threads to use
-  int nt = useNThreads(ncx*ncy, *nThreads);
+  int nt = useNThreads( ncx* ncy, *nThreads);
   
   if (*verbose)
   {
@@ -1766,7 +1781,7 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
 
   // Remedial calculations
 
-  int nSlow = 0;
+  size_t nSlow = 0;
   if (*quick < 1.0)
   {
       slowCalc2ThreadData  sctd[MxThreads];
@@ -1783,7 +1798,7 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
         sctd[t].pci = &pcX;
         sctd[t].pcj = &pcY;
         sctd[t].nSlow = &nSlow;
-        sctd[t].nNA = nNA;
+        sctd[t].nNA = &nNA_ext;
         sctd[t].lock = &mutexSC;
         sctd[t].quick = *quick;
         status[t] = pthread_create_c(&thr3[t], NULL, threadSlowCalcBicor2, (void *) &sctd[t], 
@@ -1829,6 +1844,8 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
   for (int t=0; t<nt; t++)
      if (status[t]==0) pthread_join_c(thr2[t], NULL, thrdInfoX[t].threaded);
 
+  *nNA = (int) nNA_ext;
+
   // Clean up
 
   for (int t=nt-1; t >= 0; t--) free(aux[t]);
@@ -1856,25 +1873,25 @@ void * threadSlowCalcCor2(void * par)
 {
  
   slowCalc2ThreadData * td = (slowCalc2ThreadData *) par;
-  int * nSlow = td->nSlow;
-  int * nNA = td->nNA;
+  size_t * nSlow = td->nSlow;
+  size_t * nNA = td->nNA;
 
   double * x = td->x->x->x;
 //  double * multMatX = td->x->x->multMat;
   double * result = td->x->x->result;
-  int ncx = td->x->x->nc, nr = td->x->x->nr;
+  size_t ncx = td->x->x->nc, nr = td->x->x->nr;
   int * NAmeanX = td->x->x->NAme;
-  int * nNAentriesX = td->x->x->nNAentries;
+  size_t * nNAentriesX = td->x->x->nNAentries;
   int cosineX = td->x->x->cosine;
 
   double * y = td->x->y->x;
 //  double * multMatY = td->x->y->multMat;
-  int ncy = td->x->y->nc;
+  size_t ncy = td->x->y->nc;
   int * NAmeanY = td->x->y->NAme;
-  int * nNAentriesY = td->x->y->nNAentries;
+  size_t * nNAentriesY = td->x->y->nNAentries;
   int cosineY = td->x->y->cosine;
 
-  int maxDiffNA = (int) (td->x->x->quick * nr);
+  size_t maxDiffNA = (size_t) (td->x->x->quick * nr);
 
   progressCounter * pci = td->pci, * pcj = td->pcj;
 
@@ -1890,8 +1907,8 @@ void * threadSlowCalcCor2(void * par)
   while (pci->i < ncx)
   {
      pthread_mutex_lock_c( td->lock, td->x->x->threaded );
-     int i = pci->i, ii = i;
-     int j = pcj->i, jj = j;
+     size_t i = pci->i, ii = i;
+     size_t j = pcj->i, jj = j;
      do
      {
        i = ii;
@@ -1915,9 +1932,9 @@ void * threadSlowCalcCor2(void * par)
         //         i, j, nr, cosineX, cosineY);
         xx = x + i * nr; yy = y + j * nr;
         LDOUBLE sumxy = 0, sumx = 0, sumy = 0, sumxs = 0, sumys = 0;
-        int count = 0;
+        size_t count = 0;
        
-        for (int k=0; k<nr; k++)
+        for (size_t k=0; k<nr; k++)
         {
            vx = *xx; vy = *yy;
            if (!ISNAN(vx) && !ISNAN(vy))
@@ -1962,17 +1979,17 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
            int * nThreads,
            int * verbose, int * indent)
 {
-  int nr = *nrow, ncx = *ncolx, ncy = *ncoly;
+  size_t nr = *nrow, ncx = *ncolx, ncy = *ncoly;
 
   char          spaces[2* *indent+1];
   for (int i=0; i<2* *indent; i++) spaces[i] = ' ';
   spaces[2* *indent] = '\0';
 
-  *nNA = 0;
+  size_t nNA_ext = 0;
   *err = 0;
 
   double * multMatX, * multMatY;
-  int * nNAentriesX, * nNAentriesY;
+  size_t * nNAentriesX, * nNAentriesY;
   int *NAmeanX, *NAmeanY;
 
   if ( (multMatX = malloc(ncx*nr * sizeof(double)))==NULL )
@@ -1990,7 +2007,7 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
     return;
   }
 
-  if ( (nNAentriesX = malloc(ncx * sizeof(int)))==NULL )
+  if ( (nNAentriesX = malloc(ncx * sizeof(size_t)))==NULL )
   {
     free(multMatY); free(multMatX);
     *err = 1;
@@ -1998,7 +2015,7 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
     return;
   }
 
-  if ( (nNAentriesY = malloc(ncy * sizeof(int)))==NULL )
+  if ( (nNAentriesY = malloc(ncy * sizeof(size_t)))==NULL )
   {
     free(nNAentriesX); free(multMatY); free(multMatX);
     *err = 1;
@@ -2023,7 +2040,7 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
   }
 
   // Decide how many threads to use
-  int nt = useNThreads(ncx*ncy, *nThreads);
+  int nt = useNThreads( ncx* ncy, *nThreads);
   
   if (*verbose)
   {
@@ -2151,7 +2168,7 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
 
   // Remedial calculations
 
-  int nSlow = 0;
+  size_t nSlow = 0;
   if (*quick < 1.0)
   {
       slowCalc2ThreadData  sctd[MxThreads];
@@ -2168,7 +2185,7 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
         sctd[t].pci = &pcX;
         sctd[t].pcj = &pcY;
         sctd[t].nSlow = &nSlow;
-        sctd[t].nNA = nNA;
+        sctd[t].nNA = &nNA_ext;
         sctd[t].lock = &mutexSC;
         sctd[t].quick = *quick;
         status[t] = pthread_create_c(&thr3[t], NULL, threadSlowCalcCor2, (void *) &sctd[t], 
@@ -2213,6 +2230,8 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
 
   for (int t=0; t<nt; t++)
     if (status[t]==0)  pthread_join_c(thr2[t], NULL, thrdInfoX[t].threaded);
+
+  *nNA = (int) nNA_ext;
 
   // clean up and return
 

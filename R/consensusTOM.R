@@ -186,9 +186,7 @@ consensusTOM = function(
       verbose = 1,
       indent = 0)
 {
-      
   spaces = indentSpaces(indent);
-
   networkCalibration = match.arg(networkCalibration);
 
   seedSaved = FALSE;
@@ -303,6 +301,8 @@ consensusTOM = function(
 
   if (is.null(useBlocks)) useBlocks = blockLevels;
 
+  useBlockIndex = match(useBlocks, blockLevels);
+
   if (!all(useBlocks %in% blockLevels))
     stop("All entries of 'useBlocks' must be valid block levels.");
 
@@ -332,7 +332,7 @@ consensusTOM = function(
 
   for (blockIndex in 1:nUseBlocks)
   {
-    blockNo = useBlocks[blockIndex];
+    blockNo = useBlockIndex[blockIndex];
 
     if (verbose>1) printFlush(paste(spaces, "..Working on block", blockNo, "."));
     # Select block genes
@@ -373,8 +373,6 @@ consensusTOM = function(
         networkCalibrationSamples[[blockIndex]] = list(sampleIndex = scaleSample,
                                             TOMSamples = matrix(NA, nScGenes, nSets));
     }
-
-
     if (networkCalibration %in% c("single quantile", "none"))
     {
       for (set in 1:nSets)

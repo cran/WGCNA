@@ -69,6 +69,13 @@ exportNetworkToCytoscape = function(
   rowMat = matrix(c(1:nRow), nRow, nRow, byrow = TRUE);
   colMat = matrix(c(1:nRow), nRow, nRow);
 
+  if (!is.null(nodeAttr))
+  {
+    if (is.null(dim(nodeAttr))) nodeAttr = data.frame(nodeAttribute = nodeAttr);
+    nodeAttr = as.data.frame(nodeAttr);
+  } else nodeAttr = data.frame(nodeAttribute = rep(NA, ncol(adjMat)));
+
+
   adjDst = as.dist(adjMat);
   dstRows = as.dist(rowMat);
   dstCols = as.dist(colMat);
@@ -91,14 +98,16 @@ exportNetworkToCytoscape = function(
   nodeData = data.frame (
      nodeName = nodeNames[nodesPresent],
      altName = if (is.null(altNodeNames)) rep("NA", nNodes) else altNodeNames[nodesPresent],
-     nodeAttribute = if (is.null(nodeAttr)) rep("NA", nNodes) else nodeAttr[nodesPresent]
+     nodeAttr[nodesPresent, ]
      );
 
   if (!is.null(edgeFile))
-    write.table(edgeData, file = edgeFile, quote = FALSE, row.names = FALSE, col.names = includeColNames);
+    write.table(edgeData, file = edgeFile, quote = FALSE, row.names = FALSE, col.names = includeColNames,
+                sep = "\t");
   
   if (!is.null(nodeFile))
-    write.table(nodeData, file = nodeFile, quote = FALSE, row.names = FALSE, col.names = includeColNames);
+    write.table(nodeData, file = nodeFile, quote = FALSE, row.names = FALSE, col.names = includeColNames,
+                sep = "\t");
 
   list(edgeData = edgeData, nodeData = nodeData);
 }
