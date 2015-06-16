@@ -76,7 +76,7 @@ TOMsimilarityFromExpr = function(datExpr, corType = "pearson", networkType = "un
         as.double(maxPOutliers), as.double(quickCor),
         as.integer(fallback), as.integer(cosineCorrelation),
         warn, 
-        as.integer(nThreads), as.integer(verbose), as.integer(indent));
+        as.integer(nThreads), as.integer(verbose), as.integer(indent), PACKAGE = "WGCNA");
 
   diag(tom) = 1;
   return (tom);
@@ -155,6 +155,7 @@ blockwiseModules = function(
 
   blocks = NULL,
   maxBlockSize = 5000,
+  blockSizePenaltyPower = 5,
   randomSeed = 12345,
 
   # load TOM from previously saved file?
@@ -198,6 +199,10 @@ blockwiseModules = function(
   minSplitHeight = NULL, minAbsSplitHeight = NULL,
   useBranchEigennodeDissim = FALSE,
   minBranchEigennodeDissim = mergeCutHeight,
+
+  stabilityLabels = NULL,
+  minStabilityDissim = NULL,
+
 
   pamStage = TRUE, pamRespectsDendro = TRUE,
 
@@ -327,10 +332,19 @@ blockwiseModules = function(
     minExternalSplit = minBranchEigennodeDissim;
   } else {
     branchSplitFnc = list();
-    externalSplitOptions = list(list())
+    externalSplitOptions = list()
     externalSplitFncNeedsDistance = logical(0);
     nExternalBranchSplitFnc = 0;
     minExternalSplit = numeric(0);
+  }
+
+  if (!is.null(stabilityLabels))
+  {
+    branchSplitFnc = c(branchSplitFnc, "branchSplitFromStabilityLabels");
+    minExternalSplit = c(minExternalSplit, minStabilityDissim);
+    externalSplitFncNeedsDistance = c(externalSplitFncNeedsDistance, FALSE);
+    print(dim(stabilityLabels));
+    externalSplitOptions = c(externalSplitOptions, list(list(stabilityLabels = stabilityLabels)))
   }
 
   if ("useBranchSplit" %in% names(otherArgs))
@@ -355,7 +369,8 @@ blockwiseModules = function(
       if (verbose>1) printFlush(paste(spaces, "....pre-clustering genes to determine blocks.."));
       clustering = projectiveKMeans(datExpr, preferredSize = maxBlockSize, 
                                     checkData = FALSE,
-                                    sizePenaltyPower = 5, verbose = verbose-2, indent = indent + 1);
+                                    sizePenaltyPower = blockSizePenaltyPower, 
+                                    verbose = verbose-2, indent = indent + 1);
       gBlocks = .orderLabelsBySize(clustering$clusters)
       if (verbose > 2) { printFlush("Block sizes:"); print(table(gBlocks)); }
     } else
@@ -436,7 +451,7 @@ blockwiseModules = function(
           as.integer(fallback),
           as.integer(cosineCorrelation),
           warn, as.integer(nThreads),
-          as.integer(callVerb), as.integer(callInd));
+          as.integer(callVerb), as.integer(callInd), PACKAGE = "WGCNA");
 
       # FIXME: warn if necessary
 
@@ -1288,6 +1303,7 @@ blockwiseIndividualTOMs = function(multiExpr,
 
                             blocks = NULL, 
                             maxBlockSize = 5000, 
+                            blockSizePenaltyPower = 5,
                             randomSeed = 12345,
 
                             # Network construction arguments: correlation options
@@ -1422,7 +1438,7 @@ blockwiseIndividualTOMs = function(multiExpr,
     {
       if (verbose>1) printFlush(paste(spaces, "....pre-clustering genes to determine blocks.."));
       clustering = consensusProjectiveKMeans(multiExpr, preferredSize = maxBlockSize,
-                                         sizePenaltyPower = 5, checkData = FALSE,
+                                         sizePenaltyPower = blockSizePenaltyPower, checkData = FALSE,
                                          verbose = verbose-2, indent = indent + 1);
       gBlocks = .orderLabelsBySize(clustering$clusters);
     } else 
@@ -1501,7 +1517,7 @@ blockwiseIndividualTOMs = function(multiExpr,
           as.integer(fallback),
           as.integer(cosineCorrelation),
           warn, as.integer(nThreads),
-          as.integer(callVerb), as.integer(callInd));
+          as.integer(callVerb), as.integer(callInd), PACKAGE = "WGCNA");
 
       # FIXME: warn if necessary
 
@@ -1595,6 +1611,7 @@ blockwiseConsensusModules = function(multiExpr,
 
          blocks = NULL, 
          maxBlockSize = 5000, 
+         blockSizePenaltyPower = 5,
          randomSeed = 12345,
 
          # individual TOM information
@@ -2921,10 +2938,22 @@ projectiveKMeans = function (
         sizes2[as.numeric(names(sizes))] = sizes;
         sizes = sizes2;
       }
-      sizeCorrections = (sizes/preferredSize)^sizePenaltyPower;
-      sizeCorrections[sizeCorrections < 1] = 1;
+      if (is.finite(sizePenaltyPower))
+      {
+        sizeCorrections = (sizes/preferredSize)^sizePenaltyPower;
+        sizeCorrections[sizeCorrections < 1] = 1;
+      } else {
+        sizeCorrections = rep(1, length(sizes));
+        sizeCorrections[sizes > preferredSize] = Inf;
+      }
       for (cen in changed) if (sizes[cen]!=0)
-        centerDist[membership==cen] = dst[cen, membership==cen] * sizeCorrections[cen];
+      {
+        if (is.finite(sizeCorrections[cen]))
+        {
+          centerDist[membership==cen] = dst[cen, membership==cen] * sizeCorrections[cen];
+        } else
+          centerDist[membership==cen] = 10 + dst[cen, membership==cen];
+      }
     }
     centerDist;
   }
@@ -2935,8 +2964,8 @@ projectiveKMeans = function (
 
   datExpr = scale(as.matrix(datExpr));
 
-  if (preferredSize >= floor(sqrt(2^31)) )
-    stop("'preferredSize must be less than ", floor(sqrt(2^31)), ". Please decrease it and try again.")
+  #if (preferredSize >= floor(sqrt(2^31)) )
+  #  stop("'preferredSize must be less than ", floor(sqrt(2^31)), ". Please decrease it and try again.")
 
   if (exists(".Random.seed"))
   {
@@ -3077,7 +3106,7 @@ projectiveKMeans = function (
     if (canMerge)
     {
       membership[membership==whichJ] = whichI;
-      clusterSizes[whichI] = sum(clusterSizes[c(whichI, whichJ)]);
+      clusterSizes[whichI] = clusterSizes[whichI] + clusterSizes[whichJ];
       centers[, whichI] = .alignedFirstPC(datExpr[, membership==whichI], verbose = verbose-2, 
                                           indent = indent+2);
       nCenters = nCenters -1;
@@ -3173,10 +3202,22 @@ consensusProjectiveKMeans = function (
         sizes2[as.numeric(names(sizes))] = sizes;
         sizes = sizes2;
       }
-      sizeCorrections = (sizes/preferredSize)^sizePenaltyPower;
-      sizeCorrections[sizeCorrections < 1] = 1;
-      for (cen in changed) if (sizes[cen] > 0)
-        centerDist[membership==cen] = dst[cen, membership==cen] * sizeCorrections[cen];
+      if (is.finite(sizePenaltyPower))
+      {
+        sizeCorrections = (sizes/preferredSize)^sizePenaltyPower;
+        sizeCorrections[sizeCorrections < 1] = 1;
+      } else {
+        sizeCorrections = rep(1, length(sizes));
+        sizeCorrections[sizes > preferredSize] = Inf;
+      }
+      for (cen in changed) if (sizes[cen]!=0)
+      {
+        if (is.finite(sizeCorrections[cen]))
+        {
+          centerDist[membership==cen] = dst[cen, membership==cen] * sizeCorrections[cen];
+        } else
+          centerDist[membership==cen] = 10 + dst[cen, membership==cen];
+      }
     }
     centerDist;
  }

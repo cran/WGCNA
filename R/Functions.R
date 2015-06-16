@@ -116,11 +116,13 @@ moduleEigengenes = function(expr, colors, impute = TRUE, nPC = 1, align = "along
              saved.seed = .Random.seed;
              seedSaved = TRUE;
           }
-          if (verbose > 5) printFlush(paste(spaces, " ...imputing missing data"));
           if (any(is.na(datModule))) 
-             datModule = impute.knn(as.matrix(datModule), k = min(10, nrow(datModule)-1))
-          # some versions of impute.knn return a list and we need the data component:
-          try( { if (!is.null(datModule$data)) datModule = datModule$data; }, silent = TRUE )
+          {
+             if (verbose > 5) printFlush(paste(spaces, " ...imputing missing data"));
+             datModule = impute.knn(datModule, k = min(10, nrow(datModule)-1))
+             # some versions of impute.knn return a list and we need the data component:
+             try( { if (!is.null(datModule$data)) datModule = datModule$data; }, silent = TRUE )
+          }
           # The <<- in the next line is extremely important. Using = or <- will create a local variable of
           # the name .Random.seed and will leave the important global .Random.seed untouched.
           if (seedSaved) .Random.seed <<- saved.seed;
@@ -4735,7 +4737,7 @@ labeledHeatmap = function (
 
   # Draw separator lines, if requested
 
-  if (!is.null(verticalSeparator.x))
+  if (length(verticalSeparator.x) > 0)
   {
     nLines = length(verticalSeparator.x);
     vs.col = .extend(verticalSeparator.col, nLines);
@@ -4767,7 +4769,7 @@ labeledHeatmap = function (
                  col = vs.col[l], lty = vs.lty[l], lwd = vs.lwd[l], xpd = TRUE);
   }
 
-  if (!is.null(horizontalSeparator.y))
+  if (length(horizontalSeparator.y) >0)
   {
     if (any(horizontalSeparator.y < 0 | horizontalSeparator.y > nRows))
       stop("If given. 'horizontalSeparator.y' must all be between 0 and the number of rows.");
@@ -4832,6 +4834,19 @@ labeledHeatmap.multiPage = function(
    zlim = NULL,
    signed = TRUE,
    main = "",
+
+  verticalSeparator.x = NULL,
+  verticalSeparator.col = 1,
+  verticalSeparator.lty = 1,
+  verticalSeparator.lwd = 1,
+  verticalSeparator.ext = 0,
+
+  horizontalSeparator.y = NULL,
+  horizontalSeparator.col = 1,
+  horizontalSeparator.lty = 1,
+  horizontalSeparator.lwd = 1,
+  horizontalSeparator.ext = 0,
+
    ...)
 {
 
@@ -4857,6 +4872,24 @@ labeledHeatmap.multiPage = function(
     zlim = range(Matrix, na.rm = TRUE)
     if (signed) zlim = c(-max(abs(zlim)), max(abs(zlim)));
   }
+
+  if (!is.null(verticalSeparator.x))
+  {
+    nvs = length(verticalSeparator.x);
+    verticalSeparator.col= .extend(verticalSeparator.col, nvs);
+    verticalSeparator.lty= .extend(verticalSeparator.lty, nvs);
+    verticalSeparator.lwd= .extend(verticalSeparator.lwd, nvs);
+    verticalSeparator.ext= .extend(verticalSeparator.ext, nvs);
+  }
+  
+  if (!is.null(horizontalSeparator.y))
+  {
+    nhs = length(horizontalSeparator.y);
+    horizontalSeparator.col= .extend(horizontalSeparator.col, nhs);
+    horizontalSeparator.lty= .extend(horizontalSeparator.lty, nhs);
+    horizontalSeparator.lwd= .extend(horizontalSeparator.lwd, nhs);
+    horizontalSeparator.ext= .extend(horizontalSeparator.ext, nhs);
+  }
   
 
   page = 1;
@@ -4866,13 +4899,36 @@ labeledHeatmap.multiPage = function(
   {
     rows = rowsPerPage[[page.row]];
     cols = colsPerPage[[page.col]];
+    if (!is.null(verticalSeparator.x))
+    {
+      keep.vs = verticalSeparator.x %in% cols;
+    } else 
+      keep.vs = numeric(0);
+    if (!is.null(horizontalSeparator.y))
+    {
+      keep.hs = horizontalSeparator.y %in% cols;
+    } else 
+      keep.hs = numeric(0);
+
     main.1 = main;
     if (addPageNumberToMain & multiPage) main.1 = spaste(main, "(page ", page, ")");
     labeledHeatmap(Matrix = Matrix[rows, cols, drop = FALSE],
                    xLabels = xLabels[cols], xSymbols = xSymbols[cols],
                    yLabels = yLabels[rows], ySymbols = ySymbols[rows],
                    textMatrix = textMatrix[rows, cols, drop = FALSE],
-                   zlim = zlim, main = main.1, ...);
+                   zlim = zlim, main = main.1, 
+                   verticalSeparator.x = verticalSeparator.x[keep.vs] - min(cols) + 1,
+                   verticalSeparator.col= verticalSeparator.col[keep.vs],
+                   verticalSeparator.lty= verticalSeparator.lty[keep.vs],
+                   verticalSeparator.lwd= verticalSeparator.lwd[keep.vs],
+                   verticalSeparator.ext= verticalSeparator.ext[keep.vs],
+ 
+                   horizontalSeparator.y = horizontalSeparator.y[keep.hs] - min(rows) + 1,
+                   horizontalSeparator.col= horizontalSeparator.col[keep.hs],
+                   horizontalSeparator.lty= horizontalSeparator.lty[keep.hs],
+                   horizontalSeparator.lwd= horizontalSeparator.lwd[keep.hs],
+                   horizontalSeparator.ext= horizontalSeparator.ext[keep.hs],
+                   ...);
     page = page + 1;
   }
 }

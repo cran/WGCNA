@@ -13,8 +13,8 @@ form.
 \usage{
 empiricalBayesLM(
   data,
-  retainedCovariates,
   removedCovariates,
+  retainedCovariates = NULL,
   weights = NULL,
   weightType = c("apriori", "empirical"),
   stopOnSmallWeights = TRUE,
@@ -153,6 +153,20 @@ to mean 0 and variance 1. These are used to calculate variance priors for the EB
 
 \item{fittedValues.OLS}{OLS fitted values calculated from the means and coefficients corresponding to the removed
 covariates.}
+
+\item{weights}{A matrix of weights used in the regression models. The matrix has the same dimension as the
+input \code{data}.}
+
+\item{dataColumnValid}{Logical vector with one element per column of input \code{data}, indicating whether the
+column was adjusted. Columns with zero variance or too many missing data cannot be adjusted.}
+
+\item{dataColumnWithZeroVariance}{Logical vector with one element per column of input \code{data}, indicating
+whether the  
+column had zero variance.}
+
+\item{coefficientValid}{Logical matrix of the dimension (number of covariates +1) times (number of
+variables in \code{data}), indicating whether the corresponding regression coefficient is valid. Invalid
+regression coefficients may be returned as missing values or as zeroes.}
 
 
 }

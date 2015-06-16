@@ -43,8 +43,8 @@
 
 empiricalBayesLM = function(
   data, 
-  retainedCovariates, 
   removedCovariates,
+  retainedCovariates = NULL, 
   weights = NULL,
   weightType = c("apriori", "empirical"),
   stopOnSmallWeights = TRUE,
@@ -172,7 +172,9 @@ empiricalBayesLM = function(
   # Ordinary regression to get starting point for beta
 
   beta.OLS = matrix(NA, nc, N);
+  betaValid = matrix(TRUE, nc, N);
   sigma.OLS = rep(NA, N);
+  regressionValid = rep(TRUE, N);
   oldWeights = rep(-1, nSamples);
   for (i in 1:N)
   {
@@ -181,25 +183,39 @@ empiricalBayesLM = function(
     if (any(w1!=oldWeights))
     {
       centeredDM = designMat - matrix(means.dm[, i], nSamples, nc, byrow = TRUE);
-      xtx = t(centeredDM) %*% (centeredDM * w1);
-      xtxInv = solve(xtx);
+      #dmVar = colSds(centeredDM);
+      dmVar.w = apply(centeredDM, 2, .weightedVar, weights = w1);
+      #keepDM = dmVar > 0 & dmVar.w > 0;
+      keepDM = dmVar.w > 0;
+      centeredDM.keep = centeredDM[, keepDM];
+      xtx = t(centeredDM.keep) %*% (centeredDM.keep * w1);
+      xtxInv = try(solve(xtx), silent = TRUE);
       oldWeights = w1;
     }
 
-    # The following is really (xtxInv %*% xy1), where xy1 = t(centeredDM) %*% (y[,i]*weights[,i])
-    beta.OLS[, i] = colSums(xtxInv * colSums(centeredDM * y1 * w1));
-
-    y.pred = centeredDM %*% beta.OLS[, i];
-
-    if (weightType=="apriori")
+    if (!inherits(xtx, "try-error"))
     {
-      # Standard calculation of sigma^2 in weighted refression
-      sigma.OLS[i] = sum(w1 * (y1 - y.pred)^2)/(sum(yFinite[, i])-nc-1);
+      # The following is really (xtxInv %*% xy1), where xy1 = t(centeredDM) %*% (y[,i]*weights[,i])
+      beta.OLS[keepDM, i] = colSums(xtxInv * colSums(centeredDM.keep * y1 * w1));
+      betaValid[!keepDM, i] = FALSE;
+      y.pred = centeredDM.keep %*% beta.OLS[keepDM, i];
+      if (weightType=="apriori")
+      {
+        # Standard calculation of sigma^2 in weighted refression
+        sigma.OLS[i] = sum(w1 * (y1 - y.pred)^2)/(sum(yFinite[, i])-nc-1);
+      } else {
+        xtxw2 =  t(centeredDM.keep) %*% (centeredDM.keep *w1^2);
+        sigma.OLS[i] = sum( w1* (y1-y.pred)^2) / (V1[i] - V2[i]/V1[i] - sum(xtxw2 * xtxInv));
+      }
     } else {
-      xtxw2 =  t(centeredDM) %*% (centeredDM *w1^2);
-      sigma.OLS[i] = sum( w1* (y1-y.pred)^2) / (V1[i] - V2[i]/V1[i] - sum(xtxw2 * xtxInv));
+      regressionValid[i] = FALSE;
+      betaValid[, i] = FALSE;
     }
   }
+  if (any(!regressionValid))
+     warning(immediate. = TRUE,
+             "empiricalBayesLM: OLS regression failed in ", sum(!regressionValid), " variables.");
+
   # beta.OLS has columns corresponding to variables in data, and rows corresponding to columns in x.
 
   # Debugging...
@@ -220,17 +236,19 @@ empiricalBayesLM = function(
   # Priors on beta : mean and variance
   if (robustPriors)
   {
-    prior.means = rowMedians(beta.OLS);
-    prior.covar = .bicov(t(beta.OLS));
+    if (is.na(beta.OLS[, regressionValid]))
+      stop("Some of OLS coefficients are missing. Please use non-robust priors.");
+    prior.means = rowMedians(beta.OLS[, regressionValid], na.rm = TRUE);
+    prior.covar = .bicov(t(beta.OLS[, regressionValid]));
   } else {
-    prior.means = rowMeans(beta.OLS);
-    prior.covar = cov(t(beta.OLS));
+    prior.means = rowMeans(beta.OLS[, regressionValid], na.rm = TRUE);
+    prior.covar = cov(t(beta.OLS[, regressionValid]), use = "complete.obs");
   }
   prior.inverse = solve(prior.covar);
 
   # Prior on sigma: mean and variance (median and MAD are bad estimators since the distribution is skewed)
-  sigma.m = mean(sigma.OLS);
-  sigma.v = var(sigma.OLS);
+  sigma.m = mean(sigma.OLS[regressionValid], na.rm = TRUE);
+  sigma.v = var(sigma.OLS[regressionValid], na.rm = TRUE);
 
   # Turn the sigma mean and variance into the parameters of the inverse gamma distribution
   prior.a = sigma.m^2/sigma.v + 2;
@@ -240,7 +258,7 @@ empiricalBayesLM = function(
   beta.EB = beta.OLS;
   sigma.EB = sigma.OLS;
   
-  for (i in 1:N)
+  for (i in which(regressionValid))
   {
     # Iterate to solve for EB regression coefficients (betas) and the residual variances (sigma)
     # It appears that this has to be done individually for each variable.
@@ -248,18 +266,26 @@ empiricalBayesLM = function(
     difference = 1;
     iteration = 1;
 
-    beta.old = as.matrix(beta.OLS[, i]);
+    keepDM = betaValid[, i];
+    beta.old = as.matrix(beta.OLS[keepDM, i]);
     sigma.old = sigma.OLS[i];
     y1 = y[, i];
     w1 = weights[, i];
 
     centeredDM = designMat - matrix(means.dm[, i], nSamples, nc, byrow = TRUE);
-    xtx = t(centeredDM) %*% (centeredDM * w1);
+    centeredDM.keep = centeredDM[, keepDM];
+    xtx = t(centeredDM.keep) %*% (centeredDM.keep * w1);
     xtxInv = solve(xtx);
+
+    if (all(keepDM))
+    {
+      prior.inverse.keep = prior.inverse;
+    } else
+      prior.inverse.keep = solve(prior.covar[keepDM, keepDM]);
 
     while (difference > tol && iteration <= maxIterations)
     {
-      y.pred = centeredDM %*% beta.old;
+      y.pred = centeredDM.keep %*% beta.old;
       if (wtype==1)
       {
         # Apriori weights.
@@ -270,14 +296,14 @@ empiricalBayesLM = function(
         # Empirical weights
         V1 = sum(w1);
         V2 = sum(w1^2);
-        xtxw2 =  t(centeredDM) %*% (centeredDM *w1^2);
+        xtxw2 =  t(centeredDM.keep) %*% (centeredDM.keep *w1^2);
         sigma.new = (sum( w1* (y1-y.pred)^2) + 2*prior.b) / (V1 - V2/V1 - sum(xtxw2 * xtxInv) + 2*prior.a + 2);
       }
 
-      A = (prior.inverse + xtx/sigma.new)/2;
+      A = (prior.inverse.keep + xtx/sigma.new)/2;
       A.inv = solve(A);
       #B = as.numeric(t(y1*w1) %*% centeredDM/sigma.new) + as.numeric(prior.inverse %*% prior.means);
-      B = colSums(centeredDM * y1 * w1/sigma.new) + colSums(prior.inverse * prior.means);
+      B = colSums(centeredDM.keep * y1 * w1/sigma.new) + colSums(prior.inverse.keep * prior.means[keepDM]);
 
       #beta.new = A.inv %*% as.matrix(B)/2
       beta.new = colSums(A.inv * B)/2  # ...a different and hopefully faster way of writing the above
@@ -291,7 +317,7 @@ empiricalBayesLM = function(
     }
     if (iteration > maxIterations) warning(immediate. = TRUE, 
                                            "Exceeded maximum number of iterations for variable ", i, ".");
-    beta.EB[, i] = beta.old;
+    beta.EB[keepDM, i] = beta.old;
     sigma.EB[i] = sigma.old;
   }
 
@@ -299,13 +325,16 @@ empiricalBayesLM = function(
 
   fitAndCoeffs = function(beta, sigma)
   {
-      fitted.removed = fitted = matrix(NA, nSamples, N);
-      for (i in 1:N)
+      #fitted.removed = fitted = matrix(NA, nSamples, N);
+      fitted.removed = fitted = y;
+      beta.fin = beta;
+      beta.fin[is.na(beta)] = 0;
+      for (i in which(regressionValid))
       {
          centeredDM = designMat - matrix(means.dm[, i], nSamples, nc, byrow = TRUE);
          fitted.removed[, i] = centeredDM[, removedColumns, drop = FALSE] %*% 
-                                   beta[removedColumns, i, drop = FALSE];
-         fitted[, i] = centeredDM %*% beta[, i, drop = FALSE]
+                                   beta.fin[removedColumns, i, drop = FALSE];
+         fitted[, i] = centeredDM %*% beta.fin[, i, drop = FALSE]
       }
       #browser()
       
@@ -330,11 +359,11 @@ empiricalBayesLM = function(
       sigma.all.scaled[keepY] = sigma;
       sigma.all[keepY] = sigma * scale.y^2;
 
-      beta.all[-1, keepY] = beta * matrix(scale.y, nrow = nc, ncol = N, byrow = TRUE);
-      beta.all.scaled[-1, keepY] = beta;
+      beta.all[-1, keepY] = beta.fin * matrix(scale.y, nrow = nc, ncol = N, byrow = TRUE);
+      beta.all.scaled[-1, keepY] = beta.fin;
       beta.all[varYZero] = beta.all.scaled[-1, varYZero] = 0;
       #alpha = mean.y - t(as.matrix(mean.x)) %*% beta * scale.y
-      alpha = mean.y - colSums(beta * means.dm) * scale.y
+      alpha = mean.y - colSums(beta * means.dm, na.rm = TRUE) * scale.y
       beta.all[1, keepY] = alpha;
       beta.all.scaled[1, keepY] = 0;
 
@@ -353,6 +382,10 @@ empiricalBayesLM = function(
 
   fc.OLS = fitAndCoeffs(beta.OLS, sigma.OLS);
   fc.EB = fitAndCoeffs(beta.EB, sigma.EB);
+
+  betaValid.all = matrix(FALSE, nc+1, N.original);
+  betaValid.all[, keepY] = betaValid;
+  dimnames(betaValid.all) = dimnames(fc.OLS$beta);
 
   list( adjustedData = fc.EB$residualsWithMean,
        residuals = fc.EB$residuals,
@@ -377,7 +410,8 @@ empiricalBayesLM = function(
 
        # indices of valid fits
        dataColumnValid = keepY,
-       dataColumnWithZeroVariance = varYZero);
+       dataColumnWithZeroVariance = varYZero,
+       coefficientValid = betaValid.all);
 }
 
 
@@ -429,7 +463,7 @@ bicovWeights = function(x, pearsonFallback = TRUE, maxPOutliers = 1)
              "MAD is zero in some columns of 'x'.");
      if (pearsonFallback)
      {
-       sds = colSds(x[, madZero], na.rm = TRUE)
+       sds = colSds(x[, madZero, drop = FALSE], na.rm = TRUE)
        mads[madZero] = sds * qnorm(0.75);
      }
   }

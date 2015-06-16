@@ -1,6 +1,32 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
 
+2015/06/13: 1.47
+
+	. Functions plotCor, plotMat and rgcolors.func from sma have been re-introduced
+
+	. empiricalBayesLM is now more robust to missing values, particularly
+	  when OLS regression fails due to missing values making some of the
+	  covariates constant.
+
+	. Bugfix in bicovWeights fixes crash when there is one variable with
+	  MAD = 0.
+
+	. Function blockwiseModules can now optionally use module merging
+	  criteria derived from stability studies.
+
+	. Functions blockwiseModules, blockwiseIndividualTOMs and 
+	  consensusBlockwiseModules now accept argument blockSizePenaltyPower
+	  that lets the user specify the severity of penalty for blocks
+	  exceeding maximum size. 
+
+	. Functions projectiveKMeans and consensusProjectiveKMeans now accept 
+	  Inf for sizePenaltyPower.
+
+	. Function labeledHeatmap.multiPage now accepts more explicit
+	  arguments (rather than relying on ... as before)
+	  and correctly handles separator lines.
+
 2015/03/28: 1.46
 
 	. Functions inherited from the now-defunct package sma have been

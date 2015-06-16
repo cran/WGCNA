@@ -19,6 +19,7 @@ blockwiseModules(
 
   blocks = NULL,
   maxBlockSize = 5000,
+  blockSizePenaltyPower = 5,
   randomSeed = 12345,
 
  # load TOM from previously saved file?
@@ -64,6 +65,9 @@ blockwiseModules(
   useBranchEigennodeDissim = FALSE,
   minBranchEigennodeDissim = mergeCutHeight,
 
+  stabilityLabels = NULL,
+  minStabilityDissim = NULL,
+
   pamStage = TRUE, pamRespectsDendro = TRUE,
 
   # Gene reassignment, module trimming, and module "significance" criteria
@@ -105,6 +109,9 @@ of \code{exprData} giving the number of the block to which the corresponding gen
 above is non-NULL. Otherwise, if the number of genes in \code{datExpr} exceeds \code{maxBlockSize}, genes
 will be pre-clustered into blocks whose size should not exceed \code{maxBlockSize}. }
 
+ \item{ blockSizePenaltyPower}{number specifying how strongly blocks should be penalized for exceeding the
+maximum size. Set to a lrge number or \code{Inf} if not exceeding maximum block size is very important.}
+ 
  \item{randomSeed}{integer to be used as seed for the random number generator before the function
 starts. If a current seed exists, it is saved and restored upon exit. If \code{NULL} is given, the 
 function will not save and restore the seed. }
@@ -213,6 +220,16 @@ when merging branches in Dynamic Tree Cut?}
 branches to be considerd separate. The branch eigennode dissimilarity in individual sets
 is simly 1-correlation of the
 eigennodes; the consensus is defined as quantile with probability \code{consensusQuantile}.}
+
+   \item{stabilityLabels}{Optional matrix of cluster labels that are to be used for calculating branch
+dissimilarity based on split stability. The number of rows must equal the number of genes in
+\code{multiExpr}; the number of columns (clusterings) is arbitrary. See
+\code{\link{branchSplitFromStabilityLabels}} for details.}
+
+   \item{minStabilityDissim}{Minimum stability dissimilarity criterion for two branches to be considered
+separate. Should be a number between 0 (essentially no dissimilarity required) and 1 (perfect dissimilarity
+or distinguishability based on \code{stabilityLabels}). See
+\code{\link{branchSplitFromStabilityLabels}} for details.}
 
   \item{pamStage}{ logical.  If TRUE, the second (PAM-like) stage of module detection will be performed.
      See \code{\link[dynamicTreeCut]{cutreeDynamic}} for more details. }

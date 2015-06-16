@@ -21,6 +21,7 @@ blockwiseIndividualTOMs(
 
    blocks = NULL,
    maxBlockSize = 5000,
+   blockSizePenaltyPower = 5,
    randomSeed = 12345,
 
    # Network construction arguments: correlation options
@@ -68,6 +69,10 @@ of \code{multiExpr} giving the number of the block to which the corresponding ge
   \item{maxBlockSize}{ integer giving maximum block size for module detection. Ignored if \code{blocks}
 above is non-NULL. Otherwise, if the number of genes in \code{datExpr} exceeds \code{maxBlockSize}, genes
 will be pre-clustered into blocks whose size should not exceed \code{maxBlockSize}. }
+
+  \item{blockSizePenaltyPower}{number specifying how strongly blocks should be penalized for exceeding the
+maximum size. Set to a lrge number or \code{Inf} if not exceeding maximum block size is very important.}
+
 
  \item{randomSeed}{ integer to be used as seed for the random number generator before the function
 starts. If a current seed exists, it is saved and restored upon exit. If \code{NULL} is given, the

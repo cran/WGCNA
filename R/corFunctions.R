@@ -166,7 +166,7 @@ cor = function(x, y = NULL, use = "all.obs", method = c("pearson", "kendall", "s
          res = .Call("cor1Fast_call", x,
                    quick, cosine,
                    nNA, err, nThreads,
-                   verbose, indent);
+                   verbose, indent, package = "WGCNA");
          if (!is.null(dimnames(x)[[2]])) dimnames(res) = list(dimnames(x)[[2]],  dimnames(x)[[2]] );
       } else {
          y = as.matrix(y);
