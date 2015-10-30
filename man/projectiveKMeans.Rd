@@ -13,6 +13,7 @@ projectiveKMeans(
   networkType = "unsigned",  
   randomSeed = 54321,
   checkData = TRUE,
+  imputeMissing = TRUE,
   maxIterations = 1000, 
   verbose = 0, indent = 0)
 }
@@ -38,6 +39,10 @@ starts. If a current seed exists, it is saved and restored upon exit. }
   \item{checkData}{ logical: should data be checked for genes with zero variance and 
 genes and samples with excessive numbers of missing samples? Bad samples are ignored; returned cluster
 assignment for bad genes will be \code{NA}. }
+
+  \item{imputeMissing}{ logical: should missing values in \code{datExpr} be imputed before the calculations
+start? The early imputation makes the code run faster but may produce slightly different results if re-running
+older calculations.}
 
   \item{maxIterations}{ maximum iterations to be attempted. }
 

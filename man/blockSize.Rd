@@ -14,7 +14,7 @@ blockSize(
    matrixSize, 
    rectangularBlocks = TRUE, 
    maxMemoryAllocation = NULL, 
-   overheadFactor = 3)
+   overheadFactor = 3);
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{

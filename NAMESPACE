@@ -11,6 +11,24 @@ importFrom(utils, packageVersion, compareVersion)
 importFrom(parallel, detectCores)
 importFrom(Hmisc, rcorr.cens, errbar)
 importFrom(impute, impute.knn)
-importFrom(reshape, cast, melt)
 importFrom(splines, ns)
 importFrom(preprocessCore, normalize.quantiles)
+
+# Imports of previously automatically available functions...
+
+importFrom("grDevices", "dev.off", "heat.colors", "pdf", "rgb",
+           "terrain.colors")
+importFrom("graphics", "abline", "axis", "barplot", "box", "boxplot",
+           "frame", "hist", "image", "layout", "lines", "mtext",
+           "pairs", "panel.smooth", "par", "plot", "polygon", "rect",
+           "segments", "strheight", "strwidth", "text", "title")
+importFrom("stats", "anova", "as.dendrogram", "as.dist", "coef", "cov",
+           "cutree", "dist", "fisher.test", "glm", "heatmap",
+           "kruskal.test", "lm", "median", "model.matrix",
+           "na.exclude", "order.dendrogram", "pchisq", "phyper",
+           "pnorm", "predict", "pt", "qnorm", "quantile", "reorder",
+           "residuals", "rexp", "rnorm", "runif", "sd",
+           "smooth.spline", "t.test", "var", "weighted.mean")
+importFrom("utils", "data", "flush.console", "read.csv", "write.csv",
+           "write.table")
+

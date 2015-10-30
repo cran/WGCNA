@@ -837,7 +837,7 @@ void cor1Fast(double * x, int * nrow, int * ncol, double * quick,
   // The main loop is actually a matrix multiplication
 
   double alpha = 1.0, beta = 0.0;
-  dsyrk_("L", "T", ncol, nrow, & alpha, multMat, nrow, & beta, result, ncol);
+  F77_NAME(dsyrk)("L", "T", ncol, nrow, & alpha, multMat, nrow, & beta, result, ncol);
 
   size_t nSlow = 0;
 
@@ -1113,7 +1113,7 @@ void bicor1Fast(double * x, int * nrow, int * ncol, double * maxPOutliers,
   // The main loop is actually a matrix multiplication
 
   double alpha = 1.0, beta = 0.0;
-  dsyrk_("L", "T", ncol, nrow, & alpha, multMat, nrow, & beta, result, ncol);
+  F77_NAME(dsyrk)("L", "T", ncol, nrow, & alpha, multMat, nrow, & beta, result, ncol);
 
   // Here I need to recalculate results that have NA's in them.
 
@@ -1769,7 +1769,7 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
   // The main calculation: matrix multiplication
   
   double alpha = 1.0, beta = 1.0;
-  dgemm_("T", "N", ncolx, ncoly, nrow, & alpha, multMatX, nrow, multMatY, nrow, & beta, result, ncolx);
+  F77_NAME(dgemm)("T", "N", ncolx, ncoly, nrow, & alpha, multMatX, nrow, multMatY, nrow, & beta, result, ncolx);
 
   // Rprintf("matrix multiplication result:\n");
   // for (int i=0; i<ncx; i++)
@@ -2164,7 +2164,7 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
   // The main calculation: matrix multiplication
   
   double alpha = 1.0, beta = 1.0;
-  dgemm_("T", "N", ncolx, ncoly, nrow, & alpha, multMatX, nrow, multMatY, nrow, & beta, result, ncolx);
+  F77_NAME(dgemm)("T", "N", ncolx, ncoly, nrow, & alpha, multMatX, nrow, multMatY, nrow, & beta, result, ncolx);
 
   // Remedial calculations
 

@@ -21,7 +21,8 @@ consensusKME(
   useRankPvalue = TRUE,
   rankPvalueOptions = list(calculateQvalue = getQvalues, pValueMethod = "scale"),
   setNames = NULL, 
-  excludeGrey = TRUE, greyLabel = ifelse(is.numeric(moduleLabels), 0, "grey"))
+  excludeGrey = TRUE, 
+  greyLabel = if (is.numeric(moduleLabels)) 0 else "grey")
 }
 \arguments{
   \item{multiExpr}{

@@ -82,7 +82,7 @@ blockSize = function(matrixSize, rectangularBlocks = TRUE, maxMemoryAllocation =
     maxAlloc = maxMemoryAllocation/8;
   }
   maxAlloc = maxAlloc/overheadFactor;
-  
+
   if (rectangularBlocks)
   {
      blockSz = floor(maxAlloc/matrixSize);

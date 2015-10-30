@@ -15,7 +15,8 @@ improve the algorithm in the future to make it useful in a broader range of situ
 labelPoints(
    x, y, labels, 
    cex = 0.7, offs = 0.01, xpd = TRUE, 
-   jiggle = 0, protectEdges = TRUE, ...)
+   jiggle = 0, protectEdges = TRUE, 
+   doPlot = TRUE, ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -44,6 +45,9 @@ regular (such as all points on one straight line).
 
   \item{protectEdges}{ logical: should labels be shifted inside the (actual or virtual) frame of the plot? }
 
+  \item{doPlot}{logical: should the labels be actually added to the plot? Value \code{FALSE} may be useful if
+the user would like to simply compute the best label positions the function can come up with.}
+
   \item{\dots}{
   other arguments to function \code{\link{text}}. 
 }
@@ -64,7 +68,7 @@ within the plot. Sometimes this may cause some overlapping with other points or 
 
 }
 \value{
-  None.
+  Invisibly, a data frame with 3 columns, giving the x and y positions of the labels, and the labels themselves.
 }
 \author{
  Peter Langfelder

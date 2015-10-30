@@ -227,7 +227,7 @@ void tomSimilarityFromAdj(double * adj, int * nGenes,
 
   if (*verbose > 0) Rprintf("%s..matrix multiplication..\n", spaces);
   double alpha = 1.0, beta = 0.0;
-  dsyrk_("L", "N", nGenes, nGenes, & alpha, adj, nGenes, 
+  F77_NAME(dsyrk)("L", "N", nGenes, nGenes, & alpha, adj, nGenes, 
          & beta, tom, nGenes);
 
   if (*verbose > 0) Rprintf("%s..normalization..\n", spaces);

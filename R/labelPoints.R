@@ -6,7 +6,8 @@
 #=================================================================================================
 
 labelPoints = function(x, y, labels, cex = 0.7, offs = 0.01, xpd = TRUE, jiggle = 0, 
-                       protectEdges = TRUE, ...)
+                       protectEdges = TRUE, 
+                       doPlot = TRUE, ...)
 {
   nPts = length(labels);
   box = par("usr");
@@ -159,7 +160,10 @@ labelPoints = function(x, y, labels, cex = 0.7, offs = 0.01, xpd = TRUE, jiggle 
   if (par("xlog")) xt = 10^xt;
   if (par("ylog")) yt = 10^yt;
 
-  text(xt, yt, labels, cex = cex, xpd = xpd, adj = c(0.5, 0.5), ...) 
+  if (doPlot)
+    text(xt, yt, labels, cex = cex, xpd = xpd, adj = c(0.5, 0.5), ...) 
+
+  invisible(data.frame(x = xt, y= yt, label = labels));
 }
 
 

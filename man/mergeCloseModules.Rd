@@ -21,7 +21,7 @@ mergeCloseModules(
 
   # Input handling options
   checkDataFormat = TRUE,
-  unassdColor = ifelse(is.numeric(colors), 0, "grey"),
+  unassdColor = if (is.numeric(colors)) 0 else "grey",
 
   # Options for eigengene network construction
   corFnc = cor, corOptions = list(use = 'p'),

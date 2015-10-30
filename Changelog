@@ -1,5 +1,70 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
+2015/10/29: 1.48
+
+	. Bugfix in pickHardThreshold (and pickHardThreshold.fromSimilarity):
+	  when the input is a similarity matrix rather than expression data,
+	  the function no longer crashes.
+
+2015/10/09: 1.47-6
+
+	. Bug in consensusTOM fixed that caused a spurious error 
+	  "File names to save blocks of consensus TOM are not unique."
+	  when calculating with more than on block.
+
+	. DIFF: Function consensusProjectiveKMeans can (and will by default) impute
+	  missing data. This may cause differences in preclustering when
+	  missing data are present. To reproduce old results, use
+	  argument imputeMissing = FALSE.
+
+2015/09/30: 1.47-5
+
+	. Function consensusKME is now using internal code for re-arranging
+	  rather than relying on reshape's melt-cast combination due to
+	  performance issues with larger data sets.
+
+	. Imports from/dependence on reshape have been dropped.
+
+	. blockwiseConsensusModules accepts argument cacheBase which replaces
+	  the default "." that has been used.
+
+	. labelPoints now returns a data frame with the label positions, and
+	  accepts argument doPlot that optionally turns off the plotting of
+	  the labels.
+
+	. bicor now produces a better-worded warnings about zero or missing
+	  MAD.
+
+2015/08/07: 1.47-4
+
+	. DIFF: projectiveKMeans now by default imputes missing data in
+	  datExpr at the start of the function. 
+	  This can lead to somewhat different output; old
+	  behaviour can be forced by setting imputeMissing = FALSE. This
+	  change does not affect blockwiseModules since blockwiseModules
+	  imputed missing data before calling projectiveKMeans.
+
+	. Internal code cleanup: several ifelse calls changed to if else
+	  constructs to avoid issues with ifelse generics defined by
+	  bioconductor
+
+	. pickHardThreshold is now more resistant to genes (columns) that have
+	  zero variance. However, their connectivity is considered 0.
+
+	. DIFF: Bugfix in internal code fixes an error in blockwiseModules and
+	  blockwiseConsensusModules where blocks determined by pre-clustering
+	  were incorrectly merged. In rare cases this may cause differences to previous
+	  results. Thanks to Elmar Tobi for reporting this.
+
+2015/06/27: 1.47-2
+
+	. goodGenes and goodSamples, along with their MS versions, should now
+	  run faster thanks to a code clean-up
+
+2015/06/18: 1.47-1
+
+	. Bugfix in empiricalBayesLM fixes a crash in the function.
+
 
 2015/06/13: 1.47
 

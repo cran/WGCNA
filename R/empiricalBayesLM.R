@@ -384,7 +384,8 @@ empiricalBayesLM = function(
   fc.EB = fitAndCoeffs(beta.EB, sigma.EB);
 
   betaValid.all = matrix(FALSE, nc+1, N.original);
-  betaValid.all[, keepY] = betaValid;
+  betaValid.all[-1, keepY] = betaValid;
+  betaValid.all[1, keepY] = TRUE;
   dimnames(betaValid.all) = dimnames(fc.OLS$beta);
 
   list( adjustedData = fc.EB$residualsWithMean,
@@ -445,9 +446,17 @@ empiricalBayesLM = function(
   out;
 }
 
-bicovWeights = function(x, pearsonFallback = TRUE, maxPOutliers = 1)
+
+# Argument refWeight:
+# w = (1-u^2)^2
+# u^2 = 1-sqrt(w)
+# referenceU = sqrt(1-sqrt(referenceW))
+
+bicovWeights = function(x, pearsonFallback = TRUE, maxPOutliers = 1,
+                        outlierReferenceWeight = 0.5625,
+                        defaultWeight = 0)
 {
-  referenceU = 0.5;
+  referenceU = sqrt(1-sqrt(outlierReferenceWeight^2));
   dimX = dim(x);
   dimnamesX = dimnames(x);
   x = as.matrix(x);
@@ -499,7 +508,8 @@ bicovWeights = function(x, pearsonFallback = TRUE, maxPOutliers = 1)
 
   a = matrix(as.numeric(abs(u)<1), nr, nc);
   weights = a * (1-u^2)^2;
-  weights[is.na(weights)] = 0;
+  weights[is.na(x)] = 0;
+  weights[!is.finite(weights)] = defaultWeight;
   dim(weights) = dimX;
   if (!is.null(dimX)) dimnames(weights) = dimnamesX;
   weights;

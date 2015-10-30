@@ -9,7 +9,9 @@ weights are designed such that outliers get smaller weights; the weights become 
 9 median absolute deviations from the median.
 }
 \usage{
-bicovWeights(x, pearsonFallback = TRUE, maxPOutliers = 1)
+bicovWeights(x, pearsonFallback = TRUE, maxPOutliers = 1,
+             outlierReferenceWeight = 0.5625,
+             defaultWeight = 0)
 }
 \arguments{
   \item{x}{
@@ -20,8 +22,15 @@ If two-dimensional, the weights will be calculated separately on each column.
 Logical: if the median absolute deviation is zero, should standard deviation be substituted?
 }
   \item{maxPOutliers}{
-Optional specification of the maximum proportion of outliers, i.e., data with weights equal 0. 
+Optional specification of the maximum proportion of outliers, i.e., data with weights equal to
+\code{outlierReferenceWeight} below.
 }
+  \item{outlierReferenceWeight}{A number between 0 and 1 specifying what is to be considered an outlier when
+calculating the proportion of outliers.}
+
+  \item{defaultWeight}{Value used for weights that correspond to a finite \code{x} but the weights themselves
+would not be finite, for example, when a column in \code{x} is constant.}
+
 }
 \value{
   A vector or matrix of the same dimensions as the input \code{x} giving the weights.

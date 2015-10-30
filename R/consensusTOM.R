@@ -563,9 +563,8 @@ consensusTOM = function(
     if (saveConsensusTOMs)
     {
        TOMFiles[blockIndex] = .substituteTags(consensusTOMFileNames, "%b", blockNo);
-       if (any(duplicated(TOMFiles)))
-         stop(paste("File names to save blocks of consensus TOM are not unique.\n",
-                    "  Please make sure you use the tag %b somewhere in the file name -\n",
+       if (TOMFiles[blockIndex]==consensusTOMFileNames)
+         stop(paste("File name for consensus TOM must contain the tag %b somewhere in the file name -\n",
                     "   - this tag will be replaced by the block number. "));
        save(consTomDS, file = TOMFiles[blockIndex]);
     }

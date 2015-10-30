@@ -73,6 +73,7 @@ blockwiseConsensusModules(
 
      useDiskCache = TRUE, chunkSize = NULL,
      cacheBase = ".blockConsModsCache",
+     cacheDir = ".",
 
      # Alternative consensus TOM input from a previous calculation 
 
@@ -281,6 +282,7 @@ many sets the memory footprint may be too big. }
 
   \item{cacheBase}{ character string containing the desired name for the cache files. The actual file
 names will consists of \code{cacheBase} and a suffix to make the file names unique. }
+  \item{cacheDir}{ character string containing the desired path for the cache files.}
 
 %%%%%%%%%%%%%%
 

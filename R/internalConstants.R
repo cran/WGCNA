@@ -6,7 +6,7 @@
 
 
 .zeroMADWarnings = c("Some results will be NA.", 
-                     "Pearson correlation was used for individual columns with MAD=NA.",
+                     "Pearson correlation was used for individual columns with zero (or missing) MAD.",
                      "Pearson correlation was used for entire variable.");
 
 ..minNGenes = 4;

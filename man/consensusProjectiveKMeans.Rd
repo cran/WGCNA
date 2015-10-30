@@ -13,6 +13,7 @@ consensusProjectiveKMeans(
   networkType = "unsigned", 
   randomSeed = 54321,
   checkData = TRUE,
+  imputeMissing = TRUE,
   useMean = (length(multiExpr) > 3),
   maxIterations = 1000, 
   verbose = 0, indent = 0)
@@ -41,6 +42,10 @@ starts. If a current seed exists, it is saved and restored upon exit. }
   \item{checkData}{ logical: should data be checked for genes with zero variance and 
 genes and samples with excessive numbers of missing samples? Bad samples are ignored; returned cluster
 assignment for bad genes will be \code{NA}. }
+
+   \item{imputeMissing}{ logical: should missing values in \code{datExpr} be imputed before the calculations
+start? If the missing data are not imputed, they will be replaced by 0 which can be problematic.}
+
 
   \item{useMean}{ logical: should mean distance across sets be used instead of maximum? See details. }
 

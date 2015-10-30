@@ -29,7 +29,7 @@ moduleColor.getMEprefix = function()
 # This requires the R library impute
 
 moduleEigengenes = function(expr, colors, impute = TRUE, nPC = 1, align = "along average",
-                            excludeGrey = FALSE, grey = ifelse(is.numeric(colors),  0, "grey"),
+                            excludeGrey = FALSE, grey = if (is.numeric(colors))  0 else "grey",
                             subHubs = TRUE, trapErrors = FALSE, 
                             returnValidOnly = trapErrors,
                             softPower = 6, scale = TRUE,
@@ -134,7 +134,7 @@ moduleEigengenes = function(expr, colors, impute = TRUE, nPC = 1, align = "along
         # varExpl[,i]= (svd1$d[1:min(n,p,nVarExplained)])^2/sum(svd1$d^2)
         if (verbose > 5) printFlush(paste(spaces, " ...calculating PVE"));
         veMat = cor(svd1$v[, c(1:min(n,p,nVarExplained))], t(datModule), use = "p") 
-        varExpl[c(1:min(n,p,nVarExplained)),i]= apply(veMat^2, 1, mean, na.rm = TRUE)
+        varExpl[c(1:min(n,p,nVarExplained)),i]= rowMeans(veMat^2, na.rm = TRUE)
         # this is the first principal component
         svd1$v[,1]
       }, silent = TRUE);
@@ -156,7 +156,7 @@ moduleEigengenes = function(expr, colors, impute = TRUE, nPC = 1, align = "along
           scaledExpr = scale(t(datModule));
           covEx = cov(scaledExpr, use = "p");
           modAdj = abs(covEx)^softPower;
-          kIM = (apply(modAdj, 1, sum, na.rm = TRUE))^3;
+          kIM = (rowMeans(modAdj, na.rm = TRUE))^3;
           if (max(kIM, na.rm = TRUE) > 1) kIM = kIM-1;
           kIM[is.na(kIM)] = 0;
           hub = which.max(kIM)
@@ -166,7 +166,7 @@ moduleEigengenes = function(expr, colors, impute = TRUE, nPC = 1, align = "along
           pcxMat = scaledExpr * 
                 matrix(kIM * alignSign, nrow = nrow(scaledExpr), ncol = ncol(scaledExpr), byrow = TRUE) /
                 sum(kIM);
-          pcx = apply(pcxMat, 1, sum, na.rm = TRUE);
+          pcx = rowMeans(pcxMat, na.rm = TRUE);
           varExpl[1, i] = mean(cor(pcx, t(datModule), use = "p")^2, na.rm = TRUE)
           pcx
         }, silent = TRUE);
@@ -193,7 +193,7 @@ moduleEigengenes = function(expr, colors, impute = TRUE, nPC = 1, align = "along
       ae = try( 
       {
         if (isPC[i]) scaledExpr = scale(t(datModule));
-        averExpr[, i] = apply(scaledExpr, 1, mean, na.rm = TRUE);
+        averExpr[, i] = rowMeans(scaledExpr, na.rm = TRUE);
         if (align == "along average")
         {
           if (verbose>4) printFlush(paste(spaces,
@@ -836,8 +836,8 @@ checkSets = function(data, checkStructure = FALSE, useSets = NULL)
 multiSetMEs = function(exprData, colors, universalColors = NULL, useSets = NULL, 
                        useGenes = NULL, impute = TRUE, 
                        nPC = 1, align = "along average", excludeGrey = FALSE, 
-                       grey = ifelse(is.null(universalColors), ifelse(is.numeric(colors), 0, "grey"), 
-                                     ifelse(is.numeric(universalColors), 0, "grey")),
+                       grey = if (is.null(universalColors)) {if(is.numeric(colors)) 0 else "grey"} else
+                                     if (is.numeric(universalColors)) 0 else "grey",
                        subHubs = TRUE,
                        trapErrors = FALSE, 
                        returnValidOnly = trapErrors,
@@ -845,12 +845,10 @@ multiSetMEs = function(exprData, colors, universalColors = NULL, useSets = NULL,
                        verbose = 1, indent = 0)
 {
   spaces = indentSpaces(indent);
-
   nSets = length(exprData);
   setsize = checkSets(exprData, useSets = useSets);
   nGenes = setsize$nGenes;
   nSamples = setsize$nSamples;
-
   if (verbose>0) printFlush(paste(spaces,"multiSetMEs: Calculating module MEs."));
   MEs = vector(mode="list", length=nSets);
   consValidMEs = NULL;
@@ -969,7 +967,7 @@ mergeCloseModules = function(
 
   # Input handling options
   checkDataFormat = TRUE, 
-  unassdColor = ifelse(is.numeric(colors), 0, "grey"), 
+  unassdColor = if (is.numeric(colors)) 0 else "grey", 
 
   # Options for eigengene network construction
   corFnc = cor, corOptions = list(use = 'p'),
@@ -1365,12 +1363,17 @@ colname1=c(colname1,"Density", "Centralization", "Heterogeneity")
         ncol = length(colname1)))
     names(datout) = colname1
     datout[, 1] = cutVector
-    for (i in 1:length(cutVector)) {
-        cut1 = cutVector[i]
-        datout[i, 2] = 2 * (1 - pt(sqrt(nSamples - 1) * cut1/sqrt(1 - 
-            cut1^2), nSamples - 1))
-    }
-    if (exists("fun1")) rm(fun1)
+    if (dataIsExpr)
+    {
+      for (i in 1:length(cutVector)) 
+      {
+          cut1 = cutVector[i]
+          datout[i, 2] = 2 * (1 - pt(sqrt(nSamples - 1) * cut1/sqrt(1 - 
+              cut1^2), nSamples - 1))
+      }
+    } else 
+       datout[, 2] = NA;
+
     fun1 = function(x, dataIsExpr) {
         if (dataIsExpr)
         {
@@ -1381,7 +1384,7 @@ colname1=c(colname1,"Density", "Centralization", "Heterogeneity")
           corx = x;
         out1 = rep(NA, length(cutVector))
         for (j in c(1:length(cutVector))) {
-            out1[j] = sum(corx > cutVector[j])
+            out1[j] = sum(corx > cutVector[j], na.rm = TRUE)
         }
         out1
     }
@@ -1392,9 +1395,9 @@ colname1=c(colname1,"Density", "Centralization", "Heterogeneity")
         datout[i, 3] = SFT1$Rsquared.SFT  
         datout[i, 4] = SFT1$slope.SFT 
         datout[i, 5] = SFT1$truncatedExponentialAdjRsquared
-        datout[i, 6] = mean(khelp,na.rm=T)
-        datout[i, 7] = median(khelp,na.rm=T)
-        datout[i, 8] = max(khelp,na.rm=T)
+        datout[i, 6] = mean(khelp,na.rm = TRUE)
+        datout[i, 7] = median(khelp,na.rm = TRUE)
+        datout[i, 8] = max(khelp,na.rm = TRUE)
 if(moreNetworkConcepts) { 
 Density = sum(khelp)/(nGenes * (nGenes - 1))
 datout[i, 9] =Density
@@ -1407,8 +1410,7 @@ datout[i, 11] = Heterogeneity
     print(signif(data.frame(datout),3))
     ind1 = datout[, 3] > RsquaredCut
     indcut = NA
-    indcut = ifelse(sum(ind1) > 0, min(c(1:length(ind1))[ind1]), 
-        indcut)
+    indcut = if (sum(ind1) > 0) min(c(1:length(ind1))[ind1]) else indcut;
     cutEstimate = cutVector[indcut][[1]]
     list(cutEstimate = cutEstimate, fitIndices = data.frame(datout))
 } # end of function pickHardThreshold
@@ -1449,7 +1451,7 @@ pickSoftThreshold = function (data, dataIsExpr = TRUE, RsquaredCut = 0.85,
 
     if (is.null(blockSize))
     {
-      blockSize = blockSize(nGenes, rectangularBlocks = TRUE);
+      blockSize = blockSize(nGenes, rectangularBlocks = TRUE, maxMemoryAllocation = 2^30);
       if (verbose > 0) 
         printFlush(spaste("pickSoftThreshold: will use block size ", blockSize, "."))
     }
@@ -1539,9 +1541,9 @@ pickSoftThreshold = function (data, dataIsExpr = TRUE, RsquaredCut = 0.85,
         datout[i, 2] = SFT1$Rsquared.SFT  
         datout[i, 3] = SFT1$slope.SFT 
         datout[i, 4] = SFT1$truncatedExponentialAdjRsquared
-        datout[i, 5] = mean(khelp,na.rm=T)
-        datout[i, 6] = median(khelp,na.rm=T)
-        datout[i, 7] = max(khelp,na.rm=T)
+        datout[i, 5] = mean(khelp,na.rm = TRUE)
+        datout[i, 6] = median(khelp,na.rm = TRUE)
+        datout[i, 7] = max(khelp,na.rm = TRUE)
         if(moreNetworkConcepts) 
         { 
            Density = sum(khelp)/(nGenes * (nGenes - 1))
@@ -1555,7 +1557,7 @@ pickSoftThreshold = function (data, dataIsExpr = TRUE, RsquaredCut = 0.85,
     print(signif(data.frame(datout),3))
     ind1 = datout[, 2] > RsquaredCut
     indcut = NA
-    indcut = ifelse(sum(ind1) > 0, min(c(1:length(ind1))[ind1]), indcut)
+    indcut = if (sum(ind1) > 0) min(c(1:length(ind1))[ind1]) else indcut;
     powerEstimate = powerVector[indcut][[1]]
     list(powerEstimate = powerEstimate, fitIndices = data.frame(datout))
 }
@@ -1563,7 +1565,7 @@ pickSoftThreshold = function (data, dataIsExpr = TRUE, RsquaredCut = 0.85,
 
 # ===================================================
 # The function ScaleFreePlot1 creates a plot for checking scale free topology
-# when truncated1=T is specificed, it provides the R^2 measures for the following
+# when truncated1 = TRUE is specificed, it provides the R^2 measures for the following
 # degree distributions: a) scale free topology, b) log-log R^2 and c) truncated exponential R^2
 
 # The function ScaleFreePlot1 creates a plot for checking scale free topology
@@ -2262,7 +2264,7 @@ plotClusterTreeSamples=function(datExpr, y = NULL, traitLabels = NULL, yLabels =
     {
       y = y-min(0, min(y, na.rm = TRUE)) + 1;
     } else {
-      y = (y>=median(y, na.rm=T)) + 1;
+      y = (y>=median(y, na.rm = TRUE)) + 1;
     }
     plotDendroAndColors(dendro, colors = y, groupLabels = traitLabels, rowText = yLabels, 
                         setLayout = setLayout, 
@@ -2303,14 +2305,14 @@ TOMplot = function(dissim, dendro, Colors=NULL, ColorsLeft = Colors, terrainColo
      if (terrainColors) {
        .heatmap(as.matrix(dissim), Rowv=as.dendrogram(dendro, hang = 0.1), 
                 Colv= as.dendrogram(dendro, hang = 0.1), 
-                scale="none", revC=T, ColSideColors=as.character(labeltree),
-                RowSideColors=as.character(labelrow), labRow=F, labCol=F, 
+                scale="none", revC = TRUE, ColSideColors=as.character(labeltree),
+                RowSideColors=as.character(labelrow), labRow=FALSE, labCol=FALSE, 
                 col = terrain.colors(100), setLayout = setLayout, ...) 
      } else {
        .heatmap(as.matrix(dissim), Rowv=as.dendrogram(dendro, hang = 0.1), 
                 Colv= as.dendrogram(dendro, hang = 0.1), 
-               scale="none",revC=T, ColSideColors=as.character(labeltree),
-               RowSideColors=as.character(labelrow), labRow=F, labCol=FALSE, setLayout = setLayout,
+               scale="none",revC = TRUE, ColSideColors=as.character(labeltree),
+               RowSideColors=as.character(labelrow), labRow=FALSE, labCol=FALSE, setLayout = setLayout,
                ...)
      } #end of if
   }
@@ -2348,7 +2350,7 @@ plotNetworkHeatmap = function(datExpr,  plotGenes, useTOM = TRUE, power = 6 ,
     labelrow  = names(data.frame(datErest))
     labelrow[hier1$order[length(labeltree):1]]=labelrow[hier1$order]
     options(expressions = 10000)
-    heatmap(as.matrix(diss1),Rowv=as.dendrogram(hier1),Colv= as.dendrogram(hier1), scale="none", revC=T, 
+    heatmap(as.matrix(diss1),Rowv=as.dendrogram(hier1),Colv= as.dendrogram(hier1), scale="none", revC = TRUE, 
             labRow= labeltree, labCol= labeltree,main=main)
   } # end of if (nGenes> 2 )
 } # end of function
@@ -2389,7 +2391,7 @@ plotModuleSignificance = function(geneSignificance, colors, boxplot = FALSE,
             main = title, ...)
     addErrorBars(as.vector(means1), as.vector(1.96*se1), two.side=TRUE)
   } else {
-    boxplot(split(geneSignificance,colors),notch=T,varwidth=T, col= names(table(colors) ),ylab=ylab,
+    boxplot(split(geneSignificance,colors),notch = TRUE,varwidth = TRUE, col= names(table(colors) ),ylab=ylab,
             main = title, ...)
   }
 } # end of function
@@ -2528,9 +2530,9 @@ signedKME = function(datExpr, datME, outputColumnName="kME",
      stop("Number of samples (rows) in 'datExpr' and 'datME' must be the same.")
   varianceZeroIndicatordatExpr=as.vector(apply(as.matrix(datExpr),2,var, na.rm = TRUE))==0
   varianceZeroIndicatordatME =as.vector(apply(as.matrix(datME),2,var, na.rm = TRUE))==0
-  if (sum(varianceZeroIndicatordatExpr,na.rm=T)>0 ) 
+  if (sum(varianceZeroIndicatordatExpr,na.rm = TRUE)>0 ) 
     warning("Some genes are constant. Hint: consider removing constant columns from datExpr." )
-  if (sum(varianceZeroIndicatordatME,na.rm=T)>0 ) 
+  if (sum(varianceZeroIndicatordatME,na.rm = TRUE)>0 ) 
     warning(paste("Some module eigengenes are constant, which is suspicious.\n",
             "    Hint: consider removing constant columns from datME." ))
   no.presentdatExpr=as.vector(apply(!is.na(as.matrix(datExpr)),2, sum) )
@@ -2580,7 +2582,7 @@ clusterCoef=function(adjMat)
 
 # ===================================================
 # The function addErrorBars  is used to create error bars in a barplot
-# usage: addErrorBars(as.vector(means), as.vector(stderrs), two.side=F)
+# usage: addErrorBars(as.vector(means), as.vector(stderrs), two.side=FALSE)
 addErrorBars<-function(means, errors, two.side=FALSE)
 {
  if(!is.numeric(means)) {
@@ -2610,7 +2612,7 @@ dim=c(1,length(means))))+0:(length(means)-1)+.5
 
 # ===================================================
 # this function computes the standard error
-stdErr <- function(x){ sqrt( var(x,na.rm=T)/sum(!is.na(x))   ) }
+stdErr <- function(x){ sqrt( var(x,na.rm = TRUE)/sum(!is.na(x))   ) }
 
 # ===================================================
 # The following two functions are for displaying the pair-wise correlation in a panel when using the command "pairs()"
@@ -2870,7 +2872,7 @@ verboseBarplot = function (x, g,  main = "",
     if (addCellCounts) {
        cellCountsF = function(x) {  sum(!is.na(x)) }
        cellCounts=tapply(x, factor(g), cellCountsF)
-       mtext(text=cellCounts,side=ifelse(!horiz, 1,2) ,outer=F,at=ret, col="darkgrey",las=2,cex=.8,...)
+       mtext(text=cellCounts,side=if(horiz) 2 else 1,outer=FALSE,at=ret, col="darkgrey",las=2,cex=.8,...)
     } # end of if (addCellCounts)
     abline(h = 0)
     if (numberStandardErrors > 0) {
@@ -3325,7 +3327,7 @@ plotDendroAndColors = function(dendro, colors, groupLabels = NULL, rowText = NUL
   par(mar = c(0, marAll[2], marAll[3], marAll[4]));
   plot(dendro, labels = dendroLabels, cex = cex.dendroLabels, ...);
   if (addGuide) 
-    addGuideLines(dendro, count = ifelse(guideAll, length(dendro$height)+1, guideCount), hang = guideHang);
+    addGuideLines(dendro, count = if(guideAll) length(dendro$height)+1 else guideCount, hang = guideHang);
   if (!is.null(abHeight)) abline(h=abHeight, col = abCol);
   par(mar = c(marAll[1], marAll[2], 0, marAll[4]));
   plotColorUnderTree(dendro, colors, groupLabels, cex.rowLabels = cex.colorLabels, rowText = rowText,
@@ -3406,8 +3408,8 @@ corPredictionSuccess=function( corPrediction, corTestSet, topNumber=100 )
     ranknegative=rank(as.matrix(corPrediction)[,i], ties.method="first")
     for (j in c(1:length(topNumber) ) ) 
     {
-      meancorTestSetPositive[j,i]=mean(corTestSet[rankpositive<= topNumber[j]],na.rm=T)
-      meancorTestSetNegative[j,i]= mean(corTestSet[ranknegative<=topNumber[j]],na.rm=T)
+      meancorTestSetPositive[j,i]=mean(corTestSet[rankpositive<= topNumber[j]],na.rm = TRUE)
+      meancorTestSetNegative[j,i]= mean(corTestSet[ranknegative<=topNumber[j]],na.rm = TRUE)
     } # end of j loop over topNumber
   } # end of i loop over predictors
   meancorTestSetOverall=data.frame((meancorTestSetPositive-meancorTestSetNegative)/2)
@@ -3698,9 +3700,9 @@ simulateModule = function(ME, nGenes, nNearGenes = 0, minCor = 0.3, maxCor = 1,
 #.SimulateModule=function(ME, size,minimumCor=.3) {
 #if (size<3) print("WARNING: module size smaller than 3")
 #if(minimumCor==0) minimumCor=0.0001;
-#maxnoisevariance=var(ME,na.rm=T)*(1/minimumCor^2-1)
+#maxnoisevariance=var(ME,na.rm = TRUE)*(1/minimumCor^2-1)
 #SDvector=sqrt(c(1:size)/size*maxnoisevariance)
-#datSignal=suppressWarnings(matrix(c(ME, ME ,-ME),nrow=size ,ncol=length(ME) ,byrow=T))
+#datSignal=suppressWarnings(matrix(c(ME, ME ,-ME),nrow=size ,ncol=length(ME) ,byrow = TRUE))
 #datNoise=SDvector* matrix(rnorm(size*length(ME)),nrow=size ,ncol=length(ME))
 #datModule=datSignal+datNoise
 #t(datModule)
@@ -4054,7 +4056,7 @@ simulateDatExpr5Modules = function(
    if (as.numeric(backgroundCor) > 0)  
    {
      MEbackground=MEturquoise
-     datSignal= (matrix(MEbackground,nrow=length(MEturquoise) ,ncol=nGenes,byrow=F))
+     datSignal= (matrix(MEbackground,nrow=length(MEturquoise) ,ncol=nGenes,byrow=FALSE))
      datExpr= datExpr+ as.numeric(backgroundCor)*datSignal
    }# end of if backgroundCor
 
@@ -4090,9 +4092,9 @@ automaticNetworkScreening = function(
     stop("Number of samples in 'y' and 'datExpr' disagree: length(y) != dim(as.matrix(datExpr))[[1]] ")
 
   nAvailable=apply(as.matrix(!is.na(datExpr)), 2,sum)
-  ExprVariance=apply(as.matrix(datExpr),2,var, na.rm=T ) 
+  ExprVariance=apply(as.matrix(datExpr),2,var, na.rm = TRUE ) 
   restrictGenes = (nAvailable>=..minNSamples) & (ExprVariance>0)
-  numberUsefulGenes=sum(restrictGenes,na.rm=T) 
+  numberUsefulGenes=sum(restrictGenes,na.rm = TRUE) 
   if ( numberUsefulGenes<3 ) 
   {
     stop(paste("IMPORTANT: there are not enough useful genes. \n", 
@@ -4132,11 +4134,11 @@ automaticNetworkScreening = function(
   EScounts = tapply(abs(ESvector),cut(abs(ESvector),seq(from=0,to=1, by=.1)),length )
   EScounts[is.na(EScounts)] = 0;
 
-  rr=max(abs(ES),na.rm=T)
+  rr=max(abs(ES),na.rm = TRUE)
   AAcriterion=sqrt(length(y)-2) * rr/sqrt(1-rr^2)
 
 
-  ESy=(1+max(abs(ES), na.rm=T))/2
+  ESy=(1+max(abs(ES), na.rm = TRUE))/2
   ES=data.frame(ES, ESy=ESy)
   
   # to avoid dividing by zero, we set correlation that are 1 equal to .9999
@@ -4180,9 +4182,9 @@ automaticNetworkScreeningGS = function(
 
   mergeCutHeight1 = dynamicMergeCut(n= dim(as.matrix(datExpr))[[1]])
   nAvailable=apply(as.matrix(!is.na(datExpr)), 2,sum)
-  ExprVariance=apply(as.matrix(datExpr),2,var, na.rm=T ) 
+  ExprVariance=apply(as.matrix(datExpr),2,var, na.rm = TRUE ) 
   restrictGenes=nAvailable>=4 & ExprVariance>0
-  numberUsefulGenes=sum(restrictGenes,na.rm=T) 
+  numberUsefulGenes=sum(restrictGenes,na.rm = TRUE) 
   if ( numberUsefulGenes<3 ) 
   {
     stop(paste("IMPORTANT: there are not enough useful genes. \n", 
@@ -4236,12 +4238,12 @@ hubGeneSignificance=function(datKME, GS )
   nGenes= dim(as.matrix(datKME))[[1]]
   if ( length(GS) !=  nGenes ) 
     stop("Numbers of genes in 'datKME' and 'GS' are not compatible. ")
-  Kmax=as.numeric(apply(as.matrix(abs(datKME)),2,max, na.rm=T))
+  Kmax=as.numeric(apply(as.matrix(abs(datKME)),2,max, na.rm = TRUE))
   Kmax[Kmax==0]=1
-  datKME=scale(datKME, center=F, scale=Kmax)
-  sumKsq=as.numeric(apply(as.matrix(datKME^2) , 2, sum, na.rm=T))
+  datKME=scale(datKME, center=FALSE, scale=Kmax)
+  sumKsq=as.numeric(apply(as.matrix(datKME^2) , 2, sum, na.rm = TRUE))
   sumKsq[sumKsq==0]=1
-  HGS=as.numeric(apply(I(GS)*datKME, 2, sum,na.rm=T))/ sumKsq
+  HGS=as.numeric(apply(I(GS)*datKME, 2, sum,na.rm = TRUE))/ sumKsq
   as.numeric(HGS)
 } #end of function hubGeneSignificance
 
@@ -4275,9 +4277,9 @@ networkScreeningGS = function(datExpr , datME, GS ,
            "       dim(as.matrix(datExpr))[[2]] != length(GS)   "));
 
   nAvailable=apply(as.matrix(!is.na(datExpr)), 2,sum)
-  ExprVariance=apply(as.matrix(datExpr),2,var, na.rm=T ) 
+  ExprVariance=apply(as.matrix(datExpr),2,var, na.rm = TRUE ) 
   restrictGenes=nAvailable>=4 & ExprVariance>0
-  numberUsefulGenes=sum(restrictGenes,na.rm=T) 
+  numberUsefulGenes=sum(restrictGenes,na.rm = TRUE) 
   if ( numberUsefulGenes<3 ) 
   {
     stop(paste("IMPORTANT: there are fewer than 3 useful genes. \n", 
@@ -4327,13 +4329,13 @@ networkScreeningGS = function(datExpr , datME, GS ,
   for (i in c(10,20,50,100,200,500,1000)) 
   {
     printFlush(paste("Top ", i, " list of genes: prop. of agreement = ", 
-                signif(sum(rankGS.Weighted<=i & rankGS<=i,na.rm=T)/i,3)   ))
+                signif(sum(rankGS.Weighted<=i & rankGS<=i,na.rm = TRUE)/i,3)   ))
   } # end of for loop
-  if (mean(abs(GS.Weighted),na.rm=T)>0) 
+  if (mean(abs(GS.Weighted),na.rm = TRUE)>0) 
   {
-    GS.Weighted=GS.Weighted/mean(abs(GS.Weighted),na.rm=T)*mean(abs(GS),na.rm=T)
+    GS.Weighted=GS.Weighted/mean(abs(GS.Weighted),na.rm = TRUE)*mean(abs(GS),na.rm = TRUE)
   }
-  if (addGS ) GS.Weighted=apply(data.frame(GS.Weighted, GS), 1,mean, na.rm=T)
+  if (addGS ) GS.Weighted=apply(data.frame(GS.Weighted, GS), 1,mean, na.rm = TRUE)
   datout=data.frame(GS.Weighted, GS)
 
   datout
@@ -4391,7 +4393,7 @@ networkScreening = function(
 
     #weightESy
     ES.CorBatch[ES.CorBatch>.999]= weightESy*1+ (1- weightESy)* 
-                                    max(abs(ES.CorBatch[ES.CorBatch <.999 ]),na.rm=T)
+                                    max(abs(ES.CorBatch[ES.CorBatch <.999 ]),na.rm = TRUE)
     # the following omits the diagonal when datME=datExpr
     if (nGenes==nMEs & removeDiag) {diag(datKMEBatch[index1,])=0}
     if (nGenes==nMEs )
@@ -4407,14 +4409,14 @@ networkScreening = function(
   RawCor.Weighted=RawCor.Weighted/nMEs
   RawCor.Weighted[NoAvailable< minimumSampleSize]=NA
   #to avoid dividing by zero we scale it as follows
-  if (max(abs(RawCor.Weighted),na.rm=T)==1) RawCor.Weighted=RawCor.Weighted/1.0000001
-  if (max(abs( Cor.Standard),na.rm=T)==1)  Cor.Standard=Cor.Standard/1.0000001
+  if (max(abs(RawCor.Weighted),na.rm = TRUE)==1) RawCor.Weighted=RawCor.Weighted/1.0000001
+  if (max(abs( Cor.Standard),na.rm = TRUE)==1)  Cor.Standard=Cor.Standard/1.0000001
   RawZ.Weighted=sqrt(NoAvailable -2)*RawCor.Weighted/sqrt(1-RawCor.Weighted^2)
   Z.Standard= sqrt(NoAvailable -2)* Cor.Standard/sqrt(1-Cor.Standard^2)
   
-  if (sum(abs(Z.Standard),na.rm=T) >0 ) 
+  if (sum(abs(Z.Standard),na.rm = TRUE) >0 ) 
   {
-    Z.Weighted=RawZ.Weighted/sum(abs(RawZ.Weighted),na.rm=T)*sum(abs(Z.Standard),na.rm=T)
+    Z.Weighted=RawZ.Weighted/sum(abs(RawZ.Weighted),na.rm = TRUE)*sum(abs(Z.Standard),na.rm = TRUE)
   } # end of if 
   h1=Z.Weighted/sqrt(NoAvailable-2)
   Cor.Weighted=h1/sqrt(1+h1^2)
@@ -4454,7 +4456,7 @@ networkScreening = function(
   for (i in c(10,20,50,100,200,500,1000)) 
   {
     printFlush(paste("Top ", i, " list of genes: prop. agree = ", 
-                signif(sum(rankCor.Weighted<=i & rankCor.Standard<=i,na.rm=T)/i,3)))
+                signif(sum(rankCor.Weighted<=i & rankCor.Standard<=i,na.rm = TRUE)/i,3)))
   } # end of for loop
 
 
@@ -5012,7 +5014,7 @@ labeledBarplot = function ( Matrix, labels, colorLabels = FALSE, colored = TRUE,
     text(((1:nlabels)-1)*spacing +spacing/2 , ymin - 0.02*yrange, srt = 45, 
           adj = 1, labels = labels, xpd = TRUE, cex = cex.lab, srt = xLabelsAngle)
   }
-  axis(2, labels = T)
+  axis(2, labels = TRUE)
 }
 
 #--------------------------------------------------------------------------
@@ -5821,7 +5823,7 @@ randIndex <- function(tab, adjust=TRUE)
     b <- b+.choosenew(ni,2)
     nn <- nn+ni
   }
-  if(adjust==T) {
+  if(adjust) {
     d <- .choosenew(nn,2)
     adrand <- (a-(b*c)/d)/(0.5*(b+c)-(b*c)/d)
     adrand
@@ -5845,6 +5847,10 @@ goodGenes = function(datExpr, useSamples = NULL, useGenes = NULL,
                      minFraction = 1/2, minNSamples = ..minNSamples, minNGenes = ..minNGenes,
                      verbose = 1, indent = 0)
 {
+  datExpr = as.matrix(datExpr);
+  if (is.atomic(datExpr) && (mode(datExpr)!='numeric')) 
+     stop("datExpr must contain numeric data.");
+
   if (is.null(useGenes)) useGenes = rep(TRUE, ncol(datExpr));
   if (is.null(useSamples)) useSamples = rep(TRUE, nrow(datExpr));
 
@@ -5855,11 +5861,12 @@ goodGenes = function(datExpr, useSamples = NULL, useGenes = NULL,
 
   nSamples = sum(useSamples);
   nGenes = sum(useGenes);
-  nPresent = apply(!is.na(datExpr[useSamples, useGenes]), 2, sum)
+  nPresent = colSums(!is.na(datExpr[useSamples, useGenes]))
   gg = useGenes;
   gg[useGenes][nPresent<minNSamples] = FALSE;
-  var = apply(datExpr[useSamples, gg], 2, sd, na.rm = TRUE);
-  nNAsGenes = apply(is.na(datExpr[useSamples, gg]), 2, sum);
+  var = colVars(datExpr[useSamples, gg, drop = FALSE], na.rm = TRUE);
+  var[is.na(var)] = 0;
+  nNAsGenes = colSums(is.na(datExpr[useSamples, gg]));
   gg[gg] = (nNAsGenes < (1-minFraction) * nSamples & var>0 & (nSamples-nNAsGenes >= minNSamples));
   if (sum(gg) < minNGenes)
     stop("Too few genes with valid expression levels in the required number of samples.");
@@ -5885,7 +5892,7 @@ goodSamples = function(datExpr, useSamples = NULL, useGenes = NULL,
 
   nSamples = sum(useSamples);
   nGenes = sum(useGenes);
-  nNAsSamples = apply(is.na(datExpr[useSamples, useGenes]), 1, sum);
+  nNAsSamples = rowSums(is.na(datExpr[useSamples, useGenes, drop = FALSE]));
   goodSamples = useSamples;
   goodSamples[useSamples] = ((nNAsSamples < (1-minFraction)*nGenes) & 
                              (nGenes - nNAsSamples >= minNGenes));
@@ -5929,10 +5936,10 @@ goodGenesMS = function(multiExpr, useSamples = NULL, useGenes = NULL,
   {
     if (sum(goodGenes)==0) break;
     if (sum(useSamples[[set]])==0) next;
-    nPresent = apply(!is.na(multiExpr[[set]]$data[useSamples[[set]], goodGenes]), 2, sum)
+    nPresent = colSums(!is.na(multiExpr[[set]]$data[useSamples[[set]], goodGenes, drop = FALSE]))
     goodGenes[goodGenes] = (nPresent >= minNGenes)
-    var = apply(multiExpr[[set]]$data[useSamples[[set]], goodGenes], 2, sd, na.rm = TRUE);
-    nNAsGenes = apply(is.na(multiExpr[[set]]$data[useSamples[[set]], goodGenes]), 2, sum);
+    var = colVars(multiExpr[[set]]$data[useSamples[[set]], goodGenes, drop = FALSE], na.rm = TRUE);
+    nNAsGenes = colSums(is.na(multiExpr[[set]]$data[useSamples[[set]], goodGenes, drop = FALSE]));
     goodGenes[goodGenes][nNAsGenes > (1-minFraction)*nSamples[set] | var==0 | 
                            (nSamples[set]-nNAsGenes < minNSamples)] = FALSE;
   }
@@ -5975,7 +5982,7 @@ goodSamplesMS = function(multiExpr, useSamples = NULL, useGenes = NULL,
   {
     if (sum(useGenes)==0) break;
     if (sum(goodSamples[[set]])==0) next;
-    nNAsSamples = apply(is.na(multiExpr[[set]]$data[useSamples[[set]], useGenes]), 1, sum);
+    nNAsSamples = rowSums(is.na(multiExpr[[set]]$data[useSamples[[set]], useGenes, drop = FALSE]));
     goodSamples[[set]][useSamples[[set]]] = 
           ((nNAsSamples < (1-minFraction) * nGenes) & (nGenes - nNAsSamples >= minNGenes));
     if (sum(goodSamples[[set]]) < minNSamples)
@@ -6223,7 +6230,7 @@ vectorizeMatrix=function(M, diag=FALSE)
   {
       M=as.matrix(M)
       Mtranspose=t(M)
-      abs.difference=max( abs(M-Mtranspose),na.rm=T)
+      abs.difference=max( abs(M-Mtranspose),na.rm = TRUE)
       if (abs.difference<10^(-14) ) 
       {
           out=M[upper.tri(M,diag)]  
@@ -6324,7 +6331,7 @@ datExpr=data.frame(datExpr)
 
 for (i in 1:no.Columns) {
             Column = as.numeric(as.matrix(datExpr[, i]))
-            var1 = var(Column, na.rm = T)
+            var1 = var(Column, na.rm = TRUE)
             if (var1 == 0 | is.na(var1)) {
                 pvalueWald[i] = NA
                 pvalueLogrank[i] = NA
@@ -6344,7 +6351,7 @@ for (i in 1:no.Columns) {
                 CI.LowerLimitHR[i] = exp(cox1$coef[1] - 1.96 * 
                   cox1$coef[3])
                 C.index[i] = rcorr.cens(Column, Surv(time, event), 
-                  outx = T)[[1]]
+                  outx = TRUE)[[1]]
             } # end of   if (var1 != 0 & !is.na(var1)) 
 
 
@@ -6352,7 +6359,7 @@ for (i in 1:no.Columns) {
                 quantilesE = as.numeric(quantile(Column, prob = percentiles))
                 for (j in 1:length(quantilesE)) {
                   ColumnDichot = I(Column > quantilesE[j])
-                  var1 = var(ColumnDichot, na.rm = T)
+                  var1 = var(ColumnDichot, na.rm = TRUE)
                   if (var1 == 0 | is.na(var1)) {
                     pValuesDichotomized[i, j] = NA
                   } # end of if
@@ -6363,7 +6370,7 @@ for (i in 1:no.Columns) {
                   } # end of if
                 } # end of for (j
                 MinimumDichotPvalue = apply(pValuesDichotomized, 
-                  1, min, na.rm = T)
+                  1, min, na.rm = TRUE)
                } # end of if (dichotomizationResults)
             
 
@@ -6457,7 +6464,7 @@ standardScreeningNumericTrait= function (datExpr, yNumeric, corFnc = cor,
 
   if (areaUnderROC) for (i in 1:dim(datExpr)[[2]]) 
   {
-    AreaUnderROC[i] = rcorr.cens(datExpr[, i], yNumeric, outx = T)[[1]]
+    AreaUnderROC[i] = rcorr.cens(datExpr[, i], yNumeric, outx = TRUE)[[1]]
   }
 
   q.Student=rep(NA, length(pvalueStudent) )
@@ -6508,8 +6515,8 @@ metaZfunction=function(datZ, columnweights=NULL  )
   if ( ! is.null(columnweights) )  {datZ=   t(t(datZ)* columnweights)   } 
   datZpresent= !is.na(datZ)+0.0
   if ( ! is.null(columnweights) )  {datZpresent=   t(t(datZpresent)* columnweights)   } 
-  sumZ=as.numeric(apply(datZ,1,sum,na.rm=T))
-  variance= as.numeric(apply(datZpresent^2 ,1,sum))
+  sumZ=as.numeric(rowSums(datZ, na.rm=TRUE))
+  variance= as.numeric(rowSums(datZpresent^2))
   sumZ/sqrt(variance)
 }
 
@@ -6528,7 +6535,7 @@ rankPvalue=function(datS, columnweights = NULL, na.last = "keep", ties.method = 
         stop("The number of components of the vector columnweights is unequal to the number of columns of datS. Hint: consider transposing datS. ")
 
 if (!is.null(columnweights) ) {
-if ( min(columnweights,na.rm=T)<0 )  stop("At least one component of columnweights is negative, which makes no sense. The entries should be positive numbers")
+if ( min(columnweights,na.rm=TRUE)<0 )  stop("At least one component of columnweights is negative, which makes no sense. The entries should be positive numbers")
 if ( sum(is.na(columnweights))>0 )  stop("At least one component of columnweights is missing, which makes no sense. The entries should be positive numbers")
 if ( sum( columnweights)!= 1 ) {
  # warning("The entries of columnweights do not sum to 1. Therefore, they will divided by the sum. Then the resulting weights sum to 1.");
@@ -6539,7 +6546,7 @@ columnweights= columnweights/sum( columnweights)
     if (pValueMethod != "scale") {
               percentilerank1 = function(x) {
             R1 = rank(x, ties.method = ties.method, na.last = na.last)
-            (R1-.5)/max(R1, na.rm = T)
+            (R1-.5)/max(R1, na.rm = TRUE)
         }
  
         datrankslow = apply(datS, 2, percentilerank1)
@@ -6550,18 +6557,16 @@ columnweights= columnweights/sum( columnweights)
         if (!is.null(columnweights)) {
             datSpresent = t(t(datSpresent) * columnweights)
         }
-        expectedsum = apply(datSpresent, 1, sum, na.rm = T) * 
+        expectedsum = rowSums(datSpresent, na.rm = TRUE) * 
             0.5
-        varsum = apply(datSpresent^2, 1, sum, na.rm = T) * 1/12
-        observed.sumPercentileslow = as.numeric(apply(datrankslow, 
-            1, sum, na.rm = T))
+        varsum = rowSums(datSpresent^2, na.rm = TRUE) * 1/12
+        observed.sumPercentileslow = as.numeric(rowSums(datrankslow, na.rm = TRUE))
         Zstatisticlow = (observed.sumPercentileslow - expectedsum)/sqrt(varsum)
         datrankshigh = apply(-datS, 2, percentilerank1)
         if (!is.null(columnweights)) {
             datrankshigh = t(t(datrankshigh) * columnweights)
         }
-        observed.sumPercentileshigh = as.numeric(apply(datrankshigh, 
-            1, sum, na.rm = T))
+        observed.sumPercentileshigh = as.numeric(rowSums(datrankshigh, na.rm = TRUE))
         Zstatistichigh = (observed.sumPercentileshigh - expectedsum)/sqrt(varsum)
         pValueLow = pnorm((Zstatisticlow))
         pValueHigh = pnorm((Zstatistichigh))
@@ -6591,16 +6596,14 @@ columnweights= columnweights/sum( columnweights)
             datSpresent = t(t(datSpresent) * columnweights)
         }
         expected.value = rep(0, no.rows)
-        varsum = apply(datSpresent^2, 1, sum, na.rm = T) * 1
-        observed.sumScaleddatS = as.numeric(apply(scaled.datS, 
-            1, sum, na.rm = T))
+        varsum = rowSums(datSpresent^2) * 1
+        observed.sumScaleddatS = as.numeric(rowSums(scaled.datS, na.rm = TRUE))
         Zstatisticlow = (observed.sumScaleddatS - expected.value)/sqrt(varsum)
         scaled.minusdatS = scale(-datS)
         if (!is.null(columnweights)) {
             scaled.minusdatS = t(t(scaled.minusdatS) * columnweights)
         }
-        observed.sumScaledminusdatS = as.numeric(apply(scaled.minusdatS, 
-            1, sum, na.rm = T))
+        observed.sumScaledminusdatS = as.numeric(rowSums(scaled.minusdatS, na.rm = TRUE))
         Zstatistichigh = (observed.sumScaledminusdatS - expected.value)/sqrt(varsum)
         pValueLow = pnorm((Zstatisticlow))
         pValueHigh = pnorm((Zstatistichigh))
@@ -6672,6 +6675,37 @@ qvalue.restricted = function(p, trapErrors = TRUE, ...)
 #
 #========================================================================================================
 
+
+.interleave = function(matrices, nameBase = names(matrices), sep = ".", baseFirst = TRUE)
+{
+  # Drop null entries in the list
+  keep = sapply(matrices, function(x) !is.null(x));
+  nameBase = nameBase[keep];
+  matrices = matrices[keep];
+
+  nMats = length(matrices)
+  nCols = ncol(matrices[[1]]);
+
+  dims = lapply(matrices, dim);
+
+  if (baseFirst)
+  {
+     for (m in 1:nMats) colnames(matrices[[m]]) = spaste(nameBase[m], sep, colnames(matrices[[m]]));
+  } else {
+     for (m in 1:nMats) colnames(matrices[[m]]) = spaste(colnames(matrices[[m]]), sep, nameBase[m]);
+  }
+
+  out = as.data.frame(lapply(1:nCols,
+                             function(index, matrices)
+                                as.data.frame(lapply(matrices,
+                                          function(x, i) x[, i, drop = FALSE], index)),
+                             matrices));
+
+  rownames(out) = rownames(matrices[[1]]);
+  out;
+}
+
+
 consensusKME = function(multiExpr, moduleLabels, multiEigengenes = NULL, consensusQuantile = 0,
                         signed = TRUE,
                         useModules = NULL,
@@ -6681,7 +6715,7 @@ consensusKME = function(multiExpr, moduleLabels, multiEigengenes = NULL, consens
                         useRankPvalue = TRUE,
                         rankPvalueOptions = list(calculateQvalue = getQvalues, pValueMethod = "scale"),
                         setNames = NULL, excludeGrey = TRUE,
-                        greyLabel = ifelse(is.numeric(moduleLabels), 0, "grey"))
+                        greyLabel = if (is.numeric(moduleLabels)) 0 else "grey")
 {
   corAndPvalueFnc = match.fun(corAndPvalueFnc);
 
@@ -6865,12 +6899,40 @@ consensusKME = function(multiExpr, moduleLabels, multiEigengenes = NULL, consens
   keep = c(TRUE, TRUE, getQvalues, haveZs);
   varNames = c("kME", "p.kME", "q.kME", "Z.kME")[keep];
   nVars = sum(keep);
-  combined = array(c (kME, p, q, Z), dim = c(nGenes, nModules, nSets, nVars));
 
-  recast = matrix( c(cast(melt(combined), X1~X4~X3~X2)), nGenes, nSets * nModules * nVars);
-  colnames(recast) = spaste( rep(varNames, nSets * nModules),
-                             rep( modLevels, rep(nVars * nSets, nModules)), 
-                             ".", rep( rep(setNames, rep(nVars, nSets)), nModules));
+  dimnames(kME) = list( mtd.colnames(multiExpr), spaste("k", mtd.colnames(multiEigengenes)),
+                                      setNames);
+                                     
+  dimnames(p) = list( mtd.colnames(multiExpr), spaste("p.k", mtd.colnames(multiEigengenes)),
+                                      setNames);
+
+  if (getQvalues) 
+    dimnames(q) = list( mtd.colnames(multiExpr), spaste("q.k", mtd.colnames(multiEigengenes)),
+                                      setNames);
+
+  if (haveZs) 
+    dimnames(Z) = list( mtd.colnames(multiExpr), spaste("Z.k", mtd.colnames(multiEigengenes)),
+                                      setNames);
+
+                                     
+  varList = list(kME = kME, p = p, q = if (getQvalues) q else NULL, Z = if (haveZs) Z else NULL);
+  varList.interleaved = lapply(varList, function(arr)
+  {
+    if (!is.null(dim(arr)))
+    {
+      split = lapply(1:dim(arr)[3], function(i) arr[, , i]);
+      .interleave(split, nameBase = setNames, baseFirst = FALSE)
+    } else NULL;
+  })
+
+  # the following seems to choke on larger data sets, at least in R 3.2.1
+  # combined = array(c (kME, p, q, Z), dim = c(nGenes, nModules, nSets, nVars));
+  # recast = matrix( c(cast(melt(combined), X1~X4~X3~X2)), nGenes, nSets * nModules * nVars);
+
+  # ... so I will replace it with more cumbersome but hopefully workable code.
+
+  recast = .interleave(varList.interleaved, nameBase = rep("", 4), sep = "");
+
   combinedMeta.0 = rbind(
              kME.consensus,
              kME.weightedAverage,

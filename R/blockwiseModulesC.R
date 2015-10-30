@@ -830,7 +830,7 @@ blockwiseModules = function(
   levels.excl = levels.0 [levels.0 %in% exclude]
   rearrange = labels %in% levels;
   tab = table(labels [ rearrange ]);
-  rank = rank(-tab);
+  rank = rank(-tab, ties.method = "first");
 
   oldOrder = c(levels.excl, names(tab));
   newOrder = c(levels.excl, names(tab)[rank]);
@@ -1672,6 +1672,7 @@ blockwiseConsensusModules = function(multiExpr,
 
          useDiskCache = TRUE, chunkSize = NULL,
          cacheBase = ".blockConsModsCache",
+         cacheDir = ".",
 
          # Alternative consensus TOM input from a previous calculation 
 
@@ -1942,6 +1943,7 @@ blockwiseConsensusModules = function(multiExpr,
          useDiskCache = useDiskCache, 
          chunkSize = chunkSize,
          cacheBase = cacheBase,
+         cacheDir = cacheDir,
          verbose = verbose, indent = indent);
      removeConsensusTOMOnExit = !saveConsensusTOMs;
   }
@@ -1984,7 +1986,8 @@ blockwiseConsensusModules = function(multiExpr,
 
          useDiskCache = useDiskCache, 
          chunkSize = chunkSize,
-         cacheBase = cacheBase);
+         cacheBase = cacheBase,
+         cacheDir = cacheDir);
 
        consTomDS = consensusTOMInfo$consensusTOM[[1]];
        # Remove the consensus TOM from the structure.
@@ -2897,11 +2900,13 @@ projectiveKMeans = function (
       networkType = "unsigned",
       randomSeed = 54321,
       checkData = TRUE,
+      imputeMissing = TRUE,
       maxIterations = 1000,
       verbose = 0, indent = 0 )
 {
 
-  centerGeneDist = function(centers, oldDst = NULL, changed = c(1:nCenters))
+  centerGeneDist = function(centers, oldDst = NULL, changed = c(1:nCenters),
+                          blockSize = 50000, verbose = 0, spaces = "")
   {
     if (is.null(oldDst))
     {
@@ -2911,13 +2916,23 @@ projectiveKMeans = function (
     dstAll = oldDst;
     nChanged = length(changed)
 
-    if (intNetworkType==1)
+    nBlocks = ceiling(ncol(datExpr)/blockSize);
+    blocks = allocateJobs(ncol(datExpr), nBlocks);
+
+    if (verbose > 5) 
+      pind = initProgInd(spaste(spaces, "   ..centerGeneDist: "));
+
+    for (b in 1:nBlocks)
     {
-       dst = 1-abs(cor(centers[, changed], datExpr));
-    } else {
-       dst = 1-cor(centers[, changed], datExpr);
+      if (intNetworkType==1)
+      {
+         dst = 1-abs(cor(centers[, changed], datExpr[, blocks[[b]] ]));
+      } else {
+         dst = 1-cor(centers[, changed], datExpr[, blocks[[b]] ]);
+      }
+      dstAll[changed, blocks[[b]]] = dst;
+      if (verbose > 5) pind = updateProgInd(b/nBlocks, pind);
     }
-    dstAll[changed, ] = dst;
     dstAll;
   }
 
@@ -2963,6 +2978,19 @@ projectiveKMeans = function (
     printFlush(paste(spaces, "Projective K-means:"));
 
   datExpr = scale(as.matrix(datExpr));
+
+  if (any(is.na(datExpr)))
+  {
+    if (imputeMissing)
+    {
+      printFlush(spaste(spaces, "projectiveKMeans: imputing missing data in 'datExpr'.\n",
+                  "To reproduce older results, use 'imputeMissing = FALSE'. "));
+      datExpr = t(impute.knn(t(datExpr))$data);
+    } else {
+      printFlush(spaste(spaces, "projectiveKMeans: there are missing data in 'datExpr'.\n",
+          "SVD will not work; will use a weighted mean approximation."));
+    }
+  }
 
   #if (preferredSize >= floor(sqrt(2^31)) )
   #  stop("'preferredSize must be less than ", floor(sqrt(2^31)), ". Please decrease it and try again.")
@@ -3015,14 +3043,22 @@ projectiveKMeans = function (
     iteration = iteration + 1;
     if (verbose > 1) printFlush(paste(spaces, " ..iteration", iteration));
     clusterSizes = table(membership);
-    for (cen in changed)
+    if (verbose > 5) pind = initProgInd(paste(spaces, " ....calculating centers: "))
+    for (cen in sort(changed))
+    {
         centers[, cen] = .alignedFirstPC(datExpr[, membership==cen], verbose = verbose-2, 
                                          indent = indent+2);
-    dst = centerGeneDist(centers, dst, changed);
+        if (verbose > 5) pind = updateProgInd(cen/nCenters, pind);
+    }
+    if (verbose > 5) { pind = updateProgInd(1, pind); printFlush("")}
+
+    if (verbose > 5) printFlush(paste(spaces, " ....calculating center to gene distances"));
+    dst = centerGeneDist(centers, dst, changed, verbose = verbose, spaces = spaces);
     centerDist = memberCenterDist(dst, membership, clusterSizes, changed, centerDist);
 
     nearestDist = rep(0, nGenes);
     nearest = rep(0, nGenes);
+    if (verbose > 5) printFlush(paste(spaces, " ....finding nearest center for each gene"));
     minRes = .C("minWhichMin", as.double(dst), as.integer(nCenters), as.integer(nGenes), 
                 as.double(nearestDist), as.double(nearest), PACKAGE = "WGCNA");
     nearestDist = minRes[[4]];
@@ -3076,7 +3112,21 @@ projectiveKMeans = function (
       if (verbose > 2) 
         printFlush(paste("Clustering is stable: all genes are closest to their assigned center."));
     }
+    if (verbose > 5)
+    {
+      printFlush("Sizes of biggest preliminary clusters:");
+      order = order(-as.numeric(clusterSizes));
+      print(as.numeric(clusterSizes)[order[1:min(100, length(order))]]);
+    }
   }
+
+  if (verbose > 2 & verbose <6)
+  {
+    printFlush("Sizes of preliminary clusters:");
+    print(clusterSizes);
+  }
+
+  
 
   # merge nearby clusters if their sizes allow merging
   if (verbose > 0) printFlush(paste(spaces, "..merging smaller clusters..."));
@@ -3129,6 +3179,12 @@ projectiveKMeans = function (
 
   if (seedSaved) .Random.seed <<- savedSeed;
 
+  if (verbose > 2) 
+  {
+    printFlush("Sorted sizes of final clusters:");
+    print(sort(as.numeric(table(membership))));
+  }
+
   return( list(clusters = membershipAll, centers = centers) );
 }
 
@@ -3146,6 +3202,7 @@ consensusProjectiveKMeans = function (
       networkType = "unsigned",
       randomSeed = 54321,
       checkData = TRUE,
+      imputeMissing = TRUE,
       useMean = (length(multiExpr) > 3),
       maxIterations = 1000,
       verbose = 0, indent = 0 )
@@ -3268,8 +3325,19 @@ consensusProjectiveKMeans = function (
     }
   }
 
-  for (set in 1:nSets) 
-    multiExpr[[set]]$data[is.na(multiExpr[[set]]$data)] = 0;
+  anyNA = mtd.apply(multiExpr, function(x) any(is.na(x)), mdaSimplify = TRUE);
+  if (imputeMissing && any(anyNA))
+  {
+    if (verbose > 0) 
+      printFlush(paste(spaces, "..imputing missing data.."));
+    multiExpr[anyNA] = mtd.apply(multiExpr[anyNA], function(x) t(impute.knn(t(x))$data), mdaVerbose = verbose>1)
+  } else if (any(anyNA))
+  {
+    printFlush(paste(spaces, "Found missing data. These will be replaced by zeros;\n", 
+                     spaces, "  for a better replacement, use 'imputeMissing=TRUE'."));
+    for (set in 1:nSets) 
+      multiExpr[[set]]$data[is.na(multiExpr[[set]]$data)] = 0;
+  }
 
   setSize = checkSets(multiExpr);
   nGenes = setSize$nGenes;
