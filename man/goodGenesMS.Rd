@@ -14,6 +14,7 @@ goodGenesMS(multiExpr,
             minFraction = 1/2,
             minNSamples = ..minNSamples,
             minNGenes = ..minNGenes,
+            tol = NULL,
             verbose = 1, indent = 0)
 
 }
@@ -37,6 +38,13 @@ using all genes.}
 
   \item{minNGenes}{ minimum number of good genes for the data set to be considered fit for analysis. If
 the actual number of good genes falls below this threshold, an error will be issued. }
+
+  \item{tol}{ an optional 'small' number to compare the variance against. For each set in \code{multiExpr}, 
+the default value is \code{1e-10 * max(abs(multiExpr[[set]]$data), na.rm = TRUE)}. 
+The reason of comparing the variance to this number, rather than
+zero, is that the fast way of computing variance used by this function sometimes causes small numerical 
+overflow errors which make variance of constant vectors slightly non-zero; comparing the variance to
+\code{tol} rather than zero prevents the retaining of such genes as 'good genes'.}
 
   \item{verbose}{ integer level of verbosity. Zero means silent, higher values make the output
 progressively more and more verbose. }

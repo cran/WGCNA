@@ -1,10 +1,10 @@
-08df2f7ab1e8898a168ccc8224a98082 *Changelog
-278dd1938f292bc6e1d1080827b49fb7 *DESCRIPTION
-b4ef85fbf3230cda0ee0a2584d4b6e1a *NAMESPACE
+b2f54d9c5cde7ec44a73e5b84f6f6d18 *Changelog
+38991d23bea40d1e39465623fb045106 *DESCRIPTION
+6cb10eb139d9734c3905f81328cec711 *NAMESPACE
 2640fb7286cab45b6de425c01109f80e *R/AFcorMI.R
 ea14a2a861b238bbb31d9f54117b7fdb *R/Functions-fromSimilarity.R
 f0a23a7cf2d4b05f06b2b1dbe29eeb21 *R/Functions-multiData.R
-f926c4047d9dfb5128edd9dba1e433be *R/Functions.R
+256b244544e8a9dfaa3f3ed2f4f06f98 *R/Functions.R
 bb535d83a367bb2dd829521fe1767e7e *R/GOenrichmentAnalysis.R
 a741dd19796b763560aba5d13f00fc48 *R/TrueTrait.R
 3747f2e4a71105d8e3ac4c54914b6bd4 *R/accuracyMeasures.R
@@ -37,6 +37,7 @@ d96c4db72edd76ecee257f03f3743c3e *R/mutualInfoAdjacency.R
 f01e9b205225218592759842ec81a61a *R/nearestCentroidPredictor.R
 ff247c78f289e887d88ea719e482e2ee *R/networkConcepts.R
 cbbf15f7e1af46c97769349028dcc197 *R/overlapTableUsingKME.R
+dd248a6dbff1e165b81e4a55f5ba35e9 *R/plotDendrogram.R
 1f84c828572b06bc6baf3ad5df077b99 *R/populationMeansInAdmixture.R
 b9031c27dab6ce4d7c4e320a5d921234 *R/pquantile.R
 1c35495264dc245f0c417f2797d649c1 *R/proportionsInAdmixture.R
@@ -72,7 +73,7 @@ a1c383c7c833d5d3e336f02b5fead2f6 *man/SCsLists.Rd
 674cff64a1778713173951060078736c *man/TOMsimilarity.Rd
 502131e33c1e9b1c66d48d90aba59b22 *man/TOMsimilarityFromExpr.Rd
 21b9aa92bf787c203518a52b9fc4c486 *man/TrueTrait.Rd
-052359a440a19fa344965efaeafb099d *man/WGCNA-package.Rd
+ae1a8cb6bbd7f45533121b0efb7b6182 *man/WGCNA-package.Rd
 f3daf1abc96634906122136454ee140b *man/accuracyMeasures.Rd
 051b9a0b6e3d224367101ae392fdee22 *man/addErrorBars.Rd
 2703e1c680bae62e4c5aaecdcfbbd424 *man/addGrid.Rd
@@ -134,11 +135,11 @@ a1fd5cdbf29179cffa8831ca79f1fdaa *man/empiricalBayesLM.Rd
 4f2aee2616cd6c8a62a69753510b8911 *man/fixDataStructure.Rd
 1d9439e01fb97dbdb71ee002b8b55437 *man/formatLabels.Rd
 a0878ec86150188ec97abfc2a3533b2e *man/fundamentalNetworkConcepts.Rd
-5c4e293339f4d303fa68625fbaf5952f *man/goodGenes.Rd
-e2d2e6eefbf8941f35be2cfc916d02cf *man/goodGenesMS.Rd
+d69ac3a06e999ac8cf45b61d08ec5c5d *man/goodGenes.Rd
+17eb5352731451be7dae79f756b6ae8d *man/goodGenesMS.Rd
 afbfd5c284ce86c6e75f95f2dfc0c929 *man/goodSamples.Rd
-d3fe65a668dce150a0c08f604a10bdf0 *man/goodSamplesGenes.Rd
-870fa35d0dc4771426a101e5742d2312 *man/goodSamplesGenesMS.Rd
+24072962298295c943d614b02ab94295 *man/goodSamplesGenes.Rd
+131cb00979475be142e82c5bb99268c7 *man/goodSamplesGenesMS.Rd
 23decbc236061c9afe2727ebb9cb4abc *man/goodSamplesMS.Rd
 c32af802f17f6a13a8d1f9022269b151 *man/greenBlackRed.Rd
 557c9bef232a943268f060c32c6eb87f *man/greenWhiteRed.Rd

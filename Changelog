@@ -1,5 +1,32 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
+
+2015/12/27: 1.49
+
+	. DIFF: goodGenes, goodGenesMS, goodSamplesGenes, goodSamplesGenesMS get an
+	  argument `tol' to compare the variance against, rather than against
+	  zero. This prevents erroneous retaining of zero-variacen genes
+	  because of numeric under/overflow errors in the fast calculation of
+	  variance. This may possibly result in removal of genes that were
+	  retained in WGCNA versions 1.47-2 and newer, but should remove the
+	  same genes as 1.47-1 and older. 
+
+2015/12/16: 1.48-2
+
+	. Bugfix in our local copy of heatmap, called from TOMplot, based on
+	  the bug report
+	  https://bugs.r-project.org/bugzilla3/show_bug.cgi?id=16583 . Thanks to
+	  Duncan Murdoch for pointing it out
+
+	. Function goodSamplesGenesMS can now work with data frames within the
+	  multiExpr structure, rather than just matrices.
+
+2015/11/03: 1.48-1
+
+	. TOMplot now uses my own dendrogram drawing routine which should not
+	  run into the stack/memory allocation problems of the standard
+	  plot.dendrogram function.
+
 2015/10/29: 1.48
 
 	. Bugfix in pickHardThreshold (and pickHardThreshold.fromSimilarity):

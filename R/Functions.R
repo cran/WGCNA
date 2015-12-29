@@ -4537,7 +4537,7 @@ labeledHeatmap = function (
   xLabelsAdj = 1,
   xColorWidth = 0.05,
   yColorWidth = 0.05,
-  xColorOffset = par("cxy")[1]/3,
+  xColorOffset = par("cxy")[1]/3,  # FIXME: For offsetting text, these two seem to be switched
   yColorOffset = par("cxy")[2]/3,
   # Content of heatmap
   colors = NULL, 
@@ -5845,12 +5845,13 @@ randIndex <- function(tab, adjust=TRUE)
 
 goodGenes = function(datExpr, useSamples = NULL, useGenes = NULL,
                      minFraction = 1/2, minNSamples = ..minNSamples, minNGenes = ..minNGenes,
-                     verbose = 1, indent = 0)
+                     tol = NULL, verbose = 1, indent = 0)
 {
   datExpr = as.matrix(datExpr);
   if (is.atomic(datExpr) && (mode(datExpr)!='numeric')) 
      stop("datExpr must contain numeric data.");
 
+  if (is.null(tol)) tol = 1e-10 * max(abs(datExpr), na.rm = TRUE)
   if (is.null(useGenes)) useGenes = rep(TRUE, ncol(datExpr));
   if (is.null(useSamples)) useSamples = rep(TRUE, nrow(datExpr));
 
@@ -5867,7 +5868,7 @@ goodGenes = function(datExpr, useSamples = NULL, useGenes = NULL,
   var = colVars(datExpr[useSamples, gg, drop = FALSE], na.rm = TRUE);
   var[is.na(var)] = 0;
   nNAsGenes = colSums(is.na(datExpr[useSamples, gg]));
-  gg[gg] = (nNAsGenes < (1-minFraction) * nSamples & var>0 & (nSamples-nNAsGenes >= minNSamples));
+  gg[gg] = (nNAsGenes < (1-minFraction) * nSamples & var>tol^2 & (nSamples-nNAsGenes >= minNSamples));
   if (sum(gg) < minNGenes)
     stop("Too few genes with valid expression levels in the required number of samples.");
 
@@ -5908,6 +5909,7 @@ goodSamples = function(datExpr, useSamples = NULL, useGenes = NULL,
 
 goodGenesMS = function(multiExpr, useSamples = NULL, useGenes = NULL,
                        minFraction = 1/2, minNSamples = ..minNSamples, minNGenes = ..minNGenes,
+                       tol = NULL,
                        verbose = 1, indent = 0)
 {
   dataSize = checkSets(multiExpr);
@@ -5934,14 +5936,21 @@ goodGenesMS = function(multiExpr, useSamples = NULL, useGenes = NULL,
   goodGenes = useGenes;
   for (set in 1:nSets)
   {
+    if (is.null(tol)) tol1 = 1e-10 * max(abs(multiExpr[[set]]$data), na.rm = TRUE) else tol1 = tol;
     if (sum(goodGenes)==0) break;
     if (sum(useSamples[[set]])==0) next;
-    nPresent = colSums(!is.na(multiExpr[[set]]$data[useSamples[[set]], goodGenes, drop = FALSE]))
+    expr1 = multiExpr[[set]]$data[useSamples[[set]], goodGenes, drop = FALSE];
+    if (mode(expr1)=="list") expr1 = as.matrix(expr1);
+    nPresent = colSums(!is.na(expr1))
     goodGenes[goodGenes] = (nPresent >= minNGenes)
-    var = colVars(multiExpr[[set]]$data[useSamples[[set]], goodGenes, drop = FALSE], na.rm = TRUE);
-    nNAsGenes = colSums(is.na(multiExpr[[set]]$data[useSamples[[set]], goodGenes, drop = FALSE]));
-    goodGenes[goodGenes][nNAsGenes > (1-minFraction)*nSamples[set] | var==0 | 
-                           (nSamples[set]-nNAsGenes < minNSamples)] = FALSE;
+    expr1 = expr1[, nPresent >= minNGenes, drop = FALSE];
+    if (any(goodGenes))
+    {
+      var = colVars(expr1, na.rm = TRUE);
+      nNAsGenes = colSums(is.na(expr1));
+      goodGenes[goodGenes][nNAsGenes > (1-minFraction)*nSamples[set] | var <= tol1^2 | 
+                             (nSamples[set]-nNAsGenes < minNSamples)] = FALSE;
+    }
   }
   if (sum(goodGenes) < minNGenes)
     stop("Too few genes with valid expression levels in the required number of samples in all sets.");
@@ -5995,7 +6004,8 @@ goodSamplesMS = function(multiExpr, useSamples = NULL, useGenes = NULL,
 }
 
 goodSamplesGenes = function(datExpr, minFraction = 1/2, minNSamples = ..minNSamples, 
-                            minNGenes = ..minNGenes, verbose = 1, indent = 0)
+                            minNGenes = ..minNGenes, tol = NULL,
+                            verbose = 1, indent = 0)
 {
   spaces = indentSpaces(indent)
   goodGenes = NULL;
@@ -6012,7 +6022,7 @@ goodSamplesGenes = function(datExpr, minFraction = 1/2, minNSamples = ..minNSamp
       printFlush(paste(spaces, " ..step", iter));
     goodGenes = goodGenes(datExpr, goodSamples, goodGenes,
                             minFraction = minFraction, minNSamples = minNSamples,
-                            minNGenes = minNGenes, verbose = verbose - 1, indent = indent + 1);
+                            minNGenes = minNGenes, tol = tol, verbose = verbose - 1, indent = indent + 1);
     goodSamples = goodSamples(datExpr, goodSamples, goodGenes,
                             minFraction = minFraction, minNSamples = minNSamples,
                             minNGenes = minNGenes, verbose = verbose - 1, indent = indent + 1);
@@ -6026,7 +6036,7 @@ goodSamplesGenes = function(datExpr, minFraction = 1/2, minNSamples = ..minNSamp
 }
 
 goodSamplesGenesMS = function(multiExpr, minFraction = 1/2, minNSamples = ..minNSamples, 
-                              minNGenes = ..minNGenes, verbose = 2, indent = 0)
+                              minNGenes = ..minNGenes, tol = NULL, verbose = 2, indent = 0)
 {
   spaces = indentSpaces(indent)
   size = checkSets(multiExpr)
@@ -6045,7 +6055,7 @@ goodSamplesGenesMS = function(multiExpr, minFraction = 1/2, minNSamples = ..minN
       printFlush(paste(spaces, " ..step", iter));
     goodGenes = goodGenesMS(multiExpr, goodSamples, goodGenes,
                             minFraction = minFraction, minNSamples = minNSamples,
-                            minNGenes = minNGenes, verbose = verbose - 1, indent = indent + 1);
+                            minNGenes = minNGenes, tol = tol, verbose = verbose - 1, indent = indent + 1);
     goodSamples = goodSamplesMS(multiExpr, goodSamples, goodGenes,
                             minFraction = minFraction, minNSamples = minNSamples,
                             minNGenes = minNGenes, verbose = verbose - 1, indent = indent + 1);
@@ -6200,13 +6210,19 @@ goodSamplesGenesMS = function(multiExpr, minFraction = 1/2, minNSamples = ..minN
     if (!is.null(xlab)) mtext(xlab, side = 1, line = margins[1] - 1.25)
     axis(4, iy, labels = labRow, las = 2, line = -0.5, tick = 0, cex.axis = cexRow)
     if (!is.null(ylab)) mtext(ylab, side = 4, line = margins[2] - 1.25)
-    if (!missing(add.expr)) eval(substitute(add.expr))
+    if (!missing(add.expr)) eval.parent(substitute(add.expr))
     par(mar = c(margins[1], 0, 0, 0))
-    if (doRdend) 
-        plot(ddr, horiz = TRUE, axes = FALSE, yaxs = "i", leaflab = "none" )
+    if (doRdend) {
+         .plotDendrogram(as.hclust(ddr), horiz = TRUE, labels = FALSE, axes = FALSE);
+    #    plot(ddr, horiz = TRUE, axes = FALSE, yaxs = "i", leaflab = "none" )
+    }
     else frame()
     par(mar = c(0, 0, if (!is.null(main)) 1.8 else 0, margins[2]))
-    if (doCdend) plot(ddc, axes = FALSE, xaxs = "i", leaflab = "none" )
+    if (doCdend) 
+    {
+         .plotDendrogram(as.hclust(ddc), horiz = FALSE, labels = FALSE, axes = FALSE);
+    #    plot(ddc, axes = FALSE, xaxs = "i", leaflab = "none" )
+    }
     else if (!is.null(main)) frame()
     if (!is.null(main)) title(main, cex.main = 1.2 * op[["cex.main"]])
     invisible(list(rowInd = rowInd, colInd = colInd, Rowv = if (keep.dendro && 

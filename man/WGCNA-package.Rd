@@ -13,8 +13,8 @@ also be used for general association networks specified by a symmetric adjacency
 \details{
 \tabular{ll}{
 Package: \tab WGCNA\cr
-Version: \tab 1.47-4\cr
-Date: \tab 2015-08-07\cr
+Version: \tab 1.49\cr
+Date: \tab 2015-12-27\cr
 Depends: \tab R (>= 3.0), dynamicTreeCut (>= 1.62), fastcluster, Hmisc \cr
 Imports: \tab stats, impute, grDevices, utils, splines, reshape, foreach, doParallel, matrixStats (>= 0.8.1),
 GO.db, AnnotationDbi \cr 
