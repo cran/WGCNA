@@ -33,9 +33,10 @@ overlapTable = function(labels1, labels2, na.rm = TRUE, ignore = NULL,
     {
       m1Members = (labels1 == levels1[m1]);
       m2Members = (labels2 == levels2[m2]);
+      tab = .table2.allLevels(m1Members, m2Members, levels.x = c(FALSE, TRUE), levels.y = c(FALSE, TRUE));
       #print(paste("table for levels", levels1[m1], levels2[m2]));
       #print(table(m1Members, m2Members));
-      pMat[m1, m2] = fisher.test(m1Members, m2Members, alternative = "greater")$p.value;
+      pMat[m1, m2] = fisher.test(tab, alternative = "greater")$p.value;
       countMat[m1, m2] = sum(labels1 == levels1[m1] & labels2 == levels2[m2])
     }
 

@@ -17,6 +17,8 @@ consensusTOM(
       # Blocking options
       blocks = NULL,
       maxBlockSize = 5000,
+      blockSizePenaltyPower = 5,
+      nPreclusteringCenters = NULL,
       randomSeed = 12345,
 
       # Network construction arguments: correlation options
@@ -26,6 +28,7 @@ consensusTOM(
       quickCor = 0,
       pearsonFallback = "individual",
       cosineCorrelation = FALSE,
+      replaceMissingAdjacencies = FALSE,
 
       # Adjacency function options
 
@@ -101,6 +104,14 @@ of \code{multiExpr} giving the number of the block to which the corresponding ge
 above is non-NULL. Otherwise, if the number of genes in \code{datExpr} exceeds \code{maxBlockSize}, genes
 will be pre-clustered into blocks whose size should not exceed \code{maxBlockSize}. }
 
+ \item{ blockSizePenaltyPower}{number specifying how strongly blocks should be penalized for exceeding the
+maximum size. Set to a lrge number or \code{Inf} if not exceeding maximum block size is very important.}
+
+ \item{nPreclusteringCenters}{number of centers for pre-clustering. Larger numbers typically results in better
+but slower pre-clustering. The default is \code{as.integer(min(nGenes/20, 100*nGenes/preferredSize))}
+and is an attempt to arrive at a reasonable number given the resources available. }
+
+
  \item{randomSeed}{ integer to be used as seed for the random number generator before the function
 starts. If a current seed exists, it is saved and restored upon exit. If \code{NULL} is given, the
 function will not save and restore the seed. }
@@ -142,6 +153,9 @@ cosine calculation differs from the standard one in that it does not subtract th
   \item{checkPower}{ logical: should basic sanity check be performed on the supplied \code{power}? If
 you would like to experiment with unusual powers, set the argument to \code{FALSE} and proceed with
 caution. }
+
+  \item{replaceMissingAdjacencies}{logical: should missing values in the calculation of adjacency be replaced
+by 0?}
 
   \item{TOMType}{ one of \code{"none"}, \code{"unsigned"}, \code{"signed"}. If \code{"none"}, adjacency
 will be used for clustering. If \code{"unsigned"}, the standard TOM will be used (more generally, TOM

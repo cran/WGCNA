@@ -27,7 +27,7 @@ rows corresponding to samples and columns to genes or probes. }
   \item{preferredSize}{ preferred maximum size of clusters. }
 
   \item{nCenters}{ number of initial clusters. Empirical evidence suggests that more centers will give a 
-better preclustering; the default is \code{as.integer(min(nGenes/20, preferredSize^2/nGenes))} 
+better preclustering; the default is \code{as.integer(min(nGenes/20, 100*nGenes/preferredSize))} 
 and is an attempt to arrive at a reasonable number given the resources available. }
 
   \item{sizePenaltyPower}{ parameter specifying how severe is the penalty for clusters that exceed

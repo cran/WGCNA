@@ -73,16 +73,17 @@ void tomSimilarityFromAdj(double * adj, int * nGenes,
 
 void adjacency(double * expr, int nSamples, int nGenes, int corType, int adjType, double power, 
                double maxPOutliers, double quick, int fallback, int cosine, 
+               int replaceMissing, 
                double * adj, int * errCode, int *warn, int * nThreads, int verbose, int indent)
 {
-  Rboolean	sd0 = FALSE;
   int 	nElems = nGenes * nGenes;
   int 	nNA = 0;
+  double replacementValue = 0;
 
   // Rprintf("Received nGenes: %d, nSamples: %d\n", nGenes, nSamples);
 
   // Rprintf("adjacency: adjType: %d\n", adjType);
-  // Rprintf("adjacency: corType: %d\n", corType);
+  Rprintf("adjacency: replaceMissing: %d\n", replaceMissing);
   int err = 0;
   switch (corType)
   {
@@ -90,9 +91,8 @@ void adjacency(double * expr, int nSamples, int nGenes, int corType, int adjType
         // Rprintf("Calling cor_pairwise1...");
         cor1Fast(expr, &nSamples, &nGenes, &quick, &cosine, adj, &nNA, &err, nThreads, &verbose, &indent);
         // Rprintf("..done.\n");
-        if (sd0)
+        if ((nNA > 0) && (!replaceMissing))
         {
-          // Rprintf("sd0: %d\n", sd0);
           * errCode = 1;
           return;
         }
@@ -102,7 +102,7 @@ void adjacency(double * expr, int nSamples, int nGenes, int corType, int adjType
         bicor1Fast(expr, &nSamples, &nGenes, &maxPOutliers, &quick, &fallback, &cosine, adj, &nNA, &err,
                    warn, nThreads, &verbose, &indent);
         // Rprintf("..done.\n");
-        if (nNA > 0)
+        if ((nNA > 0) && (!replaceMissing))
         {
           // Rprintf("nNA: %d\n", nNA);
           * errCode = 1;
@@ -120,7 +120,18 @@ void adjacency(double * expr, int nSamples, int nGenes, int corType, int adjType
         return;
   }
 
+  if ((*errCode==1) && replaceMissing) 
+  {
+    Rprintf("Replacing missing adjacency values.\n");
+    *errCode = 0;
+    if (adjType==AdjTypeSigned) replacementValue = -1;
+    for (int i=0; i < nElems; i++)
+       if (ISNAN(adj[i])) adj[i] = replacementValue;
+    
+  }
+
   // Rprintf("ADJ 1\n");
+  
 
   switch (adjType) 
   {
@@ -152,7 +163,7 @@ void testAdjacency(double * expr, int * nSamples, int * nGenes, int * corType, i
                    int * errCode, int * warn, int * nThreads)
 {
  adjacency(expr, * nSamples, * nGenes, * corType, * adjType, * power, 
-           *maxPOutliers, *quick, *fallback, *cosine, 
+           *maxPOutliers, *quick, *fallback, *cosine, 0,
            adj, errCode, warn, nThreads, 1, 0);
 }
 
@@ -313,6 +324,7 @@ void tomSimilarity(double * expr, int * nSamples, int * nGenes,
                    double * quick,
                    int * fallback,
                    int * cosine,
+                   int * replaceMissing,
                    double * tom, 
                    int * warn,
                    int * nThreads,
@@ -352,7 +364,7 @@ void tomSimilarity(double * expr, int * nSamples, int * nGenes,
   if (* tomType==TomTypeNone)  // just calculate adjacency.
   {
     adjacency(expr, ns, ng, *corType, *adjType, *power, *maxPOutliers, *quick, *fallback, *cosine, 
-              tom, &err, warn, nThreads, *verbose, *indent);
+              *replaceMissing, tom, &err, warn, nThreads, *verbose, *indent);
     if (*verbose > 0) Rprintf("\n");
     if (err) error(AdjErrors[err]);
     return;
@@ -368,7 +380,7 @@ void tomSimilarity(double * expr, int * nSamples, int * nGenes,
     * adjType = AdjTypeUnsigned;
 
   adjacency(expr, ns, ng, * corType, * adjType, * power, * maxPOutliers, * quick, *fallback, *cosine, 
-            adj, & err, warn, nThreads, *verbose, *indent);
+            *replaceMissing, adj, & err, warn, nThreads, *verbose, *indent);
 
   // Rprintf("TOM 1\n");
   if (err) 
@@ -390,6 +402,7 @@ SEXP tomSimilarity_call(SEXP expr_s,
                         SEXP tomType_s, SEXP denomType_s,
                         SEXP maxPOutliers_s, SEXP quick_s,  
                         SEXP fallback_s, SEXP cosine_s, 
+                        SEXP replaceMissing_s,
                         SEXP warn_s, // This is an "output" variable
                         SEXP nThreads_s, SEXP verbose_s, SEXP indent_s)
 {
@@ -397,7 +410,7 @@ SEXP tomSimilarity_call(SEXP expr_s,
   SEXP dim, tom_s;
 
   int *nSamples, *nGenes, *fallback, *cosine, *warn, *nThreads, *verbose, *indent;
-  int *corType, *adjType, *tomType, *denomType;
+  int *corType, *adjType, *tomType, *denomType, *replaceMissing;
 
   double *expr, *power, *quick, *tom, *maxPOutliers;
   // Rprintf("Step 2\n");
@@ -415,6 +428,7 @@ SEXP tomSimilarity_call(SEXP expr_s,
   denomType = INTEGER(denomType_s);
   fallback = INTEGER(fallback_s);
   cosine = INTEGER(cosine_s);
+  replaceMissing = INTEGER(replaceMissing_s);
   warn = INTEGER(warn_s);
   nThreads = INTEGER(nThreads_s);
   verbose = INTEGER(verbose_s);
@@ -433,6 +447,7 @@ SEXP tomSimilarity_call(SEXP expr_s,
                 corType, adjType, power,
                 tomType, denomType, 
                 maxPOutliers, quick, fallback, cosine,
+                replaceMissing,
                 tom, warn, nThreads, verbose, indent);
 
   // Rprintf("Returned from tomSimilarity...\n");

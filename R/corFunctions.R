@@ -199,7 +199,7 @@ cor = function(x, y = NULL, use = "all.obs", method = c("pearson", "kendall", "s
       }
       if (nNA > 0)
       {
-        warning(paste("Missing values generated in calculation of bicor.",
+        warning(paste("Missing values generated in calculation of cor.",
                       "Likely cause: too many missing entries or zero variance."));
       }
       if (drop) res[, , drop = TRUE] else res;

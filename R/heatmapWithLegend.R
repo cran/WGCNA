@@ -26,6 +26,33 @@
 }
 
 
+.plotColorLegend = function(xmin, xmax, ymin, ymax,
+                            colors,
+                            tickLen = 0.7* strwidth("M"),
+                            tickGap = 0.3 * strwidth("M"),
+                            lim, cex.legend = 1)
+{
+      tickVal = .autoTicks(lim[1], lim[2]);
+      tickY = (tickVal - lim[1]) / (lim[2] - lim[1]) * (ymax - ymin) + ymin;
+      nTicks = length(tickVal);
+
+      # Ticks:
+      for (t in 1:nTicks)
+        lines(c(xmax, xmax + tickLen), c(tickY[t], tickY[t]), xpd = TRUE);
+      text(rep(xmax + tickLen + tickGap), tickY, tickVal, adj = c(0, 0.5), cex = cex.legend,
+           xpd = TRUE);
+
+      # Fill with color:
+      nColors = length(colors);
+      ybl = (ymax-ymin)/nColors * (0:(nColors-1)) + ymin;
+      ytl = (ymax-ymin)/nColors * (1:nColors) + ymin;
+      rect(xleft = rep(xmin, nColors), xright = rep(xmax, nColors),
+           ybottom = ybl, ytop = ytl, col = colors, border = colors, xpd = TRUE);
+
+      lines(c(xmin, xmax, xmax, xmin, xmin), c(ymin, ymin, ymax, ymax, ymin), xpd = TRUE );
+}
+
+
 .heatmapWithLegend = function(data, signed, colors, naColor = "grey", zlim = NULL, 
                      reverseRows = TRUE,
                      plotLegend = TRUE,
@@ -36,7 +63,7 @@
                      legendWidth = 0.02,
                      legendGap = 0.02,
                      frame = TRUE,
-                     frameTicks = FALSE, tickLen = 0.02,
+                     frameTicks = FALSE, tickLen = 0.7* strwidth("M"),
                      ...)
 {
   data = as.matrix(data); nCols = ncol(data); nRows = nrow(data);
@@ -94,29 +121,15 @@
   if (plotLegend)
   {
       # Now plot the legend.
-      yminL = yminAll + (1-legendShrink) * (ymaxAll - yminAll);
-      ymaxL = ymaxAll - (1-legendShrink) * (ymaxAll - yminAll);
-      xminL = xmaxAll - (xmaxAll - xminAll) * (legendSpace - legendGap)
-      xmaxL = xmaxAll - (xmaxAll - xminAll) * (legendSpace - legendGap - legendWidth)
+      .plotColorLegend(xmin = xmaxAll - (xmaxAll - xminAll) * (legendSpace - legendGap),
+                       xmax = xmaxAll - (xmaxAll - xminAll) * (legendSpace - legendGap - legendWidth),
+                       ymin = yminAll + (1-legendShrink) * (ymaxAll - yminAll),
+                       ymax =  ymaxAll - (1-legendShrink) * (ymaxAll - yminAll),
+                       lim = zlim,
+                       colors = colors,
+                       tickLen = tickLen,
+                       cex.legend = cex.legend);
     
-      tickVal = .autoTicks(zlim[1], zlim[2]);
-      tickY = (tickVal - zlim[1]) / (zlim[2] - zlim[1]) * (ymaxL - yminL) + yminL;
-      nTicks = length(tickVal);
-    
-      # Ticks:
-      for (t in 1:nTicks)
-        lines(c(xmaxL, xmaxL + (xmaxAll - xminAll) * 0.8 * tickLen), c(tickY[t], tickY[t]));
-      text(rep(xmaxL + (xmaxAll - xminAll) * tickLen), tickY, tickVal, adj = c(0, 0.5), cex = cex.legend,
-           xpd = TRUE);
-    
-      # Fill with color:
-      nColors = length(colors);
-      ybl = (ymaxL-yminL)/nColors * (0:(nColors-1)) + yminL;
-      ytl = (ymaxL-yminL)/nColors * (1:nColors) + yminL;
-      rect(xleft = rep(xminL, nColors), xright = rep(xmaxL, nColors),
-           ybottom = ybl, ytop = ytl, col = colors, border = colors);
-    
-      lines(c(xminL, xmaxL, xmaxL, xminL, xminL), c(yminL, yminL, ymaxL, ymaxL, yminL) );
   }
 
   list(xMid = xMid, yMid = if (reverseRows) .reverseVector(yMid) else yMid, 

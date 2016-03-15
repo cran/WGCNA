@@ -29,7 +29,9 @@
   } else {
     weight = abs(cor(x, pc))^power;
     meanX = rowWeightedMeans(x, weight, na.rm = TRUE);
-    if (cov(pc, meanX) < 0) pc = -pc;
+    cov1 = cov(pc, meanX);
+    if (!is.finite(cov1)) cov1 = 0;
+    if (cov1 < 0) pc = -pc;
   }
   pc;
 }

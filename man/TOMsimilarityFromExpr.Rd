@@ -16,6 +16,7 @@ TOMsimilarityFromExpr(
   quickCor = 0,
   pearsonFallback = "individual",
   cosineCorrelation = FALSE, 
+  replaceMissingAdjacencies = FALSE,
   nThreads = 0,
   verbose = 1, indent = 0)
 }
@@ -31,6 +32,7 @@ midcorrelation, respectively. Missing values are handled using the \code{pairwis
 \code{"signed"}, \code{"signed hybrid"}. See \code{\link{adjacency}}. }
 
   \item{power}{ soft-thresholding power for netwoek construction. }
+
 
   \item{TOMType}{ one of \code{"none"}, \code{"unsigned"}, \code{"signed"}. If \code{"none"}, adjacency
 will be used for clustering. If \code{"unsigned"}, the standard TOM will be used (more generally, TOM
@@ -70,6 +72,9 @@ effect for Pearson correlation. See \code{\link{bicor}}.}
 
   \item{cosineCorrelation}{logical: should the cosine version of the correlation calculation be used? The 
 cosine calculation differs from the standard one in that it does not subtract the mean. }
+
+  \item{replaceMissingAdjacencies}{logical: should missing values in the calculation of adjacency be
+replaced by 0?}
 
   \item{nThreads}{ non-negative integer specifying the number of parallel threads to be used by certain
 parts of correlation calculations. This option only has an effect on systems on which a POSIX thread

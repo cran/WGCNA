@@ -29,6 +29,7 @@ TOMsimilarityFromExpr = function(datExpr, corType = "pearson", networkType = "un
                                  quickCor = 0, 
                                  pearsonFallback = "individual",
                                  cosineCorrelation = FALSE, 
+                                 replaceMissingAdjacencies = FALSE,
                                  nThreads = 0,
                                  verbose = 1, indent = 0)
 {
@@ -75,6 +76,7 @@ TOMsimilarityFromExpr = function(datExpr, corType = "pearson", networkType = "un
         as.integer(TOMTypeC), as.integer(TOMDenomC),
         as.double(maxPOutliers), as.double(quickCor),
         as.integer(fallback), as.integer(cosineCorrelation),
+        as.integer(replaceMissingAdjacencies),
         warn, 
         as.integer(nThreads), as.integer(verbose), as.integer(indent), PACKAGE = "WGCNA");
 
@@ -156,6 +158,7 @@ blockwiseModules = function(
   blocks = NULL,
   maxBlockSize = 5000,
   blockSizePenaltyPower = 5,
+  nPreclusteringCenters = as.integer(min(ncol(datExpr)/20, 100*ncol(datExpr)/maxBlockSize)),
   randomSeed = 12345,
 
   # load TOM from previously saved file?
@@ -174,6 +177,7 @@ blockwiseModules = function(
 
   power = 6,
   networkType = "unsigned",
+  replaceMissingAdjacencies = FALSE,
 
   # Topological overlap options
 
@@ -369,7 +373,8 @@ blockwiseModules = function(
       if (verbose>1) printFlush(paste(spaces, "....pre-clustering genes to determine blocks.."));
       clustering = projectiveKMeans(datExpr, preferredSize = maxBlockSize, 
                                     checkData = FALSE,
-                                    sizePenaltyPower = blockSizePenaltyPower, 
+                                    sizePenaltyPower = blockSizePenaltyPower,
+                                    nCenters = nPreclusteringCenters, 
                                     verbose = verbose-2, indent = indent + 1);
       gBlocks = .orderLabelsBySize(clustering$clusters)
       if (verbose > 2) { printFlush("Block sizes:"); print(table(gBlocks)); }
@@ -441,7 +446,7 @@ blockwiseModules = function(
       CcorType = intCorType - 1;
       CnetworkType = intNetworkType - 1;
       CTOMType = intTOMType -1;
-    
+
       warn = as.integer(0);
       tom = .Call("tomSimilarity_call", selExpr, 
           as.integer(CcorType), as.integer(CnetworkType), as.double(power), as.integer(CTOMType), 
@@ -450,6 +455,7 @@ blockwiseModules = function(
           as.double(quickCor),
           as.integer(fallback),
           as.integer(cosineCorrelation),
+          as.integer(replaceMissingAdjacencies),
           warn, as.integer(nThreads),
           as.integer(callVerb), as.integer(callInd), PACKAGE = "WGCNA");
 
@@ -1304,6 +1310,7 @@ blockwiseIndividualTOMs = function(multiExpr,
                             blocks = NULL, 
                             maxBlockSize = 5000, 
                             blockSizePenaltyPower = 5,
+                            nPreclusteringCenters = NULL,
                             randomSeed = 12345,
 
                             # Network construction arguments: correlation options
@@ -1319,6 +1326,7 @@ blockwiseIndividualTOMs = function(multiExpr,
                             power = 6, 
                             networkType = "unsigned", 
                             checkPower = TRUE,
+                            replaceMissingAdjacencies = FALSE,
 
                             # Topological overlap options
 
@@ -1439,6 +1447,7 @@ blockwiseIndividualTOMs = function(multiExpr,
       if (verbose>1) printFlush(paste(spaces, "....pre-clustering genes to determine blocks.."));
       clustering = consensusProjectiveKMeans(multiExpr, preferredSize = maxBlockSize,
                                          sizePenaltyPower = blockSizePenaltyPower, checkData = FALSE,
+                                         nCenters = nPreclusteringCenters,
                                          verbose = verbose-2, indent = indent + 1);
       gBlocks = .orderLabelsBySize(clustering$clusters);
     } else 
@@ -1516,6 +1525,7 @@ blockwiseIndividualTOMs = function(multiExpr,
           as.double(quickCor),
           as.integer(fallback),
           as.integer(cosineCorrelation),
+          as.integer(replaceMissingAdjacencies),
           warn, as.integer(nThreads),
           as.integer(callVerb), as.integer(callInd), PACKAGE = "WGCNA");
 
@@ -1612,6 +1622,7 @@ blockwiseConsensusModules = function(multiExpr,
          blocks = NULL, 
          maxBlockSize = 5000, 
          blockSizePenaltyPower = 5,
+         nPreclusteringCenters = NULL,
          randomSeed = 12345,
 
          # individual TOM information
@@ -1632,6 +1643,7 @@ blockwiseConsensusModules = function(multiExpr,
          power = 6, 
          networkType = "unsigned", 
          checkPower = TRUE,
+         replaceMissingAdjacencies = FALSE,
 
          # Topological overlap options
 
@@ -1831,6 +1843,8 @@ blockwiseConsensusModules = function(multiExpr,
                            checkMissingData = checkMissingData,
                            blocks = blocks,
                            maxBlockSize = maxBlockSize,
+                           blockSizePenaltyPower = blockSizePenaltyPower,
+                           nPreclusteringCenters = nPreclusteringCenters,
                            randomSeed = NULL,
                            corType = corType,
                            maxPOutliers = maxPOutliers,
@@ -1839,6 +1853,7 @@ blockwiseConsensusModules = function(multiExpr,
                            cosineCorrelation = cosineCorrelation,
                            power = power,
                            networkType = networkType, 
+                           replaceMissingAdjacencies= replaceMissingAdjacencies,
                            TOMType = TOMType,
                            TOMDenom = TOMDenom,
                            saveTOMs = useDiskCache | nBlocks.0>1,
@@ -3299,7 +3314,7 @@ consensusProjectiveKMeans = function (
   } else seedSaved = FALSE;
   set.seed(randomSeed);
 
-  if (is.null(nCenters)) nCenters = as.integer(min(nGenes/20, preferredSize^2/nGenes));
+  if (is.null(nCenters)) nCenters = as.integer(min(nGenes/20, 100 * nGenes/preferredSize));
 
   if (verbose > 1)
     printFlush(paste(spaces, "..using", nCenters, "centers."));

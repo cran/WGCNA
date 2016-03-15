@@ -119,6 +119,8 @@ consensusTOM = function(
       # Blocking options
       blocks = NULL,
       maxBlockSize = 5000,
+      blockSizePenaltyPower = 5,
+      nPreclusteringCenters = NULL,
       randomSeed = 12345,
 
       # Network construction arguments: correlation options
@@ -128,6 +130,7 @@ consensusTOM = function(
       quickCor = 0,
       pearsonFallback = "individual",
       cosineCorrelation = FALSE,
+      replaceMissingAdjacencies = FALSE,
 
       # Adjacency function options
 
@@ -226,12 +229,15 @@ consensusTOM = function(
                          checkMissingData = checkMissingData,
                          blocks = blocks,
                          maxBlockSize = maxBlockSize,
+                         blockSizePenaltyPower = blockSizePenaltyPower,
+                         nPreclusteringCenters = nPreclusteringCenters,
                          randomSeed = NULL,
                          corType = corType,
                          maxPOutliers = maxPOutliers,
                          quickCor = quickCor,
                          pearsonFallback = pearsonFallback,
                          cosineCorrelation = cosineCorrelation,
+                         replaceMissingAdjacencies = replaceMissingAdjacencies,
                          power = power,
                          networkType = networkType, 
                          TOMType = TOMType,

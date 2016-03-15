@@ -1,6 +1,40 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
 
+2016/03/08: 1.51
+
+	. DIFF: Defaults for the number of pre-clustering centers in
+	  blockwise[Consensus]Modules, projectiveKMeans and
+	  consensusProjectiveKMeans have changed to prevent the
+	  pre-clustering from becoming too long. To reproduce old results, use
+	  (nPreclusteringCenters or nCenters) = min(nGenes/20,
+	  maxBlockSize^2/nGenes), where nGenes is the number of genes (variables) 
+	  in the input data.
+	
+2016/02/23: 1.50
+
+	. Bugfix in function cor: function now correctly handles cases where
+	  columns have missing data placed such that the remaining entries
+	  (after removing missing values) have zero variance. Thanks to Pasha
+	  Mazin for pointing this out.
+
+	. New function consensusRepresentatives for selecting consensus representatives
+	  from multi-data.
+
+	. Cleanup in plotOrderedColors should results in better placement of
+	  'rowText' under blocks of colors.
+
+	. Minor change in spacing for row text in plotOrderedColors that also affects
+	  plotColorUnderTree and plotDendroAndColors
+
+	. TOM calculation functins (TOMsimilarity, blockwiseIndividualTOMs,
+	  blockwiseModules) now accept argument replaceMissingAdjacencies that
+	  allows the underlying code to replace missing adjacencies with an
+	  appropriate value for zero-strength link.
+
+	. moduleEigengenes is now more resistant to problems with missing data
+	  and zero-variance variables.
+
 2015/12/27: 1.49
 
 	. DIFF: goodGenes, goodGenesMS, goodSamplesGenes, goodSamplesGenesMS get an

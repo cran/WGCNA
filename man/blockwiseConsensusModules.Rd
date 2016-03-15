@@ -17,6 +17,7 @@ blockwiseConsensusModules(
      blocks = NULL, 
      maxBlockSize = 5000, 
      blockSizePenaltyPower = 5,
+     nPreclusteringCenters = NULL,
      randomSeed = 12345,
 
      # TOM precalculation arguments, if available
@@ -37,6 +38,7 @@ blockwiseConsensusModules(
      power = 6, 
      networkType = "unsigned", 
      checkPower = TRUE,
+     replaceMissingAdjacencies = FALSE,
 
      # Topological overlap options
 
@@ -146,6 +148,10 @@ will be pre-clustered into blocks whose size should not exceed \code{maxBlockSiz
    \item{blockSizePenaltyPower}{number specifying how strongly blocks should be penalized for exceeding the
 maximum size. Set to a lrge number or \code{Inf} if not exceeding maximum block size is very important.}
 
+ \item{nPreclusteringCenters}{number of centers to be used in the preclustering. Defaults to smaller of
+\code{nGenes/20} and \code{100*nGenes/maxBlockSize}, where \code{nGenes} is the nunber of genes (variables) in
+\code{multiExpr}.}
+
  \item{randomSeed}{ integer to be used as seed for the random number generator before the function
 starts. If a current seed exists, it is saved and restored upon exit. If \code{NULL} is given, the
 function will not save and restore the seed. }
@@ -202,6 +208,9 @@ cosine calculation differs from the standard one in that it does not subtract th
   \item{checkPower}{ logical: should basic sanity check be performed on the supplied \code{power}? If
 you would like to experiment with unusual powers, set the argument to \code{FALSE} and proceed with
 caution. }
+
+  \item{replaceMissingAdjacencies}{logical: should missing values in the calculation of adjacency be replaced
+by 0?}
 
   \item{TOMType}{ one of \code{"none"}, \code{"unsigned"}, \code{"signed"}. If \code{"none"}, adjacency
 will be used for clustering. If \code{"unsigned"}, the standard TOM will be used (more generally, TOM

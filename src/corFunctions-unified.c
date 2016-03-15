@@ -339,9 +339,10 @@ void * threadSymmetrize(void * par)
       if (NAmean[col] == 0)
       {
         double * resx = result + col*nc + col;
-        // Rprintf("Symmetrizing column %d to the same row.\n", col);
+        // Rprintf("Symmetrizing row %d to the same column.\n", col);
         for (size_t j=col; j<nc; j++) 
         {
+          // Rprintf("..symmetrizing element %d...\n", j);
           if (NAmean[j] == 0)
           {
             if (!ISNAN(*resx))
@@ -551,7 +552,7 @@ void * threadSlowCalcCor(void * par)
  
      if ((i < nc1) && (j < nc))
      {
-        // Rprintf("Recalculating row %d and column %d, column size %d\n", i, j, nr);
+        // Rprintf("Recalculating column %d and row %d, column size %d\n", i, j, nr);
         xx = x + i * nr; yy = x + j * nr;
         LDOUBLE sumxy = 0, sumx = 0, sumy = 0, sumxs = 0, sumys = 0;
         size_t count = 0;
@@ -570,6 +571,7 @@ void * threadSlowCalcCor(void * par)
            }
            xx++; yy++;
         }
+        // Rprintf("Count of included observations: %d\n", count);
         if (count==0) 
         {
             result[i*nc + j] = NA_REAL; 
@@ -577,9 +579,17 @@ void * threadSlowCalcCor(void * par)
         } else {
             if (cosine) 
                result[i*nc + j] = (double) ( (sumxy)/ sqrtl(sumxs * sumys) );
-            else
-               result[i*nc + j] = (double) ( (sumxy - sumx * sumy/count)/
-                                sqrtl( (sumxs - sumx*sumx/count) * (sumys - sumy*sumy/count) ) );
+            else {
+               LDOUBLE varx = sumxs - sumx*sumx/count,
+                       vary = sumys - sumy*sumy/count;
+               if (varx==0 || vary==0)
+               { 
+                 result[i*nc + j] = NA_REAL;
+                 (*nNA)++;
+               } else 
+                  result[i*nc + j] = (double) ( (sumxy - sumx * sumy/count)/
+                                sqrtl( varx * vary));
+            }
         }
         // result[j*nc + i] = result[i*nc + j];
         //Rprintf("Incrementing nSlow: i=%d, j=%d, nNAentries[i]=%d, nNAentries[j]=%d, maxDiffNA=%d\n", 
@@ -1955,8 +1965,14 @@ void * threadSlowCalcCor2(void * par)
         } else {
             if (cosineX) sumx = 0;
             if (cosineY) sumy = 0;
-            result[i + j*ncx] = (double) ( (sumxy - sumx * sumy/count)/
-                                sqrtl( (sumxs - sumx*sumx/count) * (sumys - sumy*sumy/count) ) );
+            LDOUBLE varx = sumxs - sumx*sumx/count,
+                    vary = sumys - sumy*sumy/count;
+            if (varx==0 || vary==0)
+            {
+               result[i + j*ncx] = NA_REAL;
+               (*nNA)++;
+            } else
+               result[i + j*ncx] = (double) ( (sumxy - sumx * sumy/count)/ sqrtl( varx * vary));
         }
         (*nSlow)++;
      }

@@ -155,6 +155,7 @@ moduleEigengenes = function(expr, colors, impute = TRUE, nPC = 1, align = "along
         {
           scaledExpr = scale(t(datModule));
           covEx = cov(scaledExpr, use = "p");
+          covEx[!is.finite(covEx)] = 0;
           modAdj = abs(covEx)^softPower;
           kIM = (rowMeans(modAdj, na.rm = TRUE))^3;
           if (max(kIM, na.rm = TRUE) > 1) kIM = kIM-1;
@@ -198,7 +199,9 @@ moduleEigengenes = function(expr, colors, impute = TRUE, nPC = 1, align = "along
         {
           if (verbose>4) printFlush(paste(spaces,
                           " .. aligning module eigengene with average expression."))
-          if (cor(averExpr[,i], PrinComps[,i], use = "p")<0) PrinComps[,i] = -PrinComps[,i]
+          corAve = cor(averExpr[,i], PrinComps[,i], use = "p");
+          if (!is.finite(corAve)) corAve = 0;
+          if (corAve<0) PrinComps[,i] = -PrinComps[,i]
         }
         0;
       }, silent = TRUE);
@@ -2142,10 +2145,10 @@ plotOrderedColors = function(
      textLevs = list();
      for (tr in 1:nTextRows) 
      {
-       charHeight = max(strheight(rowText[, tr]));
+       charHeight = max(strheight(rowText[, tr], cex = cex.rowText));
        width1 = rowWidths[ physicalTextRow[tr] ];
-       nCharFit = floor(width1/charHeight/cex.rowText/1.4/par("lheight"))
-       if (nCharFit==0) stop("Rows are too narrow to fit text. Consider decreasing cex.rowText.");
+       nCharFit = floor(width1/charHeight/1.7/par("lheight"));
+       if (nCharFit<1) stop("Rows are too narrow to fit text. Consider decreasing cex.rowText.");
        set = textPositions[tr];
        #colLevs = sort(unique(colors[, set]));
        #textLevs[[tr]] = rowText[match(colLevs, colors[, set]), tr];
@@ -2159,8 +2162,8 @@ plotOrderedColors = function(
          ind = orderedText == textLevs[[tr]][cl];
          sind = ind[-1];
          ind1 = ind[-length(ind)];
-         starts = c( 1[ind[1]], c(2:length(ind))[!ind1 & sind])
-         ends = c( c(1:(length(ind)-1))[ind1 & !sind], length(ind)[ ind[length(ind)] ]);
+         starts = c( if (ind[1]) 1 else NULL, which(!ind1 & sind)+1)
+         ends = which(c(ind1 & !sind, ind[length(ind)] ));
          if (length(starts)==0) starts = 1;
          if (length(ends)==0) ends = length(ind);
          if (ends[1] < starts[1]) starts = c(1, starts);
@@ -2173,9 +2176,9 @@ plotOrderedColors = function(
                     right = ends[long]+1);
        }
        if (rowTextAlignment=="left") {
-          yPos = seq(from = 2, to=2*nCharFit, by=2) / (2*nCharFit+2);
+          yPos = seq(from = 1, to=nCharFit, by=1) / (nCharFit+1);
        } else {
-          yPos = seq(from = 2*nCharFit, to=2, by=-2) / (2*nCharFit+2);
+          yPos = seq(from = nCharFit, to=1, by=-1) / (nCharFit+1);
        }
        textPosY[[tr]] = rep(yPos, ceiling(nLevs/nCharFit)+5)[1:nLevs][rank(textPos[[tr]])];
      }
@@ -2196,13 +2199,17 @@ plotOrderedColors = function(
     } else {
        rect(xl, yb, xr, yt, col = as.character(C[,j]), border = as.character(C[,j]));
     }
-    text(rowLabels[j], pos=2, x= -charWidth -0.5*step, y= (yBottom[jj] + yTop[jj])/2, 
+    text(rowLabels[j], pos=2, x= -charWidth/2 +xl[1], y= (yBottom[jj] + yTop[jj])/2, 
          cex=cex.rowLabels, xpd = TRUE);
     textRow = match(j, textPositions);
     if (is.finite(textRow))
     {
       jIndex = jIndex - 1;
-      xt = (textPos[[textRow]] - 1) * step;
+      xt = (textPos[[textRow]] - 1.5) * step;
+      
+      xt[xt<par("usr")[1]] = par("usr")[1];
+      xt[xt>par("usr")[2]] = par("usr")[2];
+     
       #printFlush(spaste("jIndex: ", jIndex, ", yBottom: ", yBottom[jIndex],
       #                  ", yTop: ", yTop[jIndex], ", min(textPosY): ", min(textPosY[[textRow]]),
       #                  ", max(textPosY): ", max(textPosY[[textRow]])));
@@ -4698,8 +4705,9 @@ labeledHeatmap = function (
   {
     xLabYPos = ifelse(xLabPos==1, ymin - offsety, ymax + offsety)
     if (is.null(cex.lab)) cex.lab = 1;
-    text(labPos$xMid[xTextLabInd] , xLabYPos, srt = xLabelsAngle, 
-          adj = xLabelsAdj, labels = xLabels[xTextLabInd], xpd = TRUE, cex = cex.lab.x, col = colors.lab.x)
+    mapply(text, x = labPos$xMid[xTextLabInd], labels = xLabels[xTextLabInd],
+           MoreArgs = list(y = xLabYPos, srt = xLabelsAngle, 
+          adj = xLabelsAdj, xpd = TRUE, cex = cex.lab.x, col = colors.lab.x));
   }
   if (sum(xValidColors)>0)
   {
@@ -4710,15 +4718,17 @@ labeledHeatmap = function (
          density = -1,  col = substring(xLabels[xColorLabInd], 3), 
          border = substring(xLabels[xColorLabInd], 3), xpd = TRUE)
     if (!is.null(xSymbols))
-      text ( labPos$xMid[xColorLabInd], baseY - sign(deltaY)* offsety, xSymbols[xColorLabInd], 
+      mapply(text, x = labPos$xMid[xColorLabInd], labels = xSymbols[xColorLabInd],
+              MoreArgs = list(baseY - sign(deltaY)* offsety, 
              adj = xLabelsAdj, 
-             xpd = TRUE, srt = xLabelsAngle, cex = cex.lab.x, col = colors.lab.x);
+             xpd = TRUE, srt = xLabelsAngle, cex = cex.lab.x, col = colors.lab.x));
   }
   if (sum(!yValidColors)>0)
   {
     if (is.null(cex.lab)) cex.lab = 1;
-    text(xmin - offsetx, labPos$yMid[yTextLabInd], srt = 0, 
-         adj = c(1, 0.5), labels = yLabels[yTextLabInd], xpd = TRUE, cex = cex.lab.y, col = colors.lab.y )
+    mapply(text, y = labPos$yMid[yTextLabInd], labels = yLabels[yTextLabInd],
+              MoreArgs = list( x= xmin - offsetx, srt = 0, 
+         adj = c(1, 0.5), xpd = TRUE, cex = cex.lab.y, col = colors.lab.y ));
   } 
   if (sum(yValidColors)>0)
   {
@@ -4732,9 +4742,9 @@ labeledHeatmap = function (
     #  lines(c(xmin- offsetx, xmin- offsetx+yColW), y = rep(labPos$yMid[i] + yspacing/2, 2), col = i, xpd = TRUE)
     #}
     if (!is.null(ySymbols))
-      text (xmin+ yColW - 2*offsetx, 
-            labPos$yMid[yColorLabInd], ySymbols[yColorLabInd], 
-            adj = c(1, 0.5), xpd = TRUE, cex = cex.lab.y, col = colors.lab.y);
+      mapply(text, y = labPos$yMid[yColorLabInd], labels = ySymbols[yColorLabInd],
+          MoreArgs = list( xmin+ yColW - 2*offsetx, 
+            adj = c(1, 0.5), xpd = TRUE, cex = cex.lab.y, col = colors.lab.y));
   }
 
   # Draw separator lines, if requested
