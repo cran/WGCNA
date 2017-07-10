@@ -11,7 +11,6 @@
 
 #include "pivot.h"
 
-
 void RprintV(double * v, size_t l)
 {
   for (size_t i=0; i<l; i++) Rprintf("%5.3f ", v[i]);

@@ -358,7 +358,7 @@ GOenrichmentAnalysis = function(labels, entrezCodes,
               enrTab = data.frame(module = rep(labelLevels[ll], nRepTerms), 
                                   modSize = rep(modSizes[ll], nRepTerms),
                                   bkgrModSize = rep(nModCodes[ll], nRepTerms), 
-                                  rank = c(1:nRepTerms),
+                                  rank = seq(length.out = nRepTerms),
                                   enrichmentP = enrichment[ll, reportTerms],
                                   BonferoniP = pmin(rep(1, nRepTerms), 
                                                     enrichment[ll, reportTerms] * nOntTerms),
@@ -372,7 +372,7 @@ GOenrichmentAnalysis = function(labels, entrezCodes,
                                   termName = rep("NA", nRepTerms),
                                   termDefinition =  rep("NA", nRepTerms))
               bestPTerms[[ont]]$forModule[[ll]] = list();
-              for (rci in 1:length(reportTerms))
+              for (rci in seq(length.out = nRepTerms))
               {
                  term = reportTerms[rci];
                  termID = names(Go2eg)[term];
@@ -436,7 +436,7 @@ GOenrichmentAnalysis = function(labels, entrezCodes,
               enrTab = data.frame(module = rep(labelLevels[ll], nRepTerms),
                                   modSize = rep(modSizes[ll], nRepTerms),
                                   bkgrModSize = rep(nModCodes[ll], nRepTerms), 
-                                  rank = c(1:nRepTerms),
+                                  rank = seq(length.out = nRepTerms),
                                   enrichmentP = enrichment[ll, reportTerms],
                                   BonferoniP = pmin(rep(1, nRepTerms), 
                                                     enrichment[ll, reportTerms] * nOntTerms),
@@ -450,7 +450,7 @@ GOenrichmentAnalysis = function(labels, entrezCodes,
                                   termName = rep("NA", nRepTerms),
                                   termDefinition =  rep("NA", nRepTerms))
               biggestTerms[[ont]]$forModule[[ll]] = list();
-              for (rci in 1:length(reportTerms))
+              for (rci in seq(length.out = nRepTerms))
               {
                  term = reportTerms[rci];
                  termID = names(Go2eg)[term];

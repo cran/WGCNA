@@ -1,42 +1,57 @@
 \name{pquantile}
 \alias{pquantile}
+\alias{pquantile.fromList}
 \alias{pmedian}
 \alias{pmean}
+\alias{pmin}
+\alias{pmean.fromList}
+\alias{pminWhich.fromList}
 \title{ Parallel quantile, median, mean }
 \description{
-Calculation of ``parallel'' quantiles, medians, and means, across given arguments.
+Calculation of ``parallel'' quantiles, minima, maxima, medians, and means, across given arguments or across lists
 }
 \usage{
 pquantile(prob, ...)
+pquantile.fromList(dataList, prob)
 pmedian(...)
-pmean(...)
+pmean(..., weights = NULL)
+pmin(...)
+pmean.fromList(dataList, weights = NULL)
+pminWhich.fromList(dataList)
 }
 \arguments{
   \item{prob}{
-    A number or vector of probabilities at which to calculate the quantile. See \code{\link{quantile}}. 
+    A single probability at which to calculate the quantile. See \code{\link{quantile}}. 
 }
+  \item{dataList}{A list of numeric vectors or arrays, all of the same length and dimensions, over which to
+calculate ``parallel'' quantiles.}
+  \item{weights}{Optional vector of the same length as \code{dataList}, giving the weights to be used in the
+weighted mean. If not given, unit weights will be used.}
   \item{\dots}{
     Numeric arguments. All arguments must have the same dimensions. See details.
 }
 }
 \details{
-    Given the argumens, say x,y,z, of equal dimensions, the \code{pquantile} 
+    Given numeric arguments, say x,y,z, of equal dimensions (and length), the \code{pquantile} 
    calculates and returns the quantile of the first components of x,y,z, then the second components, etc.
 Similarly, \code{pmedian} and \code{pmean} calculate the median and mean, respectively.
+The funtion \code{pquantile.fromList} is identical to \code{pquantile} except that the argument
+\code{dataList} replaces the ... in holding the numeric vectors over which to calculate the quantiles.
 }
 \value{
-    A vector or array containing the quantiles, medians, or
-means. The dimensions are determined by the dimensions of the input arguments and whether the \code{prob}
-input is scalar or a vector.  
+    \item{pquantile, pquantile.fromList}{A vector or array containing quantiles.}
+    \item{pmean, pmean.fromList}{A vector or array containing means. }
+    \item{pmin, pmedian}{A vector or array containing minima, medians, and maxima, respectively.}
+    \item{pminWhich.fromList}{A list with two components: \code{min} gives the minima, \code{which} gives the
+indices of the elements that are the minima.}
+ 
+Dimensions are copied from dimensions of the input arguments.
 If any of the input variables have \code{dimnames}, the first non-NULL dimnames are copied into the output.
 }
 \author{
  Peter Langfelder and Steve Horvath
 }
-
 \seealso{
-  \code{\link{pmin}} and \code{\link{pmax}} for analogous functions for minimum and maximum,
-
   \code{\link{quantile}}, \code{\link{median}}, \code{\link{mean}} for the underlying statistics.
 }
 \examples{
@@ -53,7 +68,6 @@ colnames(a) = spaste("col_", c(1:4));
 # Example use
 
 pquantile(prob = 0.5, a, b, c)
-pquantile(prob = c(0, 0.5, 1), a,b, c);
 
 pmean(a,b,c)
 pmedian(a,b,c)

@@ -54,6 +54,8 @@ Jeremy Miller
 This function is very slow and is still in an *experimental* function.  We have not had problems with ~10 modules across ~5000 genes, although theoretically it should work for many more genes and modules, depending upon the speed of the computer running R.  Please address any problems or suggestions to jeremyinla@gmail.com.
 }
 \examples{
+
+\dontrun{
 ## Example: first simulate some data.
 
 MEturquoise = sample(1:100,50)
@@ -87,7 +89,6 @@ plotDendroAndColors(tree1,cbind(colorh,colorh2),c("Old","New"),dendroLabels=FALS
 ## Now swap and reflect some branches, then optimize the order of the branches 
 # and output pdf with resulting images
 
-\dontrun{
 pdf("DENDROGRAM_PLOTS.pdf",width=10,height=5)
 plotDendroAndColors(tree1,colorh2,dendroLabels=FALSE,main="Starting Dendrogram")
 

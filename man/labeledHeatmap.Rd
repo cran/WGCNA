@@ -17,10 +17,10 @@ labeledHeatmap(
   xLabelsPosition = "bottom",
   xLabelsAngle = 45,
   xLabelsAdj = 1,
-  xColorWidth = 0.05,
-  yColorWidth = 0.05,
-  xColorOffset = par("cxy")[1]/3,
-  yColorOffset = par("cxy")[2]/3,
+  xColorWidth = 2 * strheight("M"),
+  yColorWidth = 2 * strwidth("M"), 
+  xColorOffset = strheight("M")/3, 
+  yColorOffset = strwidth("M")/3,
   colors = NULL, 
   naColor = "grey",
   textMatrix = NULL, 
@@ -33,6 +33,7 @@ labeledHeatmap(
   colors.lab.y = 1,
   bg.lab.x = NULL,
   bg.lab.y = NULL,
+  x.adj.lab.y = 1,
 
   plotLegend = TRUE, 
   keepLegendSpace = plotLegend,
@@ -87,14 +88,12 @@ Recognized values are (unique abbreviations of) \code{"top", "bottom"}. }
   \item{xLabelsAdj}{ justification parameter for column labels. See \code{\link{par}} and the
 description of parameter \code{"adj"}. }
 
-  \item{xColorWidth}{ width of the color labels for the x axis expressed as a fraction of the smaller of
-the range of the x and y axis. }
+  \item{xColorWidth}{ width of the color labels for the x axis expressed in user corrdinates.}
 
-  \item{yColorWidth}{ width of the color labels for the y axis expressed as a fraction of the smaller of
-the range of the x and y axis. }
+  \item{yColorWidth}{ width of the color labels for the y axis expressed in user coordinates.}
 
-  \item{xColorOffset}{ gap between the y axis and color labels as a fraction of the range of x axis. }
-  \item{yColorOffset}{ gap between the x axis and color labels as a fraction of the range of y axis. }
+  \item{xColorOffset}{ gap between the y axis and color labels, in user coordinates.}
+  \item{yColorOffset}{ gap between the x axis and color labels, in user coordinates.}
 
   \item{colors}{ color pallette to be used in the heatmap. Defaults to \code{\link{heat.colors}}. }
 
@@ -122,6 +121,10 @@ above. }
 
   \item{bg.lab.x}{background color for the margin along the x axis.}
   \item{bg.lab.y}{background color for the margin along the y axs.}
+
+  \item{x.adj.lab.y}{Justification of labels for the y axis along the x direction. A value of 0
+          produces left-justified text, 0.5 (the default) centered
+          text and 1 right-justified text. }
 
 
   \item{plotLegend}{ logical: should a color legend be plotted? }

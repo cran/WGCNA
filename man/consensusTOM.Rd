@@ -73,11 +73,11 @@ consensusTOM(
 
       # Return options
       saveConsensusTOMs = TRUE,
-      consensusTOMFileNames = "consensusTOM-Block\%b.RData",
+      consensusTOMFilePattern = "consensusTOM-Block\%b.RData",
       returnTOMs = FALSE,
 
       # Internal handling of TOMs
-      useDiskCache = TRUE, chunkSize = NULL,
+      useDiskCache = NULL, chunkSize = NULL,
       cacheDir = ".",
       cacheBase = ".blockConsModsCache",
 
@@ -232,7 +232,7 @@ consensus. Only used when \code{useMean} above is \code{TRUE}.}
   \item{saveConsensusTOMs}{ logical: should the consensus topological overlap matrices for each block be saved
 and returned?  }
 
-  \item{consensusTOMFileNames}{ character string containing the file namefiles containing the
+  \item{consensusTOMFilePattern}{ character string containing the file namefiles containing the
 consensus topological overlaps. The tag \code{\%b} will be replaced by the block number. If the resulting file
 names are non-unique (for example, because the user gives a file name without a \code{\%b} tag), an error
 will be generated.
@@ -245,7 +245,8 @@ function. }
 
   \item{useDiskCache}{ should calculated network similarities in individual sets be temporarilly saved
 to disk? Saving to disk is somewhat slower than keeping all data in memory, but for large blocks and/or
-many sets the memory footprint may be too big. See \code{chunkSize} below for additional information. }
+many sets the memory footprint may be too big. If not given (the default), the function will determine
+the need of caching based on the size of the data. See \code{chunkSize} below for additional information. }
 
   \item{chunkSize}{ network similarities are saved in smaller chunks of size \code{chunkSize}. If \code{NULL},
 an appropriate chunk size will be determined from an estimate of available memory. Note that if the chunk size

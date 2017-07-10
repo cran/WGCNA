@@ -69,7 +69,7 @@ blockwiseConsensusModules(
      # Saving the consensus TOM
 
      saveConsensusTOMs = FALSE,
-     consensusTOMFileNames = "consensusTOM-block.\%b.RData",
+     consensusTOMFilePattern = "consensusTOM-block.\%b.RData",
 
      # Internal handling of TOMs
 
@@ -274,7 +274,7 @@ consensus. Only used when \code{useMean} above is \code{TRUE}.}
   \item{saveConsensusTOMs}{ logical: should the consensus topological overlap matrices for each block be saved
 and returned?  } 
 
-  \item{consensusTOMFileNames}{ character string containing the file namefiles containing the
+  \item{consensusTOMFilePattern}{ character string containing the file namefiles containing the
 consensus topological overlaps. The tag \code{\%b} will be replaced by the block number. If the resulting file
 names are non-unique (for example, because the user gives a file name without a \code{\%b} tag), an error
 will be generated.

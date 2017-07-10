@@ -84,8 +84,8 @@ not enter the module eigengene clustering and will not be merged with other modu
 eigengenes) should be used in calculating module dissimilarity.}
 
   \item{equalizeQuantiles}{Logical: should quantiles of the eigengene dissimilarity matrix be equalized
-("quantile normalized")? The default is \code{FALSE} for reproducibility of old code, but better results
-will probably be achieved if quantile equalizatio is used.}
+("quantile normalized")? The default is \code{FALSE} for reproducibility of old code; when there are many
+eigengenes (e.g., at least 50), better results may be achieved if quantile equalization is used.}
 
   \item{quantileSummary}{One of \code{"mean"} or \code{"median"}. Controls how a reference dissimilarity
 is computed from the input ones (using mean or median, respectively).} 
@@ -124,8 +124,8 @@ indentation, each unit above that adds two spaces. }
 
 }
 \details{
-  This function returns the color labels for modules that are obtained from the input modules by merging
-ones that are closely related. The relationships are quantified by correlations of module eigengenes; a
+ This function merges input modules                                 
+that are closely related. The similarities are measured by correlations of module eigengenes; a
 ``consensus'' measure is defined as the ``consensus quantile'' 
 over the corresponding relationship in each set. Once the
 (dis-)similarity is calculated, average linkage hierarchical clustering of the module eigengenes is

@@ -9,22 +9,32 @@
 # would work consistently on lists and multiData objects. Similarly, multiData2list would simply become a
 # method of as.list, and as.list would be safe to use both on lists and on multiData objects. 
 
-mtd.subset = function(multiData, rowIndex = NULL, colIndex = NULL, permissive = FALSE, drop = FALSE)
+mtd.subset = function(multiData, rowIndex = NULL, colIndex = NULL, invert = FALSE, 
+                      permissive = FALSE, drop = FALSE)
+                      
 {
+  if (length(multiData)==0) return(NULL);
   size = checkSets(multiData, checkStructure = permissive);
   if (!size$structureOK && !is.null(colIndex))
     warning(immediate. = TRUE,
             paste("mtd.subset: applying column selection on data sets that do not have\n",
                   " the same number of columns. This is treacherous territory; proceed with caution."));
-  if (is.null(colIndex)) colIndex.1 = c(1:size$nGenes) else colIndex.1 = colIndex;
-  if (is.null(rowIndex)) rowIndex = lapply(size$nSamples, function(n) {c(1:n)})
+  if (is.null(colIndex)) { if (!invert) colIndex.1 = c(1:size$nGenes)} else colIndex.1 = colIndex;
+  if (is.null(rowIndex)) rowIndex = lapply(size$nSamples, function(n) if (invert) numeric(0) else c(1:n))
   if (length(rowIndex)!=size$nSets) 
     stop("If given, 'rowIndex' must be a list of the same length as 'multiData'.");
   out = list();
+  if (invert)
+  {
+     rowIndexAll = lapply(size$nSamples, function(n) c(1:n))
+     if (any(sapply(rowIndex, function(i) any(i<0))))
+       stop("Negative 'rowIndex' indices cannot be used with 'invert=TRUE'.");
+     rowIndex = mapply(setdiff, rowIndexAll, rowIndex, SIMPLIFY = FALSE);
+  }
   for (set in 1:size$nSets)
   {
     if (permissive)
-      if (is.null(colIndex)) colIndex.1 = c(1:ncol(multiData[[set]]$data)) else colIndex.1 = colIndex;
+      if (is.null(colIndex) && !invert) colIndex.1 = c(1:ncol(multiData[[set]]$data)) else colIndex.1 = colIndex;
     if (is.character(colIndex.1))
     { 
       colIndex.1 = match(colIndex.1, colnames(multiData[[set]]$data));
@@ -34,7 +44,15 @@ mtd.subset = function(multiData, rowIndex = NULL, colIndex = NULL, permissive = 
              paste( colIndex[is.na(colIndex.1)] [1:min(n1, 5)], collapse = ", "),
              if (n1>5) ", ... [output truncated]" else "");
     }
-    out[[set]] = list(data = multiData[[set]]$data[rowIndex[[set]], colIndex.1, drop = drop]);
+    if (invert)
+    {
+      if (any(colIndex.1<0)) 
+        stop("Negative indices cannot be used with 'invert=TRUE'.");
+      colIndex.2 = setdiff(1:ncol(multiData[[set]]$data), colIndex.1);
+    } else 
+      colIndex.2 = colIndex.1;
+
+    out[[set]] = list(data = multiData[[set]]$data[rowIndex[[set]], colIndex.2, drop = drop]);
   }
   names(out) = names(multiData);
   out;
@@ -56,6 +74,7 @@ list2multiData = function(data)
 
 mtd.colnames = function(multiData)
 {
+  if (length(multiData)==0) return(NULL);
   colnames(multiData[[1]]$data);
 }
 
@@ -105,6 +124,7 @@ mtd.apply = function(
     mdaVerbose = 0, mdaIndent = 0
 )
 {
+  if (length(multiData)==0) return(NULL);
   printSpaces = indentSpaces(mdaIndent);
 
   if (!isMultiData(multiData, strict = FALSE))
@@ -163,6 +183,7 @@ mtd.applyToSubset = function(
     mdaVerbose = 0, mdaIndent = 0
 )
 {
+  if (length(multiData)==0) return(NULL);
   printSpaces = indentSpaces(mdaIndent);
 
   size = checkSets(multiData);
@@ -224,6 +245,7 @@ mtd.applyToSubset = function(
 
 mtd.simplify = function(multiData)
 {
+  if (length(multiData)==0) return(NULL);
   len = length(multiData[[1]]$data);
   dim = dim(multiData[[1]]$data);
   simplifiable = TRUE;
@@ -343,6 +365,7 @@ mtd.mapply = function(
 
 mtd.rbindSelf = function(multiData)
 {
+  if (length(multiData)==0) return(NULL);
   size = checkSets(multiData);
   out = NULL;
   colnames = mtd.colnames(multiData);
@@ -350,14 +373,17 @@ mtd.rbindSelf = function(multiData)
   {
     if (!is.null(colnames(multiData[[set]]$data)) && 
         !isTRUE(all.equal(colnames, colnames(multiData[[set]]$data))) )
-          colnames(multiData[[set]]$data) = colnames;
-    out = rbind(out, multiData[[set]]$data);
+    {
+       warning("mtd.rbindSelf: 'colnames' of the first set and set ", set, " do not agree.");
+       colnames(multiData[[set]]$data) = colnames;
+    }
   }
-  out;
+  do.call(rbind, multiData2list(multiData));
 }
 
 mtd.setAttr = function(multiData, attribute, valueList)
 {
+  if (length(multiData)==0) return(NULL);
   size = checkSets(multiData);
   ind = 1;
   for (set in 1:size$nSets)
@@ -371,6 +397,7 @@ mtd.setAttr = function(multiData, attribute, valueList)
 
 mtd.setColnames = function(multiData, colnames)
 {
+  if (length(multiData)==0) return(NULL);
   size = checkSets(multiData);
   for (set in 1:size$nSets)
     colnames(multiData[[set]]$data) = colnames

@@ -40,16 +40,21 @@ selectBranch returns a numeric vector corresponding to all genes in the requeste
 Jeremy Miller
 }
 \examples{
+\dontrun{
 ## Example: first simulate some data.
+n = 30;
+n2 = 2*n;
+n.3 = 20;
+n.5 = 10;
+MEturquoise = sample(1:(2*n),n)
+MEblue      = c(MEturquoise[1:(n/2)], sample(1:(2*n),n/2))
+MEbrown     = sample(1:n2,n)
+MEyellow    = sample(1:n2,n) 
+MEgreen     = c(MEyellow[1:n.3], sample(1:n2,n.5))
+MEred	    = c(MEbrown [1:n.5], sample(1:n2,n.3))
 
-MEturquoise = sample(1:100,50)
-MEblue      = c(MEturquoise[1:25], sample(1:100,25))
-MEbrown     = sample(1:100,50)
-MEyellow    = sample(1:100,50) 
-MEgreen     = c(MEyellow[1:30], sample(1:100,20))
-MEred	    = c(MEbrown [1:20], sample(1:100,30))
 ME     = data.frame(MEturquoise, MEblue, MEbrown, MEyellow, MEgreen, MEred)
-dat1   = simulateDatExpr(ME,400 ,c(0.16,0.12,0.11,0.10,0.10,0.09,0.15), 
+dat1   = simulateDatExpr(ME,8*n ,c(0.16,0.12,0.11,0.10,0.10,0.09,0.15), 
                          signed=TRUE)
 TOM1   = TOMsimilarityFromExpr(dat1$datExpr, networkType="signed")
 colnames(TOM1) <- rownames(TOM1) <- colnames(dat1$datExpr)
@@ -92,5 +97,5 @@ tree1 = reflectBranch(tree1,hubs["blue"],hubs["green"])
 plotDendroAndColors(tree1,colorh2,dendroLabels=FALSE,main="Reflect turquoise/blue", 
                     setLayout = FALSE)
 
-}
+}}
 \keyword{misc}

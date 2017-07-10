@@ -69,6 +69,7 @@ blockwiseModules(
   minBranchEigennodeDissim = mergeCutHeight,
 
   stabilityLabels = NULL,
+  stabilityCriterion = c("Individual fraction", "Common fraction"),
   minStabilityDissim = NULL,
 
   pamStage = TRUE, pamRespectsDendro = TRUE,
@@ -98,8 +99,9 @@ blockwiseModules(
 
 }
 \arguments{
-  \item{datExpr}{ expression data. A data frame in which columns are genes and rows ar samples. NAs are
-allowed, but not too many. } 
+  \item{datExpr}{ Expression data. A matrix (preferred) or 
+data frame in which columns are genes and rows ar samples. NAs are
+allowed, but not too many. See \code{checkMissingData} below and details.} 
 
   \item{checkMissingData}{logical: should data be checked for excessive numbers of missing entries in
 genes and samples, and for genes with zero variance? See details. }
@@ -234,6 +236,11 @@ eigennodes; the consensus is defined as quantile with probability \code{consensu
 dissimilarity based on split stability. The number of rows must equal the number of genes in
 \code{multiExpr}; the number of columns (clusterings) is arbitrary. See
 \code{\link{branchSplitFromStabilityLabels}} for details.}
+
+  \item{stabilityCriterion}{One of \code{c("Individual fraction", "Common fraction")}, indicating which method
+for assessing stability similarity of two branches should be used. We recommend \code{"Individual fraction"}
+which appears to perform better; the \code{"Common fraction"} method is provided for backward compatibility
+since it was the (only) method available prior to WGCNA version 1.60.}
 
    \item{minStabilityDissim}{Minimum stability dissimilarity criterion for two branches to be considered
 separate. Should be a number between 0 (essentially no dissimilarity required) and 1 (perfect dissimilarity

@@ -59,9 +59,9 @@
                      keepLegendSpace = plotLegend,
                      cex.legend = 1, 
                      legendShrink = 0.94,
-                     legendSpace = 0.10,
-                     legendWidth = 0.02,
-                     legendGap = 0.02,
+                     legendSpace = 4 * strwidth("M"),
+                     legendWidth = 1 * strwidth("M"),
+                     legendGap = 0.7 * strwidth("M"),
                      frame = TRUE,
                      frameTicks = FALSE, tickLen = 0.7* strwidth("M"),
                      ...)
@@ -92,7 +92,8 @@
   ymin = yminAll; 
   ymax = ymaxAll; 
   xmin = xminAll; 
-  xmax = xmaxAll - legendSpace * (xmaxAll-xminAll);
+  xmax = xmaxAll - legendSpace;
+  if (xmax < xmin) stop("'legendSpace is too large, not enough space for the heatmap."); 
 
   xStep = (xmax - xmin)/nCols; 
   xLeft = xmin + c(0:(nCols-1)) * xStep;
@@ -121,8 +122,8 @@
   if (plotLegend)
   {
       # Now plot the legend.
-      .plotColorLegend(xmin = xmaxAll - (xmaxAll - xminAll) * (legendSpace - legendGap),
-                       xmax = xmaxAll - (xmaxAll - xminAll) * (legendSpace - legendGap - legendWidth),
+      .plotColorLegend(xmin = xmaxAll - (legendSpace - legendGap),
+                       xmax = xmaxAll - (legendSpace - legendGap - legendWidth),
                        ymin = yminAll + (1-legendShrink) * (ymaxAll - yminAll),
                        ymax =  ymaxAll - (1-legendShrink) * (ymaxAll - yminAll),
                        lim = zlim,

@@ -1,6 +1,97 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
 
+2017/07/07: 1.60
+
+	. empiricalBayesLM expanded with additional arguments allowing
+	  specification of initial fit function
+
+	. DIFF: New branch split function that works with stability labels, 
+	  branchSplitFromStabilityLabels.individualFraction, that tweaks the
+	  branch dissimilarity measure to work better when one branch is large
+	  and one small. To reproduce old results, use argument
+	  stabilityCriterion = "Common fraction" to functions
+	  hierarchicalConsensusModules and blockwiseConsensusModules.
+
+	. verboseBoxplot and verboseBarplot can now optionally overlay
+	  scatterplots of the underlying data (thanks to Zhijin (Jean) Wu for
+	  suggestion and code).
+
+	. Bugfix in enrichmentAnalysis: function does work when the number of
+	  reported terms is zero. (Thanks to Zhijie Cao for bug report and
+	  fix.)
+
+	. New functionality that allows a hierarchical calculation of
+	  consensus modules, with multiple new functions.
+
+	. New arguments colorHeightBase, colorHeightMax control layout in
+	  function plotDendroAndColors
+
+	. Arguments controlling the legend size in heatmaps with legends 
+	  been tweaked to make the legend width independent of the width of
+	  the plotting region. 
+
+	. The horizontal adjusting of row labels in labeledHeatmap can now be
+	  set using the new argument x.adj.lab.y.
+
+	. Bugfix in mtd.susbet: function now works properly when invert is
+	  TRUE.
+
+	. formatLabels can now format strings to a maximum width in user
+	  coordinates and shorten the results to a given number of lines.
+
+	. Limitation to block sizes less than the integer addressing limit
+	  (sqrt(2^31)) has been removed.
+
+	. Multiple mtd.... functions now return NULL when the input multiData
+	  argument has length zero.
+
+	. Function adjacency now accepts corOptions in both character and list
+	  formats.
+
+	. New function minWhichMin that calculates the row- or column-wise
+	  minimum and index of the minimum.
+
+	. New functions pmin.fromList, pmean.fromList, pquantile.fromList, for
+	  parallel minimum, mean and quantile whose input is a list of
+	  identically sized arrays; functions pmin, pmean and pquantile now
+	  use compiled code and should be substantially faster and more memory
+	  efficient.
+
+	. Bugfix in function blockwiseModules: corrected conditional module
+	  removal if too few genes remain.
+
+	. pickSoftThreshold is now faster thanks to Alexey Sergushichev; new
+	  argument gcInterval allows the user to fine tune frequency of garbage
+	  collection to suit the size of the data.
+
+	. verboseBarplot now takes argument ylim which defaults to
+	  incorporating all bar heights plus error bars (if requested)
+
+	. Cleanup in function labeledHeatmap: incorrect text and color label
+	  offsets and widths fixed. The corresponding arguments xColorWidth,
+	  yColorWidth are now measured in user units rather than fractions of
+	  overall width and height. 
+
+	. New functions bicovWeightFactors and bicovWeightsFromFactors
+
+2016/05/30: 1.52
+
+	. New function plotMultiHist for plotting multiple histograms in one
+	  plot
+
+	. New functions multiGrep, multiGrepl, multiSub, multiGSub
+
+	. New argument invert in mtd.subset allows consistent excluding of
+	  rows and columns from multiData structures.
+
+	. Bugfix in modulePreservation: accuracy statistics now work also with
+	  a single module. Thanks to Victor Hanson-Smith for pointing this
+	  out.
+
+	. mtd.rbindSelf now warns when colnames of the individual data sets do
+	  not agree.
+
 2016/03/08: 1.51
 
 	. DIFF: Defaults for the number of pre-clustering centers in

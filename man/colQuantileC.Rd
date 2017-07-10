@@ -24,6 +24,10 @@ At present, only one quantile type is implemented, namely the default type 7 use
 
 \author{ Peter Langfelder }
 
-\seealso{ \code{\link[stats]{quantile}} }
+\seealso{ 
+
+\code{\link[stats]{quantile}}; 
+\code{\link{pquantile}} for another way of calculating quantiles across structured data.
+}
 
 \keyword{misc }% __ONLY ONE__ keyword per line

@@ -453,6 +453,16 @@ consensusOrderMEs = function(MEs, useAbs = FALSE, useSets = NULL, greyLast = TRU
   orderMEs(MEs, greyLast = greyLast, greyName = greyName, order = order, useSets = useSets);
 } 
 
+orderMEsByHierarchicalConsensus = function(MEs, networkOptions, consensusTree,
+                             greyName = "ME0", 
+                             calibrate = FALSE)
+{
+  Diss = .hierarchicalConsensusMEDissimilarity(MEs, networkOptions, consensusTree,
+                      greyName = greyName, calibrate = calibrate);
+  order = .clustOrder(Diss, greyLast = TRUE, greyName = greyName);
+  mtd.subset(MEs, , order);
+}
+
 #---------------------------------------------------------------------------------------------
 #
 # consensusMEDissimilarity
@@ -505,6 +515,22 @@ consensusMEDissimilarity = function(MEs, useAbs = FALSE, useSets = NULL, method 
   ConsDiss;
 }
 
+
+hierarchicalConsensusMEDissimilarity = function(MEs, networkOptions, consensusTree,
+              greyName = "ME0", calibrate = FALSE)
+                                        
+{
+  nSets = checkSets(MEs)$nSets;
+
+  if (inherits(networkOptions, "NetworkOptions")) 
+      networkOptions = list2multiData(.listRep(networkOptions, nSets));
+
+  .hierarchicalConsensusMEDissimilarity(MEs, networkOptions, consensusTree,
+              greyName = greyName, calibrate = calibrate)
+}
+
+
+
 # Quantile normalization
 # normalize each column such that (column) quantiles are the same 
 # The final value for each quantile is the 'summaryType' of the corresponding quantiles across the columns
@@ -554,10 +580,10 @@ consensusMEDissimilarity = function(MEs, useAbs = FALSE, useSets = NULL, method 
                                      equalizeQuantiles = FALSE,
                                      quantileSummary = "mean",
                                      consensusQuantile = 0, useAbs = FALSE, 
-                                     greyMEname = "ME0")
+                                     greyName = "ME0")
 {
   nSets = checkSets(multiMEs)$nSets;
-  useMEs = c(1:ncol(multiMEs[[1]]$data))[names(multiMEs[[1]]$data)!=greyMEname]
+  useMEs = c(1:ncol(multiMEs[[1]]$data))[names(multiMEs[[1]]$data)!=greyName]
   useNames = names(multiMEs[[1]]$data)[useMEs];
   nUseMEs = length(useMEs);
 #  if (nUseMEs<2) 
@@ -594,6 +620,61 @@ consensusMEDissimilarity = function(MEs, useAbs = FALSE, useSets = NULL, method 
   ConsDiss;
 }
      
+
+.hierarchicalConsensusMEDissimilarity = function(multiMEs, 
+                                           networkOptions,
+                                           consensusTree,
+                                           greyName,
+                                           calibrate)
+{
+  nSets = checkSets(multiMEs)$nSets;
+  useMEs = which(mtd.colnames(multiMEs)!=greyName);
+  useNames = mtd.colnames(multiMEs)[useMEs];
+  nUseMEs = length(useMEs);
+#  if (nUseMEs<2) 
+#    stop("Something is wrong: there are two or more proper modules, but less than two proper",
+#         "eigengenes. Please check that the grey color label and module eigengene label", 
+#         "are correct.");
+
+  if (!isMultiData(networkOptions, strict = FALSE))
+    stop("'networkOptions' must be either a single list of class 'NetworkOptions'\n",
+         "or a MultiData structure containing one such list per input set. ");
+
+  if (length(networkOptions)!=nSets) 
+    stop("Number of sets in 'multiMEs' and 'networkOptions' must be the same.");
+
+  MEDiss = mtd.mapply(function(me, netOpt)
+  {
+    cor.me = do.call(netOpt$corFnc, 
+            c(list(x = me), netOpt$corOptions));
+    if (!grepl("signed", netOpt$networkType)) cor.me = abs(cor.me);
+    cor.me;
+  }, mtd.subset(multiMEs, , useMEs), networkOptions, returnList = TRUE);
+
+  if (calibrate)
+  {
+    cons = hierarchicalConsensusCalculation(MEDiss, 
+                consensusTree = consensusTree, 
+                level = 1,
+                # Return options: the data can be either saved or returned but not both.
+                saveConsensusData = FALSE,
+                keepIntermediateResults = FALSE,
+                # Internal handling of data
+                useDiskCache = FALSE, 
+                # Behaviour
+                collectGarbage = FALSE,
+                verbose = 0, indent = 0)$consensusData
+     cons = BD.getData(cons, blocks = 1);
+  } else
+     cons = simpleHierarchicalConsensusCalculation(MEDiss, consensusTree)
+  consDiss = 1-cons;
+  colnames(consDiss) = rownames(consDiss) = useNames;
+  consDiss;
+}
+     
+
+
+
 #======================================================================================================
 # ColorHandler.R
 #======================================================================================================
@@ -944,6 +1025,8 @@ multiSetMEs = function(exprData, colors, universalColors = NULL, useSets = NULL,
       MEs[[set]]$validMEs = rep(TRUE, times = ncol(MEs[[set]]$data));
     }
   }
+
+  names(MEs) = names(exprData);
   
   MEs;
 }
@@ -1007,13 +1090,13 @@ mergeCloseModules = function(
 
   colors = colors[, drop = TRUE];
 
-  greyMEname = paste(moduleColor.getMEprefix(), unassdColor, sep="");
+  greyName = paste(moduleColor.getMEprefix(), unassdColor, sep="");
 
   if (verbose>0) printFlush(paste(spaces, 
             "mergeCloseModules: Merging modules whose distance is less than", cutHeight));
 
   if (verbose>3) printFlush(paste(spaces, 
-            "  .. will look for grey label", greyMEname));
+            "  .. will look for grey label", greyName));
 
   if (!checkSets(exprData, checkStructure = TRUE, useSets = useSets)$structureOK)
   {
@@ -1114,7 +1197,7 @@ mergeCloseModules = function(
                                            quantileSummary = quantileSummary,
                                            consensusQuantile = consensusQuantile, useAbs = useAbs,
                                            corFnc = corFnc, corOptions = corOptions, 
-                                           useSets = useSets, greyMEname = greyMEname);
+                                           useSets = useSets, greyName = greyName);
 
       Tree = fastcluster::hclust(as.dist(ConsDiss), method = "average");
       if (iteration==1) oldTree = Tree;
@@ -1200,14 +1283,14 @@ mergeCloseModules = function(
                              excludeGrey = !getNewUnassdME, grey = unassdColor,
                              verbose = verbose-1, indent = indent+1);
         newMEs = consensusOrderMEs(NewMEs, useAbs = useAbs, useSets = useSets, greyLast = TRUE,
-                                   greyName = greyMEname);
+                                   greyName = greyName);
 
         ConsDiss = .consensusMEDissimilarity(newMEs, 
                                              equalizeQuantiles = equalizeQuantiles,
                                              quantileSummary = quantileSummary,
                                              consensusQuantile = consensusQuantile, useAbs = useAbs,
                                              corFnc = corFnc, corOptions = corOptions, 
-                                             useSets = useSets, greyMEname = greyMEname);
+                                             useSets = useSets, greyName = greyName);
         if (length(ConsDiss) > 1)
         {
           Tree = fastcluster::hclust(as.dist(ConsDiss), method = "average");
@@ -1241,6 +1324,277 @@ mergeCloseModules = function(
     list(colors = MergedNewColors, dendro = Tree, oldDendro = oldTree, cutHeight = cutHeight, 
          oldMEs = oldMEs, newMEs = newMEs, allOK = TRUE);
   }
+}
+
+  
+#---------------------------------------------------------------------------------------------
+#
+# hierarchicalMergeCloseModules
+#
+#---------------------------------------------------------------------------------------------
+                  
+
+hierarchicalMergeCloseModules = function(
+  # input data
+  multiExpr, labels,
+
+  # Optional starting eigengenes
+  MEs = NULL,  
+
+  unassdColor = if (is.numeric(labels)) 0 else "grey", 
+  # If missing data are present, impute them?
+  impute = TRUE,
+
+
+  # Options for eigengene network construction
+  networkOptions,
+
+  # Options for constructing the consensus
+  consensusTree,
+  calibrateMESimilarities = FALSE,
+
+  # Merging options
+  cutHeight = 0.2, 
+  iterate = TRUE,
+
+  # Output options
+  relabel = FALSE, 
+  colorSeq = NULL, 
+  getNewMEs = TRUE,
+  getNewUnassdME = TRUE,
+
+  # Options controlling behaviour of the function
+  trapErrors = FALSE,
+  verbose = 1, indent = 0)
+{
+
+  MEsInSingleFrame = FALSE;
+  spaces = indentSpaces(indent);
+
+  #numCols = is.numeric(labels);
+  #facCols = is.factor(labels);
+  #charCols = is.character(labels);
+
+  origColors = labels;
+
+  labels = labels[, drop = TRUE];
+
+  greyName = paste(moduleColor.getMEprefix(), unassdColor, sep="");
+
+  if (verbose>0) printFlush(paste(spaces, 
+            "mergeCloseModules: Merging modules whose distance is less than", cutHeight));
+
+  if (verbose>3) printFlush(paste(spaces, 
+            "  .. will use unassigned ME label", greyName));
+
+  setsize = checkSets(multiExpr);
+  nSets = setsize$nSets;
+  
+  if (!is.null(MEs))
+  {
+    checkMEs = checkSets(MEs, checkStructure = TRUE);
+    if (checkMEs$structureOK)
+    {
+      if (nSets!=checkMEs$nSets)
+        stop("Input error: numbers of sets in multiExpr and MEs differ.")
+      for (set in 1:nSets)
+      {
+        if (checkMEs$nSamples[set]!=setsize$nSamples[set])
+            stop(paste("Number of samples in MEs is incompatible with subset length for set", set));
+      }
+    } else {
+      if (MEsInSingleFrame)
+      {
+        MEs = fixDataStructure(MEs);
+        checkMEs = checkSets(MEs);
+      } else {
+        stop("MEs do not have the appropriate structure (same as multiExpr). ");
+      }
+    }
+  }
+
+  if (inherits(networkOptions, "NetworkOptions")) 
+      networkOptions = list2multiData(.listRep(networkOptions, nSets));
+
+  if (setsize$nGenes!=length(labels))
+    stop("Number of genes in multiExpr is different from the length of original labels. They must equal.");
+
+  done = FALSE; iteration = 1;
+
+  MergedColors = labels;
+  #ok = try( 
+  #{
+    while (!done)
+    {
+      if (is.null(MEs)) 
+      {
+        MEs = multiSetMEs(multiExpr, colors = NULL, universalColors = labels,
+                        impute = impute,
+                        subHubs = TRUE, trapErrors = FALSE, excludeGrey = TRUE, 
+                        grey = unassdColor,
+                        verbose = verbose-1, indent = indent+1);
+        #MEs = consensusOrderMEs(MEs, useAbs = useAbs, greyLast = FALSE);
+        #collectGarbage();
+      } else if (nlevels(as.factor(labels))!=checkMEs$nGenes)
+      {
+        if ((iteration==1) & (verbose>0)) printFlush(paste(spaces, "  Number of given module labels", 
+                  "does not match number of given MEs => recalculating the MEs."))
+        MEs = multiSetMEs(multiExpr, colors = NULL, universalColors = labels,
+                        impute = impute,
+                        subHubs = TRUE, trapErrors = FALSE, excludeGrey = TRUE,
+                        grey = unassdColor,
+                        verbose = verbose-1, indent = indent+1);
+        #MEs = consensusOrderMEs(MEs, useAbs = useAbs, greyLast = FALSE);
+        #collectGarbage();
+      }
+      if (iteration==1) oldMEs = MEs;
+  
+      # Check labels for number of distinct labels that are not grey
+  
+      colLevs = as.character(levels(as.factor(labels)));
+      if  ( length(colLevs[colLevs!=as.character(unassdColor)])<2 )
+      {
+        printFlush(paste(spaces, 
+           "mergeCloseModules: less than two proper modules."));
+        printFlush(paste(spaces, " ..color levels are",
+            paste(colLevs, collapse = ", ")));
+        printFlush(paste(spaces, " ..there is nothing to merge."));
+        MergedNewColors = labels;
+        MergedColors = labels;
+        nOldMods = 1; nNewMods = 1;
+        oldTree = NULL; Tree = NULL;
+        break;
+      }
+  
+      # Cluster the found module eigengenes and merge ones that are too close according to the specified
+      # quantile.
+  
+      nOldMods = nlevels(as.factor(labels));
+
+      ConsDiss = .hierarchicalConsensusMEDissimilarity(MEs, networkOptions = networkOptions,
+                                           consensusTree = consensusTree, 
+                                           greyName = greyName,
+                                           calibrate = calibrateMESimilarities);
+
+      Tree = fastcluster::hclust(as.dist(ConsDiss), method = "average");
+      if (iteration==1) oldTree = Tree;
+      TreeBranches = as.factor(moduleNumber(dendro = Tree, cutHeight = cutHeight, minSize = 1));
+      UniqueBranches = levels(TreeBranches);
+      nBranches = nlevels(TreeBranches)
+      NumberOnBranch = table(TreeBranches);
+      MergedColors = labels;
+      
+      # Merge modules on the same branch
+  
+      for (branch in 1:nBranches) if (NumberOnBranch[branch]>1)
+      {
+        ModulesOnThisBranch = names(TreeBranches)[TreeBranches==UniqueBranches[branch]];
+        ColorsOnThisBranch = substring(ModulesOnThisBranch, 3);
+        if (is.numeric(origColors)) ColorsOnThisBranch = as.numeric(ColorsOnThisBranch);
+        if (verbose>3) 
+           printFlush(paste(spaces, "  Merging original labels", 
+                            paste(ColorsOnThisBranch, collapse=", ")));
+        for (color in 2:length(ColorsOnThisBranch))
+          MergedColors[MergedColors==ColorsOnThisBranch[color]] = ColorsOnThisBranch[1];
+      }
+
+      MergedColors = MergedColors[, drop = TRUE];
+      
+      nNewMods = nlevels(as.factor(MergedColors));
+  
+      if (nNewMods<nOldMods & iterate)
+      {
+        labels = MergedColors;
+        MEs = NULL;
+      } else {
+        done = TRUE;
+      }
+      iteration = iteration+1;
+    } 
+    if (relabel) 
+    {
+       RawModuleColors = levels(as.factor(MergedColors));
+       # relabel the merged labels to the usual order based on the number of genes in each module
+       if (is.null(colorSeq)) 
+       {
+         if (is.numeric(origColors)) {
+           colorSeq = c(1:length(table(origColors)));
+         } else {
+           nNewColors = length(RawModuleColors);
+           colorSeq = labels2colors(c(1:nNewColors))
+         }
+       }
+       
+      # nGenesInModule = rep(0, nNewMods);
+      # for (mod in 1:nNewMods) nGenesInModule[mod] = sum(MergedColors==RawModuleColors[mod]);
+       nGenesInModule = table(MergedColors);
+     
+       SortedRawModuleColors = RawModuleColors[order(-nGenesInModule)]
+    
+       # Change the color names to the standard sequence, but leave grey grey 
+       # (that's why rank in general does not equal color)
+       MergedNewColors = MergedColors;
+       if (is.factor(MergedNewColors)) MergedNewColors = as.character(MergedNewColors);
+       if (verbose>3) printFlush(paste(spaces, "   Changing original labels:"));
+       rank = 0;
+       for (color in 1:length(SortedRawModuleColors)) if (SortedRawModuleColors[color]!=unassdColor)
+       {
+         rank = rank + 1;
+         if (verbose>3) printFlush(paste(spaces, "      ", SortedRawModuleColors[color], 
+                                    "to ", colorSeq[rank]));
+         MergedNewColors[MergedColors==SortedRawModuleColors[color]] = colorSeq[rank];
+       }
+       if (is.factor(MergedColors)) MergedNewColors = as.factor(MergedNewColors);
+    } else {
+       MergedNewColors = MergedColors; 
+    }
+    MergedNewColors = MergedNewColors[, drop = TRUE];
+
+    if (getNewMEs)
+    {
+      if (nNewMods<nOldMods | relabel | getNewUnassdME)
+      {
+        if (verbose>0) printFlush(paste(spaces, "  Calculating new MEs..."));
+        NewMEs = multiSetMEs(multiExpr, colors = NULL, universalColors = MergedNewColors,
+                             impute = impute, subHubs = TRUE, trapErrors = FALSE,
+                             excludeGrey = !getNewUnassdME, grey = unassdColor,
+                             verbose = verbose-1, indent = indent+1);
+        newMEs = orderMEsByHierarchicalConsensus(NewMEs, networkOptions, 
+                                   consensusTree,
+                                   greyName = greyName, calibrate = calibrateMESimilarities);
+
+        ConsDiss = .hierarchicalConsensusMEDissimilarity(newMEs, networkOptions = networkOptions,
+                                           consensusTree = consensusTree, 
+                                           greyName = greyName,
+                                           calibrate = calibrateMESimilarities);
+        if (length(ConsDiss) > 1)
+        {
+          Tree = fastcluster::hclust(as.dist(ConsDiss), method = "average");
+        } else Tree = NULL;
+      } else {
+        newMEs = MEs;
+      }
+    } else {
+       newMEs = NULL;
+    }
+  #}, silent = TRUE);
+
+  #if (class(ok)=='try-error')
+  #{
+  #  if (!trapErrors) stop(ok);
+  #  if (verbose>0)
+  #  {
+  #    printFlush(paste(spaces, "Warning: merging of modules failed with the following error:"));
+  #    printFlush(paste('   ', spaces, ok));
+  #    printFlush(paste(spaces, " --> returning unmerged modules and *no* eigengenes."));
+  #  }
+  #  warning(paste("mergeCloseModules: merging of modules failed with the following error:\n",
+  #                "    ", ok, " --> returning unmerged modules and *no* eigengenes.\n"));
+  #  list(labels = origColors, allOK = FALSE);
+  #} else {
+    list(labels = MergedNewColors, dendro = Tree, oldDendro = oldTree, cutHeight = cutHeight, 
+         oldMEs = oldMEs, newMEs = newMEs, allOK = TRUE);
+  #}
 }
 
   
@@ -1410,6 +1764,7 @@ Heterogeneity = sqrt(nGenes * sum(khelp^2)/sum(khelp)^2 - 1)
 datout[i, 11] = Heterogeneity
 }
     }
+    datout = as.data.frame(lapply(datout, as.numeric));
     print(signif(data.frame(datout),3))
     ind1 = datout[, 3] > RsquaredCut
     indcut = NA
@@ -1430,12 +1785,15 @@ datout[i, 11] = Heterogeneity
 # PL: a rewrite that splits the data into a few blocks.
 # SH: more netowkr concepts added.
 # PL: re-written for parallel processing
+# Alexey Sergushichev: speed up by pre-calculating correlation powers
 
 pickSoftThreshold = function (data, dataIsExpr = TRUE, RsquaredCut = 0.85, 
     powerVector = c(seq(1, 10, by = 1), seq(12, 20, by = 2)), removeFirst = FALSE, nBreaks = 10, 
     blockSize = NULL, corFnc = cor, corOptions = list(use = 'p'), 
-    networkType = "unsigned", moreNetworkConcepts=FALSE, verbose = 0, indent = 0)
+    networkType = "unsigned", moreNetworkConcepts=FALSE, 
+    gcInterval = NULL, verbose = 0, indent = 0)
 {
+    powerVector = sort(powerVector)
     intType = charmatch(networkType, .networkTypes)
     if (is.na(intType)) 
         stop(paste("Unrecognized 'networkType'. Recognized values are", 
@@ -1458,6 +1816,7 @@ pickSoftThreshold = function (data, dataIsExpr = TRUE, RsquaredCut = 0.85,
       if (verbose > 0) 
         printFlush(spaste("pickSoftThreshold: will use block size ", blockSize, "."))
     }
+    if (length(gcInterval)==0) gcInterval = 4*blockSize;
    
     colname1 = c("Power", "SFT.R.sq", "slope", "truncated R.sq", 
                  "mean(k)", "median(k)", "max(k)")
@@ -1490,6 +1849,7 @@ pickSoftThreshold = function (data, dataIsExpr = TRUE, RsquaredCut = 0.85,
 
     # Main loop
     startG = 1
+    lastGC = 0;
     while (startG <= nGenes) 
     {
       endG = min (startG + blockSize - 1, nGenes)
@@ -1521,18 +1881,27 @@ pickSoftThreshold = function (data, dataIsExpr = TRUE, RsquaredCut = 0.85,
           }
           if (sum(is.na(corx)) != 0) 
               warning(paste("Some correlations are NA in block", 
-                  startG, ":", endG, "."))
+                  startG, ":", endG, "."));
         } else {
           corx = data[, useGenes];
         }
         datk.local = matrix(NA, nGenes1, nPowers);
+        corxPrev = matrix(1, nrow=nrow(corx), ncol=ncol(corx))
+        powerVector1 <- c(0, head(powerVector, -1))
+        powerSteps <- powerVector - powerVector1
+        uniquePowerSteps <- unique(powerSteps)
+        corxPowers <- lapply(uniquePowerSteps, function(p) corx^p)
+        names(corxPowers) <- uniquePowerSteps
         for (j in 1:nPowers) {
-            datk.local[, j] = colSums(corx^powerVector[j], na.rm = TRUE) - 1;
-        }
-        datk.local;
+            corxCur <- corxPrev * corxPowers[[as.character(powerSteps[j])]]
+            datk.local[, j] = colSums(corxCur, na.rm = TRUE) - 1
+            corxPrev <- corxCur
+        };
+        datk.local
       } # End of %dopar% evaluation
       # Move to the next block of genes.
       startG = endG + 1
+      if ((gcInterval > 0) && (startG - lastGC > gcInterval)) { gc(); lastGC = startG; }
       if (verbose == 1) pind = updateProgInd(endG/nGenes, pind)
     }
     if (verbose == 1) printFlush("");
@@ -1562,6 +1931,7 @@ pickSoftThreshold = function (data, dataIsExpr = TRUE, RsquaredCut = 0.85,
     indcut = NA
     indcut = if (sum(ind1) > 0) min(c(1:length(ind1))[ind1]) else indcut;
     powerEstimate = powerVector[indcut][[1]]
+    collectGarbage()
     list(powerEstimate = powerEstimate, fitIndices = data.frame(datout))
 }
 
@@ -1921,24 +2291,41 @@ adjacency = function(datExpr, selectCols=NULL, type = "unsigned", power = if (ty
   if (is.na(intType))
     stop(paste("Unrecognized 'type'. Recognized values are", paste(.adjacencyTypes, collapse = ", ")));
 
+  corFnc.fnc = match.fun(corFnc);
+
   if (intType < 4)
   {
     if (is.null(selectCols))
     {
-      corExpr = parse(text = paste(corFnc, "(datExpr ", prepComma(corOptions), ")"));
-      # cor_mat = cor(datExpr, use = "p");
-      cor_mat = eval(corExpr);
+      if (is.list(corOptions))
+      {
+         cor_mat = do.call(corFnc.fnc, c(list(x = datExpr), corOptions))
+      } else {
+         corExpr = parse(text = paste(corFnc, "(datExpr ", prepComma(corOptions), ")"));
+         # cor_mat = cor(datExpr, use = "p");
+         cor_mat = eval(corExpr);
+      }
     } else {
-      corExpr = parse(text = paste(corFnc, "(datExpr, datExpr[, selectCols] ", prepComma(corOptions), ")"));
-      #cor_mat = cor(datExpr, datExpr[, selectCols], use="p");
-      cor_mat = eval(corExpr);
+      if (is.list(corOptions))
+      {
+         cor_mat = do.call(corFnc.fnc, c(list(x = datExpr, y = datExpr[, selectCols]), corOptions))
+      } else {
+        corExpr = parse(text = paste(corFnc, "(datExpr, datExpr[, selectCols] ", prepComma(corOptions), ")"));
+        #cor_mat = cor(datExpr, datExpr[, selectCols], use="p");
+        cor_mat = eval(corExpr);
+      }
     }
   } else {
     if (!is.null(selectCols)) 
       stop("The argument 'selectCols' cannot be used for distance adjacency.");
-    corExpr = parse(text = paste(distFnc, "(t(datExpr) ", prepComma(distOptions), ")"));
-    # cor_mat = cor(datExpr, use = "p");
-    d = eval(corExpr);
+    if (is.list(distOptions))
+    {
+      d = do.call(distFnc, c(list(x = t(datExpr)), distOptions));
+    } else {
+      corExpr = parse(text = paste(distFnc, "(t(datExpr) ", prepComma(distOptions), ")"));
+      # cor_mat = cor(datExpr, use = "p");
+      d = eval(corExpr);
+    }
     if (any(d<0)) 
       warning("Function WGCNA::adjacency: Distance function returned (some) negative values.");
     cor_mat = 1-as.matrix( (d/max(d, na.rm = TRUE))^2 );
@@ -1953,63 +2340,6 @@ adjacency = function(datExpr, selectCols=NULL, type = "unsigned", power = if (ty
   }
   cor_mat^power;
 }
-
-.compiledAdjacency = function(expr, 
-                                 corType = "pearson", networkType = "unsigned",
-                                 power = 6, 
-                                 maxPOutliers = 1,
-                                 quickCor = 0,
-                                 pearsonFallback = "individual",
-                                 cosineCorrelation = FALSE,
-                                 nThreads = 0,
-                                 verbose = 1, indent = 0)
-
-{
-  corTypeC = as.integer(pmatch(corType, .corTypes)-1);
-  if (is.na(corTypeC))
-    stop(paste("Invalid 'corType'. Recognized values are", paste(.corTypes, collapse = ", ")))
-
-  if ( (maxPOutliers < 0) | (maxPOutliers > 1)) stop("maxPOutliers must be between 0 and 1.");
-  if (quickCor < 0) stop("quickCor must be positive.");
-  if ( (maxPOutliers < 0) | (maxPOutliers > 1)) stop("maxPOutliers must be between 0 and 1.");
-
-  fallback = as.integer(pmatch(pearsonFallback, .pearsonFallbacks));
-  if (is.na(fallback))
-      stop(paste("Unrecognized 'pearsonFallback'. Recognized values are (unique abbreviations of)\n",
-           paste(.pearsonFallbacks, collapse = ", ")))
-
-  if (nThreads < 0) stop("nThreads must be positive.");
-  if (is.null(nThreads) || (nThreads==0)) nThreads = .useNThreads();
-
-  if ( (power<1) | (power>30) ) stop("power must be between 1 and 30.");
-
-  networkTypeC = as.integer(charmatch(networkType, .networkTypes)-1);
-  if (is.na(networkTypeC))
-    stop(paste("Unrecognized networkType argument.",
-         "Recognized values are (unique abbreviations of)", paste(.networkTypes, collapse = ", ")));
-  dimEx = dim(expr);
-  if (length(dimEx)!=2) stop("expr has incorrect dimensions.")
-  nGenes = dimEx[2];
-  nSamples = dimEx[1];
-  warn = as.integer(0);
-
-  expr = as.matrix(expr);
-
-  adj = matrix(0, nGenes, nGenes);
-  err = as.integer(0);
-
-  res = .C("testAdjacency", as.double(expr), as.integer(nSamples), as.integer(nGenes),
-           as.integer(corTypeC), as.integer(networkTypeC), as.double(power), as.double(maxPOutliers),
-           as.double(quickCor), as.integer(fallback), as.integer(cosineCorrelation), adj = as.double(adj),
-           as.integer(err), as.integer(warn), as.integer(nThreads), NAOK = TRUE);
-
-  adj = res$adj;
-  dim(adj) = c(nGenes, nGenes);
-  adj;
-}
-
-
-
 
 # A presumably faster and less memory-intensive version, only for "unsigned" networks.
 
@@ -2784,7 +3114,10 @@ verboseScatterplot = function(x, y,
 
 verboseBoxplot = function(x, g,
                           main ="", xlab = NA, ylab = NA, cex=1, cex.axis = 1.5,
-                          cex.lab = 1.5, cex.main = 1.5, notch = TRUE, varwidth = TRUE, ...) 
+                          cex.lab = 1.5, cex.main = 1.5, notch = TRUE, varwidth = TRUE, ...,
+                          addScatterplot = FALSE,
+                          pt.cex = 0.8, pch = 21, pt.col = "blue", pt.bg = "skyblue",
+                          randomSeed = 31425, jitter = 0.6) 
 {
   if ( is.na(xlab) ) xlab= as.character(match.call(expand.dots = FALSE)$g)
   #print(xlab1)
@@ -2792,21 +3125,40 @@ verboseBoxplot = function(x, g,
   #print(ylab1)
   p1 = signif(kruskal.test(x, factor(g) )$p.value,2)
   #if (p1< 5.0*10^(-22) ) p1="< 5e-22"
-  boxplot(x~factor(g), notch = notch, varwidth = varwidth,
+  boxp = boxplot(x~factor(g), notch = notch, varwidth = varwidth,
           main=paste(main,"p =",p1 ),
-          xlab=xlab, ylab=ylab, cex=cex, cex.axis=cex.axis,cex.lab=cex.lab, cex.main=cex.main, ...)
+          xlab=xlab, ylab=ylab, cex=cex, cex.axis=cex.axis,cex.lab=cex.lab, cex.main=cex.main, ...);
+
+  if (exists(".Random.seed"))
+  {
+    savedSeed = .Random.seed;
+    set.seed(randomSeed);
+    on.exit(.Random.seed <<- savedSeed);
+  }
+
+  set.seed(randomSeed)  # so we can make the identical plot again
+  points(jitter(rep(1:ncol(boxp$stats),boxp$n), jitter), unlist(tapply(x, g, identity)),
+         pch=pch, col=pt.col, bg = pt.bg, cex = pt.cex)
+
+  invisible(boxp);
 }
+
 
 verboseBarplot = function (x, g,  main = "",
     xlab = NA, ylab = NA, cex = 1, cex.axis = 1.5, cex.lab = 1.5,
     cex.main = 1.5, color="grey", numberStandardErrors=1,
     KruskalTest=TRUE,  AnovaTest=FALSE, two.sided=TRUE, 
-    addCellCounts=FALSE, horiz = FALSE, ...) 
+    addCellCounts=FALSE, horiz = FALSE, ylim = NULL, ...,
+    addScatterplot = FALSE,
+    pt.cex = 0.8, pch = 21, pt.col = "blue", pt.bg = "skyblue",
+    randomSeed = 31425, jitter = 0.6,
+    adjustYLim = TRUE) 
 {
+   g.factor = as.factor(g);
    stderr1 = function(x) {
         sqrt(var(x, na.rm = TRUE)/sum(!is.na(x)))
     }
-    SE = tapply(x, factor(g), stderr1)
+    SE = tapply(x, g.factor, stderr1)
     err.bp = function(dd, error, two.sided = FALSE, numberStandardErrors, 
         horiz = FALSE) {
         if (!is.numeric(dd)) {
@@ -2858,12 +3210,12 @@ verboseBarplot = function (x, g,  main = "",
         ylab = as.character(match.call(expand.dots = FALSE)$x)
     if (is.na(xlab)) 
         xlab = as.character(match.call(expand.dots = FALSE)$g)
-    Means1 = tapply(x, factor(g), mean, na.rm = TRUE)
+    Means1 = tapply(x, g.factor, mean, na.rm = TRUE)
 
     if (length(unique(x)) > 2) {
-        p1 = signif(kruskal.test(x ~ factor(g))$p.value, 2)
+        p1 = signif(kruskal.test(x ~ g.factor)$p.value, 2)
         if (AnovaTest) 
-            p1 = signif(anova(lm(x ~ factor(g)))$Pr[[1]], 2)
+            p1 = signif(anova(lm(x ~ g.factor))$Pr[[1]], 2)
     }
     else {
         p1 = tryCatch(signif(fisher.test(x, g, alternative = "two.sided")$p.value, 
@@ -2873,12 +3225,26 @@ verboseBarplot = function (x, g,  main = "",
     }
     if (AnovaTest | KruskalTest) 
         main = paste(main, "p =", p1)
+    maxSE = max(as.vector(SE), na.rm = TRUE);
+    if (is.null(ylim)) 
+    {
+      if (addScatterplot && adjustYLim) {
+        ylim = range(x, na.rm = TRUE);
+        d = ylim[2] -ylim[1];
+        ylim = ylim + c(-d/50, d/50);
+      } else {
+        ylim = range(Means1,na.rm = TRUE) + c(-maxSE, maxSE) * numberStandardErrors * (numberStandardErrors>0);
+        if (ylim[1] > 0) ylim[1] = 0;
+        if (ylim[2] <0) ylim[2] = 0;
+      }
+    }
     ret = barplot(Means1, main = main, col = color, xlab = xlab, 
         ylab = ylab, cex = cex, cex.axis = cex.axis, cex.lab = cex.lab, 
-        cex.main = cex.main, horiz = horiz, ...)
+        cex.main = cex.main, horiz = horiz, ylim = ylim,
+        ...)
     if (addCellCounts) {
        cellCountsF = function(x) {  sum(!is.na(x)) }
-       cellCounts=tapply(x, factor(g), cellCountsF)
+       cellCounts=tapply(x, g.factor, cellCountsF)
        mtext(text=cellCounts,side=if(horiz) 2 else 1,outer=FALSE,at=ret, col="darkgrey",las=2,cex=.8,...)
     } # end of if (addCellCounts)
     abline(h = 0)
@@ -2886,6 +3252,19 @@ verboseBarplot = function (x, g,  main = "",
         err.bp(as.vector(Means1), as.vector(SE), two.sided = two.sided, 
             numberStandardErrors = numberStandardErrors, horiz = horiz)
     }
+    if (exists(".Random.seed"))
+    {
+      savedSeed = .Random.seed;
+      set.seed(randomSeed);
+      on.exit(.Random.seed <<- savedSeed);
+    }
+
+    x.list = tapply(x, g, identity);
+    nPerGroup = sapply(x.list, length);
+    set.seed(randomSeed)  # so we can make the identical plot again
+    points(jitter(rep(ret, nPerGroup), jitter), unlist(x.list),
+           pch=pch, col=pt.col, bg = pt.bg, cex = pt.cex)
+
     attr(ret, "height") = as.vector(Means1)
     attr(ret, "stdErr") = as.vector(SE)
     invisible(ret)
@@ -3314,6 +3693,7 @@ plotDendroAndColors = function(dendro, colors, groupLabels = NULL, rowText = NUL
                                rowTextIgnore = NULL,
                                textPositions = NULL,
                                setLayout = TRUE, autoColorHeight = TRUE, colorHeight = 0.2,
+                               colorHeightBase = 0.2, colorHeightMax = 0.6,
                                rowWidths = NULL,
                                dendroLabels = NULL, 
                                addGuide = FALSE, guideAll = FALSE, guideCount = 50, 
@@ -3329,7 +3709,7 @@ plotDendroAndColors = function(dendro, colors, groupLabels = NULL, rowText = NUL
     nRows = dim(colors)[2];
   } else nRows = 1;
   if (!is.null(rowText)) nRows = nRows + if (is.null(textPositions)) nRows else length(textPositions);
-  if (autoColorHeight) colorHeight = 0.2 + 0.3 * (1-exp(-(nRows-1)/6))
+  if (autoColorHeight) colorHeight = colorHeightBase + (colorHeightMax - colorHeightBase) * (1-exp(-(nRows-1)/6))
   if (setLayout) layout(matrix(c(1:2), 2, 1), heights = c(1-colorHeight, colorHeight));
   par(mar = c(0, marAll[2], marAll[3], marAll[4]));
   plot(dendro, labels = dendroLabels, cex = cex.dendroLabels, ...);
@@ -4542,10 +4922,10 @@ labeledHeatmap = function (
   xLabelsPosition = "bottom",
   xLabelsAngle = 45,
   xLabelsAdj = 1,
-  xColorWidth = 0.05,
-  yColorWidth = 0.05,
-  xColorOffset = par("cxy")[1]/3,  # FIXME: For offsetting text, these two seem to be switched
-  yColorOffset = par("cxy")[2]/3,
+  xColorWidth = 2*strheight("M"),
+  yColorWidth = 2*strwidth("M"),
+  xColorOffset = strheight("M")/3, 
+  yColorOffset = strwidth("M")/3,
   # Content of heatmap
   colors = NULL, 
   naColor = "grey",
@@ -4558,6 +4938,7 @@ labeledHeatmap = function (
   colors.lab.y = 1,
   bg.lab.x = NULL,
   bg.lab.y = NULL,
+  x.adj.lab.y = 1,
   plotLegend = TRUE, 
   keepLegendSpace = plotLegend,
   # Separator line specification                   
@@ -4574,6 +4955,7 @@ labeledHeatmap = function (
   horizontalSeparator.ext = 0,
   ... ) 
 {
+  textFnc = match.fun("text");
   if (!is.null(colorLabels)) {xColorLabels = colorLabels; yColorLabels = colorLabels; }
   
   if (is.null(yLabels) & (!is.null(xLabels)) & (dim(Matrix)[1]==dim(Matrix)[2])) 
@@ -4634,14 +5016,16 @@ labeledHeatmap = function (
   yspacing = abs(labPos$yMid[2] - labPos$yMid[1]);
 
   nylabels = length(yLabels)
-  offsetx = yColorOffset;
-  offsety = xColorOffset;
-  # Transform fractional widths into coordinate widths
-  xColW = min(xmax - xmin, ymax - ymin) * xColorWidth;
-  yColW = min(xmax - xmin, ymax - ymin) * yColorWidth;
+  offsetx = xColorOffset;
+  offsety = yColorOffset;
+  xColW = xColorWidth;
+  yColW = yColorWidth;
 
-  if (any(xValidColors)) offsety = offsety + xColW;
-  if (any(yValidColors)) offsetx = offsetx + yColW;
+  # Additional angle-dependent offsets for x axis labels
+  textOffsetY = strheight("M") * cos(xLabelsAngle/180 * pi);
+
+  if (any(xValidColors)) offsetx = offsetx + xColW;
+  if (any(yValidColors)) offsety = offsety + yColW;
 
   # Create the background for column and row labels.
 
@@ -4677,10 +5061,13 @@ labeledHeatmap = function (
     ratio = figureDims[1]/figureDims[2] * figYrange/figXrange;
     ext.x = -sign * ext * 1/tan(angle)/ratio;
     ext.y = sign * ext * sign(sin(angle))
+
+    offset = (sum(xValidColors)>0) * xColW + offsetx + textOffsetY;
+
     for (c in 1:nCols)
        polygon(x = c(xLeft[c], xLeft[c], xLeft[c] + ext.x, xRight[c] + ext.x, xRight[c], xRight[c]),
-               y = c(y0, y0-sign*offsety, y0-sign*offsety - ext.y, y0-sign*offsety - ext.y, 
-                     y0-sign*offsety, y0), 
+               y = c(y0, y0-sign*offset, y0-sign*offset - ext.y, y0-sign*offset - ext.y, 
+                     y0-sign*offset, y0), 
                border = bg.lab.x[c], col = bg.lab.x[c], xpd = TRUE);
   }
 
@@ -4697,43 +5084,49 @@ labeledHeatmap = function (
            col = bg.lab.y[r], border = bg.lab.y[r], xpd = TRUE);
   }
 
-
-  
-
   # Write out labels
   if (sum(!xValidColors)>0)
   {
-    xLabYPos = ifelse(xLabPos==1, ymin - offsety, ymax + offsety)
+    xLabYPos = ifelse(xLabPos==1, ymin - offsetx- textOffsetY, ymax + offsetx + textOffsetY)
     if (is.null(cex.lab)) cex.lab = 1;
-    mapply(text, x = labPos$xMid[xTextLabInd], labels = xLabels[xTextLabInd],
+    mapply(textFnc, x = labPos$xMid[xTextLabInd], labels = xLabels[xTextLabInd],
            MoreArgs = list(y = xLabYPos, srt = xLabelsAngle, 
           adj = xLabelsAdj, xpd = TRUE, cex = cex.lab.x, col = colors.lab.x));
   }
   if (sum(xValidColors)>0)
   {
-    baseY = ifelse(xLabPos==1, ymin-offsety, ymax + offsety);
+    baseY = ifelse(xLabPos==1, ymin-offsetx, ymax + offsetx);
     deltaY = ifelse(xLabPos==1, xColW, -xColW);
     rect(xleft = labPos$xMid[xColorLabInd] - xspacing/2, ybottom = baseY,
          xright = labPos$xMid[xColorLabInd] + xspacing/2, ytop = baseY + deltaY,
          density = -1,  col = substring(xLabels[xColorLabInd], 3), 
          border = substring(xLabels[xColorLabInd], 3), xpd = TRUE)
     if (!is.null(xSymbols))
-      mapply(text, x = labPos$xMid[xColorLabInd], labels = xSymbols[xColorLabInd],
-              MoreArgs = list(baseY - sign(deltaY)* offsety, 
+      mapply(textFnc, x = labPos$xMid[xColorLabInd], labels = xSymbols[xColorLabInd],
+              MoreArgs = list(baseY -textOffsetY - sign(deltaY)* strwidth("M")/3,
              adj = xLabelsAdj, 
              xpd = TRUE, srt = xLabelsAngle, cex = cex.lab.x, col = colors.lab.x));
   }
+  x.adj.lab.y = .extend(x.adj.lab.y, nRows)
+  leftMarginWidth = par("mai")[2] / par("pin")[1] * xrange
+  xSpaceForYLabels = leftMarginWidth-2*strwidth("M")/3 - c(0, offsety)[yValidColors + 1];
+  xPosOfYLabels.relative = xSpaceForYLabels * (1-x.adj.lab.y);
+
+  colors.lab.y = .extend(colors.lab.y, nRows);
+
   if (sum(!yValidColors)>0)
   {
     if (is.null(cex.lab)) cex.lab = 1;
-    mapply(text, y = labPos$yMid[yTextLabInd], labels = yLabels[yTextLabInd],
-              MoreArgs = list( x= xmin - offsetx, srt = 0, 
-         adj = c(1, 0.5), xpd = TRUE, cex = cex.lab.y, col = colors.lab.y ));
+    mapply(textFnc, y = labPos$yMid[yTextLabInd], labels = yLabels[yTextLabInd],
+           adj = lapply(x.adj.lab.y[yTextLabInd], c, 0.5),
+           x = xmin - strwidth("M")/3 - xPosOfYLabels.relative[yTextLabInd],
+           col = colors.lab.y[yTextLabInd],
+           MoreArgs = list(srt = 0, xpd = TRUE, cex = cex.lab.y));
   } 
   if (sum(yValidColors)>0)
   {
-    rect(xleft = xmin- offsetx, ybottom = rev(labPos$yMid[yColorLabInd]) - yspacing/2,
-         xright = xmin- offsetx+yColW, ytop = rev(labPos$yMid[yColorLabInd]) + yspacing/2, 
+    rect(xleft = xmin- offsety, ybottom = rev(labPos$yMid[yColorLabInd]) - yspacing/2,
+         xright = xmin- offsety + yColW, ytop = rev(labPos$yMid[yColorLabInd]) + yspacing/2, 
          density = -1,  col = substring(rev(yLabels[yColorLabInd]), 3), 
          border = substring(rev(yLabels[yColorLabInd]), 3), xpd = TRUE)
     #for (i in yColorLabInd)
@@ -4742,9 +5135,10 @@ labeledHeatmap = function (
     #  lines(c(xmin- offsetx, xmin- offsetx+yColW), y = rep(labPos$yMid[i] + yspacing/2, 2), col = i, xpd = TRUE)
     #}
     if (!is.null(ySymbols))
-      mapply(text, y = labPos$yMid[yColorLabInd], labels = ySymbols[yColorLabInd],
-          MoreArgs = list( xmin+ yColW - 2*offsetx, 
-            adj = c(1, 0.5), xpd = TRUE, cex = cex.lab.y, col = colors.lab.y));
+      mapply(textFnc, y = labPos$yMid[yColorLabInd], labels = ySymbols[yColorLabInd],
+             adj = lapply(x.adj.lab.y[yColorLabInd], c, 0.5),
+             x = xmin - offsety - strwidth("M")/3 - xPosOfYLabels.relative[yColorLabInd], col = colors.lab.y,
+          MoreArgs = list(srt = 0, xpd = TRUE, cex = cex.lab.y));
   }
 
   # Draw separator lines, if requested
@@ -4775,9 +5169,10 @@ labeledHeatmap = function (
     ratio = figureDims[1]/figureDims[2] * figYrange/figXrange;
     ext.x = -sign * extension.bottom * 1/tan(angle)/ratio;
     ext.y = sign * extension.bottom * sign(sin(angle))
+    offset = (sum(xValidColors)>0) * xColW + offsetx + textOffsetY;
     for (l in 1:nLines)
          lines(c(x.lines[l], x.lines[l], x.lines[l] + vs.ext * ext.x), 
-               c(y0, y0-sign*offsety, y0-sign*offsety - vs.ext * ext.y),  
+               c(y0, y0-sign*offset, y0-sign*offset - vs.ext * ext.y),  
                  col = vs.col[l], lty = vs.lty[l], lwd = vs.lwd[l], xpd = TRUE);
   }
 
@@ -4918,7 +5313,7 @@ labeledHeatmap.multiPage = function(
       keep.vs = numeric(0);
     if (!is.null(horizontalSeparator.y))
     {
-      keep.hs = horizontalSeparator.y %in% cols;
+      keep.hs = horizontalSeparator.y %in% rows;
     } else 
       keep.hs = numeric(0);
 
@@ -5424,16 +5819,20 @@ preservationNetworkConnectivity = function(
       adj_mat[is.na(adj_mat)] = 0;
       blockAdj[set, , ] = adj_mat
     }
+    blockAdj2 = blockAdj;
+    dim(blockAdj2) = c(nSets, nLinks * nBlockGenes);
     min = matrix(0, nLinks, nBlockGenes)
-    which = matrix(0, nLinks, nBlockGenes)
-    res = .C("minWhichMin", as.double(blockAdj), as.integer(nSets), as.integer(nLinks * nBlockGenes),
-                    min = as.double(min), as.double(which))
-    min[, ] = res$min;
     max = matrix(0, nLinks, nBlockGenes);
-    res = .C("minWhichMin", as.double(-blockAdj), as.integer(nSets), as.integer(nLinks * nBlockGenes),
-                    min = as.double(min), as.double(which))
-    max[, ] = -res$min;
-    rm(res);
+    #which = matrix(0, nLinks, nBlockGenes)
+    #res = .C("minWhichMin", as.double(blockAdj), as.integer(nSets), as.integer(nLinks * nBlockGenes),
+    #                min = as.double(min), as.double(which))
+    #min[, ] = res$min;
+    #res = .C("minWhichMin", as.double(-blockAdj), as.integer(nSets), as.integer(nLinks * nBlockGenes),
+    #                min = as.double(min), as.double(which))
+    #max[, ] = -res$min;
+    #rm(res);
+    min[, ] = colMins(blockAdj2);
+    max[, ] = colMaxs(blockAdj2);
     diff = max - min;
     allPres[blockIndex] = (apply(1-diff, 2, sum) - subtract[blockIndex])/(nLinks - subtract[blockIndex]);
     weight = ((max + min)/2)^weightPower
@@ -6394,7 +6793,7 @@ for (i in 1:no.Columns) {
                       ColumnDichot, na.action = na.exclude))
                     pValuesDichotomized[i, j] = coxh$coef[5]
                   } # end of if
-                } # end of for (j
+                } # end of for (j)
                 MinimumDichotPvalue = apply(pValuesDichotomized, 
                   1, min, na.rm = TRUE)
                } # end of if (dichotomizationResults)
@@ -6670,8 +7069,7 @@ columnweights= columnweights/sum( columnweights)
 
 prepComma = function(s)
 {
-  if (s=="") return (s);
-  paste(",", s);
+  ifelse (s=="", s, paste(",", s));
 }
 
 
@@ -6987,6 +7385,333 @@ consensusKME = function(multiExpr, moduleLabels, multiEigengenes = NULL, consens
   out
 }
 
+
+hierarchicalConsensusKME = function(
+   multiExpr, 
+   moduleLabels, 
+   multiEigengenes = NULL, 
+   consensusTree,
+   signed = TRUE,
+   useModules = NULL,
+   metaAnalysisWeights = NULL, 
+   corAndPvalueFnc = corAndPvalue, corOptions = list(),
+   corComponent = "cor", getFDR = FALSE,
+   useRankPvalue = TRUE,
+   rankPvalueOptions = list(calculateQvalue = getFDR, pValueMethod = "scale"),
+   setNames = NULL, excludeGrey = TRUE,
+   greyLabel = if (is.numeric(moduleLabels)) 0 else "grey",
+   reportWeightType = NULL,
+   getOwnModuleZ = TRUE,
+   getBestModuleZ = TRUE,
+   getOwnConsensusKME = TRUE,
+   getBestConsensusKME = TRUE,
+   getAverageKME = FALSE,
+   getConsensusKME = TRUE,
+   
+   getMetaP = FALSE,
+   getMetaFDR = getMetaP && getFDR,
+   
+   getSetKME = TRUE,
+   getSetZ = FALSE,
+   getSetP = FALSE,
+   getSetFDR = getSetP && getFDR,
+
+   includeID = TRUE,
+   additionalGeneInfo = NULL,
+   includeWeightTypeInColnames = TRUE
+   )
+{
+  corAndPvalueFnc = match.fun(corAndPvalueFnc);
+
+  size = checkSets(multiExpr);
+  nSets = size$nSets;
+  nGenes = size$nGenes;
+  nSamples = size$nSamples;
+
+  if (!is.null(metaAnalysisWeights))
+     if (length(metaAnalysisWeights)!=nSets)
+       stop("Length of 'metaAnalysisWeights' must equal number of input sets.");
+
+  if (!is.null(useModules))
+  {
+    if (greyLabel %in% useModules) 
+      stop(paste("Grey module (or module 0) cannot be used with 'useModules'.\n",
+                 "   Use 'excludeGrey = FALSE' to obtain results for the grey module as well. "));
+   keep = moduleLabels %in% useModules;
+    if (sum(keep)==0)
+      stop("Incorrectly specified 'useModules': no such module(s).");
+    moduleLabels [ !keep ] = greyLabel;
+  }
+
+  if (!is.null(additionalGeneInfo))
+  {
+    if (nrow(additionalGeneInfo)!=nGenes)
+      stop("If given, 'additionalGeneInfo' must be a data frame with one row per gene.");
+  }
+
+  if (is.null(multiEigengenes))
+    multiEigengenes = multiSetMEs(multiExpr, universalColors = moduleLabels, verbose = 0, 
+                                  excludeGrey = excludeGrey, grey = greyLabel);
+
+  modLevels = substring(colnames(multiEigengenes[[1]]$data), 3);
+  nModules = length(modLevels);
+
+  kME = p = Z = nObs = array(NA, dim = c(nGenes, nModules, nSets));
+
+  corOptions$alternative = c("two.sided", "greater")[signed+1];
+  
+  haveZs = FALSE;
+  kME.lst = list();
+  for (set in 1:nSets)
+  {
+    corOptions$x = multiExpr[[set]]$data;
+    corOptions$y = multiEigengenes[[set]]$data;
+    cp = do.call(corAndPvalueFnc, args = corOptions);
+    corComp = grep(corComponent, names(cp));
+    pComp = match("p", names(cp));
+    if (is.na(pComp)) pComp = match("p.value", names(cp));
+    if (is.na(pComp)) stop("Function `corAndPvalueFnc' did not return a p-value.");
+    kME[, , set] =  kME.lst[[set]] = cp[[corComp]]
+    p[, , set] = cp[[pComp]];
+    if (!is.null(cp$Z)) { Z[, , set] = cp$Z; haveZs = TRUE}
+    if (!is.null(cp$nObs)) 
+    {
+       nObs[, , set] = cp$nObs;
+    } else
+       nObs[, , set] = t(is.na(multiExpr[[set]]$data)) %*% (!is.na(multiEigengenes[[set]]$data));
+  }
+
+  names(kME.lst) = setNames;
+
+  if (getFDR)
+  {
+    q = apply(p, c(2:3), p.adjust, method = "fdr");
+  } else q = NULL;
+
+  # kME.average = rowMeans(kME, dims = 2); <-- not neccessary since weighted average also contains it
+
+  if (is.null(reportWeightType))
+  {
+    if (is.null(metaAnalysisWeights))
+    {
+      reportWeightType = "rootDoF"
+    } else
+      reportWeightType = "user";
+  }
+
+  knownWeightTypes = c("equal", "rootDoF", "DoF", "user");
+  reportWeightType.num = pmatch(reportWeightType, knownWeightTypes);
+  if (length(reportWeightType.num)==0 || any(is.na(reportWeightType.num)))
+    stop("If given, 'reportWeightType' must be one of:\n  ",
+         paste(knownWeightTypes, collapse = ", "));
+
+  powers = c(0, 0.5, 1);
+  nPowers = length(powers)
+  nWeights.all = nPowers + !is.null(metaAnalysisWeights)
+  weightNames = c("equalWeights", "rootDoFWeights", "DoFWeights", "userWeights"); 
+  nWeights = length(reportWeightType.num);
+
+  if (nWeights > 1) includeWeightTypeInColnames = TRUE;
+  kME.weightedAverage = array(NA, dim = c(nGenes, nWeights, nModules));
+  for (m in 1:nWeights)
+  {
+    mm = reportWeightType.num[m];
+    if (mm<=nPowers) {
+      weights = (nObs-2)^powers[mm]
+    } else
+      weights = array( rep(metaAnalysisWeights, rep(nGenes*nModules, nSets)),
+                             dim = c(nGenes, nModules, nSets));
+    kME.weightedAverage[, m, ] = rowSums( kME * weights, na.rm = TRUE, dims = 2) / 
+                                    rowSums(weights, dims = 2, na.rm = TRUE)
+  }
+
+  dim(kME.weightedAverage) = c(nGenes * nWeights, nModules);
+
+  kME.consensus = simpleHierarchicalConsensusCalculation(
+       individualData = kME.lst, consensusTree = consensusTree);
+
+  # Prepare identifiers for the variables (genes)
+  if (is.null(colnames(multiExpr[[1]]$data)))
+  {
+     ID = spaste("Variable.", 1:nGenes);
+  } else
+     ID = colnames(multiExpr[[1]]$data);
+
+  # Get meta-Z, -p, -q values
+  if (haveZs)
+  {
+    Z.kME.meta = p.kME.meta = array(0, dim = c(nGenes, nWeights, nModules))
+    if (getFDR) q.kME.meta = array(0, dim = c(nGenes, nWeights, nModules));
+    for (m in 1:nWeights)
+    {
+      mm = reportWeightType.num[m];
+      if (mm<=nPowers) {
+        weights = (nObs-2)^powers[mm]
+      } else
+        weights = array( rep(metaAnalysisWeights, rep(nGenes*nModules, nSets)),
+                               dim = c(nGenes, nModules, nSets));
+
+      Z1 = rowSums( Z * weights, na.rm = TRUE, dims = 2) / sqrt(rowSums(weights^2, na.rm = TRUE, dims = 2))
+      if (signed)
+      {
+         p1 = pnorm(Z1, lower.tail = FALSE);
+      } else
+         p1 = 2*pnorm(abs(Z1), lower.tail = FALSE);
+      Z.kME.meta[, m, ] = Z1;
+      p.kME.meta[, m, ] = p1;
+      if (getFDR)
+      {
+        q1 = apply(p1, 2, p.adjust, method = "fdr");
+        q.kME.meta[, m, ] = q1;
+      }
+    }
+    dim(Z.kME.meta) = dim(p.kME.meta) = c(nGenes* nWeights, nModules);
+    if (getFDR) 
+    {
+        dim(q.kME.meta) = c(nGenes * nWeights, nModules);
+    } else 
+        q.kME.meta = NULL;
+  } else {
+    Z.kME.meta = p.kME.meta = q.kME.meta = NULL;
+  }
+
+  # Call rankPvalue
+
+  if (useRankPvalue)
+  {
+    for (mod in 1:nModules) for (m in 1:nWeights)
+    {
+      if (m<=nPowers) {
+        weights = nObs[, mod, ]^powers[m]
+      } else
+        weights = matrix( metaAnalysisWeights, nGenes, nSets, byrow = TRUE);
+      # rankPvalue requires a vector of weights... so compress the weights to a vector.
+      # Output a warning if the compression loses information.
+      nDifferent = apply(weights, 2, function(x) {length(unique(x)) });
+      if (any(nDifferent)>1)
+        printFlush(paste("Warning in consensusKME: rankPvalue requires compressed weights.\n",
+                         "Some weights may not be entirely accurate."));
+      cw = colMeans(weights, na.rm = TRUE);
+      rankPvalueOptions$columnweights = cw / sum(cw);
+
+      rankPvalueOptions$datS = kME[, mod, ];
+      rp1 = do.call(rankPvalue, rankPvalueOptions);
+      colnames(rp1) = spaste(colnames(rp1), ".ME", modLevels[mod], ".", weightNames[m]);
+      if (mod==1 && m==1) {
+        rp = rp1;
+      } else 
+        rp = cbind(rp, rp1);
+    }
+  }
+
+  # Format the output... this will entail some rearranging of the individual set results.
+  if (is.null(setNames))
+     setNames = names(multiExpr);
+
+  if (is.null(setNames))
+     setNames = spaste("Set_", c(1:nSets));
+
+  if (!haveZs) Z = NULL;
+
+  keep = c(TRUE, TRUE, getFDR, haveZs);
+  varNames = c("kME", "p.kME", "FDR.kME", "Z.kME")[keep];
+  nVars = sum(keep);
+
+  dimnames(kME) = list( mtd.colnames(multiExpr), spaste("k", mtd.colnames(multiEigengenes)),
+                                      setNames);
+                                     
+  dimnames(p) = list( mtd.colnames(multiExpr), spaste("p.k", mtd.colnames(multiEigengenes)),
+                                      setNames);
+
+  if (getFDR) 
+    dimnames(q) = list( mtd.colnames(multiExpr), spaste("FDR.k", mtd.colnames(multiEigengenes)),
+                                      setNames);
+
+  if (haveZs) 
+    dimnames(Z) = list( mtd.colnames(multiExpr), spaste("Z.k", mtd.colnames(multiEigengenes)),
+                                      setNames);
+
+  varList = list(kME = if (getSetKME) kME else NULL, 
+                 p = if (getSetP) p else NULL, 
+                 q = if (getSetFDR) q else NULL, 
+                 Z = if (getSetZ && haveZs) Z else NULL);
+  varList.interleaved = lapply(varList, function(arr)
+  {
+    if (!is.null(dim(arr)))
+    {
+      split = lapply(1:dim(arr)[3], function(i) arr[, , i]);
+      .interleave(split, nameBase = setNames, baseFirst = FALSE)
+    } else NULL;
+  })
+
+  recast = .interleave(varList.interleaved, nameBase = rep("", 4), sep = "");
+
+  out = data.frame(ID = ID);
+
+  if (!is.null(additionalGeneInfo))
+    out = data.frame(out, additionalGeneInfo);
+
+  out = data.frame(out, module = moduleLabels);
+  
+  index = cbind(1:nGenes, match(moduleLabels, modLevels));
+  if (getOwnModuleZ)
+    out = cbind(out, Z.kME.inOwnModule= Z.kME.meta[index]);
+
+  if (getBestModuleZ)
+  {
+     maxData = minWhichMin(-Z.kME.meta, byRow = TRUE)
+     maxMMmodule = modLevels[maxData$which];
+     out = cbind(out, maxZ.kME = -maxData$min, moduleOfMaxZ.kME = maxMMmodule);
+  }
+
+  if (getOwnConsensusKME)
+    out = cbind(out, consKME.inOwnModule= kME.consensus[index]);
+
+  if (getBestConsensusKME)
+  {
+     maxData = minWhichMin(-kME.consensus, byRow = TRUE)
+     out = cbind(out, maxConsKME = -maxData$min, moduleOfMaxConsKME = modLevels[maxData$which]);
+  }
+
+  if (!includeID) out = out[, -1, drop = FALSE];
+
+  combinedMeta.0 = rbind(
+             if (getConsensusKME) kME.consensus else NULL,
+             if (getAverageKME) kME.weightedAverage else NULL,
+             Z.kME.meta,
+             if (getMetaP) p.kME.meta else NULL,
+             if (getMetaFDR) q.kME.meta else NULL);
+
+
+  combinedMeta = matrix(combinedMeta.0, nGenes, 
+                            (getConsensusKME + getAverageKME * nWeights + 
+                             (haveZs* (1 + getMetaP + getMetaFDR)*nWeights)) * nModules);
+
+  metaNames = c("consensus.kME", 
+                spaste("weightedAverage.", 
+                        if (includeWeightTypeInColnames) spaste(weightNames, ".") else "", "kME"), 
+                spaste("meta.Z.", 
+                        if (includeWeightTypeInColnames) spaste(weightNames, ".") else "", "kME"), 
+                spaste("meta.p.", 
+                        if (includeWeightTypeInColnames) spaste(weightNames, ".") else "", "kME"), 
+                spaste("meta.FDR.", 
+                        if (includeWeightTypeInColnames) spaste(weightNames, ".") else "", "kME")
+                )[ c(getConsensusKME, rep(getAverageKME, nWeights), 
+                     rep(haveZs, nWeights), 
+                     rep(haveZs && getMetaP, nWeights), 
+                     rep(haveZs && getMetaFDR, nWeights))];
+
+  nMetaVars = length(metaNames);
+  colnames(combinedMeta) = spaste (rep(metaNames, nModules), 
+                                   rep(modLevels, rep(nMetaVars, nModules)));
+
+  if (useRankPvalue) {
+     out = data.frame(out, combinedMeta, rp, recast);
+  } else 
+     out = data.frame(out, combinedMeta, recast);
+  out
+}
+
 #======================================================================================================
 #
 # Meta-analysis
@@ -7262,25 +7987,51 @@ prependZeros = function(x, width = max(nchar(x)))
 #
 #===========================================================================================================
 
-formatLabels = function(labels, maxCharPerLine = 14, split = " ", fixed = TRUE, newsplit = split,
-                        keepSplitAtEOL = TRUE)
+.effectiveNChar = function(s, capitalMultiplier = 1.4)
+{
+  ss = gsub("[^A-Z]", "", s);
+  nchar(s) + (capitalMultiplier-1) * nchar(ss);
+}
+
+formatLabels = function(labels, 
+        maxCharPerLine = 14, 
+        maxWidth = NULL, 
+        maxLines = Inf,
+        cex = 1,
+        split = " ", fixed = TRUE, newsplit = split,
+        keepSplitAtEOL = TRUE, capitalMultiplier = 1.4,
+        eol = "\n", ellipsis = "...")
 {
   n = length(labels);
   splitX = strsplit(labels, split = split, fixed = fixed);
   newLabels= rep("", n);
+  width.newsplit = if (is.null(maxWidth)) .effectiveNChar(newsplit) else strwidth(newsplit, cex = cex);
   for (l in 1:n)
   {
     nl = "";
     line = "";
+    nLines = 1;
     if (nchar(labels[l]) > 0) for (s in 1:length(splitX[[l]]))
     {
-      newLen = nchar(line) + nchar(splitX [[l]] [s]);
-      if (nchar(line) < 5 | newLen <= maxCharPerLine)
+      newLen = .effectiveNChar(line) + width.newsplit + .effectiveNChar(splitX [[l]] [s]);
+      cond = if (is.null(maxWidth)) {
+        newLen <= maxCharPerLine - (maxLines==nLines) * (width.newsplit + 2)
+      } else
+        strwidth(spaste(line, newsplit, splitX [[l]] [s]), cex = cex) <= 
+             maxWidth - (maxLines==nLines) * (width.newsplit + strwidth(ellipsis, cex = cex));
+      if (nchar(line) < 5 | cond)
       {
         nl = paste(nl, splitX[[l]] [s], sep = newsplit)
         line = paste(line, splitX[[l]] [s], sep = newsplit);
       } else {
-        nl = paste(nl, splitX[[l]] [s], sep = paste0(if(keepSplitAtEOL) newsplit else "", "\n"));
+        if (nLines < maxLines) {
+           nl = paste(nl, splitX[[l]] [s], sep = paste0(if(keepSplitAtEOL) newsplit else "", eol));
+        } else {
+           # If this is the last line, add ellipsis and move on to next label.
+           nl = spaste(nl, newsplit, ellipsis)
+           break;
+        }
+        nLines = nLines +1;
         line = splitX[[l]] [s];
       }
     }
@@ -7354,5 +8105,229 @@ shortenStrings = function(strings, maxLength = 25, minLength = 10, split = " ", 
   dimnames(newLabels) = dnames;
   if (outputDF) as.data.frame(newLabels) else newLabels;
 }
+
+#========================================================================================================
+#
+# multiGSub, multiSub
+#
+#========================================================================================================
+
+multiGSub = function(patterns, replacements, x, ...)
+{
+  n = length(patterns);
+  if (n!=length(replacements)) stop("Lengths of 'patterns' and 'replacements' must be the same.");
+  for (i in 1:n) x = gsub(patterns[i], replacements[i], x, ...);
+  x;
+}
+
+multiSub = function(patterns, replacements, x, ...)
+{
+  n = length(patterns);
+  if (n!=length(replacements)) stop("Lengths of 'patterns' and 'replacements' must be the same.");
+  for (i in 1:n) x = sub(patterns[i], replacements[i], x, ...);
+  x;
+}
+
+
+multiGrep = function(patterns, x, ..., sort = TRUE, invert = FALSE)
+{
+  if (invert)
+  {
+    out = multiIntersect(lapply(patterns, grep, x, ..., invert = TRUE))
+  } else
+    out = unique(unlist(lapply(patterns, grep, x, ..., invert = FALSE)));
+  if (sort) out = sort(out);
+  out;
+}
+
+multiGrepl = function(patterns, x, ...)
+{
+  mat = do.call(cbind, lapply(patterns, function(p) as.numeric(grepl(p, x, ...))));
+  rowSums(mat)>0;
+}
+
+#========================================================================================================
+#
+# plotMultiHist, multiPlot
+#
+#========================================================================================================
+
+.addErrorBars.2sided = function (x, means, upper, lower, width = strwidth("II"), ...) 
+{
+    if (!is.numeric(means) | !is.numeric(x) || !is.numeric(upper) || !is.numeric(lower)) {
+        stop("All arguments must be numeric")
+    }
+    ERR1 <- upper
+    ERR2 <- lower
+    for (i in 1:length(means)) {
+        segments(x[i], means[i], x[i], ERR1[i], ...)
+        segments(x[i] - width/2, ERR1[i], x[i] + width/2, ERR1[i], ...)
+        segments(x[i], means[i], x[i], ERR2[i], ...)
+        segments(x[i] - width/2, ERR2[i], x[i] + width/2, ERR2[i], ...)
+    }
+}
+
+
+.multiPlot = function( x = NULL, y = NULL, data = NULL,
+                      columnX = NULL, columnY = NULL,
+                      barHigh = NULL, barLow = NULL,
+                      type = "p",
+                      xlim = NULL, ylim = NULL, 
+                      pch = 1, col = 1, bg = 0, lwd = 1, lty = 1,
+                      cex = 1, barColor = 1,
+                      addGrid = FALSE, linesPerTick = NULL, 
+                      horiz = TRUE, vert = FALSE, gridColor = "grey30", gridLty = 3,
+                      errBar.lwd = 1,
+                      plotBg = NULL,
+                      newPlot = TRUE,
+                      dropMissing = TRUE,
+                      ...)
+{
+
+  getColumn = function(data, column)
+  {
+     if (!is.numeric(column)) column = match(column, colnames(data));
+     data[, column];
+  }
+
+  expand = function(x, n)
+  {
+    if (length(x) < n) x = rep(x, ceiling(n/length(x)));
+    x[1:n];
+  }
+
+  if (!is.null(data))
+  {
+    if (is.null(columnX)) stop("'columnX' must be given.");
+    if (is.null(columnY)) stop("'columnY' must be given.");
+    
+    x = lapply(data, getColumn, columnX);
+    y = lapply(data, getColumn, columnY);
+  }
+  
+
+  if (is.null(x) | is.null(y)) stop("'x' and 'y' or 'data' must be given.");
+
+  if (mode(x)=="numeric") x = as.list(as.data.frame(as.matrix(x)));
+  if (mode(y)=="numeric") y = as.list(as.data.frame(as.matrix(y)));
+
+  if (!is.null(barHigh) && mode(barHigh)=="numeric") barHigh = as.list(as.data.frame(as.matrix(barHigh)));
+  if (!is.null(barLow) && mode(barLow)=="numeric") barLow = as.list(as.data.frame(as.matrix(barLow)));
+
+  nx = length(x);
+  ny = length(y);
+
+  if (nx==1 && ny>1) 
+  {
+    for (c in 2:ny) x[[c]] = x[[1]];
+    nx = length(x);
+  }
+
+  if (nx!=ny) stop("Length of 'x' and 'y' must be the same.");
+
+  if (length(barHigh)>0 && length(barHigh)!=ny) stop("If given, 'barHigh' must have the same length as 'y'.");
+  if (length(barLow)>0 && length(barLow)!=ny) stop("If given, 'barLow' must have the same length as 'y'.");
+
+  if (!is.null(barHigh) && is.null(barLow)) 
+    barLow = mapply(function(m, u) 2*m-u, y, barHigh, SIMPLIFY = FALSE);
+
+  pch = expand(pch, nx);
+  col = expand(col, nx);
+  bg = expand(bg, nx);
+  lwd = expand(lwd, nx);
+  lty = expand(lty, nx);
+  cex = expand(cex, nx);
+  barColor = expand(barColor, nx);
+
+  if (is.null(xlim)) xlim = range(x, na.rm = TRUE) 
+  if (is.null(ylim)) ylim = range(c(y, barLow, barHigh), na.rm = TRUE)
+
+  if (newPlot) 
+     plot(x[[1]], y[[1]], xlim = xlim, ylim = ylim, pch = pch[1], col = col[1],
+       bg = bg[[1]], lwd = lwd[1], lty = lty[1], cex = cex[1], ..., type = "n");
+
+  if (!is.null(plotBg))
+  {
+    if (length(plotBg)==1) plotBg = expand(plotBg, nx);
+    box = par("usr");
+    for (i in 1:nx)
+    {
+      if (i==1) xl = box[1] else xl = (x[[1]] [i] + x[[1]] [i-1])/2;
+      if (i==nx) xr = box[2] else xr = (x[[1]] [i+1]+x[[1]] [i])/2;
+      rect(xl, box[3], xr, box[4], border = plotBg[i], col = plotBg[i]);
+    }
+  }
+
+  if (addGrid)
+    addGrid(linesPerTick = linesPerTick, horiz = horiz, vert = vert, col = gridColor, lty = gridLty);
+
+  if (!is.null(barHigh))
+    for (p in 1:nx)
+      .addErrorBars.2sided(x[[p]], y[[p]], barHigh[[p]], barLow[[p]], col = barColor[p],
+                          lwd = errBar.lwd);
+
+  if (type %in% c("l", "b")) for (p in 1:nx)
+  {
+    if (dropMissing) present = is.finite(x[[p]]) & is.finite(y[[p]]) else
+       present = rep(TRUE, length(x[[p]]));
+    lines(x[[p]][present], y[[p]][present], lwd = lwd[p], lty = lty[p], cex = cex[p], col = bg[p]);
+  }
+  if (type %in% c("p", "b")) for (p in 1:nx)
+      points(x[[p]], y[[p]], pch = pch[p], col = col[p], bg = bg[p], cex = cex[p])
+}
+
+plotMultiHist = function(data, nBreaks = 100, col = 1:length(data), scaleBy = c("area", "max", "none"),
+                         cumulative = FALSE, ...)
+{
+  if (is.atomic(data)) data = list(data);
+  range = range(data, na.rm = TRUE);
+  breaks = seq(from = range[1], to = range[2], length.out = nBreaks + 1);
+  breaks[nBreaks + 1] = range[2] + 0.001 * (range[2] - range[1]);
+
+  hists = lapply(data, hist, breaks = breaks, plot = FALSE);
+
+  scaleBy = match.arg(scaleBy);
+
+  if (cumulative)
+  {
+     hists = lapply(hists, function(h) {h$counts = cumsum(h$counts)/sum(h$counts); h})
+  } else {
+    if (scaleBy=="max")
+    {
+       scale = lapply(hists, function(h1) max(h1$counts));
+       hists = mapply(function(h1, s1) {h1$counts = h1$counts/s1; h1}, hists, scale, SIMPLIFY = FALSE);
+    } else if (scaleBy=="area")
+    {
+       scale = lapply(hists, function(h1) sum(h1$counts));
+       hists = mapply(function(h1, s1) {h1$counts = h1$counts/s1; h1}, hists, scale, SIMPLIFY = FALSE);
+    }
+  }
+
+  n = length(data);
+
+  .multiPlot(x = lapply(hists, getElement, "mids"),
+            y = lapply(hists, getElement, "counts"),
+            type = "l", col = col, bg = col, ...);
+  invisible(list(x = lapply(hists, getElement, "mids"), y = lapply(hists, getElement, "counts")))
+}
+
+replaceMissing = function(x, replaceWith)
+{
+  if (missing(replaceWith))
+  {
+    if (is.logical(x)) {
+      replaceWith = FALSE
+    } else if (is.numeric(x)) {
+      replaceWith = 0;
+    } else if (is.character(x)) {
+      replaceWith = ""
+    } else stop("Need 'replaceWith'.");
+  }
+  x[is.na(x)] = replaceWith;
+  x;
+}
+
+
+
   
 

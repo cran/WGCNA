@@ -9,7 +9,10 @@ for the actual drawing.
 \usage{
 verboseBoxplot(x, g, main = "", xlab = NA, ylab = NA, 
                cex = 1, cex.axis = 1.5, cex.lab = 1.5, cex.main = 1.5, 
-               notch = TRUE, varwidth = TRUE, ...)
+               notch = TRUE, varwidth = TRUE, ...,
+               addScatterplot = FALSE,
+               pt.cex = 0.8, pch = 21, pt.col = "blue", pt.bg = "skyblue",
+               randomSeed = 31425, jitter = 0.6)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -30,10 +33,17 @@ verboseBoxplot(x, g, main = "", xlab = NA, ylab = NA,
   \item{\dots}{ other arguments to the function \code{\link{boxplot}}. Of note is the argument \code{las}
 that specifies label orientation. Value \code{las=1} will result in horizontal labels (the default), while
 \code{las=2} will result in vertical labels, useful when the labels are long.}
+  \item{addScatterplot}{logical: should a scatterplot of the data be overlaid? }
+  \item{pt.cex}{character expansion factor for the points.}
+  \item{pch}{shape code for the points.}
+  \item{pt.col}{color for the points.}
+  \item{pt.bg}{background color for the points.}
+  \item{randomSeed}{integer random seed to make plots reproducible.}
+  \item{jitter}{amount of random jitter to add to the position of the points along the x axis.}
 }
 \value{
   Returns the value returned by the function \code{\link{boxplot}}.  
 }
-\author{ Steve Horvath }
+\author{ Steve Horvath, with contributions from Zhijin (Jean) Wu and Peter Langfelder }
 \seealso{ \code{\link{boxplot}} }
 \keyword{ misc }% __ONLY ONE__ keyword per line

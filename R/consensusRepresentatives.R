@@ -156,7 +156,7 @@ selectFewestConsensusMissing <- function(mdx, colID, group,
    presentData         = as.matrix(mtd.apply(mdx, function(x) colSums(is.finite(x)), mdaSimplify = TRUE));
 
    presentFrac = presentData/matrix(nSamples, nVars, nSets, byrow = TRUE);
-   consensusPresentFrac = .consensusCalculation(setTomMat = presentFrac, useMean = FALSE,
+   consensusPresentFrac = .consensusCalculation.base(data = presentFrac, useMean = FALSE,
                             setWeightMat = NULL,
                             consensusQuantile = consensusQuantile)$consensus;
    
@@ -354,7 +354,7 @@ consensusRepresentatives = function(mdx,
  #       verboseScatterplot(xxx[, set], selectionStatistics[, set], samples = 10000)
  #  }
 
-   consensusSelStat = .consensusCalculation(selectionStatistics, useMean = FALSE, setWeightMat = NULL,
+   consensusSelStat = .consensusCalculation.base(selectionStatistics, useMean = FALSE, setWeightMat = NULL,
                              consensusQuantile = consensusQuantile)$consensus;
 
    # Actually run the summarization.
@@ -416,7 +416,7 @@ consensusRepresentatives = function(mdx,
      if (calibration=="full quantile")
        connectivities = normalize.quantiles(connectivities);
 
-     consConn = .consensusCalculation(connectivities, useMean = FALSE, setWeightMat = NULL,
+     consConn = .consensusCalculation.base(connectivities, useMean = FALSE, setWeightMat = NULL,
                                                consensusQuantile = consensusQuantile)$consensus;
      repres.inMore = rep(0, length(more));
      for (ig in 1:length(more))

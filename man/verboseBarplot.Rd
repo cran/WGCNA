@@ -10,7 +10,11 @@ verboseBarplot(x, g,
                cex = 1, cex.axis = 1.5, cex.lab = 1.5, cex.main = 1.5, 
                color = "grey", numberStandardErrors = 1, 
                KruskalTest = TRUE, AnovaTest = FALSE, two.sided = TRUE, 
-               addCellCounts=FALSE, horiz = FALSE, ...)
+               addCellCounts=FALSE, horiz = FALSE, ylim = NULL, ...,
+               addScatterplot = FALSE,
+               pt.cex = 0.8, pch = 21, pt.col = "blue", pt.bg = "skyblue",
+               randomSeed = 31425, jitter = 0.6,
+               adjustYLim = TRUE)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -31,7 +35,19 @@ calculated. }
   \item{two.sided}{ logical: should the printed p-value be two-sided? See details. }
   \item{addCellCounts}{ logical: should counts be printed above each bar? }
   \item{horiz}{ logical: should the bars be drawn horizontally? }
-  \item{\dots}{ other parameters to function \code{\link{barplot}}  }
+  \item{ylim}{optional specification of the limits for the y axis. If not given, they will be determined
+automatically.}
+  \item{\dots}{ other parameters to function \code{\link{barplot}}.  }
+  \item{addScatterplot}{logical: should a scatterplot of the data be overlaid? }
+  \item{pt.cex}{character expansion factor for the points.}
+  \item{pch}{shape code for the points.}
+  \item{pt.col}{color for the points.}
+  \item{pt.bg}{background color for the points.}
+  \item{randomSeed}{integer random seed to make plots reproducible.}
+  \item{jitter}{amount of random jitter to add to the position of the points along the x axis.}
+  \item{adjustYLim}{logical: should the limits of the y axis be set so as to accomodate the individual points?
+The adjustment is only carried out if input \code{ylim} is \code{NULL} and \code{addScatterplot} is
+\code{TRUE}. In particular, if the user supplies \code{ylim}, it is not touched.}
 }
 \details{
   This function creates a barplot of a numeric variable (input \code{x}) across the levels of a grouping
@@ -53,7 +69,7 @@ robust with regard to outliers. All p-values are two-sided.
 \value{
   None.
 }
-\author{ Steve Horvath }
+\author{ Steve Horvath, with contributions from Zhijin (Jean) Wu and Peter Langfelder}
 \seealso{ \code{\link{barplot}} }
 \examples{
 

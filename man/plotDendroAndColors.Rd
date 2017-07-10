@@ -17,6 +17,8 @@ plotDendroAndColors(
   setLayout = TRUE, 
   autoColorHeight = TRUE, 
   colorHeight = 0.2, 
+  colorHeightBase = 0.2, 
+  colorHeightMax = 0.6,
   rowWidths = NULL, 
   dendroLabels = NULL, 
   addGuide = FALSE, guideAll = FALSE, 
@@ -67,6 +69,12 @@ automatically adjusted for the number of traits? Only effective if \code{setLayo
 
   \item{colorHeight}{ specifies the height of the color area under dendrogram as a fraction of the
 height of the dendrogram area. Only effective when \code{autoColorHeight} above is \code{FALSE}. }
+
+  \item{colorHeightBase}{when \code{autoColorHeight} is \code{TRUE}, this specifies the minimum height of the color
+area (the height when there is one color row).}
+
+  \item{colorHeightMax}{when \code{autoColorHeight} is \code{TRUE}, this specifies the maximum height of the color
+area (the height when there are many color rows).}
 
   \item{rowWidths}{ optional specification of relative row widths for the color and text (if given) rows.
 Need not sum to 1. }

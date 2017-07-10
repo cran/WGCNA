@@ -18,7 +18,6 @@
 
  */
 
-
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -28,10 +27,12 @@
 #include <Rinternals.h>
 #include <R_ext/BLAS.h>
 #include <R_ext/libextern.h>
+#include <R_ext/Rdynload.h>
+
 #define LDOUBLE 	long double
 
-#include "pivot.h"
-
+#include "parallelQuantile_stdC.h"
+#include "pivot_declarations.h"
 #include "corFunctions-common.h"
 #include "corFunctions.h"
 
@@ -54,8 +55,8 @@ enum { TomDenomMin = 0, TomDenomMean = 1 };
 enum { AdjTypeUnsigned = 0, AdjTypeSigned = 1, AdjTypeHybrid = 2, AdjTypeUnsignedKeepSign = 3 };
 
 #define MxStr	200
-typedef char	string[MxStr];
-const string 	AdjErrors[] = {"No error. Just a placeholder.",
+typedef char	plString[MxStr];
+const plString 	AdjErrors[] = {"No error. Just a placeholder.",
                                "Standard deviation of some genes is zero.",
                                "Unrecognized correlation type.",
                                "Unrecognized adjacency type."};
@@ -83,7 +84,7 @@ void adjacency(double * expr, int nSamples, int nGenes, int corType, int adjType
   // Rprintf("Received nGenes: %d, nSamples: %d\n", nGenes, nSamples);
 
   // Rprintf("adjacency: adjType: %d\n", adjType);
-  Rprintf("adjacency: replaceMissing: %d\n", replaceMissing);
+  // Rprintf("adjacency: replaceMissing: %d\n", replaceMissing);
   int err = 0;
   switch (corType)
   {
@@ -199,10 +200,6 @@ size_t checkAvailableMemory()
   return guess*guess;
 }
 
-void checkAvailableMemoryForR(double * size)
-{
-  *size = 1.0 *  checkAvailableMemory() ;
-}
   
 //====================================================================================================
 
@@ -230,6 +227,9 @@ void tomSimilarityFromAdj(double * adj, int * nGenes,
   for (int gene = 0; gene < ng; gene++)
   {
     double * adj2 = (adj + gene * ng);
+    // set diagonal to 1.
+    *(adj2 + gene) = 1;
+    // Calculate connectivity
     double sum = 0.0;
     for (int g2 = 0; g2 < ng; g2++)
       sum += fabs(adj2[g2]);
@@ -305,6 +305,7 @@ void tomSimilarityFromAdj(double * adj, int * nGenes,
   free(conn);
   if (*verbose > 0) Rprintf("%s..done.\n", spaces);
 }
+
 
 
 //===========================================================================================
@@ -394,69 +395,6 @@ void tomSimilarity(double * expr, int * nSamples, int * nGenes,
   }
 }
 
-// Version to be called via .Call
-//
-
-SEXP tomSimilarity_call(SEXP expr_s, 
-                        SEXP corType_s, SEXP adjType_s, SEXP power_s,
-                        SEXP tomType_s, SEXP denomType_s,
-                        SEXP maxPOutliers_s, SEXP quick_s,  
-                        SEXP fallback_s, SEXP cosine_s, 
-                        SEXP replaceMissing_s,
-                        SEXP warn_s, // This is an "output" variable
-                        SEXP nThreads_s, SEXP verbose_s, SEXP indent_s)
-{
-  // Rprintf("Step 1\n");
-  SEXP dim, tom_s;
-
-  int *nSamples, *nGenes, *fallback, *cosine, *warn, *nThreads, *verbose, *indent;
-  int *corType, *adjType, *tomType, *denomType, *replaceMissing;
-
-  double *expr, *power, *quick, *tom, *maxPOutliers;
-  // Rprintf("Step 2\n");
-
-  /* Get dimensions of 'expr'. */
-  PROTECT(dim = getAttrib(expr_s, R_DimSymbol));
-  nSamples = INTEGER(dim);
-  nGenes = INTEGER(dim)+1;
-  expr = REAL(expr_s);
-
-  // Rprintf("Step 3\n");
-  corType = INTEGER(corType_s);
-  adjType = INTEGER(adjType_s);
-  tomType = INTEGER(tomType_s);
-  denomType = INTEGER(denomType_s);
-  fallback = INTEGER(fallback_s);
-  cosine = INTEGER(cosine_s);
-  replaceMissing = INTEGER(replaceMissing_s);
-  warn = INTEGER(warn_s);
-  nThreads = INTEGER(nThreads_s);
-  verbose = INTEGER(verbose_s);
-  indent = INTEGER(indent_s);
-
-  power = REAL(power_s);
-  quick = REAL(quick_s);
-  maxPOutliers = REAL(maxPOutliers_s);
-
-  // Rprintf("Step 4\n");
-  PROTECT(tom_s = allocMatrix(REALSXP, *nGenes, *nGenes));   
-  tom = REAL(tom_s);
-
-  // Rprintf("Calling tomSimilarity...\n");
-  tomSimilarity(expr, nSamples, nGenes,
-                corType, adjType, power,
-                tomType, denomType, 
-                maxPOutliers, quick, fallback, cosine,
-                replaceMissing,
-                tom, warn, nThreads, verbose, indent);
-
-  // Rprintf("Returned from tomSimilarity...\n");
-  UNPROTECT(2);
-
-  return tom_s;
-}
-
-
 /*======================================================================================================
 
   Function returning the column-wise minimum and minimum index. For easier integration with R, the index
@@ -532,5 +470,155 @@ void mean(double * matrix, int * nRows, int * nColumns, double * mean)
     else
       mean[i] = NA_REAL;
   }
+}
+
+
+// Version to be called via .Call
+//
+
+SEXP tomSimilarityFromAdj_call(SEXP adj_s, 
+                        SEXP tomType_s, SEXP denomType_s,
+                        SEXP verbose_s, SEXP indent_s)
+{
+  // Rprintf("Step 1\n");
+  SEXP dim, tom_s;
+
+  int *nGenes, *verbose, *indent;
+  int *tomType, *denomType, *replaceMissing;
+
+  double *adj, *tom, *maxPOutliers;
+  // Rprintf("Step 2\n");
+
+  /* Get dimensions of 'expr'. */
+  PROTECT(dim = getAttrib(adj_s, R_DimSymbol));
+  nGenes = INTEGER(dim);
+  if (*nGenes!= *(nGenes+1)) 
+  {
+    UNPROTECT(1);
+    error("Input adjacency is not symmetric.");
+  }
+  // nGenes = INTEGER(dim)+1;
+  adj = REAL(adj_s);
+
+  // Rprintf("Step 3\n");
+  tomType = INTEGER(tomType_s);
+  denomType = INTEGER(denomType_s);
+  verbose = INTEGER(verbose_s);
+  indent = INTEGER(indent_s);
+
+  // Rprintf("Step 4\n");
+  PROTECT(tom_s = allocMatrix(REALSXP, *nGenes, *nGenes));   
+  tom = REAL(tom_s);
+
+  // Rprintf("Calling tomSimilarity...\n");
+  tomSimilarityFromAdj(adj, nGenes,
+                tomType, denomType, tom, 
+                verbose, indent);
+
+  // Rprintf("Returned from tomSimilarity...\n");
+  UNPROTECT(2);
+
+  return tom_s;
+}
+
+// Version to be called via .Call
+//
+
+SEXP tomSimilarity_call(SEXP expr_s, 
+                        SEXP corType_s, SEXP adjType_s, SEXP power_s,
+                        SEXP tomType_s, SEXP denomType_s,
+                        SEXP maxPOutliers_s, SEXP quick_s,  
+                        SEXP fallback_s, SEXP cosine_s, 
+                        SEXP replaceMissing_s,
+                        SEXP warn_s, // This is an "output" variable
+                        SEXP nThreads_s, SEXP verbose_s, SEXP indent_s)
+{
+  // Rprintf("Step 1\n");
+  SEXP dim, tom_s;
+
+  int *nSamples, *nGenes, *fallback, *cosine, *warn, *nThreads, *verbose, *indent;
+  int *corType, *adjType, *tomType, *denomType, *replaceMissing;
+
+  double *expr, *power, *quick, *tom, *maxPOutliers;
+  // Rprintf("Step 2\n");
+
+  /* Get dimensions of 'expr'. */
+  PROTECT(dim = getAttrib(expr_s, R_DimSymbol));
+  nSamples = INTEGER(dim);
+  nGenes = INTEGER(dim)+1;
+  expr = REAL(expr_s);
+
+  // Rprintf("Step 3\n");
+  corType = INTEGER(corType_s);
+  adjType = INTEGER(adjType_s);
+  tomType = INTEGER(tomType_s);
+  denomType = INTEGER(denomType_s);
+  fallback = INTEGER(fallback_s);
+  cosine = INTEGER(cosine_s);
+  replaceMissing = INTEGER(replaceMissing_s);
+  warn = INTEGER(warn_s);
+  nThreads = INTEGER(nThreads_s);
+  verbose = INTEGER(verbose_s);
+  indent = INTEGER(indent_s);
+
+  power = REAL(power_s);
+  quick = REAL(quick_s);
+  maxPOutliers = REAL(maxPOutliers_s);
+
+  // Rprintf("Step 4\n");
+  PROTECT(tom_s = allocMatrix(REALSXP, *nGenes, *nGenes));   
+  tom = REAL(tom_s);
+
+  // Rprintf("Calling tomSimilarity...\n");
+  tomSimilarity(expr, nSamples, nGenes,
+                corType, adjType, power,
+                tomType, denomType, 
+                maxPOutliers, quick, fallback, cosine,
+                replaceMissing,
+                tom, warn, nThreads, verbose, indent);
+
+  // Rprintf("Returned from tomSimilarity...\n");
+  UNPROTECT(2);
+
+  return tom_s;
+}
+
+void checkAvailableMemoryForR(double * size)
+{
+  *size = 1.0 *  checkAvailableMemory() ;
+}
+
+/* =============================================================================================
+ *
+ *  Register native routines here.
+ *
+ * =============================================================================================*/
+
+void R_init_WGCNA(DllInfo * info)
+{
+  static const R_CallMethodDef callMethods[]  = {
+    {"tomSimilarity_call", (DL_FUNC) &tomSimilarity_call, 15},
+    {"tomSimilarityFromAdj_call", (DL_FUNC) &tomSimilarityFromAdj_call, 5},
+    {"cor1Fast_call", (DL_FUNC) &cor1Fast_call, 8},
+    {"bicor1_call", (DL_FUNC) &bicor1_call, 11},
+    {"bicor2_call", (DL_FUNC) &bicor2_call, 16},
+    {"corFast_call", (DL_FUNC) &corFast_call, 10},
+    {"parallelQuantile", (DL_FUNC) &parallelQuantile, 2},
+    {"parallelMean", (DL_FUNC) &parallelMean, 2},
+    {"parallelMin", (DL_FUNC) &parallelMin, 1},
+    {"minWhich_call", (DL_FUNC) &minWhich_call, 2},
+    {"quantileC_call", (DL_FUNC) &quantileC_call, 2},
+    {"rowQuantileC_call", (DL_FUNC) &rowQuantileC_call, 2},
+    {"qorder", (DL_FUNC) &qorder, 1},
+    {NULL, NULL, 0}
+  };
+
+  static R_NativePrimitiveArgType checkAvailableMemoryForR_t[] = { REALSXP };
+  static const R_CMethodDef CMethods[] = {
+    {"checkAvailableMemoryForR", (DL_FUNC) &checkAvailableMemoryForR, 1, checkAvailableMemoryForR_t},
+    {NULL, NULL, 0}
+  };
+  R_registerRoutines(info, CMethods, callMethods, NULL, NULL);
+  R_useDynamicSymbols(info, FALSE);
 }
 

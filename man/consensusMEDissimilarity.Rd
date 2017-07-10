@@ -2,7 +2,7 @@
 \alias{consensusMEDissimilarity}
 \title{ Consensus dissimilarity of module eigengenes. }
 \description{
-  Calculates consensus dissimilarity \code{(1-cor)} of given module eigengenes relaized in several sets.
+  Calculates consensus dissimilarity \code{(1-cor)} of given module eigengenes realized in several sets.
 }
 \usage{
 consensusMEDissimilarity(MEs, useAbs = FALSE, useSets = NULL, method = "consensus")

@@ -41,10 +41,42 @@
   sum(centered^2 * weights)/(V1-V2/V1);
 }
 
+# Defaults for certain fitting functions
+
+.initialFit.defaultWeightName = function(fitFnc)
+{
+  wNames = c(rlm = "w", lmrob = "rweights");
+  if (fitFnc %in% names(wNames)) return(wNames[ match(fitFnc, names(wNames))]);
+  NULL;
+}
+
+.initialFit.defaultOptions = function(fitFnc)
+{
+  defOpt = list(
+       rlm = list(),
+       lmrob = list(model = FALSE, x = FALSE, y = FALSE, control = lmRob.control()));
+  if (fitFnc %in% names(defOpt)) return(defOpt[[ match(fitFnc, names(defOpt))]]);
+  list();
+}
+
+.initialFit.requiresFormula = function(fitFnc)
+{
+  reqForm = c(rlm = FALSE, lmrob = TRUE);
+  if (fitFnc %in% names(reqForm)) return(reqForm[ match(fitFnc, names(reqForm))]);
+  FALSE;
+}
+
+
 empiricalBayesLM = function(
   data, 
   removedCovariates,
   retainedCovariates = NULL, 
+
+  initialFitFunction = NULL,
+  initialFitOptions = NULL,
+  initialFitRequiresFormula = NULL,
+  initialFit.returnWeightName = NULL,
+
   weights = NULL,
   weightType = c("apriori", "empirical"),
   stopOnSmallWeights = TRUE,
@@ -52,8 +84,20 @@ empiricalBayesLM = function(
   scaleMeanToSamples = NULL,
   robustPriors = FALSE,
   automaticWeights = c("none", "bicov"),
-  aw.maxPOutliers = 0.1)
+  aw.maxPOutliers = 0.1,
+  minDesignDeviation = 1e-10,
+  garbageCollectInterval = 50000,
+
+  getOLSAdjustedData = TRUE,
+  getResiduals = TRUE,
+  getFittedValues = TRUE,
+  getWeights = TRUE,
+  getEBadjustedData = TRUE,
+
+  verbose = 0, indent = 0)
 {
+
+  spaces = indentSpaces(indent);
 
   nSamples = nrow(data);
   designMat = NULL;
@@ -64,6 +108,7 @@ empiricalBayesLM = function(
   if (automaticWeights=="bicov")
   {
     weightType = "empirical";
+    if (verbose > 0) printFlush(paste(spaces, "..calculating weights.."));
     weights = bicovWeights(data, maxPOutliers = aw.maxPOutliers);
   }
 
@@ -121,6 +166,7 @@ empiricalBayesLM = function(
 
   dimnamesY = dimnames(y.original);
 
+  if (verbose > 0) printFlush(paste(spaces, "..checking for non-varying responses.."));
   varY = colVars(y.original, na.rm = TRUE);
   varYMissing = is.na(varY);
   varYZero = varY==0;
@@ -147,13 +193,14 @@ empiricalBayesLM = function(
                  "Small weights found. This can lead to unreliable fit with weight type 'apriori'.\n",
                  "Proceed with caution.");
     }
-  }
+  } 
 
   N = ncol(y);
   nc = ncol(designMat);
 
   # Scale y to mean zero and variance 1. This is needed for the prior to make sense.
 
+  if (verbose > 0) printFlush(paste(spaces, "..standardizing responses.."));
   if (is.null(scaleMeanToSamples)) scaleMeanToSamples = c(1:nSamples);
 
   mean.y.target = .colWeightedMeans.x(y[scaleMeanToSamples, ], weights[scaleMeanToSamples, ], na.rm = TRUE);
@@ -164,57 +211,137 @@ empiricalBayesLM = function(
   scale.y.mat = matrix(scale.y, nrow = nrow(y), ncol = ncol(y), byrow = TRUE);
   y[!yFinite] = 0;
 
-  # Get the means of the design matrix with respect to all weight vectors.
-  V1 = colSums(weights);
-  V2 = colSums(weights^2);
-  means.dm = t(designMat) %*% weights / matrix(V1, nrow = nc, ncol = N, byrow = TRUE);
-
-  # Ordinary regression to get starting point for beta
-
+  if (verbose > 0) printFlush(paste(spaces, "..initial model fitting.."));
+  # Prepaer ordinary regression to get starting points for beta and sigma
   beta.OLS = matrix(NA, nc, N);
   betaValid = matrix(TRUE, nc, N);
   sigma.OLS = rep(NA, N);
   regressionValid = rep(TRUE, N);
-  oldWeights = rep(-1, nSamples);
-  for (i in 1:N)
-  {
-    w1 = weights[, i];
-    y1 = y[, i];
-    if (any(w1!=oldWeights))
-    {
-      centeredDM = designMat - matrix(means.dm[, i], nSamples, nc, byrow = TRUE);
-      #dmVar = colSds(centeredDM);
-      dmVar.w = apply(centeredDM, 2, .weightedVar, weights = w1);
-      #keepDM = dmVar > 0 & dmVar.w > 0;
-      keepDM = dmVar.w > 0;
-      centeredDM.keep = centeredDM[, keepDM];
-      xtx = t(centeredDM.keep) %*% (centeredDM.keep * w1);
-      xtxInv = try(solve(xtx), silent = TRUE);
-      oldWeights = w1;
-    }
 
-    if (!inherits(xtx, "try-error"))
+  # Get the means of the design matrix with respect to all weight vectors.
+  V1 = colSums(weights);
+  V2 = colSums(weights^2);
+  means.dm = t(designMat) %*% weights / matrix(V1, nrow = nc, ncol = N, byrow = TRUE);
+  i = 0;
+  on.exit(printFlush(spaste("Error occurred at i = ", i)));
+  #on.exit(browser());
+  pindStep = max(1, floor(N/100));
+  if (is.null(initialFitFunction))
+  {
+    # Ordinary weighted least squares, in two varieties.
+    oldWeights = rep(-1, nSamples);
+    if (verbose > 1) pind = initProgInd();
+    for (i in 1:N)
     {
-      # The following is really (xtxInv %*% xy1), where xy1 = t(centeredDM) %*% (y[,i]*weights[,i])
-      beta.OLS[keepDM, i] = colSums(xtxInv * colSums(centeredDM.keep * y1 * w1));
-      betaValid[!keepDM, i] = FALSE;
-      y.pred = centeredDM.keep %*% beta.OLS[keepDM, i];
-      if (weightType=="apriori")
+      w1 = weights[, i];
+      y1 = y[, i];
+      if (any(w1!=oldWeights))
       {
-        # Standard calculation of sigma^2 in weighted refression
-        sigma.OLS[i] = sum(w1 * (y1 - y.pred)^2)/(sum(yFinite[, i])-nc-1);
-      } else {
-        xtxw2 =  t(centeredDM.keep) %*% (centeredDM.keep *w1^2);
-        sigma.OLS[i] = sum( w1* (y1-y.pred)^2) / (V1[i] - V2[i]/V1[i] - sum(xtxw2 * xtxInv));
+        centeredDM = designMat - matrix(means.dm[, i], nSamples, nc, byrow = TRUE);
+        #dmVar = colSds(centeredDM);
+        dmVar.w = apply(centeredDM, 2, .weightedVar, weights = w1);
+        #keepDM = dmVar > 0 & dmVar.w > 0;
+        keepDM = dmVar.w > minDesignDeviation^2;
+        xtxInv = try(
+        {
+          centeredDM.keep = centeredDM[, keepDM, drop = FALSE];
+          xtx = t(centeredDM.keep) %*% (centeredDM.keep * w1);
+          solve(xtx);
+        }, silent = TRUE)
       }
-    } else {
-      regressionValid[i] = FALSE;
-      betaValid[, i] = FALSE;
+  
+      if (!inherits(xtxInv, "try-error"))
+      {
+        oldWeights = w1;
+        # The following is really (xtxInv %*% xy1), where xy1 = t(centeredDM) %*% (y[,i]*weights[,i])
+        beta.OLS[keepDM, i] = colSums(xtxInv * colSums(centeredDM.keep * y1 * w1));
+        betaValid[!keepDM, i] = FALSE;
+        y.pred = centeredDM.keep %*% beta.OLS[keepDM, i, drop = FALSE];
+        if (weightType=="apriori")
+        {
+          # Standard calculation of sigma^2 in weighted refression
+          sigma.OLS[i] = sum((w1>0) * (y1 - y.pred)^2)/(sum(w1>0)-nc-1);
+        } else {
+          xtxw2 =  t(centeredDM.keep) %*% (centeredDM.keep *w1^2);
+          sigma.OLS[i] = sum( w1* (y1-y.pred)^2) / (V1[i] - V2[i]/V1[i] - sum(xtxw2 * xtxInv));
+        }
+      } else {
+        regressionValid[i] = FALSE;
+        betaValid[, i] = FALSE;
+      }
+      if (i%%garbageCollectInterval ==0) gc();
+      if (verbose > 1 && i%%pindStep==0) pind = updateProgInd(i/N, pind);
     }
+    if (verbose > 1) {pind = updateProgInd(i/N, pind); printFlush()}
+    rweights = weights;
+  } else {
+    fitFnc = match.fun(initialFitFunction);
+    if (is.null(initialFit.returnWeightName))
+      initialFit.returnWeightName = .initialFit.defaultWeightName(initialFitFunction);
+
+    if (is.null(initialFitOptions))
+      initialFitOptions = .initialFit.defaultOptions(initialFitFunction);
+
+    if (is.null(initialFitRequiresFormula))
+      initialFitRequiresFormula = .initialFit.requiresFormula(initialFitFunction);
+      
+    rweights = weights;
+    if (verbose > 1) pind = initProgInd();
+    for (i in 1:N)
+    {
+      y1 = y[, i];
+      w1 = weights[, i]
+      dmVar.w = apply(designMat, 2, .weightedVar, weights = w1);
+      keepDM = dmVar.w > 0;
+      if (initialFitRequiresFormula)
+      {
+        modelData = data.frame(designMat[, keepDM, drop = FALSE]);
+        fit = try(do.call(fitFnc, c(list(formula = "y1~.", data = data.frame(y1 = y1, modelData), w = w1), 
+                                            initialFitOptions)));
+      } else {
+        fit = try(do.call(fitFnc, c(list(x = cbind(intercept = rep(1, nSamples), 
+                                                   designMat[, keepDM, drop = FALSE]), 
+                                         y = y1, w = w1),
+                                    initialFitOptions)));
+      }
+      if (!inherits(fit, "try-error"))
+      {
+        beta.OLS[keepDM, i] = fit$coefficients[-1];
+        betaValid[!keepDM, i] = FALSE;
+        rw1 = getElement(fit, initialFit.returnWeightName);
+        if (length(rw1)!=nSamples) 
+          stop("Length of component '", initialFit.returnWeightName, 
+               "' does not match the number of samples.\n",
+               "Please check that the name of the component containing robustness weights\n",
+               "is specified correctly.");
+        rweights[, i] = rw1 * w1;
+        if (!is.null(fit$scale))
+        { 
+           sigma.OLS[i] = fit$scale
+        } else {
+          # This is not the greatest estimate since it is non-robust and does not take the final weights into
+          # account. The hope is that this will never be used.
+          sigma.OLS[i] = sum((w1>0) * fit$residuals^2)/(sum(w1>0)-nc-1)
+        }
+      } else {
+        regressionValid[i] = FALSE;
+        betaValid[, i] = FALSE;
+      }
+      if (i%%garbageCollectInterval ==0) gc();
+      if (verbose > 1 && i%%pindStep==0) pind = updateProgInd(i/N, pind);
+    }
+    if (verbose > 1) {pind = updateProgInd(i/N, pind); printFlush()}
   }
+
   if (any(!regressionValid))
      warning(immediate. = TRUE,
-             "empiricalBayesLM: OLS regression failed in ", sum(!regressionValid), " variables.");
+             "empiricalBayesLM: initial regression failed in ", sum(!regressionValid), " variables.");
+
+  if (all(!regressionValid))
+     stop("Initial regression model failed for all columns in 'data'.\n",
+          "Last model returned the following error:\n\n",
+          if (is.null(initialFitFunction)) xtx else fit,
+          "\n\nPlease check that the model is correctly specified.");
 
   # beta.OLS has columns corresponding to variables in data, and rows corresponding to columns in x.
 
@@ -233,100 +360,123 @@ empiricalBayesLM = function(
 
   }
 
-  # Priors on beta : mean and variance
-  if (robustPriors)
+  if (getEBadjustedData)
   {
-    if (is.na(beta.OLS[, regressionValid]))
-      stop("Some of OLS coefficients are missing. Please use non-robust priors.");
-    prior.means = rowMedians(beta.OLS[, regressionValid], na.rm = TRUE);
-    prior.covar = .bicov(t(beta.OLS[, regressionValid]));
-  } else {
-    prior.means = rowMeans(beta.OLS[, regressionValid], na.rm = TRUE);
-    prior.covar = cov(t(beta.OLS[, regressionValid]), use = "complete.obs");
-  }
-  prior.inverse = solve(prior.covar);
-
-  # Prior on sigma: mean and variance (median and MAD are bad estimators since the distribution is skewed)
-  sigma.m = mean(sigma.OLS[regressionValid], na.rm = TRUE);
-  sigma.v = var(sigma.OLS[regressionValid], na.rm = TRUE);
-
-  # Turn the sigma mean and variance into the parameters of the inverse gamma distribution
-  prior.a = sigma.m^2/sigma.v + 2;
-  prior.b = sigma.m * (prior.a-1);
-
-  # Calculate the EB estimates
-  beta.EB = beta.OLS;
-  sigma.EB = sigma.OLS;
-  
-  for (i in which(regressionValid))
-  {
-    # Iterate to solve for EB regression coefficients (betas) and the residual variances (sigma)
-    # It appears that this has to be done individually for each variable.
-
-    difference = 1;
-    iteration = 1;
-
-    keepDM = betaValid[, i];
-    beta.old = as.matrix(beta.OLS[keepDM, i]);
-    sigma.old = sigma.OLS[i];
-    y1 = y[, i];
-    w1 = weights[, i];
-
-    centeredDM = designMat - matrix(means.dm[, i], nSamples, nc, byrow = TRUE);
-    centeredDM.keep = centeredDM[, keepDM];
-    xtx = t(centeredDM.keep) %*% (centeredDM.keep * w1);
-    xtxInv = solve(xtx);
-
-    if (all(keepDM))
+    # Priors on beta : mean and variance
+    if (verbose > 0) printFlush(spaste(spaces, "..calculating priors.."));
+    if (robustPriors)
     {
-      prior.inverse.keep = prior.inverse;
-    } else
-      prior.inverse.keep = solve(prior.covar[keepDM, keepDM]);
-
-    while (difference > tol && iteration <= maxIterations)
-    {
-      y.pred = centeredDM.keep %*% beta.old;
-      if (wtype==1)
-      {
-        # Apriori weights.
-        fin1 = yFinite[, i];
-        nSamples1 = sum(fin1);
-        sigma.new = (sum(w1*(y1-y.pred)^2) + 2*prior.b)/ (nSamples1-nc + 2 * prior.a + 1);
-      } else {
-        # Empirical weights
-        V1 = sum(w1);
-        V2 = sum(w1^2);
-        xtxw2 =  t(centeredDM.keep) %*% (centeredDM.keep *w1^2);
-        sigma.new = (sum( w1* (y1-y.pred)^2) + 2*prior.b) / (V1 - V2/V1 - sum(xtxw2 * xtxInv) + 2*prior.a + 2);
-      }
-
-      A = (prior.inverse.keep + xtx/sigma.new)/2;
-      A.inv = solve(A);
-      #B = as.numeric(t(y1*w1) %*% centeredDM/sigma.new) + as.numeric(prior.inverse %*% prior.means);
-      B = colSums(centeredDM.keep * y1 * w1/sigma.new) + colSums(prior.inverse.keep * prior.means[keepDM]);
-
-      #beta.new = A.inv %*% as.matrix(B)/2
-      beta.new = colSums(A.inv * B)/2  # ...a different and hopefully faster way of writing the above
-
-      difference = max( abs(sigma.new-sigma.old)/(sigma.new + sigma.old),
-                        abs(beta.new-beta.old)/(beta.new + beta.old));
-
-      beta.old = beta.new;
-      sigma.old = sigma.new;
-      iteration = iteration + 1;
+      if (is.na(beta.OLS[, regressionValid]))
+        stop("Some of OLS coefficients are missing. Please use non-robust priors.");
+      prior.means = rowMedians(beta.OLS[, regressionValid, drop = FALSE], na.rm = TRUE);
+      prior.covar = .bicov(t(beta.OLS[, regressionValid, drop = FALSE]));
+    } else {
+      prior.means = rowMeans(beta.OLS[, regressionValid, drop = FALSE], na.rm = TRUE);
+      prior.covar = cov(t(beta.OLS[, regressionValid, drop = FALSE]), use = "complete.obs");
     }
-    if (iteration > maxIterations) warning(immediate. = TRUE, 
-                                           "Exceeded maximum number of iterations for variable ", i, ".");
-    beta.EB[keepDM, i] = beta.old;
-    sigma.EB[i] = sigma.old;
-  }
+    prior.inverse = solve(prior.covar);
+  
+    # Prior on sigma: mean and variance (median and MAD are bad estimators since the distribution is skewed)
+    sigma.m = mean(sigma.OLS[regressionValid], na.rm = TRUE);
+    sigma.v = var(sigma.OLS[regressionValid], na.rm = TRUE);
+  
+    # Turn the sigma mean and variance into the parameters of the inverse gamma distribution
+    prior.a = sigma.m^2/sigma.v + 2;
+    prior.b = sigma.m * (prior.a-1);
+  
+    # Calculate the EB estimates
+    if (verbose > 0) printFlush(spaste(spaces, "..calculating final coefficients.."));
+    beta.EB = beta.OLS;
+    sigma.EB = sigma.OLS;
+    
+    # Get the means of the design matrix with respect to all rweight vectors.
+    rV1 = colSums(rweights);
+    rV2 = colSums(rweights^2);
+    rmeans.dm = t(designMat) %*% weights / matrix(V1, nrow = nc, ncol = N, byrow = TRUE);
+  
+    if (verbose > 1) pind = initProgInd();
+    for (i in which(regressionValid))
+    {
+      # Iterate to solve for EB regression coefficients (betas) and the residual variances (sigma)
+      # It appears that this has to be done individually for each variable.
+  
+      difference = 1;
+      iteration = 1;
+  
+      y1 = y[, i];
+      w1 = rweights[, i];
+  
+      centeredDM = designMat - matrix(rmeans.dm[, i], nSamples, nc, byrow = TRUE);
+      dmVar.w = apply(centeredDM, 2, .weightedVar, weights = w1);
+      keepDM = dmVar.w > 0 & betaValid[, i];
+  
+      beta.old = as.matrix(beta.OLS[keepDM, i, drop = FALSE]);
+      sigma.old = sigma.OLS[i];
+  
+      centeredDM.keep = centeredDM[, keepDM, drop = FALSE];
+      xtx = t(centeredDM.keep) %*% (centeredDM.keep * w1);
+      xtxInv = solve(xtx);
+  
+      if (all(keepDM))
+      {
+        prior.inverse.keep = prior.inverse;
+      } else
+        prior.inverse.keep = solve(prior.covar[keepDM, keepDM, drop = FALSE]);
+  
+      while (difference > tol && iteration <= maxIterations)
+      {
+        y.pred = centeredDM.keep %*% beta.old;
+        if (wtype==1)
+        {
+          # Apriori weights.
+          fin1 = yFinite[, i];
+          nSamples1 = sum(fin1);
+          sigma.new = (sum(fin1 * (y1-y.pred)^2) + 2*prior.b)/ (nSamples1-nc + 2 * prior.a + 1);
+        } else {
+          # Empirical weights
+          V1 = sum(w1);
+          V2 = sum(w1^2);
+          xtxw2 =  t(centeredDM.keep) %*% (centeredDM.keep *w1^2);
+          sigma.new = (sum( w1* (y1-y.pred)^2) + 2*prior.b) / (V1 - V2/V1 - sum(xtxw2 * xtxInv) + 2*prior.a + 2);
+        }
+  
+        A = (prior.inverse.keep + xtx/sigma.new)/2;
+        A.inv = solve(A);
+        #B = as.numeric(t(y1*w1) %*% centeredDM/sigma.new) + as.numeric(prior.inverse %*% prior.means);
+        B = colSums(centeredDM.keep * y1 * w1/sigma.new) + colSums(prior.inverse.keep * prior.means[keepDM]);
+  
+        #beta.new = A.inv %*% as.matrix(B)/2
+        beta.new = colSums(A.inv * B)/2  # ...a different and hopefully faster way of writing the above
+  
+        difference = max( abs(sigma.new-sigma.old)/(sigma.new + sigma.old),
+                          abs(beta.new-beta.old)/(beta.new + beta.old));
+  
+        beta.old = beta.new;
+        sigma.old = sigma.new;
+        iteration = iteration + 1;
+      }
+      if (iteration > maxIterations) warning(immediate. = TRUE, 
+                                             "Exceeded maximum number of iterations for variable ", i, ".");
+      beta.EB[keepDM, i] = beta.old;
+      sigma.EB[i] = sigma.old;
+      if (i%%garbageCollectInterval ==0) gc();
+      if (verbose > 1 && i%%pindStep==0) pind = updateProgInd(i/N, pind);
+    }
+    if (verbose > 1) {pind = updateProgInd(i/N, pind); printFlush()}
+  } ### if (getEBAdjustedData)  
+
+  on.exit(NULL);
+
 
   # Put output together. Will return the coefficients for lm and EB-lm, and the residuals with added mean.
+
+  if (verbose > 0) printFlush(paste(spaces, "..calculating adjusted data.."));
 
   fitAndCoeffs = function(beta, sigma)
   {
       #fitted.removed = fitted = matrix(NA, nSamples, N);
-      fitted.removed = fitted = y;
+      fitted.removed = y;
+      if (getFittedValues) fitted = y;
       beta.fin = beta;
       beta.fin[is.na(beta)] = 0;
       for (i in which(regressionValid))
@@ -334,7 +484,8 @@ empiricalBayesLM = function(
          centeredDM = designMat - matrix(means.dm[, i], nSamples, nc, byrow = TRUE);
          fitted.removed[, i] = centeredDM[, removedColumns, drop = FALSE] %*% 
                                    beta.fin[removedColumns, i, drop = FALSE];
-         fitted[, i] = centeredDM %*% beta.fin[, i, drop = FALSE]
+         if (getFittedValues) fitted[, i] = centeredDM %*% beta.fin[, i, drop = FALSE]
+         if (i%%garbageCollectInterval ==0) gc();
       }
       #browser()
       
@@ -343,16 +494,26 @@ empiricalBayesLM = function(
 
       meanShift =  matrix(mean.y.target, nSamples, N, byrow = TRUE)
 
-      residuals.all = residualsWithMean.all = fitted.all = matrix(NA, nSamples, N.original);
+      if (getFittedValues) 
+      {
+        fitted.all = matrix(NA, nSamples, N.original);
+        fitted.all[, keepY] = fitted * scale.y.mat + meanShift;
+        dimnames(fitted.all) = dimnamesY;
+      }
+      
+      residualsWithMean.all = matrix(NA, nSamples, N.original);
+      if (getResiduals)
+      {
+        residuals.all = residualsWithMean.all;
+        residuals.all[, keepY] = residuals;
+        residuals.all[, varYZero] = 0;
+        residuals.all[is.na(y.original)] = NA;
+      }
 
-      residuals.all[, keepY] = residuals;
-      residuals.all[, varYZero] = 0;
-      residuals.all[is.na(y.original)] = NA;
-
-      residualsWithMean.all[, keepY] = residuals.all[, keepY] + meanShift;
+      residualsWithMean.all[, keepY] = residuals + meanShift;
+      residualsWithMean.all[, varYZero] = 0;
       residualsWithMean.all[is.na(y.original)] = NA;
 
-      fitted.all[, keepY] = fitted * scale.y.mat + meanShift;
 
       beta.all = beta.all.scaled = matrix(NA, nc+1, N.original);
       sigma.all = sigma.all.scaled = rep(NA, N.original);
@@ -371,43 +532,49 @@ empiricalBayesLM = function(
       colnames(beta.all) = colnames(beta.all.scaled) = colnames(y.original);
       rownames(beta.all) = rownames(beta.all.scaled) = c("(Intercept)", colnames(designMat));
 
-      list(residuals = residuals.all,
+      list(residuals = if (getResiduals) residuals.all else NULL,
            residualsWithMean = residualsWithMean.all,
            beta = beta.all,
            beta.scaled = beta.all.scaled,
            sigmaSq = sigma.all,
            sigmaSq.scaled = sigma.all.scaled,
-           fittedValues = fitted.all);
+           fittedValues = if (getFittedValues) fitted.all else NULL);
   }
 
   fc.OLS = fitAndCoeffs(beta.OLS, sigma.OLS);
-  fc.EB = fitAndCoeffs(beta.EB, sigma.EB);
+  if (getEBadjustedData) fc.EB = fitAndCoeffs(beta.EB, sigma.EB);
 
   betaValid.all = matrix(FALSE, nc+1, N.original);
   betaValid.all[-1, keepY] = betaValid;
   betaValid.all[1, keepY] = TRUE;
   dimnames(betaValid.all) = dimnames(fc.OLS$beta);
 
-  list( adjustedData = fc.EB$residualsWithMean,
-       residuals = fc.EB$residuals,
-       coefficients = fc.EB$beta,
-       coefficients.scaled = fc.EB$beta.scaled,
-       sigmaSq = fc.EB$sigmaSq,
-       sigmaSq.scaled = fc.EB$sigmaSq.scaled,
-       fittedValues = fc.EB$fittedValues,
+  finalWeights = originalWeights;
+  finalWeights[, keepY] = rweights;
+  
+
+  list( adjustedData = if (getEBadjustedData) fc.EB$residualsWithMean else NULL,
+       residuals = if (getResiduals & getEBadjustedData) fc.EB$residuals else NULL,
+       coefficients = if (getEBadjustedData) fc.EB$beta else NULL,
+       coefficients.scaled = if (getEBadjustedData) fc.EB$beta.scaled else NULL,
+       sigmaSq = if (getEBadjustedData) fc.EB$sigmaSq else NULL,
+       sigmaSq.scaled = if (getEBadjustedData) fc.EB$sigmaSq.scaled else NULL,
+       fittedValues = if (getFittedValues && getEBadjustedData) fc.EB$fittedValues else NULL,
 
        # OLS results
-       adjustedData.OLS = fc.OLS$residualsWithMean,
-       residuals.OLS = fc.OLS$residuals,
+       adjustedData.OLS = if (getOLSAdjustedData) fc.OLS$residualsWithMean else NULL,
+       residuals.OLS = if (getResiduals) fc.OLS$residuals else NULL,
        coefficients.OLS = fc.OLS$beta,
        coefficients.OLS.scaled = fc.OLS$beta.scaled,
        sigmaSq.OLS = fc.OLS$sigmaSq,
        sigmaSq.OLS.scaled = fc.OLS$sigmaSq.scaled,
-       fittedValues.OLS = fc.OLS$fittedValues,
+       fittedValues.OLS = if (getFittedValues) fc.OLS$fittedValues else NULL,
 
 
        # Weights used in the model
-       weights = originalWeights,
+       initialWeights = if (getWeights) originalWeights else NULL,
+       finalWeights = if (getWeights) finalWeights else NULL,
+       
 
        # indices of valid fits
        dataColumnValid = keepY,
@@ -415,6 +582,197 @@ empiricalBayesLM = function(
        coefficientValid = betaValid.all);
 }
 
+
+
+#===================================================================================================
+#
+# Linear model coefficients
+#
+#===================================================================================================
+
+.linearModelCoefficients = function(
+  responses, 
+  predictors,
+
+  weights = NULL,
+  automaticWeights = c("none", "bicov"),
+  aw.maxPOutliers = 0.1,
+
+  getWeights = FALSE,
+
+  garbageCollectInterval = 50000,
+  minDesignDeviation = 1e-10,
+
+  verbose = 0, indent = 0)
+{
+
+  spaces = indentSpaces(indent);
+
+  designMat = NULL;
+
+  automaticWeights = match.arg(automaticWeights);
+  if (automaticWeights=="bicov")
+  {
+    if (verbose > 0) printFlush(paste(spaces, "..calculating weights.."));
+    weights = bicovWeights(responses, maxPOutliers = aw.maxPOutliers);
+  }
+
+  if (is.null(dim(predictors)))
+     predictors = data.frame(retainedCovariate = predictors)
+
+  keepSamples = rowSums(is.na(predictors))==0;
+
+  responses = responses[keepSamples, , drop = FALSE];
+  predictors = predictors[keepSamples, , drop = FALSE];
+  nSamples = nrow(responses);
+
+  if (nrow(predictors)!=nSamples)
+    stop("Numbers of rows in 'responses' and 'predictors' differ.");
+  predictors = as.data.frame(predictors);
+  mm = model.matrix(~., data = predictors);
+  colSDs = colSds(mm[, -1, drop = FALSE], na.rm = TRUE);
+  if (any(colSDs==0))
+    stop("Some columns in 'predictors' have zero variance.");
+  designMat = mm;
+
+  y.original = as.matrix(responses);
+  N.original = ncol(y.original);
+  if (any(!is.finite(y.original))) 
+  {
+    warning(immediate. = TRUE,
+            "Found missing and non-finite data. These will be removed.");
+  }
+    
+  if (is.null(weights))
+    weights = matrix(1, nSamples, ncol(y.original));
+
+  if (any(!is.finite(weights)))
+    stop("Given 'weights' contain some infinite or missing entries. All weights must be present and finite.");
+
+  if (any(weights<0))
+    stop("Given 'weights' contain negative entries. All weights must be non-negative.");
+
+  originalWeights = weights;
+
+  dimnamesY = dimnames(y.original);
+
+  if (verbose > 0) printFlush(paste(spaces, "..checking for non-varying responses.."));
+  varY = colVars(y.original, na.rm = TRUE);
+  varYMissing = is.na(varY);
+  varYZero = varY==0;
+  varYZero[is.na(varYZero)] = FALSE;
+  keepY = !(varYZero | varYMissing);
+
+  y = y.original[, keepY];
+  weights = weights[, keepY];
+  yFinite = is.finite(y);
+  weights[!yFinite] = 0;
+  nSamples.y = colSums(yFinite);
+  y[!yFinite] = 0;
+
+  N = ncol(y);
+  nc = ncol(designMat);
+
+  if (verbose > 0) printFlush(paste(spaces, "..model fitting.."));
+  # Prepaer ordinary regression to get starting points for beta and sigma
+  beta.OLS = matrix(NA, nc, N);
+  betaValid = matrix(TRUE, nc, N);
+  sigma.OLS = rep(NA, N);
+  regressionValid = rep(TRUE, N);
+
+  # Get the means of the design matrix with respect to all weight vectors.
+  V1 = colSums(weights);
+  V2 = colSums(weights^2);
+  means.dm = t(designMat) %*% weights / matrix(V1, nrow = nc, ncol = N, byrow = TRUE);
+  i = 0;
+  on.exit(printFlush(spaste("Error occurred at i = ", i)));
+  #on.exit(browser());
+  pindStep = max(1, floor(N/100));
+
+  # Ordinary weighted least squares
+  oldWeights = rep(-1, nSamples);
+  if (verbose > 1) pind = initProgInd();
+  for (i in 1:N)
+  {
+    w1 = weights[, i];
+    y1 = y[, i];
+    if (any(w1!=oldWeights))
+    {
+      #centeredDM = designMat - matrix(means.dm[, i], nSamples, nc, byrow = TRUE);
+      centeredDM = designMat; # Do not center the design mat.
+      #dmVar = colSds(centeredDM);
+      dmVar.w = apply(centeredDM, 2, .weightedVar, weights = w1);
+      #keepDM = dmVar > 0 & dmVar.w > 0;
+      keepDM = dmVar.w > minDesignDeviation^2;
+      keepDM[1] = TRUE; # For the intercept
+      centeredDM.keep = centeredDM[, keepDM, drop = FALSE];
+      xtx = t(centeredDM.keep) %*% (centeredDM.keep * w1);
+      xtxInv = try(solve(xtx), silent = TRUE);
+      oldWeights = w1;
+    }
+
+    if (!inherits(xtxInv, "try-error"))
+    {
+      # The following is really (xtxInv %*% xy1), where xy1 = t(centeredDM) %*% (y[,i]*weights[,i])
+      beta.OLS[keepDM, i] = colSums(xtxInv * colSums(centeredDM.keep * y1 * w1));
+      betaValid[!keepDM, i] = FALSE;
+      y.pred = centeredDM.keep %*% beta.OLS[keepDM, i, drop = FALSE];
+      #if (weightType=="apriori")
+      #{
+        # Standard calculation of sigma^2 in weighted refression
+        sigma.OLS[i] = sum((w1>0) * (y1 - y.pred)^2)/(sum(w1>0)-nc-1);
+      #} else {
+      #  xtxw2 =  t(centeredDM.keep) %*% (centeredDM.keep *w1^2);
+      #  sigma.OLS[i] = sum( w1* (y1-y.pred)^2) / (V1[i] - V2[i]/V1[i] - sum(xtxw2 * xtxInv));
+      #}
+    } else {
+      regressionValid[i] = FALSE;
+      betaValid[, i] = FALSE;
+    }
+    if (i%%garbageCollectInterval ==0) gc();
+    if (verbose > 1 && i%%pindStep==0) pind = updateProgInd(i/N, pind);
+  }
+  if (verbose > 1) {pind = updateProgInd(i/N, pind); printFlush()}
+
+  on.exit(NULL)
+
+  if (any(!regressionValid))
+     warning(immediate. = TRUE,
+             "linearModelCoefficients: initial regression failed in ", sum(!regressionValid), " variables.");
+
+  if (all(!regressionValid))
+     stop("Initial regression model failed for all columns in 'data'.\n",
+          "Last model returned the following error:\n\n",
+          xtx,
+          "\n\nPlease check that the model is correctly specified.");
+
+  # beta.OLS has columns corresponding to variables in responses, and rows corresponding to columns in x.
+
+  # Extend results to all variables.
+
+  beta.all = matrix(NA, nc, N.original);
+  beta.all[, keepY] = beta.OLS;
+  dimnames(beta.all) = list(colnames(designMat), dimnamesY[[2]]);
+
+  sigma.all = rep(NA, N.original);
+  sigma.all[keepY] = sigma.OLS;
+  
+
+  betaValid.all = matrix(FALSE, nc, N.original);
+  betaValid.all[, keepY] = betaValid;
+  dimnames(betaValid.all) = dimnames(beta.all);
+
+
+  list(coefficients = beta.all,
+       sigmaSq = sigma.all,
+       # Weights used in the model
+       weights = if (getWeights) weights else NULL,
+
+       # indices of valid fits
+       dataColumnValid = keepY,
+       dataColumnWithZeroVariance = varYZero,
+       coefficientValid = betaValid.all);
+}
 
 #===================================================================================================
 #
@@ -452,11 +810,11 @@ empiricalBayesLM = function(
 # u^2 = 1-sqrt(w)
 # referenceU = sqrt(1-sqrt(referenceW))
 
-bicovWeights = function(x, pearsonFallback = TRUE, maxPOutliers = 1,
+bicovWeightFactors = function(x, pearsonFallback = TRUE, maxPOutliers = 1,
                         outlierReferenceWeight = 0.5625,
-                        defaultWeight = 0)
+                        defaultFactor = NA)
 {
-  referenceU = sqrt(1-sqrt(outlierReferenceWeight^2));
+  referenceU = sqrt(1-sqrt(outlierReferenceWeight));
   dimX = dim(x);
   dimnamesX = dimnames(x);
   x = as.matrix(x);
@@ -465,8 +823,8 @@ bicovWeights = function(x, pearsonFallback = TRUE, maxPOutliers = 1,
   mx = colMedians(x, na.rm = TRUE);
   mx.mat = matrix(mx, nr, nc, byrow = TRUE);
   mads = colMads(x, constant = 1, na.rm = TRUE);
-  madZero = mads==0;
-  if (any(madZero)) 
+  madZero = replaceMissing(mads==0);
+  if (any(madZero, na.rm = TRUE))
   {
      warning(immediate. = TRUE,
              "MAD is zero in some columns of 'x'.");
@@ -505,22 +863,46 @@ bicovWeights = function(x, pearsonFallback = TRUE, maxPOutliers = 1,
       u[pos1, c] = u[pos1, c] * referenceU/uq[c];
     }
   }
+  if (!is.null(defaultFactor)) u[!is.finite(u)] = defaultFactor;
+  u;
+}
+  
+
+bicovWeights = function(x, pearsonFallback = TRUE, maxPOutliers = 1,
+                        outlierReferenceWeight = 0.5625,
+                        defaultWeight = 0)
+{
+  dimX = dim(x);
+  dimnamesX = dimnames(x);
+  x = as.matrix(x);
+  nc = ncol(x);
+  nr = nrow(x);
+
+  u = bicovWeightFactors(x, pearsonFallback = pearsonFallback,
+                         maxPOutliers = maxPOutliers,
+                         outlierReferenceWeight = outlierReferenceWeight,
+                         defaultFactor = NA);
 
   a = matrix(as.numeric(abs(u)<1), nr, nc);
   weights = a * (1-u^2)^2;
-  weights[is.na(x)] = 0;
+  weights[is.na(x)] = defaultWeight;
   weights[!is.finite(weights)] = defaultWeight;
   dim(weights) = dimX;
   if (!is.null(dimX)) dimnames(weights) = dimnamesX;
   weights;
 }
 
-#=====================================================================================================
-#
-# Diagnostic plot for coefficients
-#
-#=====================================================================================================
-
-
+bicovWeightsFromFactors = function(u, defaultWeight = 0)
+{
+  dimU = dim(u);
+  u = as.matrix(u);
+  a = matrix(as.numeric(abs(u)<1), nrow(u), ncol(u));
+  weights = a * (1-u^2)^2;
+  weights[is.na(u)] = defaultWeight;
+  weights[!is.finite(weights)] = defaultWeight;
+  dim(weights) = dimU;
+  if (!is.null(dimU)) dimnames(weights) = dimnames(u);
+  weights;
+}
 
 

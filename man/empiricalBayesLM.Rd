@@ -15,6 +15,12 @@ empiricalBayesLM(
   data,
   removedCovariates,
   retainedCovariates = NULL,
+
+  initialFitFunction = NULL,
+  initialFitOptions = NULL,
+  initialFitRequiresFormula = NULL,
+  initialFit.returnWeightName = NULL,
+
   weights = NULL,
   weightType = c("apriori", "empirical"),
   stopOnSmallWeights = TRUE,
@@ -22,7 +28,17 @@ empiricalBayesLM(
   scaleMeanToSamples = NULL,
   robustPriors = FALSE,
   automaticWeights = c("none", "bicov"),
-  aw.maxPOutliers = 0.1)
+  aw.maxPOutliers = 0.1,
+  minDesignDeviation = 1e-10,
+  garbageCollectInterval = 50000,
+
+  getOLSAdjustedData = TRUE,
+  getResiduals = TRUE,
+  getFittedValues = TRUE,
+  getWeights = TRUE,
+  getEBadjustedData = TRUE,
+
+  verbose = 0, indent = 0)
 
 }
 %- maybe also 'usage' for other objects documented here.
@@ -31,18 +47,47 @@ empiricalBayesLM(
 A 2-dimensional matrix or data frame of numeric data to be adjusted. Variables (for example, genes or
 methylation profiles) should be in columns and observations (samples) should be in rows.
 }
-  \item{retainedCovariates}{
-A vector or two-dimensional object (matrix or data frame) giving the covariates whose effect on the data is to be retained. May be
-\code{NULL} if there are no such "retained" covariates.
-}
   \item{removedCovariates}{
 A vector or two-dimensional object (matrix or data frame) giving the covariates whose effect on the data is to
 be removed. At least one such covariate must be given.
 }
+  \item{retainedCovariates}{
+A vector or two-dimensional object (matrix or data frame) giving the covariates whose effect on the data is
+to be retained. May be \code{NULL} if there are no such "retained" covariates.
+}
+
+  \item{initialFitFunction}{
+Function name to perform the initial fit. The default is to use the internal implementation of linear model
+fitting. The function must take arguments \code{formula} and \code{data} or \code{x} and \code{y},
+ plus possibly additional arguments.
+The return value must be a list with component \code{coefficients}, either \code{scale} or
+\code{residuals}, and weights must be returned in component specified by \code{initialFit.returnWeightName}. 
+See \code{\link{lm}}, \code{\link{rlm}} and other standard fit functions for examples of
+suitable functions.}
+
+  \item{initialFitOptions}{
+Optional specifications of extra arguments for \code{initialFitFunction}, apart from \code{formula} and
+\code{data} or \code{x} and \code{y}. 
+Defaults are provided for functions \code{\link[MASS]{rlm}} and \code{\link[robust]{lmRob}},
+i.e., if either of these two functions are used as \code{initialFitFunction}, suitable initial fit options
+will be chosen automatically.}
+
+  \item{initialFitRequiresFormula}{
+Logical: does the initial fit function need \code{formula} and \code{data} arguments? If \code{TRUE},
+\code{initialFitFunction} will be called with arguments \code{formula} and \code{data}, otherwise with
+arguments \code{x} and \code{y}.}
+
+  \item{initialFit.returnWeightName}{
+Name of the component of the return value of \code{initialFitFunction} that contains the weights used in the
+fit. Suitable default value will be chosen automatically for \code{\link[MASS]{rlm}} and
+\code{\link[robust]{lmRob}}.
+}
   \item{weights}{
 Optional 2-dimensional matrix or data frame of the same dimensions as \code{data} giving weights for each
-entry in \code{data}.
+entry in \code{data}. These weights will be used in the initial fit and are are separate from the ones returned by
+\code{initialFitFunction} if it is specified.
 }
+
   \item{weightType}{
 One of (unique abbreviations of) \code{"apriori"} or \code{"empirical"}. Determines whether a standard
 (\code{"apriori"}) or a modified (\code{"empirical"}) weighted regression is used. The \code{"apriori"} choice is
@@ -51,6 +96,7 @@ suitable for weights that have been determined without knowledge of the actual \
 because they may be outliers. In either case, the weights should be determined in a way that is independent of 
 the covariates (both retained and removed).
 }
+
   \item{stopOnSmallWeights}{
 Logical: should presence of small \code{"apriori"} weights trigger an error? Because standard weighted regression
 assumes that all weights are non-zero (otherwise estimates of standard errors will be biased), this function
@@ -81,14 +127,42 @@ If \code{automaticWeights} above is \code{"bicov"}, this argument gets passed to
 \code{\link{bicovWeights}} and determines the maximum proportion of outliers in calculating the weights. See
 \code{\link{bicovWeights}} for more details.
 }
+
+  \item{minDesignDeviation}{
+Minimum standard deviation for columns of the design matrix to be retained. Columns with standard deviations
+below this number will be removed (effectively removing the corresponding terms from the design).
 }
+
+  \item{garbageCollectInterval}{
+Number of variables after which to call garbage collection.
+}
+
+  \item{getOLSAdjustedData}{Logical: should data adjusted by ordinary least squares or by
+\code{initialFitFunction}, if specified, be returned?} 
+
+  \item{getResiduals}{Logical: should the residuals (adjusted values without the means) be returned?}
+
+  \item{getFittedValues}{Logical: should fitted values be returned?}
+
+  \item{getWeights}{Logical: should the final weights be returned?}
+
+  \item{getEBadjustedData}{Logical: should the EB step be performed and the adjusted data returned? If this
+is \code{FALSE}, the function acts as a rather slow but still potentially useful adjustment using standard
+fit functions.}
+
+  \item{verbose}{Level of verbosity. Zero means silent, higher values result in more diagnostic messages
+being printed.}
+  \item{indent}{Indentation of diagnostic messages. Each unit adds two spaces.}
+}
+
 \details{
 This function uses Empirical Bayes-moderated (EB) linear regression to remove variation in \code{data} due to the
 variables in \code{removedCovariates} while retaining variation due to variables in \code{retainedCovariates},
 if any are given. The EB step uses simple normal priors on the regression coefficients and inverse gamma 
 priors on the
 variances. The procedure starts with multivariate ordinary linear regression of individual columns in
-\code{data} on \code{retainedCovariates} and \code{removedCovariates}. To make the coefficients comparable,
+\code{data} on \code{retainedCovariates} and \code{removedCovariates}. Alternatively, the user may specify an
+intial fit function (e.g., robust linear regression). To make the coefficients comparable,
 columns of \code{data} are scaled to (weighted if weights are given) mean 0 and variance 1.
 The resulting regression coefficients are used to
 determine the parameters of the normal prior (mean, covariance, and inverse gamma or median and biweight
@@ -111,7 +185,7 @@ conditions, samples with covariate outliers are best removed entirely before cal
 
 }
 \value{
-A list with the following components:
+A list with the following components (some of which may be missing depending on input options):
 \item{adjustedData}{A matrix of the same dimensions as the input \code{data}, giving the adjusted data. If
 input \code{data} has non-NULL \code{dimnames}, these are copied.}
 
@@ -173,8 +247,6 @@ regression coefficients may be returned as missing values or as zeroes.}
 \author{
 Peter Langfelder
 }
-
-%% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
 \code{\link{bicovWeights}} for suitable weights that make the adjustment robust to outliers.

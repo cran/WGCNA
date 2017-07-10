@@ -4,14 +4,14 @@
 #
 #======================================================================================================
 
-# CAUTION: this function assumes normalized x and no non-missing values.
+# CAUTION: this function assumes normalized x and no missing values.
 
 .alignedFirstPC = function(x, power = 6, verbose = 2, indent = 0)
 {
   x = as.matrix(x);
   #printFlush(paste(".alignedFirstPC: dim(x) = ", paste(dim(x), collapse = ", ")));
   pc = try( svd(x, nu = 1, nv = 0)$u[,1] , silent = TRUE);
-  if (class(pc)=='try-error')
+  if (inherits(pc, 'try-error'))
   {
     #file = "alignedFirstPC-svdError-inputData-x.RData";
     #save(x, file = file);
@@ -62,6 +62,7 @@ branchEigengeneDissim = function(expr, branch1, branch2,
   if (signed)  1-cor0 else 1-abs(cor0);
 }
 
+
 mtd.branchEigengeneDissim = function(multiExpr, branch1, branch2, 
                             corFnc = cor, corOptions = list(use = 'p'),
                             consensusQuantile = 0, signed = TRUE, reproduceQuantileError = FALSE, ...)
@@ -69,11 +70,48 @@ mtd.branchEigengeneDissim = function(multiExpr, branch1, branch2,
   setSplits.list = mtd.apply(multiExpr, branchEigengeneDissim, 
                         branch1 = branch1, branch2 = branch2,
                         corFnc = corFnc, corOptions = corOptions,
-                        signed = signed);
-  setSplits = unlist(multiData2list(setSplits.list));
+                        signed = signed,
+                        returnList = TRUE);
+  setSplits = unlist(setSplits.list);
   quantile(setSplits, prob = if (reproduceQuantileError) consensusQuantile else 1-consensusQuantile, 
            na.rm = TRUE, names = FALSE);
 }
+
+branchEigengeneSimilarity = function(expr, branch1, branch2,
+                            networkOptions, 
+                            returnDissim = TRUE,
+                            ...)
+{
+  corFnc = match.fun(networkOptions$corFnc);
+  cor0 = as.numeric(do.call(corFnc, 
+       c(list(x = .alignedFirstPC(expr[, branch1], verbose = 0),
+              y = .alignedFirstPC(expr[, branch2], verbose = 0)),
+         networkOptions$corOptions)));
+  if (length(cor0) != 1) stop ("Internal error in branchEigengeneDissim: cor has length ", length(cor0));
+  if (grepl("signed", networkOptions$networkType))  cor0 = abs(cor0);
+  if (returnDissim) 1-cor0 else cor0;
+}
+
+
+hierarchicalBranchEigengeneDissim = function(
+    multiExpr, 
+    branch1, branch2,
+    networkOptions,
+    consensusTree, ...)
+{
+   setSplits.list = mtd.mapply(branchEigengeneSimilarity,
+                        expr = multiExpr, networkOptions = networkOptions,
+                        MoreArgs = list(
+                           branch1 = branch1, branch2 = branch2,
+                           returnDissim = FALSE), returnList = TRUE)
+
+   1 - simpleHierarchicalConsensusCalculation(individualData = setSplits.list,
+                  consensusTree = consensusTree)
+}
+   
+                       
+
+
 
 
 #==========================================================================================================
@@ -390,9 +428,15 @@ branchSplit.dissim = function(dissimMat, branch1, branch2, upperP,
 # Basic idea: if two branches are separate, their membership should be predictable from the alternate
 # labels. 
 
-# For each module in the alternate labeling: assign it to the branch in which |module ^ branch|/|branch| is
-# bigger; then calculate |module ^ branch|/|branch| for the other branch as a classification error. Add all
-# classification errors for a single alternate labeling and average them over labelings. 
+# This function takes the l-th stability labels, finds ones that overlap with both branches, and for each
+# label calculates the contribution to similarity as
+#      r1 = sum(lab1==cl)/n1;
+#      r2 = sum(lab2==cl)/n2;
+#      sim = sim + min(r1, r2)
+
+# This will penalize similarity of a small and large module if the large module is a composite of several
+# branches, only few of which overlap with the small module. 
+
 
 # This method is invariant under splitting of alternate module as long as the branch to which the modules are
 # assigned does not change. So in this sense the splitting settings in the resampling study shouldn't
@@ -409,6 +453,7 @@ branchSplitFromStabilityLabels = function(
   n2 = length(branch2);
 
   sim = 0;
+  #browser()
   for (l in 1:nLabels)
   {
     lab1 = stabilityLabels[branch1, l];
@@ -423,12 +468,107 @@ branchSplitFromStabilityLabels = function(
       sim = sim + min(r1, r2)
     }
   }
+  #printFlush(spaste("branchSplitFromStabilityLabels: returning ", 1-sim/nLabels))
 
   1-sim/nLabels
 }
 
+# Resurrect the old idea of prediction
+# accuracy. For each overlap module, count the genes in the branch with which the module has smaller overlap
+# and add it to the score for that branch. The final counts divided by number of genes on branch give a
+# "indistinctness" score; take the larger of the the two indistinctness scores and call this the similarity.
+
+# This method is still more or less invariant under splitting of the stability modules, as long as the
+# splitting is random with respect to the two branches. 
+
+## Note that one could in principle run a chisq.test on the table of labels corresponding to branch1 and
+## branch2 vs. stabilityLabels restricted to branch1 and branch2, 
+
+# The problem here is that small changes in stability labels could make a big difference in final
+# (dis)similarity when one module is large and the other small. Assume a few of the stability labels cover
+# small and a part of the large module; other stability labels cover the rest of the large module. If the
+# common stability labels cover a bit more of large than small module, similarity will be high; if they
+# switch more to the smaller module, similarity could be near zero. 
+
+# In summary, this function may be used for experiments but should not be used in production setting.
+ 
+branchSplitFromStabilityLabels.prediction = function(
+            branch1, branch2,
+            stabilityLabels, ignoreLabels = 0, ...)
+{
+  nLabels = ncol(stabilityLabels);
+  n1 = length(branch1);
+  n2 = length(branch2);
+
+  s1 = s2 = 0;
+  for (l in 1:nLabels)
+  {
+    lab1 = stabilityLabels[branch1, l];
+    lab2 = stabilityLabels[branch2, l];
+    commonLevels = intersect(lab1, lab2);
+    commonLevels = setdiff(commonLevels, ignoreLabels);
+    if (length(commonLevels) > 0) for (cl in commonLevels)
+    {
+      #printFlush(spaste("Common level ", cl, " in clustering ", l))
+      o1 = sum(lab1==cl);
+      o2 = sum(lab2==cl);
+      if (o1 > o2) {
+         s2 = s2 + o2;
+      } else
+         s1 = s1 + o1;
+    }
+  }
+  indist1 = s1/(n1 * nLabels);
+  indist2 = s2/(n2 * nLabels);
+  sim = min(1, 2*max(indist1, indist2));
+  dissim = 1-sim
+  #printFlush(spaste("branchSplitFromStabilityLabels.prediction: returning ", dissim))
+
+  dissim
+}
 
  
-  
-  
+# Third idea: for each branch, for each gene sum the fraction of the stability label (restricted to the two
+# branches) that belongs to the branch. If this is relatively low, around 0.5, it means most elements are in
+# non-discriminative stability labels.
+
+branchSplitFromStabilityLabels.individualFraction= function(
+            branch1, branch2,
+            stabilityLabels, ignoreLabels = 0, ...)
+{
+  nLabels = ncol(stabilityLabels);
+  n1 = length(branch1);
+  n2 = length(branch2);
+
+  s1 = s2 = 0;
+  for (l in 1:nLabels)
+  {
+    lab1 = stabilityLabels[branch1, l];
+    lab2 = stabilityLabels[branch2, l];
+    commonLevels = intersect(lab1, lab2);
+    commonLevels = setdiff(commonLevels, ignoreLabels);
+    s1.all = n1; s2.all = n2;
+    for (cl in commonLevels)
+    {
+      #printFlush(spaste("Common level ", cl, " in clustering ", l))
+      o1 = sum(lab1==cl);
+      o2 = sum(lab2==cl);
+      o12 = o1 + o2;
+      coef1 = max(0.5, o1/o12);
+      coef2 = max(0.5, o2/o12);
+      s2 = s2 + o2*coef2;
+      s1 = s1 + o1*coef1;
+      s1.all = s1.all - o1;
+      s2.all = s2.all - o2;
+    }
+    s1 = s1 + s1.all;
+    s2 = s2 + s2.all;
+  }
+  distinctness1 = 2*s1/(n1 * nLabels) -1
+  distinctenss2 = 2*s2/(n2 * nLabels)-1;
+  dissim = min(distinctness1, distinctenss2)
+  printFlush(spaste("branchSplitFromStabilityLabels.individualFraction: returning ", dissim))
+
+  dissim
+}
 

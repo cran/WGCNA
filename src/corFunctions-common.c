@@ -41,7 +41,7 @@ double median(double * x, size_t n, int copy, int * err)
   double * xx, res;
   if (copy)
   {
-    if ( (xx=malloc(n * sizeof(double)))==NULL ) 
+    if ( (xx=(double *) malloc(n * sizeof(double)))==NULL ) 
     {
       Rprintf("Memory allocation error in median(). Could not allocate %d kB.\n", 
               (int) (n * sizeof(double) / 1024 + 1));
@@ -100,7 +100,7 @@ double quantile(double * x, size_t n, double q, int copy, int * err)
 
   if (copy)
   {
-    if ( (xx=malloc(n * sizeof(double)))==NULL ) 
+    if ( (xx=(double *) malloc(n * sizeof(double)))==NULL ) 
     {
       Rprintf("Memory allocation error in quantile(). Could not allocate %d kB.\n", 
               (int) (n * sizeof(double) / 1024 + 1));
@@ -139,6 +139,40 @@ double quantile(double * x, size_t n, double q, int copy, int * err)
   return res;
 
 }
+
+
+double quantile_noCopy(double * x, size_t n, double q)
+{
+  double res;
+  // Put all NA's at the end.
+  size_t bound = n;
+  for (size_t i=n; i>0; ) 
+  {
+    i--;
+    if (ISNAN(x[i]))
+    {
+       bound--;
+       x[i] = x[bound];
+       x[bound] = NA_REAL;
+    }
+  }
+
+  // Rprintf("Quantile: q: %f, n: %d, bound: %d\n", q, n, bound);
+  // Any non-NA's left?
+
+  if (bound==0)
+    res = NA_REAL;
+  else
+  // yes, return the appropriate pivot. 
+    res = pivot(x, bound, ( 1.0 * (bound-1))*q);
+
+  return res;
+
+}
+
+
+
+
 
 
 

@@ -24,6 +24,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #define minSizeForThreading	100
 
+#include <R.h>
+#include <Rinternals.h>
+
+
 
 void cor1Fast(double * x, int * nrow, int * ncol, double * quick, 
           int * cosine,
@@ -55,4 +59,31 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
            double * result, int *nNA, int * err,
            int * nThreads,
            int * verbose, int * indent);
+
+SEXP cor1Fast_call(SEXP x_s, SEXP quick_s, SEXP cosine_s,
+                   SEXP nNA_s, SEXP err_s,
+                   SEXP nThreads_s, SEXP verbose_s, SEXP indent_s);
+
+SEXP corFast_call(SEXP x_s, SEXP y_s,
+                 SEXP quick_s,
+                 SEXP cosineX_s, SEXP cosineY_s,
+                 SEXP nNA_s, SEXP err_s,
+                 SEXP nThreads_s, SEXP verbose_s, SEXP indent_s);
+
+SEXP bicor1_call(SEXP x_s,
+                 SEXP maxPOutliers_s, SEXP quick_s,
+                 SEXP fallback_s, SEXP cosine_s,
+                 SEXP nNA_s, SEXP err_s, SEXP warn_s,
+                 SEXP nThreads_s, SEXP verbose_s, SEXP indent_s);
+
+SEXP bicor2_call(SEXP x_s, SEXP y_s,
+                 SEXP robustX_s, SEXP robustY_s,
+                 SEXP maxPOutliers_s, SEXP quick_s,
+                 SEXP fallback_s,
+                 SEXP cosineX_s, SEXP cosineY_s,
+                 SEXP nNA_s, SEXP err_s,
+                 SEXP warnX_s, SEXP warnY_s,
+                 SEXP nThreads_s, SEXP verbose_s, SEXP indent_s);
+
+
 #endif

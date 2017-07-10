@@ -54,6 +54,7 @@ Some notes on handling of zero MAD:
 
 */
 
+
 #include "corFunctions.h"
 #include <stdio.h>
 //#include <stdlib.h>
@@ -631,81 +632,6 @@ int useNThreads(size_t n, int nThreadsRequested)
 //===================================================================================================
 
 
-// Re-write cor1Fast as a function that can be called using .Call
-// Since I don't know how to create and fill lists in C code, I will for now return the nNA and err results
-// via supplied arguments. Not ideal but will do.
-
-SEXP cor1Fast_call(SEXP x_s, SEXP quick_s, SEXP cosine_s,
-                       SEXP nNA_s, SEXP err_s,
-                       SEXP nThreads_s, SEXP verbose_s, SEXP indent_s)
-{
-  SEXP dim, cor_s; 
-  // SEXP out, nNA_s, err_s;
-
-  int nr, nc;
-  int *cosine, *err, *nThreads, *verbose, *indent;
-  int *nNA;
-
-  double *x, *corMat, *quick;
-
-  /* Get dimensions of 'x'. */
-  PROTECT(dim = getAttrib(x_s, R_DimSymbol));
-  nr = INTEGER(dim)[0];
-  nc = INTEGER(dim)[1];
-  // Rprintf("Matrix dimensions: %d %d\n", nr, nc);
-
-  x = REAL(x_s);
-
-  // Rprintf("First three elements of x: %f %f %f\n", x[0], x[1], x[2]);
-
-  quick = REAL(quick_s);
-  cosine = INTEGER(cosine_s);
-  nThreads = INTEGER(nThreads_s);
-  verbose = INTEGER(verbose_s);
-  indent = INTEGER(indent_s);
-
-  // Allocate space for the result
-  PROTECT(cor_s = allocMatrix(REALSXP, nc, nc));
-  // PROTECT(nNA_s = allocVector(REALSXP, 1));
-  // PROTECT(err_s = allocVector(REALSXP, 1));
-
-  corMat = REAL(cor_s);
-  nNA = INTEGER(nNA_s);
-  err = INTEGER(err_s);
-
-  // Rprintf("Calling cor1Fast...\n");
-  cor1Fast(x, &nr, &nc, quick, cosine, 
-           corMat, nNA, err,
-           nThreads, verbose, indent);
-
-  // Rprintf("Done...\n");
-  UNPROTECT(2);
-  return cor_s;
-} 
-
-// test function
-
-SEXP testFnc(SEXP a, SEXP b)
-{
-  SEXP ans;
-
-  PROTECT(ans=allocVector(REALSXP, 1));
-
-  double *aa, *bb, *sum;
-
-  aa = REAL(a);
-  bb = REAL(b);
-  sum = REAL(ans);
-
-  *sum = *aa + *bb;
-  *aa = *aa - *bb;
-
-  UNPROTECT(1);
-  return(ans);
-
-}
-
-
 // C-level correlation calculation
 
 void cor1Fast(double * x, int * nrow, int * ncol, double * quick, 
@@ -734,7 +660,7 @@ void cor1Fast(double * x, int * nrow, int * ncol, double * quick,
   // This matrix will hold preprocessed entries that can be simply multiplied together to get the
   // numerator
 
-  if ( (multMat = malloc(nc*nr * sizeof(double)))==NULL )
+  if ( (multMat = (double *) malloc(nc*nr * sizeof(double)))==NULL )
   {
     *err = 1;
     Rprintf("cor1: memory allocation error. If possible, please decrease block size.\n");
@@ -743,7 +669,7 @@ void cor1Fast(double * x, int * nrow, int * ncol, double * quick,
 
   // Number of NA entries in each column
 
-  if ( (nNAentries = malloc(nc * sizeof(size_t)))==NULL )
+  if ( (nNAentries = (size_t *) malloc(nc * sizeof(size_t)))==NULL )
   {
     free(multMat);
     *err = 1;
@@ -753,7 +679,7 @@ void cor1Fast(double * x, int * nrow, int * ncol, double * quick,
 
   // Flag indicating whether the mean of each column is NA
 
-  if ( (NAmean = malloc(nc * sizeof(int)))==NULL )
+  if ( (NAmean = (int *) malloc(nc * sizeof(int)))==NULL )
   {
     free(nNAentries); free(multMat); 
     *err = 1;
@@ -776,7 +702,7 @@ void cor1Fast(double * x, int * nrow, int * ncol, double * quick,
 
   // for (int t=0; t < nt; t++)
   // {
-     // if ( (aux[t] = malloc(6*nr * sizeof(double)))==NULL)
+     // if ( (aux[t] = (double *) malloc(6*nr * sizeof(double)))==NULL)
      // {
        // *err = 1;
        // Rprintf("cor1: memory allocation error. The needed block is very small... suspicious.\n");
@@ -971,7 +897,7 @@ void bicor1Fast(double * x, int * nrow, int * ncol, double * maxPOutliers,
   size_t * nNAentries;
   int  *NAmed;
 
-  if ( (multMat = malloc(nc*nr * sizeof(double)))==NULL )
+  if ( (multMat = (double *) malloc(nc*nr * sizeof(double)))==NULL )
   {
     *err = 1;
     Rprintf("cor1: memory allocation error. If possible, please decrease block size.\n");
@@ -980,7 +906,7 @@ void bicor1Fast(double * x, int * nrow, int * ncol, double * maxPOutliers,
 
   // Number of NA entries in each column
 
-  if ( (nNAentries = malloc(nc * sizeof(size_t)))==NULL )
+  if ( (nNAentries = (size_t *) malloc(nc * sizeof(size_t)))==NULL )
   {
     free(multMat);
     *err = 1;
@@ -990,7 +916,7 @@ void bicor1Fast(double * x, int * nrow, int * ncol, double * maxPOutliers,
 
   // Flag indicating whether the mean of each column is NA
 
-  if ( (NAmed = malloc(nc * sizeof(int)))==NULL )
+  if ( (NAmed = (int *) malloc(nc * sizeof(int)))==NULL )
   {
     free(nNAentries); free(multMat); 
     *err = 1;
@@ -1013,7 +939,7 @@ void bicor1Fast(double * x, int * nrow, int * ncol, double * maxPOutliers,
 
   for (int t=0; t < nt; t++)
   {
-     if ( (aux[t] = malloc(6*nr * sizeof(double)))==NULL)
+     if ( (aux[t] = (double *) malloc(6*nr * sizeof(double)))==NULL)
      {
        *err = 1;
        Rprintf("cor1: memory allocation error. The needed block is very small... suspicious.\n");
@@ -1451,7 +1377,7 @@ void * threadSlowCalcBicor2(void * par)
                   (*nNA)++;
                } else {
                   result[i + j*ncx] = (double) sumxy;
-                  // Rprintf("Recalculated row %d and column %d, column size %d in thread %d: result = %7.4f\n", 
+                  // Rprintf("Recalculated row %d and column %d, column size %d in thread %d: result = %12.6f\n", 
                   //         i, j, nr, td->x->x->id,  result[i + j*ncx]);
                }
             } else {
@@ -1499,14 +1425,36 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
   size_t * nNAentriesX, * nNAentriesY;
   int *NAmedX, *NAmedY;
 
-  if ( (multMatX = malloc(ncx*nr * sizeof(double)))==NULL )
+
+  // Rprintf("nr: %d, ncx: %d, ncy: %d\n", nr, ncx, ncy);
+  // Rprintf("robustX: %d, robustY: %d, cosineX: %d, cosineY: %d\n", *robustX, *robustY, *cosineX, *cosineY);
+  // Rprintf("quick: %12.6f, maxPOutliers: %12.6f\n", *quick, *maxPOutliers);
+
+  // Rprintf("Last few entries of x:\n");
+  // for (int i = nr-2; i<nr; i++)
+  // {
+  //   for (int j = ncx-3; j<ncx; j++)
+  //     Rprintf("%12.6f ", x[j*nr + i]);
+  //   Rprintf("\n");
+  // }
+
+  // Rprintf("Last few entries of y:\n");
+  // for (int i = nr-2; i<nr; i++)
+  // {
+  //   for (int j = ncy-3; j<ncy; j++)
+  //     Rprintf("%12.6f ", y[j*nr + i]);
+  //   Rprintf("\n");
+  // }
+
+  if ( (multMatX = (double *) malloc(ncx*nr * sizeof(double)))==NULL )
+  if ( (multMatX = (double *) malloc(ncx*nr * sizeof(double)))==NULL )
   {
     *err = 1;
     Rprintf("bicor: memory allocation error. If possible, please decrease block size.\n");
     return;
   }
 
-  if ( (multMatY = malloc(ncy*nr * sizeof(double)))==NULL )
+  if ( (multMatY = (double *) malloc(ncy*nr * sizeof(double)))==NULL )
   {
     free(multMatX);
     *err = 1;
@@ -1514,7 +1462,7 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
     return;
   }
 
-  if ( (nNAentriesX = malloc(ncx * sizeof(size_t)))==NULL )
+  if ( (nNAentriesX = (size_t *) malloc(ncx * sizeof(size_t)))==NULL )
   {
     free(multMatY); free(multMatX);
     *err = 1;
@@ -1522,7 +1470,7 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
     return;
   }
 
-  if ( (nNAentriesY = malloc(ncy * sizeof(size_t)))==NULL )
+  if ( (nNAentriesY = (size_t *) malloc(ncy * sizeof(size_t)))==NULL )
   {
     free(nNAentriesX); free(multMatY); free(multMatX);
     *err = 1;
@@ -1530,7 +1478,7 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
     return;
   }
 
-  if ( (NAmedX = malloc(ncx * sizeof(int)))==NULL )
+  if ( (NAmedX = (int *) malloc(ncx * sizeof(int)))==NULL )
   {
     free(nNAentriesY); free(nNAentriesX); free(multMatY); free(multMatX);
     *err = 1;
@@ -1538,7 +1486,7 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
     return;
   }
 
-  if ( (NAmedY = malloc(ncy * sizeof(int)))==NULL )
+  if ( (NAmedY = (int *) malloc(ncy * sizeof(int)))==NULL )
   {
     free(NAmedX); free(nNAentriesY); free(nNAentriesX); free(multMatY); free(multMatX);
     *err = 1;
@@ -1561,7 +1509,7 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
 
   for (int t=0; t < nt; t++)
   {
-     if ( (aux[t] = malloc(6*nr * sizeof(double)))==NULL)
+     if ( (aux[t] = (double *) malloc(6*nr * sizeof(double)))==NULL)
      {
        *err = 1;
        Rprintf("cor1: memory allocation error. The needed block is very small... suspicious.\n");
@@ -1754,20 +1702,6 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
     }
   }
 
-  // Rprintf("multMatX:\n");
-  // for (int i=0; i<nr; i++)
-  // {
-  //   for (int j=0; j<ncx; j++) Rprintf(" %7.4f ", multMatX[i + nr*j]);
-  //   Rprintf("\n");
- //  }
- 
-  // Rprintf("multMatY:\n");
- //  for (int i=0; i<nr; i++)
- //  {
-   //  for (int j=0; j<ncy; j++) Rprintf(" %7.4f ", multMatY[i + nr*j]);
-   //  Rprintf("\n");
- //  }
-
    // Rprintf("nNAentriesX:");
    // for (int i=0; i<ncx; i++) Rprintf(" %d,", nNAentriesX[i]);
    // Rprintf("\n");
@@ -1778,16 +1712,39 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
 
   // The main calculation: matrix multiplication
   
-  double alpha = 1.0, beta = 1.0;
+  double alpha = 1.0, beta = 0.0;
   F77_NAME(dgemm)("T", "N", ncolx, ncoly, nrow, & alpha, multMatX, nrow, multMatY, nrow, & beta, result, ncolx);
 
   // Rprintf("matrix multiplication result:\n");
   // for (int i=0; i<ncx; i++)
   // {
-  //   for (int j=0; j<ncy; j++) Rprintf(" %7.4f ", result[i + ncx*j]);
+  //   for (int j=0; j<ncy; j++) Rprintf(" %12.6f ", result[i + ncx*j]);
   //   Rprintf("\n");
  //  }
+/*
+  Rprintf("Last few entries of result just after multiplication:\n");
+  for (int i = 0; i<ncx; i++)
+  {
+    for (int j = 0; j<ncy; j++)
+      Rprintf("%12.6f ", result[j*ncx + i]);
+    Rprintf("\n");
+  }
 
+  Rprintf("multMatX:\n");
+  for (int i=0; i<nr; i++)
+  {
+    for (int j=0; j<ncx; j++) Rprintf(" %12.6f ", multMatX[i + nr*j]);
+    Rprintf("\n");
+  }
+ 
+  Rprintf("multMatY:\n");
+  for (int i=0; i<nr; i++)
+  {
+    for (int j=0; j<ncy; j++) Rprintf(" %12.6f ", multMatY[i + nr*j]);
+    Rprintf("\n");
+  }
+
+*/
 
   // Remedial calculations
 
@@ -1855,6 +1812,15 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
      if (status[t]==0) pthread_join_c(thr2[t], NULL, thrdInfoX[t].threaded);
 
   *nNA = (int) nNA_ext;
+
+  
+  // Rprintf("Last few entries of result:\n");
+  // for (int i = ncx-4; i<ncx; i++)
+  // {
+  //  for (int j = ncy-4; j<ncy; j++)
+  //    Rprintf("%12.6f ", result[j*ncx + i]);
+  //  Rprintf("\n");
+  //}
 
   // Clean up
 
@@ -1981,13 +1947,6 @@ void * threadSlowCalcCor2(void * par)
 }
 
 
-
-//===================================================================================================
-//
-// Two-variable Pearson correlation. 
-//
-//===================================================================================================
-
 void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
            double * quick, 
            int * cosineX, int * cosineY, 
@@ -2008,14 +1967,14 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
   size_t * nNAentriesX, * nNAentriesY;
   int *NAmeanX, *NAmeanY;
 
-  if ( (multMatX = malloc(ncx*nr * sizeof(double)))==NULL )
+  if ( (multMatX = (double *) malloc(ncx*nr * sizeof(double)))==NULL )
   {
     *err = 1;
     Rprintf("cor(x,y): memory allocation error. If possible, please decrease block size.\n");
     return;
   }
 
-  if ( (multMatY = malloc(ncy*nr * sizeof(double)))==NULL )
+  if ( (multMatY = (double *) malloc(ncy*nr * sizeof(double)))==NULL )
   {
     free(multMatX);
     *err = 1;
@@ -2023,7 +1982,7 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
     return;
   }
 
-  if ( (nNAentriesX = malloc(ncx * sizeof(size_t)))==NULL )
+  if ( (nNAentriesX = (size_t *) malloc(ncx * sizeof(size_t)))==NULL )
   {
     free(multMatY); free(multMatX);
     *err = 1;
@@ -2031,7 +1990,7 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
     return;
   }
 
-  if ( (nNAentriesY = malloc(ncy * sizeof(size_t)))==NULL )
+  if ( (nNAentriesY = (size_t *) malloc(ncy * sizeof(size_t)))==NULL )
   {
     free(nNAentriesX); free(multMatY); free(multMatX);
     *err = 1;
@@ -2039,7 +1998,7 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
     return;
   }
 
-  if ( (NAmeanX = malloc(ncx * sizeof(int)))==NULL )
+  if ( (NAmeanX = (int *) malloc(ncx * sizeof(int)))==NULL )
   {
     free(nNAentriesY); free(nNAentriesX); free(multMatY); free(multMatX);
     *err = 1;
@@ -2047,7 +2006,7 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
     return;
   }
 
-  if ( (NAmeanY = malloc(ncy * sizeof(int)))==NULL )
+  if ( (NAmeanY = (int *) malloc(ncy * sizeof(int)))==NULL )
   {
     free(NAmeanX); free(nNAentriesY); free(nNAentriesX); free(multMatY); free(multMatX);
     *err = 1;
@@ -2158,14 +2117,14 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
   //Rprintf("multMatX:\n");
   //for (int i=0; i<nr; i++)
   //{
-    //for (int j=0; j<ncx; j++) Rprintf(" %7.4f ", multMatX[i + nr*j]);
+    //for (int j=0; j<ncx; j++) Rprintf(" %12.6f ", multMatX[i + nr*j]);
     //Rprintf("\n");
   //}
  
   //Rprintf("multMatY:\n");
   //for (int i=0; i<nr; i++)
   //{
-    //for (int j=0; j<ncy; j++) Rprintf(" %7.4f ", multMatY[i + nr*j]);
+    //for (int j=0; j<ncy; j++) Rprintf(" %12.6f ", multMatY[i + nr*j]);
     //Rprintf("\n");
   //}
 
@@ -2179,7 +2138,7 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
 
   // The main calculation: matrix multiplication
   
-  double alpha = 1.0, beta = 1.0;
+  double alpha = 1.0, beta = 0.0;
   F77_NAME(dgemm)("T", "N", ncolx, ncoly, nrow, & alpha, multMatX, nrow, multMatY, nrow, & beta, result, ncolx);
 
   // Remedial calculations
@@ -2258,4 +2217,245 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
   free(multMatY);
   free(multMatX);
 }
+
+//===================================================================================================
+//
+// Two-variable Pearson correlation. 
+//
+//===================================================================================================
+
+SEXP bicor2_call(SEXP x_s, SEXP y_s,
+                 SEXP robustX_s, SEXP robustY_s,
+                 SEXP maxPOutliers_s, SEXP quick_s, 
+                 SEXP fallback_s, 
+                 SEXP cosineX_s, SEXP cosineY_s,
+                 SEXP nNA_s, SEXP err_s, 
+                 SEXP warnX_s, SEXP warnY_s,
+                 SEXP nThreads_s, SEXP verbose_s, SEXP indent_s)
+{
+  SEXP dimX, dimY, cor_s; 
+
+  int nr, ncx, ncy;
+  int *cosineX, *cosineY;
+  int *err, *nThreads, *verbose, *indent, *fallback;
+  int *warnX, *warnY, *robustX, *robustY;
+  int *nNA;
+
+  double *x, *y, *corMat, *quick, *maxPOutliers;
+
+  /* Get dimensions of 'x'. */
+  PROTECT(dimX = getAttrib(x_s, R_DimSymbol));
+  nr = INTEGER(dimX)[0];
+  ncx = INTEGER(dimX)[1];
+  // Rprintf("Matrix x dimensions: %d %d\n", nr, ncx);
+  /* Get dimensions of 'y'. */
+  PROTECT(dimY = getAttrib(y_s, R_DimSymbol));
+  ncy = INTEGER(dimY)[1];
+  // Rprintf("Matrix y dimensions: %d %d\n", INTEGER(dimY)[0], ncy);
+
+  x = REAL(x_s);
+  y = REAL(y_s);
+
+  // Rprintf("First three elements of x: %f %f %f\n", x[0], x[1], x[2]);
+
+  quick = REAL(quick_s);
+  maxPOutliers = REAL(maxPOutliers_s);
+  cosineX = INTEGER(cosineX_s);
+  cosineY = INTEGER(cosineY_s);
+  robustX = INTEGER(robustX_s);
+  robustY = INTEGER(robustY_s);
+  nThreads = INTEGER(nThreads_s);
+  verbose = INTEGER(verbose_s);
+  indent = INTEGER(indent_s);
+  fallback = INTEGER(fallback_s);
+
+  // Allocate space for the result
+  PROTECT(cor_s = allocMatrix(REALSXP, ncx, ncy));
+  // PROTECT(nNA_s = allocVector(REALSXP, 1));
+  // PROTECT(err_s = allocVector(REALSXP, 1));
+
+  corMat = REAL(cor_s);
+  nNA = INTEGER(nNA_s);
+  err = INTEGER(err_s);
+  warnX = INTEGER(warnX_s);
+  warnY = INTEGER(warnY_s);
+
+  // Rprintf("Calling cor1Fast...\n");
+  bicorFast(x, &nr, &ncx, y, &ncy,
+           robustX, robustY,
+           maxPOutliers, quick, fallback, 
+           cosineX, cosineY, 
+           corMat, nNA, err,
+           warnX, warnY, 
+           nThreads, verbose, indent);
+
+  // Rprintf("Done...\n");
+  UNPROTECT(3);
+  return cor_s;
+} 
+
+SEXP corFast_call(SEXP x_s, SEXP y_s,
+                 SEXP quick_s, 
+                 SEXP cosineX_s, SEXP cosineY_s,
+                 SEXP nNA_s, SEXP err_s, 
+                 SEXP nThreads_s, SEXP verbose_s, SEXP indent_s)
+{
+  SEXP dimX, dimY, cor_s; 
+
+  int nr, ncx, ncy;
+  int *cosineX, *cosineY;
+  int *err, *nThreads, *verbose, *indent;
+  int *nNA;
+
+  double *x, *y, *corMat, *quick;
+
+  /* Get dimensions of 'x'. */
+  PROTECT(dimX = getAttrib(x_s, R_DimSymbol));
+  nr = INTEGER(dimX)[0];
+  ncx = INTEGER(dimX)[1];
+  // Rprintf("Matrix dimensions: %d %d\n", nr, nc);
+  /* Get dimensions of 'y'. */
+  PROTECT(dimY = getAttrib(y_s, R_DimSymbol));
+  ncy = INTEGER(dimY)[1];
+
+  x = REAL(x_s);
+  y = REAL(y_s);
+
+  // Rprintf("First three elements of x: %f %f %f\n", x[0], x[1], x[2]);
+
+  quick = REAL(quick_s);
+  cosineX = INTEGER(cosineX_s);
+  cosineY = INTEGER(cosineY_s);
+  nThreads = INTEGER(nThreads_s);
+  verbose = INTEGER(verbose_s);
+  indent = INTEGER(indent_s);
+
+  // Allocate space for the result
+  PROTECT(cor_s = allocMatrix(REALSXP, ncx, ncy));
+  // PROTECT(nNA_s = allocVector(REALSXP, 1));
+  // PROTECT(err_s = allocVector(REALSXP, 1));
+
+  corMat = REAL(cor_s);
+  nNA = INTEGER(nNA_s);
+  err = INTEGER(err_s);
+
+  // Rprintf("Calling cor1Fast...\n");
+  corFast(x, &nr, &ncx, y, &ncy,
+           quick, 
+           cosineX, cosineY, 
+           corMat, nNA, err,
+           nThreads, verbose, indent);
+
+  // Rprintf("Done...\n");
+  UNPROTECT(3);
+  return cor_s;
+} 
+
+// Re-write cor1Fast as a function that can be called using .Call
+// Since I don't know how to create and fill lists in C code, I will for now return the nNA and err results
+// via supplied arguments. Not ideal but will do.
+
+SEXP cor1Fast_call(SEXP x_s, SEXP quick_s, SEXP cosine_s,
+                   SEXP nNA_s, SEXP err_s,
+                   SEXP nThreads_s, SEXP verbose_s, SEXP indent_s)
+{
+  SEXP dim, cor_s; 
+  // SEXP out, nNA_s, err_s;
+
+  int nr, nc;
+  int *cosine, *err, *nThreads, *verbose, *indent;
+  int *nNA;
+
+  double *x, *corMat, *quick;
+
+  /* Get dimensions of 'x'. */
+  PROTECT(dim = getAttrib(x_s, R_DimSymbol));
+  nr = INTEGER(dim)[0];
+  nc = INTEGER(dim)[1];
+  // Rprintf("Matrix dimensions: %d %d\n", nr, nc);
+
+  x = REAL(x_s);
+
+  // Rprintf("First three elements of x: %f %f %f\n", x[0], x[1], x[2]);
+
+  quick = REAL(quick_s);
+  cosine = INTEGER(cosine_s);
+  nThreads = INTEGER(nThreads_s);
+  verbose = INTEGER(verbose_s);
+  indent = INTEGER(indent_s);
+
+  // Allocate space for the result
+  PROTECT(cor_s = allocMatrix(REALSXP, nc, nc));
+  // PROTECT(nNA_s = allocVector(REALSXP, 1));
+  // PROTECT(err_s = allocVector(REALSXP, 1));
+
+  corMat = REAL(cor_s);
+  nNA = INTEGER(nNA_s);
+  err = INTEGER(err_s);
+
+  // Rprintf("Calling cor1Fast...\n");
+  cor1Fast(x, &nr, &nc, quick, cosine, 
+           corMat, nNA, err,
+           nThreads, verbose, indent);
+
+  // Rprintf("Done...\n");
+  UNPROTECT(2);
+  return cor_s;
+} 
+
+SEXP bicor1_call(SEXP x_s, 
+                 SEXP maxPOutliers_s, SEXP quick_s, 
+                 SEXP fallback_s, SEXP cosine_s,
+                 SEXP nNA_s, SEXP err_s, SEXP warn_s,
+                 SEXP nThreads_s, SEXP verbose_s, SEXP indent_s)
+{
+  SEXP dim, cor_s; 
+  // SEXP out, nNA_s, err_s;
+
+  int nr, nc;
+  int *cosine, *err, *nThreads, *verbose, *indent, *fallback;
+  int *nNA, *warn;
+
+  double *x, *corMat, *quick, *maxPOutliers;
+
+  /* Get dimensions of 'x'. */
+  PROTECT(dim = getAttrib(x_s, R_DimSymbol));
+  nr = INTEGER(dim)[0];
+  nc = INTEGER(dim)[1];
+  // Rprintf("Matrix dimensions: %d %d\n", nr, nc);
+
+  x = REAL(x_s);
+
+  // Rprintf("First three elements of x: %f %f %f\n", x[0], x[1], x[2]);
+
+  quick = REAL(quick_s);
+  maxPOutliers = REAL(maxPOutliers_s);
+  cosine = INTEGER(cosine_s);
+  nThreads = INTEGER(nThreads_s);
+  verbose = INTEGER(verbose_s);
+  indent = INTEGER(indent_s);
+  fallback = INTEGER(fallback_s);
+
+  // Allocate space for the result
+  PROTECT(cor_s = allocMatrix(REALSXP, nc, nc));
+  // PROTECT(nNA_s = allocVector(REALSXP, 1));
+  // PROTECT(err_s = allocVector(REALSXP, 1));
+
+  corMat = REAL(cor_s);
+  nNA = INTEGER(nNA_s);
+  err = INTEGER(err_s);
+  warn = INTEGER(warn_s);
+
+  // Rprintf("Calling cor1Fast...\n");
+  bicor1Fast(x, &nr, &nc, 
+           maxPOutliers, quick, 
+           fallback, cosine, 
+           corMat, nNA, err,
+           warn, 
+           nThreads, verbose, indent);
+
+  // Rprintf("Done...\n");
+  UNPROTECT(2);
+  return cor_s;
+} 
 

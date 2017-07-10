@@ -13,6 +13,7 @@ mtd.subset(
 
   # Rows and columns to keep
   rowIndex = NULL, colIndex = NULL, 
+  invert = FALSE,
 
   # Strict or permissive checking of structure?
   permissive = FALSE, 
@@ -36,10 +37,13 @@ A vector giving the columns to be retained. All indexing methods recognized by R
 logical, negative indexing, etc). In addition, column names of the retained columns may be given; if a given
 name cannot be matched to a column, an error will be thrown. If \code{NULL}, all columns will be retained.
 }
-  \item{permissive}{logical: should the function tolerate "loose" \code{multiData} input? Note that the subsetting
+
+  \item{invert}{Logical: should the selection be inverted?}
+
+  \item{permissive}{Logical: should the function tolerate "loose" \code{multiData} input? Note that the subsetting
 may lead to cryptic errors if the input \code{multiData} does not follow the "strict" format. }
 
-  \item{drop}{logical: should dimensions with extent 1 be dropped? }
+  \item{drop}{Logical: should dimensions with extent 1 be dropped? }
 }
 \details{
 A multiData structure is intended to store (the same type of) data for multiple, possibly independent,
@@ -54,8 +58,8 @@ purposes should be of comparable type and content).
 This function assumes a "strict" multiData structure unless \code{permissive} is \code{TRUE}.
 }
 \value{
-A multiData structure containing the selected rows and columns. Note that result always retaines it
-dimension and other attributes.
+A multiData structure containing the selected rows and columns. Attributes (except possibly dimensions and the
+corresponding dimnames) are retained.
 }
 \author{
 Peter Langfelder

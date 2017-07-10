@@ -9,13 +9,18 @@
 
 #define LDOUBLE 	long double
 
-#include "pivot.h"
+#include <R.h>
+#include <Rinternals.h>
+
+//#include "pivot.h"
 
 enum { noWarning, warnZeroMAD };
 
 double median(double * x, size_t n, int copy, int * err);
 
 double quantile(double * x, size_t n, double q, int copy, int * err);
+double quantile_noCopy(double * x, size_t n, double q);
+
 
 void testMedian(double *x, int * n, double * res);
 

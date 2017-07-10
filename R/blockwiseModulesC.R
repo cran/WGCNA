@@ -107,21 +107,26 @@ TOMsimilarity = function(adjMat, TOMType = "unsigned", TOMDenom = "min", verbose
 
   checkAdjMat(adjMat, min = if (TOMTypeC==2) -1 else 0, max = 1);
 
-  if (sum(is.na(adjMat))>0) adjMat[is.na(adjMat)] = 0;
-  if (any(diag(adjMat)!=1)) diag(adjMat) = 1;
+  if (any(is.na(adjMat))) adjMat[is.na(adjMat)] = 0;
+  #if (any(diag(adjMat)!=1)) diag(adjMat) = 1;  <--- this is now done in compiled code
 
-  nGenes = dim(adjMat)[1];
+  #nGenes = dim(adjMat)[1];
 
-  tom = matrix(0, nGenes, nGenes);
+  #tom = matrix(0, nGenes, nGenes);
 
-  tomResult = .C("tomSimilarityFromAdj", as.double(as.matrix(adjMat)), as.integer(nGenes),
-        as.integer(TOMTypeC), 
+  #tomResult = .C("tomSimilarityFromAdj", as.double(as.matrix(adjMat)), as.integer(nGenes),
+  #      as.integer(TOMTypeC), 
+  #      as.integer(TOMDenomC),
+  #      tom = as.double(tom), as.integer(verbose), as.integer(indent), PACKAGE = "WGCNA") 
+  #tom[,] = tomResult$tom;
+  #diag(tom) = 1;
+  #rm(tomResult); collectGarbage();
+  tom = .Call("tomSimilarityFromAdj_call", as.matrix(adjMat),
+        as.integer(TOMTypeC),
         as.integer(TOMDenomC),
-        tom = as.double(tom), as.integer(verbose), as.integer(indent), PACKAGE = "WGCNA") 
+        as.integer(verbose), as.integer(indent), PACKAGE = "WGCNA")                       
+  gc();
 
-  tom[,] = tomResult$tom;
-  diag(tom) = 1;
-  rm(tomResult); collectGarbage();
   tom;
 }
 
@@ -146,15 +151,12 @@ TOMdist = function(adjMat, TOMType = "unsigned", TOMDenom = "min", verbose = 1, 
 
 blockwiseModules = function(
   # Input data
-
   datExpr, 
 
   # Data checking options
-
   checkMissingData = TRUE,
 
   # Options for splitting data into blocks
-
   blocks = NULL,
   maxBlockSize = 5000,
   blockSizePenaltyPower = 5,
@@ -205,6 +207,7 @@ blockwiseModules = function(
   minBranchEigennodeDissim = mergeCutHeight,
 
   stabilityLabels = NULL,
+  stabilityCriterion = c("Individual fraction", "Common fraction"),
   minStabilityDissim = NULL,
 
 
@@ -289,8 +292,8 @@ blockwiseModules = function(
   AllMEs = NULL;
   allLabelIndex = NULL;
 
-  if (maxBlockSize >= floor(sqrt(2^31)) )
-    stop("'maxBlockSize must be less than ", floor(sqrt(2^31)), ". Please decrease it and try again.")
+  #if (maxBlockSize >= floor(sqrt(2^31)) )
+  #  stop("'maxBlockSize must be less than ", floor(sqrt(2^31)), ". Please decrease it and try again.")
 
   if (!is.null(blocks) && (length(blocks)!=nGenes))
     stop("Input error: the length of 'geneRank' does not equal the number of genes in given 'datExpr'.");
@@ -344,7 +347,10 @@ blockwiseModules = function(
 
   if (!is.null(stabilityLabels))
   {
-    branchSplitFnc = c(branchSplitFnc, "branchSplitFromStabilityLabels");
+    stabilityCriterion = match.arg(stabilityCriterion);
+    branchSplitFnc = c(branchSplitFnc,
+           if (stabilityCriterion=="Individual fraction")
+               "branchSplitFromStabilityLabels.individualFraction" else "branchSplitFromStabilityLabels");
     minExternalSplit = c(minExternalSplit, minStabilityDissim);
     externalSplitFncNeedsDistance = c(externalSplitFncNeedsDistance, FALSE);
     print(dim(stabilityLabels));
@@ -388,6 +394,13 @@ blockwiseModules = function(
 
   blockLevels = as.numeric(levels(factor(gBlocks)));
   blockSizes = table(gBlocks)
+
+  if (any(blockSizes > sqrt(2^31)-1))
+    printFlush(spaste(spaces,
+            "Found block(s) with size(s) larger than limit of 'int' indexing.\n",
+            spaces, " Support for such large blocks is experimental; please report\n",
+            spaces, " any issues to Peter.Langfelder@gmail.com."));
+
   nBlocks = length(blockLevels);
 
   # Initialize various variables
@@ -489,7 +502,7 @@ blockwiseModules = function(
     blockLabels = try(cutreeDynamic(dendro = dendros[[blockNo]], 
                            deepSplit = deepSplit,
                            cutHeight = detectCutHeight, minClusterSize = minModuleSize, 
-                           method ="hybrid", distM = dissTom, 
+                           method = "hybrid", distM = dissTom, 
                            maxCoreScatter = maxCoreScatter, minGap = minGap,
                            maxAbsCoreScatter = maxAbsCoreScatter, minAbsGap = minAbsGap,
                            minSplitHeight = minSplitHeight, minAbsSplitHeight = minAbsSplitHeight,
@@ -735,7 +748,7 @@ blockwiseModules = function(
                                       "genes from module", mod, "to modules with higher KME."));
            allLabels[assGenes[modGenes[candidates][reassign]]] = whichBest[reassign];
            changedModules = union(changedModules, whichBest[reassign]);
-           if (sum(modGenes)-sum(reassign) < minModuleSize) 
+           if (length(modGenes)-sum(reassign) < minModuleSize) 
            {
              deleteModules = c(deleteModules, mod);
            } else 
@@ -1182,7 +1195,7 @@ recutBlockwiseTrees = function(datExpr,
                                       "genes from module", mod, "to modules with higher KME."));
            allLabels[assGenes[modGenes[candidates][reassign]]] = whichBest[reassign];
            changedModules = union(changedModules, whichBest[reassign]);
-           if (sum(modGenes)-sum(reassign) < minModuleSize) 
+           if (length(modGenes)-sum(reassign) < minModuleSize) 
            {
              deleteModules = c(deleteModules, mod);
            } else 
@@ -1288,16 +1301,14 @@ recutBlockwiseTrees = function(datExpr,
   format;
 }
 
-.processFileName = function(format, setNumber, setNames, blockNumber)
+.processFileName = function(format, setNumber, setNames, blockNumber, analysisName = "")
 { 
   # The following is a workaround around empty (NULL) setNames. Replaces the name with the setNumber.
   if (is.null(setNames)) setNames = rep(setNumber, setNumber)
 
-  .substituteTags(format, c("%s", "%N", "%b"), c(setNumber, setNames[setNumber], blockNumber));
+  .substituteTags(format, c("%s", "%N", "%b", "%a"), 
+                    c(setNumber, setNames[setNumber], blockNumber, analysisName));
 }
-
-
-
 
 blockwiseIndividualTOMs = function(multiExpr,
 
@@ -1378,8 +1389,8 @@ blockwiseIndividualTOMs = function(multiExpr,
     set.seed(randomSeed);
   }
 
-  if (maxBlockSize >= floor(sqrt(2^31)) )
-    stop("'maxBlockSize must be less than ", floor(sqrt(2^31)), ". Please decrease it and try again.")
+  #if (maxBlockSize >= floor(sqrt(2^31)) )
+  #  stop("'maxBlockSize must be less than ", floor(sqrt(2^31)), ". Please decrease it and try again.")
 
   if (!is.null(blocks) && (length(blocks)!=nGenes))
     stop("Input error: length of 'blocks' must equal number of genes in 'multiExpr'.");
@@ -1461,6 +1472,12 @@ blockwiseIndividualTOMs = function(multiExpr,
   blockLevels = as.numeric(levels(factor(gBlocks)));
   blockSizes = table(gBlocks)
   nBlocks = length(blockLevels);
+
+  if (any(blockSizes > sqrt(2^31)-1))
+    printFlush(spaste(spaces,
+            "Found block(s) with size(s) larger than limit of 'int' indexing.\n",
+            spaces, " Support for such large blocks is experimental; please report\n",
+            spaces, " any issues to Peter.Langfelder@gmail.com."));
 
   # check file names for uniqueness
 
@@ -1678,7 +1695,7 @@ blockwiseConsensusModules = function(multiExpr,
          # Saving the consensus TOM
 
          saveConsensusTOMs = FALSE, 
-         consensusTOMFileNames = "consensusTOM-block.%b.RData",
+         consensusTOMFilePattern = "consensusTOM-block.%b.RData",
 
          # Internal handling of TOMs
 
@@ -1951,7 +1968,7 @@ blockwiseConsensusModules = function(multiExpr,
 
          # Return options
          saveConsensusTOMs = saveConsensusTOMs,
-         consensusTOMFileNames = consensusTOMFileNames,
+         consensusTOMFilePattern = consensusTOMFilePattern,
          returnTOMs = nBlocks==1,
 
          # Internal handling of TOMs
@@ -2291,7 +2308,7 @@ blockwiseConsensusModules = function(multiExpr,
          {
            allLabels[assGenes[modGenes[candidates][reassign]]] = whichBest[reassign];
            changedModules = union(changedModules, whichBest[reassign]);
-           if (sum(modGenes)-sum(reassign) < minModuleSize)
+           if (length(modGenes)-sum(reassign) < minModuleSize)
            {
              deleteModules = union(deleteModules, mod);
            } else
@@ -2809,7 +2826,7 @@ recutConsensusTrees = function(multiExpr,
          {
            allLabels[assGenes[modGenes[candidates][reassign]]] = whichBest[reassign];
            changedModules = union(changedModules, whichBest[reassign]);
-           if (sum(modGenes)-sum(reassign) < minModuleSize)
+           if (length(modGenes)-sum(reassign) < minModuleSize)
            {
              deleteModules = union(deleteModules, mod);
            } else
@@ -3010,6 +3027,11 @@ projectiveKMeans = function (
   #if (preferredSize >= floor(sqrt(2^31)) )
   #  stop("'preferredSize must be less than ", floor(sqrt(2^31)), ". Please decrease it and try again.")
 
+  if (preferredSize >= sqrt(2^31)-1)
+    printFlush(spaste(
+            spaces, " Support for blocks larger than sqrt(2^31) is experimental; please report\n",
+            spaces, " any issues to Peter.Langfelder@gmail.com."));
+
   if (exists(".Random.seed"))
   {
      seedSaved = TRUE;
@@ -3074,11 +3096,9 @@ projectiveKMeans = function (
     nearestDist = rep(0, nGenes);
     nearest = rep(0, nGenes);
     if (verbose > 5) printFlush(paste(spaces, " ....finding nearest center for each gene"));
-    minRes = .C("minWhichMin", as.double(dst), as.integer(nCenters), as.integer(nGenes), 
-                as.double(nearestDist), as.double(nearest), PACKAGE = "WGCNA");
-    nearestDist = minRes[[4]];
-    nearest = minRes[[5]]+1;
-    rm(minRes); collectGarbage();
+    minRes = .Call("minWhich_call", dst, 0L, PACKAGE = "WGCNA")
+    nearestDist = minRes$min;
+    nearest = minRes$which;
 
     if (sum(centerDist>nearestDist)>0)
     {
@@ -3238,21 +3258,17 @@ consensusProjectiveKMeans = function (
       for (set in 1:nSets)
         if (intNetworkType==1)
         {
-           dstX[set, , ] = -1+abs(cor(centers[[set]]$data[, changed], multiExpr[[set]]$data));
+           dstX[set, , ] = 1-abs(cor(centers[[set]]$data[, changed], multiExpr[[set]]$data));
         } else {
-           dstX[set, , ] = -1+cor(centers[[set]]$data[, changed], multiExpr[[set]]$data);
+           dstX[set, , ] = 1-cor(centers[[set]]$data[, changed], multiExpr[[set]]$data);
         }
       dst = array(0, c(nChanged, nGenes));
       if (useMean)
       {
-        minRes = .C("mean", as.double(dstX), as.integer(nSets), as.integer(nGenes * nChanged), 
-                    as.double(dst), PACKAGE = "WGCNA");
+        dstAll[changed, ] = base::colMeans(dstX, dims = 1);
       } else {
-        which = array(0, c(nChanged, nGenes));
-        minRes = .C("minWhichMin", as.double(dstX), as.integer(nSets), as.integer(nGenes * nChanged), 
-                    as.double(dst), as.double(which), PACKAGE = "WGCNA");
+        dstAll[changed, ] = -minWhichMin(-dstX, byRow = FALSE, dims = 1)$min;
       }
-      dstAll[changed, ] = -minRes[[4]];
     }
     dstAll;
   }
@@ -3304,8 +3320,14 @@ consensusProjectiveKMeans = function (
   nGenes = allSize$nGenes;
   nSets = allSize$nSets;
 
-  if (preferredSize >= floor(sqrt(2^31)) )
-    stop("'preferredSize must be less than ", floor(sqrt(2^31)), ". Please decrease it and try again.")
+  #if (preferredSize >= floor(sqrt(2^31)) )
+  #  stop("'preferredSize must be less than ", floor(sqrt(2^31)), ". Please decrease it and try again.")
+
+  if (preferredSize >= sqrt(2^31)-1)
+    printFlush(spaste(
+            spaces, " Support for blocks larger than sqrt(2^31) is experimental; please report\n",
+            spaces, " any issues to Peter.Langfelder@gmail.com."));
+
 
   if (exists(".Random.seed"))
   {
@@ -3383,14 +3405,11 @@ consensusProjectiveKMeans = function (
     dst = centerGeneDist(centers, dst, changed);
     centerDist = memberCenterDist(dst, membership, clusterSizes, changed, centerDist);
 
-    nearestDist = rep(0, nGenes);
-    nearest = rep(0, nGenes);
-    minRes = .C("minWhichMin", as.double(dst), as.integer(nCenters), as.integer(nGenes), 
-                as.double(nearestDist), as.double(nearest), PACKAGE = "WGCNA");
-    nearestDist = minRes[[4]];
-    nearest = minRes[[5]]+1;
     changed = NULL;
-    rm(minRes); collectGarbage();
+    minRes = minWhichMin(dst);
+    nearestDist = minRes$min;
+    nearest = minRes$which;
+
     if (sum(centerDist>nearestDist)>0)
     {
       proposedMemb = nearest;
@@ -3452,17 +3471,12 @@ consensusProjectiveKMeans = function (
     {
       if (intNetworkType==1)
       {
-         distX[set, , ] = -1+abs(cor(centers[[set]]$data[, select]));
+         distX[set, , ] = 1-abs(cor(centers[[set]]$data[, select]));
       } else {
-         distX[set, , ] = -1+cor(centers[[set]]$data[, select]);
+         distX[set, , ] = 1-cor(centers[[set]]$data[, select]);
       }
     }
-    dst = matrix(0, nC, nC);
-    which = matrix(0, nC, nC);
-    minRes = .C("minWhichMin", as.double(distX), as.integer(nSets), as.integer(nC*nC),
-                as.double(dst), as.double(which), PACKAGE = "WGCNA");
-    dst[,] = -minRes[[4]];
-    dst;
+    -minWhichMin(-distX, byRow = FALSE, dims = 1)$min;
   }
 
   unmergedMembership = membership;

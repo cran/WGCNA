@@ -16,6 +16,7 @@ pickSoftThreshold(
   corFnc = cor, corOptions = list(use = 'p'), 
   networkType = "unsigned",
   moreNetworkConcepts = FALSE,
+  gcInterval = NULL,
   verbose = 0, indent = 0)
 
 pickSoftThreshold.fromSimilarity(
@@ -61,6 +62,9 @@ into memory problems, decrease this value. }
 function will calculate how the network density, the network heterogeneity, and the network centralization
 depend on the power. For the definition of these additional network concepts, see Horvath and Dong (2008).
 PloS Comp Biol.  }
+
+  \item{gcInterval}{a number specifying in interval (in terms of individual genes) in which garbage
+collection will be performed. The actual interval will never be less than \code{blockSize}.}
 
   \item{verbose}{ integer level of verbosity. Zero means silent, higher values make the output
 progressively more and more verbose. }

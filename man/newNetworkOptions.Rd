@@ -1,0 +1,60 @@
+\name{newNetworkOptions}
+\alias{newNetworkOptions}
+\alias{NetworkOptions}
+%- Also NEED an '\alias' for EACH other topic documented here.
+\title{
+Create a list of network construction arguments (options).
+}
+\description{
+This function creates a reusable list of network calculation arguments/options.
+}
+\usage{
+newNetworkOptions(
+    correlationOptions = newCorrelationOptions(),
+
+    # Adjacency options
+    replaceMissingAdjacencies = TRUE,
+    power = 6,
+    networkType = c("signed hybrid", "signed", "unsigned"),
+    checkPower = TRUE,
+
+    # Topological overlap options
+    TOMType = c("signed", "unsigned", "none"),
+    TOMDenom = c("mean", "min"))
+}
+%- maybe also 'usage' for other objects documented here.
+\arguments{
+  \item{correlationOptions}{
+A list of correlation options. See \code{\link{newCorrelationOptions}}.
+}
+  \item{replaceMissingAdjacencies}{Logical: should missing adjacencies be replaced by zero? 
+}
+  \item{power}{ Soft-thresholding power for network construction. 
+}
+  \item{networkType}{ network type. Allowed values are (unique abbreviations of) \code{"unsigned"},
+\code{"signed"}, \code{"signed hybrid"}. See \code{\link{adjacency}}. 
+}
+  \item{checkPower}{Logicel: should the power be checked for sanity? 
+}
+  \item{TOMType}{One of \code{"none"}, \code{"unsigned"}, \code{"signed"}. If \code{"none"}, adjacency
+will be used for clustering. If \code{"unsigned"}, the standard TOM will be used (more generally, TOM
+function will receive the adjacency as input). If \code{"signed"}, TOM will keep track of the sign of
+correlations between neighbors. 
+}
+  \item{TOMDenom}{Character string specifying the TOM variant to be used. Recognized values are
+\code{"min"} giving the standard TOM described in Zhang and Horvath (2005), and \code{"mean"} in which
+the \code{min} function in the denominator is replaced by \code{mean}. The \code{"mean"} may produce
+better results but at this time should be considered experimental.
+}
+}
+\value{
+A list of class \code{NetworkOptions}.
+}
+\author{
+Peter Langfelder
+}
+
+\seealso{
+code{\link{newCorrelationOptions}}
+}
+\keyword{misc}

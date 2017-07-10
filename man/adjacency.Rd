@@ -38,14 +38,15 @@ to be used. }
 similarity for correlation networks. 
 Defaults to Pearson correlation. Any function returning values between -1 and 1 can be used. }
 
-  \item{corOptions}{ character string specifying additional arguments to be passed to the function given
-by \code{corFnc}. Use \code{"use = 'p', method = 'spearman'"} to obtain Spearman correlation.   }
+  \item{corOptions}{ character string or a llist specifying additional arguments to be passed to the function given
+by \code{corFnc}. Use \code{"use = 'p', method = 'spearman'"} or, equivalently, 
+\code{list(use = 'p', method = 'spearman')} to obtain Spearman correlation.   }
 
   \item{distFnc}{ character string specifying the function to be used to calculate co-expression
 similarity for distance networks. Defaults to the function \code{\link{dist}}. 
 Any function returning non-negative values can be used.}
 
-  \item{distOptions}{ character string specifying additional arguments to be passed to the function given
+  \item{distOptions}{ character string or a list specifying additional arguments to be passed to the function given
 by \code{distFnc}. For example, when the function  \code{\link{dist}} is used, the argument \code{method}
 can be used to specify various ways of computing the distance. }
 

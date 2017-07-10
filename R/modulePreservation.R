@@ -1118,6 +1118,7 @@ modulePreservation = function(
                            -log10(apply(overlap$pTable[!greyRow, !greyCol, drop = FALSE], 2, min));
          ccNumer = apply(overlap$countTable[!greyRow, !greyCol, drop = FALSE], 2, choose,
                          ccTupletSize);
+         dim(ccNumer) = c(sum(!greyRow), sum(!greyCol));
          ccDenom = choose(refModSizes[!greyCol], ccTupletSize)
          accuracy[!greyCol, 3] = apply(ccNumer, 2, sum)/ccDenom;
       }

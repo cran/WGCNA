@@ -2,6 +2,7 @@ useDynLib(WGCNA)
 
 exportPattern("^[^\\.]")
 
+importFrom(Rcpp, evalCpp)
 import(foreach, doParallel, dynamicTreeCut, fastcluster, GO.db, AnnotationDbi, matrixStats)
 importFrom(survival, is.Surv, coxph, Surv)
 importFrom(parallel, stopCluster)
@@ -13,6 +14,7 @@ importFrom(Hmisc, rcorr.cens, errbar)
 importFrom(impute, impute.knn)
 importFrom(splines, ns)
 importFrom(preprocessCore, normalize.quantiles)
+importFrom(robust, lmRob.control, lmRob)
 
 # Imports of previously automatically available functions...
 
@@ -21,14 +23,14 @@ importFrom("grDevices", "dev.off", "heat.colors", "pdf", "rgb",
 importFrom("graphics", "abline", "axis", "barplot", "box", "boxplot",
            "frame", "hist", "image", "layout", "lines", "mtext",
            "pairs", "panel.smooth", "par", "plot", "polygon", "rect",
-           "segments", "strheight", "strwidth", "text", "title")
+           "segments", "strheight", "strwidth", "text", "title", "points")
 importFrom("stats", "anova", "as.dendrogram", "as.dist", "as.hclust", "coef", 
            "cov", "cutree", "dist", "fisher.test", "glm", "heatmap",
            "kruskal.test", "lm", "median", "model.matrix",
            "na.exclude", "order.dendrogram", "pchisq", "phyper",
            "pnorm", "predict", "pt", "qnorm", "quantile", "reorder",
            "residuals", "rexp", "rnorm", "runif", "sd",
-           "smooth.spline", "t.test", "var", "weighted.mean")
+           "smooth.spline", "t.test", "var", "weighted.mean", "p.adjust")
 importFrom("utils", "data", "flush.console", "read.csv", "write.csv",
-           "write.table")
+           "write.table", "object.size")
 
