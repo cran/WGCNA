@@ -302,6 +302,11 @@ consensusCalculation = function(
   if (length(setWeights)!=nSets)
     stop("Length of 'setWeights' must equal the number of sets.");
 
+  if (any(!is.finite(setWeights)))
+    stop("setWeights must all be finite.");
+
+  setWeightMat = as.matrix(setWeights)/sum(setWeights)
+
   if (is.null(chunkSize)) chunkSize = as.integer(.largestBlockSize/(2*nSets))
   if (is.null(useDiskCache)) useDiskCache = .useDiskCache(individualData, chunkSize = chunkSize);
 
@@ -555,7 +560,6 @@ consensusCalculation = function(
           setChunks[, set] = temp;
           file.remove(chunkFileNames[chunk, set]);
         }
-        setWeightMat = matrix(setWeights, chunkLengths[chunk], nSets, byrow = TRUE);
         tmp = .consensusCalculation.base(setChunks, useMean = consensusOptions$useMean, 
                                          setWeightMat = setWeightMat,
                                          consensusQuantile = consensusOptions$consensusQuantile);
@@ -568,7 +572,6 @@ consensusCalculation = function(
         start = end + 1;
       }
     } else {
-      setWeightMat = matrix(setWeights, blockLengths[block], nSets, byrow = TRUE)
       tmp = .consensusCalculation.base(calibratedData, useMean = consensusOptions$useMean, 
                                        setWeightMat = setWeightMat,
                                        consensusQuantile = consensusOptions$consensusQuantile);
@@ -815,7 +818,7 @@ simpleConsensusCalculation = function(
     if (is.null(setWeights)) setWeights = rep(1, nSets);
     if (length(setWeights)!=nSets)
       stop("Length of 'setWeights' must equal the number of sets.");
-  } else setWeightMat = NULL;
+  } else setWeights = NULL;
 
   .consensusCalculation.base.FromList(individualData, useMean = consensusOptions$useMean, 
                                    setWeights = setWeights,

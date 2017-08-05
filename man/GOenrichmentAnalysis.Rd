@@ -2,7 +2,11 @@
 \alias{GOenrichmentAnalysis}
 \title{ Calculation of GO enrichment (experimental)}
 \description{
-  WARNING: This function should be considered experimental. The arguments and resulting values (in
+NOTE: GOenrichmentAnalysis is deprecated. Please use function
+          enrichmentAnalysis from R package anRichment, available from
+          https://labs.genetics.ucla.edu/horvath/htdocs/CoexpressionNetwork/GeneAnnotation/
+
+WARNING: This function should be considered experimental. The arguments and resulting values (in
 particular, the enrichment p-values) are not
 yet finalized and may change in the future. The function should only be used to get a quick and rough
 overview of GO enrichment in the modules in a data set; for a publication-quality analysis, please use an

@@ -1,11 +1,11 @@
-6308f205991bb23bf9ddeefd247b6c75 *Changelog
-b4fb059abf19ff2be074beed347b42b0 *DESCRIPTION
+ba3b5152e7bd0cf965e3c1712387c791 *Changelog
+5d99efe4abc2375bed54c03079c6c3e9 *DESCRIPTION
 f910de2dfb54ed572d2b2842ed53f80c *NAMESPACE
 2640fb7286cab45b6de425c01109f80e *R/AFcorMI.R
 ea14a2a861b238bbb31d9f54117b7fdb *R/Functions-fromSimilarity.R
 f0a23a7cf2d4b05f06b2b1dbe29eeb21 *R/Functions-multiData.R
-3945e17e98d78c92a66f641173f9d503 *R/Functions.R
-8de528d34b5dc682e688510c88f62c46 *R/GOenrichmentAnalysis.R
+17b778fdeb0a79358bd93ec0ccdd7680 *R/Functions.R
+dedc67cc205260a91ef1d8f82cfa2d34 *R/GOenrichmentAnalysis.R
 a741dd19796b763560aba5d13f00fc48 *R/TrueTrait.R
 3747f2e4a71105d8e3ac4c54914b6bd4 *R/accuracyMeasures.R
 6694f89a89e904eb1bc90d28cf28fc37 *R/adjacency.polyReg.R
@@ -18,7 +18,7 @@ ceee787204a986fedae3e8b3ce86d121 *R/collapseRows.R
 46a73fe3580e01ceab1bdcb55c316c3c *R/conformityDecomposition.R
 02dab22b7430423c18deb9490fee4172 *R/consensusDissTOMandTree.R
 6a3752172cc4c31d53eec0cdc1463ea7 *R/consensusRepresentatives.R
-eace97c58dfa0a2048c7aa676d7bf9a6 *R/consensusTOM.R
+54b6a8b3573ca938654d4f088974c718 *R/consensusTOM.R
 239273bfb01626e6a7a6ea7eb966bca7 *R/corAndPvalue.R
 0fded4e50cc163a00b2251dd9fe98758 *R/corFunctions.R
 f5dfb236765806a3eb39bd028bff071b *R/coxRegressionResiduals.R
@@ -41,7 +41,7 @@ cbbf15f7e1af46c97769349028dcc197 *R/overlapTableUsingKME.R
 dd248a6dbff1e165b81e4a55f5ba35e9 *R/plotDendrogram.R
 1f84c828572b06bc6baf3ad5df077b99 *R/populationMeansInAdmixture.R
 1c35495264dc245f0c417f2797d649c1 *R/proportionsInAdmixture.R
-494f6d51bb0b09eb71e80bebdeebf529 *R/quantileC.R
+f17cfef92906bb48ef2d09a25a8b57c4 *R/quantileC.R
 0f6a00ada5b99112e8dadea807aa2a00 *R/qvalue.R
 69f368afdd00a44008445ba5d90cdd6b *R/returnGeneSetsAsList.R
 698d3d0ad4bbdde32bce989d480c080e *R/sampledModules.R
@@ -66,7 +66,7 @@ c6e9fa3b41671b6ad31df708e1a013ff *data/SCsLists.rda
 90e62d285af393b1c3598dca8b5e4901 *man/BloodLists.Rd
 2692449a2600292b3b10f07bfa70010d *man/BrainLists.Rd
 65c0bd53eec8c8d582497e48fdc09497 *man/BrainRegionMarkers.Rd
-8c7d3bbf8ea375ebdd7c50d47d27c663 *man/GOenrichmentAnalysis.Rd
+c8562c092b61e998696d2eda7e89ae33 *man/GOenrichmentAnalysis.Rd
 4de45938151062d0afaa35fbebd71074 *man/GTOMdist.Rd
 71782d3e2e09a394a6a512b4069e1434 *man/ImmunePathwayLists.Rd
 21b4631827ab613c08045a398a0145f7 *man/PWLists.Rd
@@ -225,7 +225,7 @@ f2fa34c2378f9fc80f160eb71192ca58 *man/plotModuleSignificance.Rd
 b3b63887750827169ae97ae4d11e6063 *man/plotMultiHist.Rd
 df0a200d8b0404a897490031b0ee24b9 *man/plotNetworkHeatmap.Rd
 eceea04cd1a4c5da64cf47ce67682eb5 *man/populationMeansInAdmixture.Rd
-1a8b9c59e3adee6b48d2b8b2562bb2ef *man/pquantile.Rd
+84def9c15318640a89e377a9cbf8bc1e *man/pquantile.Rd
 98a05e761090162822158e0c290ffd30 *man/prepComma.Rd
 71c4a62c37e7a43d9883422108f81dc9 *man/prependZeros.Rd
 638576053aa6de4e1d9bd76f17cd417c *man/preservationNetworkConnectivity.Rd
@@ -282,7 +282,7 @@ aec15f438a27353b45dc5f9a686c5339 *man/userListEnrichment.Rd
 308ee48efe67621cf18660f2488ac635 *man/verboseBarplot.Rd
 72069790ca6e8b3072971fe266b15459 *man/verboseBoxplot.Rd
 18fe9aca7afb7daa47d32c121b7336cc *man/verboseIplot.Rd
-07dbaee6d23cdd2390ea304356ebb84d *man/verboseScatterplot.Rd
+01eac1f74abff75760ed47b42eda7a00 *man/verboseScatterplot.Rd
 5b60605817816b91df09d8a00118afff *man/votingLinearPredictor.Rd
 79b4e6437c1c28ffca58a9127550d161 *src/Makevars
 22d54f2b9dc56c83bb08fc083227e3fd *src/Makevars.win

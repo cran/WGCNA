@@ -14,8 +14,9 @@ verboseScatterplot(x, y,
                    abline = FALSE, abline.color = 1, abline.lty = 1,
                    corLabel = corFnc, 
                    displayAsZero = 1e-5,
-                   col = 1, bg = 0,
+                   col = 1, bg = 0, pch = 1,
                    lmFnc = lm,
+                   plotPriority = NULL,
                    ...)
 }
 %- maybe also 'usage' for other objects documented here.
@@ -42,7 +43,7 @@ be determined from the full vectors \code{x} and \code{y}.}
 
   \item{ylab}{ label for the y-axis. }
 
-  \item{cex}{ character expansion factor for plot annotations. }
+  \item{cex}{ character expansion factor for plot annotations, recycled as necessary. }
 
   \item{cex.axis}{ character expansion factor for axis annotations. }
 
@@ -66,9 +67,13 @@ zero. This can result in a more intuitive display (for example, cor=0 instead of
 
   \item{bg}{fill color of the plotted symbols (used for certain symbols). Recycled as necessary. }
 
+  \item{pch}{Integer code for plotted symbols (see \code{link{plot.default}}). Recycled as necessary. }
   \item{lmFnc}{linear model fit function. Used to calculate the linear model fit line if \code{'abline'} is
                \code{TRUE}. For example, robust linear models are implemented in the 
                function \code{\link[MASS]{rlm}}. }
+
+  \item{plotPriority}{Optional numeric vector of same length as \code{x}. Points with higher plot priority
+will be plotted later, making them more visible if points overlap.}
 
   \item{\dots}{ other arguments to the function \code{\link{plot}}. }
 }

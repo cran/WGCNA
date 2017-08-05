@@ -1,6 +1,20 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
 
+
+2017/08/04: 1.61
+
+	. Bugfix in consensusCalculation: function works with mean consensus.
+
+	. New arguments pch and plotPriority for verboseScatterplot.
+
+	. Function pmin has been removed since it incorrectly duplicates
+	  base::pmin.
+
+	. Function GOenrichmentAnalysis is deprecated. Please use function
+	  enrichmentAnalysis from R package anRichment, available from
+	  https://labs.genetics.ucla.edu/horvath/htdocs/CoexpressionNetwork/GeneAnnotation/
+
 2017/07/07: 1.60
 
 	. empiricalBayesLM expanded with additional arguments allowing

@@ -3,7 +3,6 @@
 \alias{pquantile.fromList}
 \alias{pmedian}
 \alias{pmean}
-\alias{pmin}
 \alias{pmean.fromList}
 \alias{pminWhich.fromList}
 \title{ Parallel quantile, median, mean }
@@ -15,7 +14,6 @@ pquantile(prob, ...)
 pquantile.fromList(dataList, prob)
 pmedian(...)
 pmean(..., weights = NULL)
-pmin(...)
 pmean.fromList(dataList, weights = NULL)
 pminWhich.fromList(dataList)
 }
@@ -41,7 +39,7 @@ The funtion \code{pquantile.fromList} is identical to \code{pquantile} except th
 \value{
     \item{pquantile, pquantile.fromList}{A vector or array containing quantiles.}
     \item{pmean, pmean.fromList}{A vector or array containing means. }
-    \item{pmin, pmedian}{A vector or array containing minima, medians, and maxima, respectively.}
+    \item{pmedian}{A vector or array containing  medians.}
     \item{pminWhich.fromList}{A list with two components: \code{min} gives the minima, \code{which} gives the
 indices of the elements that are the minima.}
  

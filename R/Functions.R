@@ -3066,8 +3066,9 @@ verboseScatterplot = function(x, y,
                              abline.color = 1, abline.lty = 1,
                              corLabel = corFnc, 
                              displayAsZero = 1e-5,
-                             col = 1, bg = 0, 
+                             col = 1, bg = 0, pch = 1,
                              lmFnc = lm,
+                             plotPriority = NULL,
                              ...) 
 {
   if ( is.na(xlab) ) xlab= as.character(match.call(expand.dots = FALSE)$x)
@@ -3089,19 +3090,33 @@ verboseScatterplot = function(x, y,
   } else
      mainX = main;
 
+  if (length(col)<length(x)) col = rep(col, ceiling(length(x)/length(col)));
+  if (length(pch)<length(x)) pch = rep(pch, ceiling(length(x)/length(pch)));
+  if (length(cex)<length(x)) cex = rep(cex, ceiling(length(x)/length(cex)));
+  if (length(bg )<length(x))  bg = rep(bg,  ceiling(length(x)/length(bg)));
+
+  if (is.null(plotPriority)) plotPriority = rep(1, length(x)); 
+  if (length(plotPriority)!=length(x))
+    stop("When given, length of 'plotPriority' must equal length of 'x'.");
+
   if (!is.null(sample))
   {
     if (length(sample) == 1)
     {
       sample = sample(length(x), sample)
     } 
-    if (length(col)<length(x)) col = rep(col, ceiling(length(x)/length(col)));
-    if (length(bg )<length(x))  bg = rep(bg,  ceiling(length(x)/length(bg)));
-    plot(x[sample], y[sample], main=mainX, xlab=xlab, ylab=ylab, cex=cex, 
-         cex.axis=cex.axis, cex.lab=cex.lab, cex.main=cex.main, col = col[sample], bg = bg[sample], ...)
+    priority1 = plotPriority[sample];
+    order1 = order(priority1, na.last = TRUE);
+    plot(x[sample][order1], y[sample][order1], main=mainX, xlab=xlab, ylab=ylab, 
+         cex.axis=cex.axis, cex.lab=cex.lab, cex.main=cex.main, 
+         col = col[sample][order1], bg = bg[sample][order1], pch = pch[sample][order1],
+         cex = cex[sample][order1],
+         ...)
   } else {
-    plot(x, y, main=mainX, xlab=xlab, ylab=ylab, cex=cex, 
-         cex.axis=cex.axis, cex.lab=cex.lab, cex.main=cex.main, col = col, bg = bg, ...)
+    order1 = order(plotPriority, na.last = TRUE);
+    plot(x[order1], y[order1], main=mainX, xlab=xlab, ylab=ylab, 
+         cex.axis=cex.axis, cex.lab=cex.lab, cex.main=cex.main, col = col[order1], bg = bg[order1], 
+         pch = pch[order1], cex = cex[order1], ...)
   }
   if (abline)
   {

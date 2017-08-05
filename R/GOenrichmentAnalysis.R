@@ -15,6 +15,11 @@ GOenrichmentAnalysis = function(labels, entrezCodes,
                getTermDetails = TRUE,
                verbose = 2, indent = 0 )
 {
+   warning(immediate. = TRUE,
+     spaste("This function is deprecated and will be removed in the near future. \n",
+            "We suggest using the replacement function enrichmentAnalysis \n",
+            "in R package anRichment, available from the following URL:\n",
+            "https://labs.genetics.ucla.edu/horvath/htdocs/CoexpressionNetwork/GeneAnnotation/"));
 
    sAF = options("stringsAsFactors")
    options(stringsAsFactors = FALSE);

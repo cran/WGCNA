@@ -67,10 +67,10 @@ pmean.fromList = function(dataList, weights = NULL)
    q
 }
 
-pmin = function(...)
-{
-  pminWhich.fromList(dataList = list(...))$min
-}
+#pmin.wgcna = function(...)
+#{
+#  pminWhich.fromList(dataList = list(...))$min
+#}
 
 pminWhich.fromList = function(dataList)
 {
