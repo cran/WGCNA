@@ -23,15 +23,19 @@
 #
 #==========================================================================================================
 
-TOMsimilarityFromExpr = function(datExpr, corType = "pearson", networkType = "unsigned", 
-                                 power = 6, TOMType = "signed", TOMDenom = "min",
-                                 maxPOutliers = 1,
-                                 quickCor = 0, 
-                                 pearsonFallback = "individual",
-                                 cosineCorrelation = FALSE, 
-                                 replaceMissingAdjacencies = FALSE,
-                                 nThreads = 0,
-                                 verbose = 1, indent = 0)
+TOMsimilarityFromExpr = function(
+  datExpr, weights = NULL,
+  corType = "pearson", networkType = "unsigned", 
+  power = 6, TOMType = "signed", TOMDenom = "min",
+  maxPOutliers = 1,
+  quickCor = 0, 
+  pearsonFallback = "individual",
+  cosineCorrelation = FALSE, 
+  replaceMissingAdjacencies = FALSE,
+  suppressTOMForZeroAdjacencies = FALSE,
+  useInternalMatrixAlgebra = FALSE,
+  nThreads = 0,
+  verbose = 1, indent = 0)
 {
   corTypeC = as.integer(pmatch(corType, .corTypes)-1);
   if (is.na(corTypeC))
@@ -65,18 +69,32 @@ TOMsimilarityFromExpr = function(datExpr, corType = "pearson", networkType = "un
          "Recognized values are (unique abbreviations of)", paste(.networkTypes, collapse = ", ")));
   dimEx = dim(datExpr);
   if (length(dimEx)!=2) stop("datExpr has incorrect dimensions.")
+  if (length(weights) > 0)
+  {
+    if (!isTRUE(all.equal(dimEx, dim(weights))))
+      stop("When 'weights' are given, they must have the same dimensions as 'datExpr'.")
+    if (any(!is.finite(weights)))
+    {
+      if (verbose > 0)
+        warning("Found non-finite weights. The corresponding data points will be removed.");
+      weights[!is.finite(weights)] = NA;
+    }
+  }
   nGenes = dimEx[2];
   nSamples = dimEx[1];
   warn = as.integer(0);
 
   datExpr = as.matrix(datExpr);
+  if (length(weights) > 0) weights = as.matrix(weights) else weights = NULL;
 
-  tom = .Call("tomSimilarity_call", datExpr, 
+  tom = .Call("tomSimilarity_call", datExpr, weights,
         as.integer(corTypeC), as.integer(networkTypeC), as.double(power), 
         as.integer(TOMTypeC), as.integer(TOMDenomC),
         as.double(maxPOutliers), as.double(quickCor),
         as.integer(fallback), as.integer(cosineCorrelation),
         as.integer(replaceMissingAdjacencies),
+        as.integer(suppressTOMForZeroAdjacencies),
+        as.integer(useInternalMatrixAlgebra),
         warn, 
         as.integer(nThreads), as.integer(verbose), as.integer(indent), PACKAGE = "WGCNA");
 
@@ -86,13 +104,14 @@ TOMsimilarityFromExpr = function(datExpr, corType = "pearson", networkType = "un
 
 
 
-#==========================================================================================================
+#======================================================================================================
 #
 # TOMsimilarity (from adjacency)
 #
 #===================================================================================================
 
-TOMsimilarity = function(adjMat, TOMType = "unsigned", TOMDenom = "min", verbose = 1, indent = 0)
+TOMsimilarity = function(adjMat, TOMType = "unsigned", TOMDenom = "min", 
+          suppressTOMForZeroAdjacencies = FALSE, useInternalMatrixAlgebra = FALSE, verbose = 1, indent = 0)
 {
   TOMTypeC = pmatch(TOMType, .TOMTypes)-1;
   if (is.na(TOMTypeC))
@@ -124,6 +143,8 @@ TOMsimilarity = function(adjMat, TOMType = "unsigned", TOMDenom = "min", verbose
   tom = .Call("tomSimilarityFromAdj_call", as.matrix(adjMat),
         as.integer(TOMTypeC),
         as.integer(TOMDenomC),
+        as.integer(suppressTOMForZeroAdjacencies),
+        as.integer(useInternalMatrixAlgebra),
         as.integer(verbose), as.integer(indent), PACKAGE = "WGCNA")                       
   gc();
 
@@ -136,9 +157,11 @@ TOMsimilarity = function(adjMat, TOMType = "unsigned", TOMDenom = "min", verbose
 #
 #==========================================================================================================
 
-TOMdist = function(adjMat, TOMType = "unsigned", TOMDenom = "min", verbose = 1, indent = 0)
+TOMdist = function(adjMat, TOMType = "unsigned", TOMDenom = "min", 
+ suppressTOMForZeroAdjacencies = FALSE, useInternalMatrixAlgebra = FALSE, verbose = 1, indent = 0)
 {
-  1-TOMsimilarity(adjMat, TOMType, TOMDenom, verbose, indent)
+  1-TOMsimilarity(adjMat, TOMType, TOMDenom, suppressTOMForZeroAdjacencies = suppressTOMForZeroAdjacencies,
+   useInternalMatrixAlgebra = useInternalMatrixAlgebra, verbose = verbose, indent = indent)
 }
 
 
@@ -152,6 +175,7 @@ TOMdist = function(adjMat, TOMType = "unsigned", TOMDenom = "min", verbose = 1, 
 blockwiseModules = function(
   # Input data
   datExpr, 
+  weights = NULL,
 
   # Data checking options
   checkMissingData = TRUE,
@@ -180,6 +204,7 @@ blockwiseModules = function(
   power = 6,
   networkType = "unsigned",
   replaceMissingAdjacencies = FALSE,
+  suppressTOMForZeroAdjacencies = FALSE,
 
   # Topological overlap options
 
@@ -233,6 +258,7 @@ blockwiseModules = function(
   # Options controlling behaviour
 
   nThreads = 0,
+  useInternalMatrixAlgebra = FALSE,
   verbose = 0, indent = 0,
   ...)
 {
@@ -284,8 +310,12 @@ blockwiseModules = function(
            paste(.pearsonFallbacks, collapse = ", ")))
 
 
+  datExpr = as.matrix(datExpr);
   dimEx = dim(datExpr);
   if (length(dimEx)!=2) stop("datExpr has incorrect dimensions.")
+  weights = .checkAndScaleWeights(weights, datExpr, scaleByMax = FALSE);
+  haveWeights = length(weights)>0;
+
   nGenes = dimEx[2];
   nSamples = dimEx[1];
   allLabels = rep(0, nGenes);
@@ -305,8 +335,12 @@ blockwiseModules = function(
 
   if (checkMissingData)
   {
-    gsg = goodSamplesGenes(datExpr, verbose = verbose - 1, indent = indent + 1)
-    if (!gsg$allOK) datExpr = datExpr[gsg$goodSamples, gsg$goodGenes];
+    gsg = goodSamplesGenes(datExpr, weights = weights, verbose = verbose - 1, indent = indent + 1)
+    if (!gsg$allOK) 
+    {
+       datExpr = datExpr[gsg$goodSamples, gsg$goodGenes]; 
+       if (haveWeights) weights = weights[gsg$goodSamples, gsg$goodGenes];
+    } 
     nGGenes = sum(gsg$goodGenes);
     nGSamples = sum(gsg$goodSamples);
   } else {
@@ -418,6 +452,7 @@ blockwiseModules = function(
     blockGenes[[blockNo]] = c(1:nGenes)[gsg$goodGenes][gBlocks==blockLevels[blockNo]];
     block = c(1:nGGenes)[gBlocks==blockLevels[blockNo]];
     selExpr = as.matrix(datExpr[, block]);
+    if (haveWeights) selWeights = weights[, block];
     nBlockGenes = length(block);
     TOMFiles[blockNo] = spaste(saveTOMFileBase, "-block.", blockNo, ".RData");
     if (loadTOM)
@@ -461,7 +496,7 @@ blockwiseModules = function(
       CTOMType = intTOMType -1;
 
       warn = as.integer(0);
-      tom = .Call("tomSimilarity_call", selExpr, 
+      tom = .Call("tomSimilarity_call", selExpr, weights,
           as.integer(CcorType), as.integer(CnetworkType), as.double(power), as.integer(CTOMType), 
           as.integer(TOMDenomC),
           as.double(maxPOutliers),
@@ -469,6 +504,8 @@ blockwiseModules = function(
           as.integer(fallback),
           as.integer(cosineCorrelation),
           as.integer(replaceMissingAdjacencies),
+          as.integer(suppressTOMForZeroAdjacencies),
+          as.integer(useInternalMatrixAlgebra),
           warn, as.integer(nThreads),
           as.integer(callVerb), as.integer(callInd), PACKAGE = "WGCNA");
 
@@ -602,13 +639,15 @@ blockwiseModules = function(
     # Check modules: make sure that of the genes present in the module, at least a minimum number
     # have a correlation with the eigengene higher than a given cutoff.
 
-    if (verbose>2) printFlush(paste(spaces, "....checking modules for statistical meaningfulness.."));
+    if (verbose>2) printFlush(paste(spaces, "....checking kME in modules.."));
     for (mod in 1:ncol(propMEs))
     {
       modGenes = (blockLabels==blockLabelIndex[mod]);
-      corEval = parse(text = paste(corFnc, "(selExpr[, modGenes], propMEs[, mod]", 
-                                   prepComma(.corOptions[intCorType]), ")"));
-      KME = as.vector(eval(corEval));
+      KME = do.call(match.fun(corFnc),
+                    c(list(selExpr[, modGenes], propMEs[, mod], 
+                           weights.x = if (haveWeights) weights[, modGenes] else NULL,
+                           weights.y = NULL),
+                      .corOptionList[[intCorType]]));
       if (intNetworkType==1) KME = abs(KME);
       if (sum(KME>minCoreKME) < minCoreKMESize) 
       {
@@ -715,9 +754,11 @@ blockwiseModules = function(
   {
      propLabels = goodLabels[goodLabels!=0];
      assGenes = (c(1:nGenes)[gsg$goodGenes])[goodLabels!=0];
-     corEval = parse(text = paste(corFnc, "(datExpr[, goodLabels!=0], AllMEs", 
-                                  prepComma(.corOptions[intCorType]), ")"));
-     KME = eval(corEval);
+     KME = do.call(match.fun(corFnc),
+                c(list(datExpr[, goodLabels!=0], AllMEs,
+                     weights.x = if(haveWeights) weights[, goodLabels!=0] else NULL,
+                     weights.y = NULL),
+                  .corOptionList[[intCorType]]));
      if (intNetworkType == 1) KME = abs(KME)
      nMods = ncol(AllMEs);
      for (mod in 1:nMods)
@@ -1310,53 +1351,51 @@ recutBlockwiseTrees = function(datExpr,
                     c(setNumber, setNames[setNumber], blockNumber, analysisName));
 }
 
-blockwiseIndividualTOMs = function(multiExpr,
+blockwiseIndividualTOMs = function(
+   multiExpr,
+   multiWeights = NULL,
 
-                            # Data checking options
+   # Data checking options
+   checkMissingData = TRUE,
 
-                            checkMissingData = TRUE,
+   # Blocking options
+   blocks = NULL, 
+   maxBlockSize = 5000, 
+   blockSizePenaltyPower = 5,
+   nPreclusteringCenters = NULL,
+   randomSeed = 12345,
 
-                            # Blocking options
+   # Network construction arguments: correlation options
+   corType = "pearson",
+   maxPOutliers = 1,
+   quickCor = 0,
+   pearsonFallback = "individual", 
+   cosineCorrelation = FALSE,
 
-                            blocks = NULL, 
-                            maxBlockSize = 5000, 
-                            blockSizePenaltyPower = 5,
-                            nPreclusteringCenters = NULL,
-                            randomSeed = 12345,
+   # Adjacency function options
+   power = 6, 
+   networkType = "unsigned", 
+   checkPower = TRUE,
+   replaceMissingAdjacencies = FALSE,
+   suppressTOMForZeroAdjacencies = FALSE,
 
-                            # Network construction arguments: correlation options
+   # Topological overlap options
+   TOMType = "unsigned",           
+   TOMDenom = "min",
 
-                            corType = "pearson",
-                            maxPOutliers = 1,
-                            quickCor = 0,
-                            pearsonFallback = "individual", 
-                            cosineCorrelation = FALSE,
+   # Save individual TOMs? If not, they will be returned in the session.
+   saveTOMs = TRUE,
+   individualTOMFileNames = "individualTOM-Set%s-Block%b.RData",
 
-                            # Adjacency function options
-
-                            power = 6, 
-                            networkType = "unsigned", 
-                            checkPower = TRUE,
-                            replaceMissingAdjacencies = FALSE,
-
-                            # Topological overlap options
-
-                            TOMType = "unsigned",           
-                            TOMDenom = "min",
-
-                            # Save individual TOMs? If not, they will be returned in the session.
-
-                            saveTOMs = TRUE,
-                            individualTOMFileNames = "individualTOM-Set%s-Block%b.RData",
-
-                            # General options
-
-                            nThreads = 0,
-                            verbose = 2, indent = 0)
+   # General options
+   nThreads = 0,
+   useInternalMatrixAlgebra = FALSE,
+   verbose = 2, indent = 0)
 {
   spaces = indentSpaces(indent);
 
   dataSize = checkSets(multiExpr, checkStructure = TRUE);
+
   if (dataSize$structureOK)
   {
     nSets = dataSize$nSets;
@@ -1364,11 +1403,12 @@ blockwiseIndividualTOMs = function(multiExpr,
     multiFormat = TRUE;
   } else {
     multiExpr = multiData(multiExpr);
+    multiWeights = multiData(multiWeights);
     nSets = dataSize$nSets;
     nGenes = dataSize$nGenes;
     multiFormat = FALSE;
   }
-
+  .checkAndScaleMultiWeights(multiWeights, multiExpr, scaleByMax = FALSE);
 
   if (length(power)!=1)
   {
@@ -1435,16 +1475,14 @@ blockwiseIndividualTOMs = function(multiExpr,
   if (checkMissingData)
   {
     gsg = goodSamplesGenesMS(multiExpr, verbose = verbose - 1, indent = indent + 1)
-    if (!gsg$allOK)
+    if (!gsg$allOK) 
     {
-      for (set in 1:nSets) 
-        multiExpr[[set]]$data = multiExpr[[set]]$data[gsg$goodSamples[[set]], gsg$goodGenes];
+      multiExpr = mtd.subset(multiExpr, gsg$goodSamples, gsg$goodGenes);
+      if (!is.null(multiWeights)) multiWeights = mtd.subset(multiWeights, gsg$goodSamples, gsg$goodGenes);
     }
   } else {
-    gsg = list(goodGenes = rep(TRUE, nGenes), goodSamples = list());
-    for (set in 1:nSets)
-      gsg$goodSamples[[set]] = rep(TRUE, nSamples[set]);
-    gsg$allOK = TRUE;
+    gsg = list(goodGenes = rep(TRUE, nGenes), goodSamples = lapply(nSamples, function(n) rep(TRUE, n)),
+               allOK = TRUE);
   }
 
   nGGenes = sum(gsg$goodGenes);
@@ -1526,6 +1564,8 @@ blockwiseIndividualTOMs = function(multiExpr,
     {
       if (verbose>2) printFlush(paste(spaces, "....Working on set", set))
       selExpr = as.matrix(multiExpr[[set]]$data[, block]);
+      if (!is.null(multiWeights)) selWeights = as.matrix(multiWeights[[set]]$data[, block]) else
+          selWeights = NULL;
 
       # Calculate TOM by calling a custom C function:
       callVerb = max(0, verbose - 1); callInd = indent + 2;
@@ -1535,7 +1575,7 @@ blockwiseIndividualTOMs = function(multiExpr,
       # tempExpr = as.double(as.matrix(selExpr));
       warn = 0L;
 
-      tom = .Call("tomSimilarity_call", selExpr,
+      tom = .Call("tomSimilarity_call", selExpr, selWeights,
           as.integer(CcorType), as.integer(CnetworkType), as.double(power[set]), as.integer(CTOMType),
           as.integer(TOMDenomC),
           as.double(maxPOutliers),
@@ -1543,6 +1583,8 @@ blockwiseIndividualTOMs = function(multiExpr,
           as.integer(fallback),
           as.integer(cosineCorrelation),
           as.integer(replaceMissingAdjacencies),
+          as.integer(suppressTOMForZeroAdjacencies),
+          as.integer(useInternalMatrixAlgebra),
           warn, as.integer(nThreads),
           as.integer(callVerb), as.integer(callInd), PACKAGE = "WGCNA");
 
@@ -1628,14 +1670,13 @@ lowerTri2matrix = function(x, diag = 1)
 
 # Function to calculate consensus modules and eigengenes from all genes.
 
-blockwiseConsensusModules = function(multiExpr, 
+blockwiseConsensusModules = function(
+         multiExpr, 
 
          # Data checking options
-
          checkMissingData = TRUE,
 
          # Blocking options
-
          blocks = NULL, 
          maxBlockSize = 5000, 
          blockSizePenaltyPower = 5,
@@ -1648,7 +1689,6 @@ blockwiseConsensusModules = function(multiExpr,
          useIndivTOMSubset = NULL,
 
          # Network construction arguments: correlation options
-
          corType = "pearson",
          maxPOutliers = 1,
          quickCor = 0,
@@ -1656,7 +1696,6 @@ blockwiseConsensusModules = function(multiExpr,
          cosineCorrelation = FALSE,
 
          # Adjacency function options
-
          power = 6, 
          networkType = "unsigned", 
          checkPower = TRUE,
@@ -2378,6 +2417,7 @@ blockwiseConsensusModules = function(multiExpr,
   } else {
     mergedColors[gsg$goodGenes] = mergedMods$colors;
     allSampleMEs = vector(mode = "list", length = nSets);
+    names(allSampleMEs) = names(multiExpr);
     for (set in 1:nSets)
     {
       allSampleMEs[[set]] = 
@@ -3536,62 +3576,4 @@ consensusProjectiveKMeans = function (
   return( list(clusters = membershipAll, centers = centers, unmergedClusters = unmergedMembership,
                unmergedCenters = unmergedCenters) );
 }
-
-
-# old initialization code:
-
-# signe-set:
-  #n0 = 40;
-  #nSVectors = min(nCenters, as.integer(nSamples/2 * (1+exp(-nSamples/n0)))); 
-  #svd = svd(datExpr, nu = nSVectors, nv = 0);
-
-  #centers = matrix(0, nSamples, nCenters);
-  #for (sv in 1:nSVectors)  
-  #{
-  #  coeffs = matrix(runif(n = nCenters, min = -svd$d[sv], max = svd$d[sv]), nSamples, nCenters,
-  #                         byrow = TRUE);
-  #  centers = centers + coeffs * matrix(svd$u[, sv], nSamples, nCenters);
-  #}
-
-  #centers = scale(centers);
-
-  #dst = centerGeneDist(centers);
-
-  #bestDst = rep(0, nGenes);
-  #best = rep(0, nGenes);
-  #minRes = .C("minWhichMin", as.double(dst), as.integer(nCenters), as.integer(nGenes), 
-  #            as.double(bestDst), as.double(best));
-  #centerDist = minRes[[4]];
-  #membership = minRes[[5]]+1;
-  #rm(minRes); collectGarbage();
-
-# Old initialization for consensus projective K means
-#  centers = vector(mode="list", length = nSets);
-#  n0 = 40;
-#  nSVectors = min(nCenters, as.integer(nSamples/2 * (1+exp(-nSamples/n0))));
-#
-#  for (set in 1:nSets)
-#  {
-#    centers[[set]] = list(data = matrix(0, nSamples[set], nCenters));
-#    svd = svd(multiExpr[[set]]$data, nu = nSVectors, nv = 0);
-#
-#    for (sv in 1:nSVectors)
-#    {
-#      coeffs = matrix(runif(n = nCenters, min = -svd$d[sv], max = svd$d[sv]), nSamples[set], nCenters,
-#                             byrow = TRUE);
-#      centers[[set]]$data = centers[[set]]$data + coeffs * matrix(svd$u[, sv], nSamples[set], nCenters);
-#    }
-#
-#    centers[[set]]$data = scale(centers[[set]]$data);
-#  }
-#
-#  dst = centerGeneDist(centers);
-#
-#  bestDst = rep(0, nGenes);
-#  best = rep(0, nGenes);
-#  minRes = .C("minWhichMin", as.double(dst), as.integer(nCenters), as.integer(nGenes),
-#              as.double(bestDst), as.double(best));
-#  centerDist = minRes[[4]];
-#  membership = minRes[[5]]+1;
-#  rm(minRes); collectGarbage();
 

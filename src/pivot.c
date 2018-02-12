@@ -120,6 +120,120 @@ double pivot(double * v, size_t len, double target)
 }
 
 
+/*====================================================================================================
+ *
+ * Weighted pivot.
+ *
+ * arguments: 
+ *    v is the vector of values; 
+ *    from, to: indices between which to pivot. v[from],..., v[to-1] will be worked on.
+ *    target the quantile which is to be calculated;
+ *    w are the weights, assumed to be of length len;
+ *    csw is the cumulative sum of weights, csw[i] = sum(w, from=0, to=i)
+ *
+ *    NOT FINISHED
+ *
+ *===================================================================================================*/
+
+#define swap(a, b, temp)      { temp = a; a = b; b = temp; }
+
+double pivot_weighted(double * v, size_t from, size_t to, double target,
+                      double * w, double * csw)
+{
+  // Rprintf("Entering pivot with len=%d and target=%f\n   ", len, target);
+  // RprintV(v, len);
+
+  size_t len = to-from;
+  if (len > 2)
+  {
+    // pick the pivot, say as the median of the first, middle and last
+    size_t i1 = from, i2 = to-1, i3 = (from + to)/2, ip;
+    if (v[i1] <= v[i2])
+    {
+      if (v[i2] <= v[i3])
+        ip = i2;
+      else if (v[i3] >= v[i1])
+         ip = i3;
+      else 
+         ip = i1;
+    } else {
+      if (v[i1] <= v[i3])
+        ip = i1;
+      else if (v[i2] <= v[i3])
+        ip = i3;
+      else
+        ip = i2;
+    }
+
+    // put v[ip] at the end
+    double vp, wp;
+    swap(v[ip], v[to-1], vp);
+    swap(w[ip], w[to-1], wp);
+
+    // Rprintf("   pivot value: %5.3f, index: %d\n", vp, ip);
+
+    // pivot everything else
+    size_t bound = from;
+    for (size_t i=from; i<to; i++) if (v[i] < vp)
+    {
+      double temp;
+      swap(v[bound], v[i], temp);
+      swap(w[bound], w[i], temp)
+      bound++;
+    }
+
+    v[len-1] = v[bound]; v[bound] = vp;
+    w[len-1] = w[bound]; w[bound] = wp;
+
+    // Update the cumulative sums
+
+    double sum = from > 0 ? csw[from-1] : 0;
+    for (size_t i=from; i<to; i++)
+    {
+       sum = sum + w[i];
+       csw[i] = sum;
+    }
+
+    // Rprintf("   After pivoting: bound:%d and vector: ", bound); // RprintV(v, len);
+
+    // Did we find the target?
+    
+    double crit = target - bound;
+    // Rprintf("   crit: %5.3f\n", crit);
+    if (fabs(crit) > 1.0)
+    {
+      if (crit < 0)
+        return pivot(v, bound, target);
+      else
+        return pivot(v+bound+1, len-bound-1, target-bound-1);
+    }
+    // Rprintf("vMax(v, bound): %5.3f, vMin(v+bound+1, len-bound-1): %5.3f, vp: %5.3f\n", vMax(v, bound),
+                // vMin(v+bound+1, len-bound-1), vp);
+    if (crit < 0)
+    {
+       double v1 = vMax(v, bound);
+       return (v1 *(-crit) + vp * (1+crit));
+    } // else
+    double v2 = vMin(v+bound+1, len-bound-1);
+    return (vp * (1-crit) + v2 * crit);
+  } 
+  else if (len==2)
+  {
+      // Rprintf("  Short v, returning a direct value.\n"); 
+      double v1 = vMin(v, 2);
+      double v2 = vMax(v, 2);
+      if (target < 0) return v1;
+      else if (target > 1) return v2;
+      else return (target * v2 + (1-target) * v1);
+  }
+  else 
+  {
+     // Rprintf("  length 1 v, returning a direct value.\n"); 
+     return v[0];
+  }
+}
+
+
 /*
  *
  * This isn't needed for now.

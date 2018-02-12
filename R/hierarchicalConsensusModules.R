@@ -1,98 +1,101 @@
 # Hierarchical consensus modules
 
-hierarchicalConsensusModules = function(multiExpr, 
+hierarchicalConsensusModules = function(
+    multiExpr, 
+    multiWeights = NULL,
 
-         # Optional: multiExpr wigth imputed missing data
-         multiExpr.imputed = NULL,
+    # Optional: multiExpr wigth imputed missing data
+    multiExpr.imputed = NULL,
 
-         # Data checking options
+    # Data checking options
 
-         checkMissingData = TRUE,
+    checkMissingData = TRUE,
 
-         # Blocking options
+    # Blocking options
 
-         blocks = NULL, 
-         maxBlockSize = 5000, 
-         blockSizePenaltyPower = 5,
-         nPreclusteringCenters = NULL,
-         randomSeed = 12345,
+    blocks = NULL, 
+    maxBlockSize = 5000, 
+    blockSizePenaltyPower = 5,
+    nPreclusteringCenters = NULL,
+    randomSeed = 12345,
 
-         # ...or information needed to construct individual networks
+    # ...or information needed to construct individual networks
 
-         # Network construction options. This can be a single object of class NetworkOptions, or a multiData
-         # structure of NetworkOptions objects, one per element of multiExpr.
+    # Network construction options. This can be a single object of class NetworkOptions, or a multiData
+    # structure of NetworkOptions objects, one per element of multiExpr.
 
-         networkOptions,
+    networkOptions,
 
-         # Save individual TOMs?
+    # Save individual TOMs?
 
-         saveIndividualTOMs = TRUE,
-         individualTOMFileNames = "individualTOM-Set%s-Block%b.RData",
-         keepIndividualTOMs = FALSE,
+    saveIndividualTOMs = TRUE,
+    individualTOMFileNames = "individualTOM-Set%s-Block%b.RData",
+    keepIndividualTOMs = FALSE,
 
-         # Consensus calculation options
+    # Consensus calculation options
 
-         consensusTree = NULL,  # if not given, the one in consensusTOMInfo will be used.
+    consensusTree = NULL,  # if not given, the one in consensusTOMInfo will be used.
 
-         # Return options
-         saveConsensusTOM = TRUE,
-         consensusTOMFilePattern = "consensusTOM-%a-Block%b.RData",
+    # Return options
+    saveConsensusTOM = TRUE,
+    consensusTOMFilePattern = "consensusTOM-%a-Block%b.RData",
 
-         # Keep the consensus? Note: I will not have an option to keep intermediate results here.
-         keepConsensusTOM = saveConsensusTOM,
+    # Keep the consensus? Note: I will not have an option to keep intermediate results here.
+    keepConsensusTOM = saveConsensusTOM,
 
-         # Internal handling of TOMs
+    # Internal handling of TOMs
 
-         useDiskCache = NULL, chunkSize = NULL,
-         cacheBase = ".blockConsModsCache",
-         cacheDir = ".",
+    useDiskCache = NULL, chunkSize = NULL,
+    cacheBase = ".blockConsModsCache",
+    cacheDir = ".",
 
-         # Alternative consensus TOM input from a previous calculation 
+    # Alternative consensus TOM input from a previous calculation 
 
-         consensusTOMInfo = NULL,
+    consensusTOMInfo = NULL,
 
-         # Basic tree cut options 
+    # Basic tree cut options 
 
-         deepSplit = 2, 
-         detectCutHeight = 0.995, minModuleSize = 20,
-         checkMinModuleSize = TRUE,
+    deepSplit = 2, 
+    detectCutHeight = 0.995, minModuleSize = 20,
+    checkMinModuleSize = TRUE,
 
-         # Advanced tree cut opyions
+    # Advanced tree cut opyions
 
-         maxCoreScatter = NULL, minGap = NULL,
-         maxAbsCoreScatter = NULL, minAbsGap = NULL,
-         minSplitHeight = NULL, minAbsSplitHeight = NULL,
+    maxCoreScatter = NULL, minGap = NULL,
+    maxAbsCoreScatter = NULL, minAbsGap = NULL,
+    minSplitHeight = NULL, minAbsSplitHeight = NULL,
 
-         useBranchEigennodeDissim = FALSE,
-         minBranchEigennodeDissim = mergeCutHeight,
+    useBranchEigennodeDissim = FALSE,
+    minBranchEigennodeDissim = mergeCutHeight,
 
-         stabilityLabels = NULL,
-         stabilityCriterion = c("Individual fraction", "Common fraction"),
-         minStabilityDissim = NULL,
+    stabilityLabels = NULL,
+    stabilityCriterion = c("Individual fraction", "Common fraction"),
+    minStabilityDissim = NULL,
 
-         pamStage = TRUE,  pamRespectsDendro = TRUE,
+    pamStage = TRUE,  pamRespectsDendro = TRUE,
 
-         # Gene joining and removal from a module, and module "significance" criteria
-         # reassignThresholdPS = 1e-4, ## For now do not do gene reassignment - have to think more about how
-         # to do it.
+    # Gene joining and removal from a module, and module "significance" criteria
+    # reassignThresholdPS = 1e-4, ## For now do not do gene reassignment - have to think more about how
+    # to do it.
 
-         minCoreKME = 0.5, minCoreKMESize = minModuleSize/3,
-         minKMEtoStay = 0.2,
+    iteratePruningAndMerging = FALSE,
+    minCoreKME = 0.5, minCoreKMESize = minModuleSize/3,
+    minKMEtoStay = 0.2,
 
-         # Module eigengene calculation options
+    # Module eigengene calculation options
 
-         impute = TRUE,
-         trapErrors = FALSE,
+    impute = TRUE,
+    trapErrors = FALSE,
 
-         # Module merging options
+    # Module merging options
 
-         calibrateMergingSimilarities = FALSE,
-         mergeCutHeight = 0.15, 
-                          
-         # General options
-         collectGarbage = TRUE,
-         verbose = 2, indent = 0,
-         ...)
+    calibrateMergingSimilarities = FALSE,
+    mergeCutHeight = 0.15, 
+                     
+    # General options
+    collectGarbage = TRUE,
+    verbose = 2, indent = 0,
+    ...)
 {
   spaces = indentSpaces(indent);
 
@@ -100,6 +103,9 @@ hierarchicalConsensusModules = function(multiExpr,
   nSets = dataSize$nSets;
   nGenes = dataSize$nGenes;
   # nSamples = dataSize$nSamples;
+
+  haveWeights = !is.null(multiWeights);
+  .checkAndScaleMultiWeights(multiWeights, multiExpr, scaleByMax = FALSE);
 
   if (!is.null(randomSeed))
   {
@@ -169,6 +175,7 @@ hierarchicalConsensusModules = function(multiExpr,
 
     consensusTOMInfo = hierarchicalConsensusTOM(
          multiExpr = multiExpr,
+         multiWeights = multiWeights,
          checkMissingData = checkMissingData,
          blocks = blocks,
          maxBlockSize = maxBlockSize,
@@ -221,7 +228,7 @@ hierarchicalConsensusModules = function(multiExpr,
     networkOptions = consensusTOMInfo$individualTOMInfo$networkOptions;
   }
   
-  allLabels = rep(0, nGenes);
+  allLabels = mergedLabels = rep(0, nGenes);
   allLabelIndex = NULL;
 
   # Restrict data to goodSamples and goodGenes
@@ -229,7 +236,11 @@ hierarchicalConsensusModules = function(multiExpr,
   gsg = consensusTOMInfo$individualTOMInfo$blockInfo$goodSamplesAndGenes;
 
   if (!gsg$allOK)
+  {
     multiExpr = mtd.subset(multiExpr, gsg$goodSamples, gsg$goodGenes);
+    multiExpr.imputed = mtd.subset(multiExpr.imputed, gsg$goodSamples, gsg$goodGenes);
+    if (haveWeights) multiWeights = mtd.subset(multiWeights, gsg$goodSamples, gsg$goodGenes);
+  }
 
   nGGenes = sum(gsg$goodGenes);
   nGSamples = sapply(gsg$goodSamples, sum);
@@ -248,6 +259,7 @@ hierarchicalConsensusModules = function(multiExpr,
 
   cutreeLabels = list();
   maxUsedLabel = 0;
+  goodGeneLabels = rep(0, nGGenes);
   # Here's where the analysis starts
 
   for (blockNo in 1:nBlocks)
@@ -258,11 +270,9 @@ hierarchicalConsensusModules = function(multiExpr,
     nBlockGenes = length(block);
 
     selExpr = mtd.subset(multiExpr, , block);
+    if (haveWeights) selWeights = mtd.subset(multiWeights, , block);
     errorOccurred = FALSE;
     consTomDS = BD.getData(consensusTOMInfo$consensusData, blockNo);
-    # Temporary "cast" so fastcluster::hclust doesn't complain about non-integer size.
-    # attr(consTomDS, "Size") = as.integer(attr(consTomDS, "Size")); ## This should not be needed now.
-
     consTomDS = 1-consTomDS;
     
     if (collectGarbage) gc();
@@ -327,195 +337,70 @@ hierarchicalConsensusModules = function(multiExpr,
            (paste(spaces, "blockwiseConsensusModules: cutreeDynamic failed:\n    ", spaces, 
                   blockLabels, "\n", spaces, "    Error occured in block", blockNo, "\n",
                   spaces, "   Continuing with next block. "));
-      next;
     } else {
       blockLabels[blockLabels>0] = blockLabels[blockLabels>0] + maxUsedLabel;
       maxUsedLabel = max(blockLabels);
+      goodGeneLabels[block] = blockLabels;
     }
-    if (sum(blockLabels>0)==0)
-    {
-      if (verbose>1) 
-      {
-          printFlush(paste(spaces, "No modules detected in block", blockNo,
-                           "--> continuing with next block."))
-      }
-      next;
-    }
-
-    # Calculate eigengenes for this batch
-
-    if (verbose>2) printFlush(paste(spaces, "....calculating eigengenes.."));
-    blockAssigned = c(1:nBlockGenes)[blockLabels!=0];
-    blockLabelIndex = sort(unique(blockLabels[blockAssigned]));
-    blockConsMEs = try(multiSetMEs(selExpr, universalColors = blockLabels,
-                                   excludeGrey = TRUE, grey = 0, impute = impute,
-                                   # trapErrors = TRUE, returnValidOnly = TRUE, 
-                                   verbose = verbose-4, indent = indent + 3), silent = TRUE);
-    if (class(blockConsMEs)=='try-error')
-    {
-      if (verbose>0)
-      {
-        printFlush(paste(spaces, "*** multiSetMEs failed with the message:"));
-        printFlush(paste(spaces, "     ", blockConsMEs));
-        printFlush(paste(spaces, "*** --> Ending module detection here"));
-      } else warning(paste("blocwiseConsensusModules: multiSetMEs failed with the message: \n",
-               "      ", blockConsMEs, "\n--> continuing with next block."));
-      next;
-    }
-
-    deleteModules = NULL;
-    changedModules = NULL;
-
-    if (collectGarbage) gc();
-
-    # Check modules: make sure that of the genes present in the module, at least a minimum number
-    # have a correlation with the eigengene higher than a given cutoff, and that all member genes have
-    # the required minimum consensus KME
-
-    if (verbose>2) 
-      printFlush(paste(spaces, "....checking consensus modules for statistical meaningfulness.."));
-
-    KME = mtd.mapply(function(expr, me, netOpt)
-      {
-       # printFlush("=============================================================");
-       # print(netOpt$corOptions);
-        kme = do.call(netOpt$corFnc, c(list(x = expr, y = me), netOpt$corOptions));
-        if (!grepl("signed", netOpt$networkType)) kme = abs(kme);
-        kme;
-      }, selExpr, blockConsMEs, networkOptions, returnList = TRUE);
-    consKME = simpleHierarchicalConsensusCalculation(KME, consensusTree);
-
-    for (mod in 1:ncol(blockConsMEs[[1]]$data))
-    {
-      modGenes = (blockLabels==blockLabelIndex[mod]);
-      consKME1 = consKME[modGenes, mod];
-      if (sum(consKME1>minCoreKME) < minCoreKMESize) 
-      {
-        blockLabels[modGenes] = 0;
-        deleteModules = union(deleteModules, mod);
-        if (verbose>3) 
-          printFlush(paste(spaces, "    ..deleting module ",blockLabelIndex[mod], 
-                           ": of ", sum(modGenes), 
-                     " total genes in the module only ",  sum(consKME1>minCoreKME), 
-                     " have the requisite high correlation with the eigengene in all sets.", sep=""));
-      } else if (sum(consKME1<minKMEtoStay)>0)
-      {
-        if (verbose > 3) 
-          printFlush(paste(spaces, "    ..removing", sum(consKME1<minKMEtoStay),
-                           "genes from module", blockLabelIndex[mod], "because their KME is too low."));
-        blockLabels[modGenes][consKME1 < minKMEtoStay] = 0;
-        if (sum(blockLabels[modGenes]>0) < minModuleSize) 
-        {
-          deleteModules = union(deleteModules, mod);
-          blockLabels[modGenes] = 0;
-          if (verbose>3) 
-            printFlush(paste(spaces, "    ..deleting module ",blockLabelIndex[mod], 
-                     ": not enough genes in the module after removal of low KME genes.", sep=""));
-        } else {
-          changedModules = union(changedModules, blockLabelIndex[mod]);
-        }
-      }
-    }
-
-    # Remove marked modules
-
-    if (!is.null(deleteModules)) 
-    {
-       for (set in 1:nSets) blockConsMEs[[set]]$data = blockConsMEs[[set]]$data[, -deleteModules];
-       modGenes = is.finite(match(blockLabels, blockLabelIndex[deleteModules]));
-       blockLabels[modGenes] = 0;
-       modAllGenes = is.finite(match(allLabels, blockLabelIndex[deleteModules]));
-       allLabels[modAllGenes] = 0;
-       blockLabelIndex = blockLabelIndex[-deleteModules];
-    }
-
-    # Check whether there's anything left
-    if (sum(blockLabels>0)==0)
-    {
-      if (verbose>1) 
-      {
-        printFlush(paste(spaces, "  ..No significant modules detected in block", blockNo))
-        printFlush(paste(spaces, "  ..continuing with next block."));
-      }
-      next;
-    }
-
-    # Update module eigengenes
-
-    for (set in 1:nSets) 
-      if (is.null(dim(blockConsMEs[[set]]$data))) 
-        dim(blockConsMEs[[set]]$data) = c(length(blockConsMEs[[set]]$data), 1);
-
-    if (is.null(consMEs[[1]]))
-    {
-       for (set in 1:nSets) consMEs[[set]] = list(data = blockConsMEs[[set]]$data);
-    } else for (set in 1:nSets)
-       consMEs[[set]]$data = cbind(consMEs[[set]]$data, blockConsMEs[[set]]$data);
-
-    # Update allLabels
-
-    allLabelIndex = c(allLabelIndex, blockLabelIndex);
-    allLabels[gsg$goodGenes][block[blockAssigned]] = blockLabels[blockAssigned];
-
-    collectGarbage();
-  
   }
 
-  if (verbose>1) printFlush(paste(spaces, "..merging consensus modules that are too close.."));
+  prune = try(pruneAndMergeConsensusModules(
+     multiExpr = multiExpr,
+     multiWeights = multiWeights,
+     multiExpr.imputed = multiExpr.imputed,
+     labels = goodGeneLabels,
 
-  #print(table(allLabels));
-  #print(is.numeric(allLabels))
+     networkOptions = networkOptions,
+     consensusTree = consensusTree,
 
-  mergedLabels = rep(NA, nGenes);
+     minModuleSize = minModuleSize,
+     minCoreKME = minCoreKME, 
+     minCoreKMESize = minCoreKMESize,
+     minKMEtoStay = minKMEtoStay,
 
-  mergedMods = try(hierarchicalMergeCloseModules(multiExpr, allLabels[gsg$goodGenes],
-                            networkOptions = networkOptions, consensusTree = consensusTree,
-                            calibrateMESimilarities = calibrateMergingSimilarities,
-                            cutHeight = mergeCutHeight,
-                            relabel = TRUE,
-                            verbose = verbose-2, indent = indent + 2), silent = TRUE); 
-  if (class(mergedMods)=='try-error')
+     # Module eigengene calculation options
+
+     impute = impute,
+     trapErrors = trapErrors,
+
+     # Module merging options
+
+     calibrateMergingSimilarities = calibrateMergingSimilarities,
+     mergeCutHeight = mergeCutHeight,
+
+     iterate = iteratePruningAndMerging,
+     collectGarbage = collectGarbage,
+     getDetails = TRUE,
+     verbose = verbose, indent=indent), silent = TRUE);
+
+  if (inherits(prune, "try-error"))
   {
-    if (verbose>0) 
-    {
-      printFlush(paste(spaces, 'blockwiseConsensusModules: mergeCloseModule failed with this message:\n',
-            spaces, '    ', mergedMods, spaces,
-            '---> returning unmerged consensus modules'));
-    } else warning(paste('blockwiseConsensusModules: mergeCloseModule failed with this message:\n     ',
-                          mergedMods, '---> returning unmerged consensus modules'));
-    MEs = try(multiSetMEs(multiExpr, universalColors = allLabels[gsg$goodGenes]
-                          # trapErrors = TRUE, returnValidOnly = TRUE
-                          ), silent = TRUE);
-    if (class(MEs)=='try-error')
-    {
-      warning(paste('blockwiseConsensusModules: ME calculation failed with this message:\n     ',
-            MEs, '---> returning empty module eigengenes'));
-      allSampleMEs = NULL;
-    } else {
-      mergedLabels[gsg$goodGenes] = allLabels[gsg$goodGenes];
-      allSampleMEs = vector(mode = "list", length = nSets);
-      for (set in 1:nSets)
-      {
-        allSampleMEs[[set]] =
-           list(data = as.data.frame(matrix(NA, nrow = nGSamples[set], ncol = ncol(MEs[[set]]$data))));
-        allSampleMEs[[set]]$data[gsg$goodSamples[[set]], ] = MEs[[set]]$data[,];
-        names(allSampleMEs[[set]]$data) = names(MEs[[set]]$data);
-      }
-    }
-  } else {
-    mergedLabels[gsg$goodGenes] = mergedMods$labels;
-    allSampleMEs = vector(mode = "list", length = nSets);
-    for (set in 1:nSets)
-    {
-      allSampleMEs[[set]] = 
-         list(data = as.data.frame(matrix(NA, nrow = nGSamples[set], 
-                                          ncol = ncol(mergedMods$newMEs[[1]]$data))));
-      allSampleMEs[[set]]$data[gsg$goodSamples[[set]], ] = mergedMods$newMEs[[set]]$data[,];
-      names(allSampleMEs[[set]]$data) = names(mergedMods$newMEs[[set]]$data);
-    }
-  }
+    printFlush(paste(spaces, "'pruneAndMergeConsensusModules' failed with the following error message:\n",
+                     spaces, prune, "\n", spaces, "--> returning unpruned module labels.")); 
+    mergedLabels = goodGeneLabels;
+  } else 
+    mergedLabels = prune$labels;
 
-  names(allSampleMEs) = names(multiExpr);
+  allLabels[gsg$goodGenes] = goodGeneLabels;
+
+  MEs = try(multiSetMEs(multiExpr, universalColors = mergedLabels,
+                            # trapErrors = TRUE, returnValidOnly = TRUE
+                            ), silent = TRUE);
+  if (class(MEs)=='try-error')
+  {
+    warning(paste('blockwiseConsensusModules: ME calculation failed with this message:\n     ',
+          MEs, '---> returning empty module eigengenes'));
+    allSampleMEs = NULL;
+  } else {
+    mergedLabels[gsg$goodGenes] = mergedLabels;
+    index = lapply(gsg$goodSamples, function(gs)
+    {
+      out = rep(NA, length(gs));
+      out[gs] = 1:sum(gs);
+      out;
+    });
+    allSampleMEs = mtd.subset(MEs, index);
+  }
 
   if (removeConsensusTOMOnExit) 
   {
@@ -553,3 +438,230 @@ hierarchicalConsensusModules = function(multiExpr,
        details = if(getDetails) list(cutreeLabels = cutreeLabels) else NULL
       );
 }
+
+#=====================================================================================================
+#
+# pruneAndMergeConsensusModules
+#
+#=====================================================================================================
+
+pruneConsensusModules = function(
+  multiExpr,
+  multiWeights = NULL,
+  multiExpr.imputed = NULL,
+  MEs = NULL,
+  labels,
+
+  unassignedLabel = if (is.numeric(labels)) 0 else "grey",
+
+  networkOptions,
+  consensusTree,
+
+  minModuleSize,
+  minCoreKMESize = minModuleSize/3,
+  minCoreKME = 0.5,
+  minKMEtoStay = 0.2,
+
+  # Module eigengene calculation options
+  impute = TRUE,
+  collectGarbage = FALSE,
+  checkWeights = TRUE, 
+
+  verbose = 1, indent=0)
+{
+  spaces = indentSpaces(indent);
+
+  if (checkWeights) .checkAndScaleMultiWeights(multiWeights, multiExpr, scaleByMax = FALSE)
+
+  oldLabels = labels;
+  moduleIndex = sort(unique(labels));
+  moduleIndex = moduleIndex[moduleIndex!=0];
+  if (is.null(MEs))
+  {
+    # If multiExpr.imputed were not given, do not impute here, let moduleEigengenes do it since the imputation
+    # should be faster there.
+    if (is.null(multiExpr.imputed)) multiExpr.imputed = multiExpr
+    MEs = multiSetMEs(multiExpr.imputed, universalColors = labels,
+                  excludeGrey = TRUE, grey = unassignedLabel, impute = impute,
+                  verbose = verbose-4, indent = indent + 3);
+  } else {
+    meSize = checkSets(MEs);
+  }
+
+  deleteModules = numeric(0);
+  changedModules = numeric(0);
+
+  # Check modules: make sure that of the genes present in the module, at least a minimum number
+  # have a correlation with the eigengene higher than a given cutoff, and that all member genes have
+  # the required minimum consensus KME
+
+  if (verbose>0) 
+    printFlush(paste(spaces, "..checking kME in consensus modules"));
+
+  nSets = nSets(multiExpr);
+
+  if (is.null(multiWeights)) multiWeights = .listRep(numeric(0), nSets) 
+
+  KME = mtd.mapply(function(expr, weights, me, netOpt)
+    {
+     # printFlush("=============================================================");
+     # print(netOpt$corOptions);
+      haveWeights = length(dim(weights))==2;
+      kme = do.call(netOpt$corFnc, 
+                 c(list(x = expr, y = me, weights.x = weights), netOpt$corOptions));
+      if (!grepl("signed", netOpt$networkType)) kme = abs(kme);
+      kme;
+    }, multiExpr, multiWeights, MEs, networkOptions, returnList = TRUE);
+
+  consKME = simpleHierarchicalConsensusCalculation(KME, consensusTree);
+
+  if (collectGarbage) gc();
+
+  nMEs = checkSets(MEs)$nGenes;
+
+  for (mod in 1:nMEs)
+  {
+    modGenes = (labels==moduleIndex[mod]);
+    consKME1 = consKME[modGenes, mod];
+    if (sum(consKME1>minCoreKME) < minCoreKMESize) 
+    {
+      labels[modGenes] = 0;
+      deleteModules = union(deleteModules, mod);
+      if (verbose>1) 
+        printFlush(paste(spaces, "    ..deleting module ",moduleIndex[mod], 
+                         ": of ", sum(modGenes), 
+                   " total genes in the module only ",  sum(consKME1>minCoreKME), 
+                   " have the requisite high correlation with the eigengene in all sets.", sep=""));
+    } else if (sum(consKME1<minKMEtoStay)>0)
+    {
+      if (verbose > 1) 
+        printFlush(paste(spaces, "    ..removing", sum(consKME1<minKMEtoStay),
+                         "genes from module", moduleIndex[mod], "because their KME is too low."));
+      labels[modGenes][consKME1 < minKMEtoStay] = 0;
+      if (sum(labels[modGenes]>0) < minModuleSize) 
+      {
+        deleteModules = union(deleteModules, mod);
+        labels[modGenes] = unassignedLabel;
+        if (verbose>1) 
+          printFlush(paste(spaces, "    ..deleting module ",moduleIndex[mod], 
+                   ": not enough genes in the module after removal of low KME genes.", sep=""));
+      } else {
+        changedModules = union(changedModules, moduleIndex[mod]);
+      }
+    }
+  }
+
+  # Remove marked modules
+
+  if (length(deleteModules) > 0)
+  {
+     for (set in 1:nSets) MEs[[set]]$data = MEs[[set]]$data[, -deleteModules, drop = FALSE];
+     modGenes = labels %in% moduleIndex[deleteModules];
+     labels[modGenes] = unassignedLabel;
+     moduleIndex = moduleIndex[-deleteModules];
+  }
+
+  labels;
+}
+
+pruneAndMergeConsensusModules = function(
+  multiExpr,
+  multiWeights = NULL,
+  multiExpr.imputed = NULL,
+  labels,
+
+  unassignedLabel = if (is.numeric(labels)) 0 else "grey",
+  networkOptions,
+  consensusTree,
+
+  minModuleSize,
+  minCoreKMESize = minModuleSize/3,
+  minCoreKME = 0.5, 
+  minKMEtoStay = 0.2,
+
+  # Module eigengene calculation options
+
+  impute = TRUE,
+  trapErrors = FALSE,
+
+  # Module merging options
+
+  calibrateMergingSimilarities = FALSE,
+  mergeCutHeight = 0.15,
+
+  iterate = TRUE,
+  collectGarbage = FALSE,
+  getDetails = TRUE,
+  verbose = 1, indent=0)
+  
+{
+  spaces = indentSpaces(indent);
+  if (is.null(multiExpr.imputed)) 
+    multiExpr.imputed = mtd.apply(multiExpr, function(x) t(impute.knn(t(scale(x)))$data));
+
+  .checkAndScaleMultiWeights(multiWeights, multiExpr, scaleByMax = FALSE);
+
+  changed = TRUE;
+  if (getDetails) details = list(originalLabels = labels);
+  step = 0;
+  while (changed)
+  {
+    step = step + 1;
+    if (verbose > 0) printFlush(spaste(spaces, "step ", step));
+    stepDetails = list();
+    oldLabels = labels;
+    if (verbose>1) printFlush(paste(spaces, "..pruning genes with low KME.."));
+    labels = pruneConsensusModules(
+       multiExpr,
+       multiWeights = multiWeights,
+       multiExpr.imputed = multiExpr.imputed,
+       MEs = NULL,
+       labels = labels,
+
+       unassignedLabel = unassignedLabel,
+       networkOptions = networkOptions,
+       consensusTree = consensusTree,
+       minModuleSize = minModuleSize,
+       minCoreKME = minCoreKME,
+       minCoreKMESize = minCoreKMESize,
+       minKMEtoStay = minKMEtoStay,
+
+       impute = impute,
+       collectGarbage = collectGarbage,
+       checkWeights = FALSE,
+       verbose = verbose -2, indent = indent + 1)
+
+    if (getDetails) stepDetails = c(stepDetails, list(prunedLabels = labels))
+    #if (sum(labels>0)==0)
+    #{
+    #  if (verbose>1) 
+    #    printFlush(paste(spaces, "  ..No significant modules left."));
+    #  if (getDetails) details = c(details, stepDetails);
+    #  break;
+    #}
+
+    # Merging needs to be called only if we're either in first iteration or if pruning acutally changed
+    # modules.
+    if (step==1 || any(labels!=oldLabels))
+    {
+      if (verbose>1) printFlush(paste(spaces, "..merging consensus modules that are too close.."));
+
+      mergedMods = hierarchicalMergeCloseModules(multiExpr, labels = labels,
+                                networkOptions = networkOptions, consensusTree = consensusTree,
+                                calibrateMESimilarities = calibrateMergingSimilarities,
+                                cutHeight = mergeCutHeight,
+                                relabel = TRUE,
+                                verbose = verbose-2, indent = indent + 1);
+      if (getDetails) stepDetails = c(stepDetails, list(mergeInfo = mergedMods));
+      labels = mergedMods$labels;
+    }
+    changed = !all(labels==oldLabels) & iterate;
+    if (getDetails) details = c(details, list(stepDetails));
+  }
+  if (getDetails) 
+  {
+     names(details)[-1] = spaste("Iteration.", prependZeros(1:step));
+     list(labels = labels, lastMergeInfo = mergedMods, details = details);
+  } else labels;
+}
+

@@ -7,6 +7,7 @@
 \usage{
 TOMsimilarityFromExpr(
   datExpr, 
+  weights = NULL,
   corType = "pearson", 
   networkType = "unsigned", 
   power = 6, 
@@ -17,12 +18,18 @@ TOMsimilarityFromExpr(
   pearsonFallback = "individual",
   cosineCorrelation = FALSE, 
   replaceMissingAdjacencies = FALSE,
+  suppressTOMForZeroAdjacencies = FALSE,
+  useInternalMatrixAlgebra = FALSE,
   nThreads = 0,
   verbose = 1, indent = 0)
 }
 \arguments{
   \item{datExpr}{ expression data. A data frame in which columns are genes and rows ar samples. NAs are
 allowed, but not too many. }
+
+  \item{weights}{optional observation weights for \code{datExpr} to be used in correlation calculation. 
+A matrix of the same dimensions as
+\code{datExpr}, containing non-negative weights.}
 
   \item{corType}{ character string specifying the correlation to be used. Allowed values are (unique
 abbreviations of) \code{"pearson"} and \code{"bicor"}, corresponding to Pearson and bidweight
@@ -75,6 +82,11 @@ cosine calculation differs from the standard one in that it does not subtract th
 
   \item{replaceMissingAdjacencies}{logical: should missing values in the calculation of adjacency be
 replaced by 0?}
+
+  \item{suppressTOMForZeroAdjacencies}{Logical: should TOM be set to zero for zero adjacencies?}
+
+  \item{useInternalMatrixAlgebra}{Logical: should WGCNA's own, slow, matrix multiplication be used instead of
+R-wide BLAS? Only useful for debugging.}
 
   \item{nThreads}{ non-negative integer specifying the number of parallel threads to be used by certain
 parts of correlation calculations. This option only has an effect on systems on which a POSIX thread

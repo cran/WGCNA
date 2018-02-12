@@ -7,8 +7,6 @@
 #include <iostream>
 #include "array.h"
 
-#include "corFunctions-common.h"
-
 using namespace std;
 using namespace Rcpp;
 

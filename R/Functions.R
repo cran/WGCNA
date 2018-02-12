@@ -1336,7 +1336,9 @@ mergeCloseModules = function(
 
 hierarchicalMergeCloseModules = function(
   # input data
-  multiExpr, labels,
+  multiExpr, 
+  multiExpr.imputed = NULL,
+  labels,
 
   # Optional starting eigengenes
   MEs = NULL,  
@@ -1389,7 +1391,19 @@ hierarchicalMergeCloseModules = function(
 
   setsize = checkSets(multiExpr);
   nSets = setsize$nSets;
-  
+
+  if (is.null(multiExpr.imputed))
+  {
+    if (impute) {
+      multiExpr.imputed = mtd.apply(multiExpr, imputeByModule,
+           labels = labels, 
+           excludeUnassigned = FALSE, unassignedLabel = unassdColor,
+           scale = TRUE)
+    } else 
+      multiExpr.imputed = multiExpr;
+  } else
+    stopifnot(isTRUE(all.equal(checkSets(multiExpr.imputed), setsize)));
+           
   if (!is.null(MEs))
   {
     checkMEs = checkSets(MEs, checkStructure = TRUE);
@@ -1428,7 +1442,7 @@ hierarchicalMergeCloseModules = function(
     {
       if (is.null(MEs)) 
       {
-        MEs = multiSetMEs(multiExpr, colors = NULL, universalColors = labels,
+        MEs = multiSetMEs(multiExpr.imputed, colors = NULL, universalColors = labels,
                         impute = impute,
                         subHubs = TRUE, trapErrors = FALSE, excludeGrey = TRUE, 
                         grey = unassdColor,
@@ -1439,7 +1453,7 @@ hierarchicalMergeCloseModules = function(
       {
         if ((iteration==1) & (verbose>0)) printFlush(paste(spaces, "  Number of given module labels", 
                   "does not match number of given MEs => recalculating the MEs."))
-        MEs = multiSetMEs(multiExpr, colors = NULL, universalColors = labels,
+        MEs = multiSetMEs(multiExpr.imputed, colors = NULL, universalColors = labels,
                         impute = impute,
                         subHubs = TRUE, trapErrors = FALSE, excludeGrey = TRUE,
                         grey = unassdColor,
@@ -1555,7 +1569,7 @@ hierarchicalMergeCloseModules = function(
       if (nNewMods<nOldMods | relabel | getNewUnassdME)
       {
         if (verbose>0) printFlush(paste(spaces, "  Calculating new MEs..."));
-        NewMEs = multiSetMEs(multiExpr, colors = NULL, universalColors = MergedNewColors,
+        NewMEs = multiSetMEs(multiExpr.imputed, colors = NULL, universalColors = MergedNewColors,
                              impute = impute, subHubs = TRUE, trapErrors = FALSE,
                              excludeGrey = !getNewUnassdME, grey = unassdColor,
                              verbose = verbose-1, indent = indent+1);
@@ -1627,6 +1641,7 @@ sigmoidAdjacencyFunction = function(ss, mu=0.8, alpha=20)
 
 softConnectivity=function(datExpr, 
                           corFnc = "cor", corOptions = "use = 'p'", 
+                          weights = NULL,
                           type = "unsigned", 
                           power = if (type == "signed") 15 else 6, 
                           blockSize = 1500, minNSamples = NULL,
@@ -1663,7 +1678,7 @@ softConnectivity=function(datExpr,
   {
     end = min(start + blockSize-1, nGenes);
     index1=start:end;
-    ad1 = adjacency(datExpr, index1, power = power, type = type, 
+    ad1 = adjacency(datExpr, weights = weights, selectCols = index1, power = power, type = type, 
                     corFnc = corFnc, corOptions = corOptions);
     k[index1]=colSums(ad1, na.rm = TRUE)-1;
     # If fewer than minNSamples contain gene expression information for a given
@@ -1787,11 +1802,18 @@ datout[i, 11] = Heterogeneity
 # PL: re-written for parallel processing
 # Alexey Sergushichev: speed up by pre-calculating correlation powers
 
-pickSoftThreshold = function (data, dataIsExpr = TRUE, RsquaredCut = 0.85, 
-    powerVector = c(seq(1, 10, by = 1), seq(12, 20, by = 2)), removeFirst = FALSE, nBreaks = 10, 
-    blockSize = NULL, corFnc = cor, corOptions = list(use = 'p'), 
-    networkType = "unsigned", moreNetworkConcepts=FALSE, 
-    gcInterval = NULL, verbose = 0, indent = 0)
+pickSoftThreshold = function (
+  data,
+  dataIsExpr = TRUE,
+  weights = NULL,
+  RsquaredCut = 0.85,
+  powerVector = c(seq(1, 10, by = 1), seq(12, 20, by = 2)),
+  removeFirst = FALSE, nBreaks = 10, blockSize = NULL,
+  corFnc = cor, corOptions = list(use = 'p'),
+  networkType = "unsigned",
+  moreNetworkConcepts = FALSE,
+  gcInterval = NULL,
+  verbose = 0, indent = 0)
 {
     powerVector = sort(powerVector)
     intType = charmatch(networkType, .networkTypes)
@@ -1850,6 +1872,15 @@ pickSoftThreshold = function (data, dataIsExpr = TRUE, RsquaredCut = 0.85,
     # Main loop
     startG = 1
     lastGC = 0;
+    corOptions$x = data;
+    if (!is.null(weights))
+    {
+      if (!dataIsExpr) 
+        stop("Weights can only be used when 'data' represents expression data ('dataIsExpr' must be TRUE).");
+      if (!isTRUE(all.equal(dim(data), dim(weights))))
+        stop("When 'weights' are given, dimensions of 'data' and 'weights' must be the same.");
+      corOptions$weights.x = weights;
+    }
     while (startG <= nGenes) 
     {
       endG = min (startG + blockSize - 1, nGenes)
@@ -1869,8 +1900,9 @@ pickSoftThreshold = function (data, dataIsExpr = TRUE, RsquaredCut = 0.85,
         nGenes1 = length(useGenes);
         if (dataIsExpr)
         {
-          corOptions$x = data;
           corOptions$y = data[ , useGenes];
+          if (!is.null(weights))
+            corOptions$weights.y = weights[ , useGenes];
           corx = do.call(corFnc, corOptions);
           if (intType == 1) {
               corx = abs(corx)
@@ -2223,7 +2255,8 @@ vectorTOM = function(datExpr, vect, subtract1 = FALSE, blockSize = 2000,
 
 
 subsetTOM = function(datExpr, subset, 
-                    corFnc = "cor", corOptions = "use = 'p'", networkType = "unsigned", power = 6,
+                    corFnc = "cor", corOptions = "use = 'p'", 
+                    weights = NULL, networkType = "unsigned", power = 6,
                     verbose = 1, indent = 0)
 {
   spaces = indentSpaces(indent);
@@ -2253,7 +2286,8 @@ subsetTOM = function(datExpr, subset,
   if (is.na(intType))
     stop(paste("Unrecognized 'networkType'. Recognized values are", paste(.networkTypes, collapse = ", ")));
 
-  adj = adjacency(datExpr, subset, power = power, type = networkType, corFnc = corFnc, 
+  adj = adjacency(datExpr, weights = weights, selectCols = subset, power = power, 
+                  type = networkType, corFnc = corFnc, 
                   corOptions = corOptions);
 
   adj[is.na(adj)] = 0;
@@ -2283,9 +2317,11 @@ subsetTOM = function(datExpr, subset,
 # Caution: no checking of selectCols validity is performed.
 # The probability method is removed as it's not used.
  
-adjacency = function(datExpr, selectCols=NULL, type = "unsigned", power = if (type=="distance") 1 else 6,
-                     corFnc = "cor", corOptions = "use = 'p'",
-                     distFnc = "dist", distOptions = "method = 'euclidean'")
+adjacency = function(datExpr, selectCols=NULL, 
+                     type = "unsigned", power = if (type=="distance") 1 else 6,
+                     corFnc = "cor", corOptions = list(use = 'p'), weights = NULL, 
+                     distFnc = "dist", distOptions = "method = 'euclidean'",
+                     weightArgNames = c("weights.x", "weights.y"))
 {
   intType = charmatch(type, .adjacencyTypes)
   if (is.na(intType))
@@ -2293,24 +2329,47 @@ adjacency = function(datExpr, selectCols=NULL, type = "unsigned", power = if (ty
 
   corFnc.fnc = match.fun(corFnc);
 
+  .checkAndScaleWeights(weights, datExpr, scaleByMax = FALSE);
+
+  if (length(weights) > 0)
+  {
+    if (is.null(selectCols))
+    {
+       if (is.list(corOptions))
+       {
+         weightOpt = list(weights.x = weights);
+         names(weightOpt) = weightArgNames[1];
+       } else spaste(weightArgNames[1], " = weights");
+    } else {
+       if (is.list(corOptions))
+       {
+         weightOpt = list(weights.x = weights, weights.y = weights[, selectCols]);
+         names(weightOpt) = weightArgNames[c(1,2)];
+       } else spaste(weightArgNames[1], " = weights", weightArgNames[2], " = weights[, selectCols]");
+    }
+  } else {
+    weightOpt = if (is.list(corOptions)) list() else ""
+  }
+
   if (intType < 4)
   {
     if (is.null(selectCols))
     {
       if (is.list(corOptions))
       {
-         cor_mat = do.call(corFnc.fnc, c(list(x = datExpr), corOptions))
+         cor_mat = do.call(corFnc.fnc, c(list(x = datExpr), weightOpt, corOptions))
       } else {
-         corExpr = parse(text = paste(corFnc, "(datExpr ", prepComma(corOptions), ")"));
+         corExpr = parse(text = paste(corFnc, "(datExpr ", prepComma(weightOpt), prepComma(corOptions), ")"));
          # cor_mat = cor(datExpr, use = "p");
          cor_mat = eval(corExpr);
       }
     } else {
       if (is.list(corOptions))
       {
-         cor_mat = do.call(corFnc.fnc, c(list(x = datExpr, y = datExpr[, selectCols]), corOptions))
+         cor_mat = do.call(corFnc.fnc, c(list(x = datExpr, y = datExpr[, selectCols]), weightOpt, corOptions))
       } else {
-        corExpr = parse(text = paste(corFnc, "(datExpr, datExpr[, selectCols] ", prepComma(corOptions), ")"));
+        corExpr = parse(text = paste(corFnc, "(datExpr, datExpr[, selectCols] ", prepComma(weightOpt), 
+                                     prepComma(corOptions), ")"));
         #cor_mat = cor(datExpr, datExpr[, selectCols], use="p");
         cor_mat = eval(corExpr);
       }
@@ -2640,14 +2699,14 @@ TOMplot = function(dissim, dendro, Colors=NULL, ColorsLeft = Colors, terrainColo
      dendro$height = (dendro$height - min(dendro$height))/(1.15 *
                                      (max(dendro$height)-min(dendro$height)))
      if (terrainColors) {
-       .heatmap(as.matrix(dissim), Rowv=as.dendrogram(dendro, hang = 0.1), 
-                Colv= as.dendrogram(dendro, hang = 0.1), 
+       .heatmap(as.matrix(dissim), Rowv=dendro,
+                Colv= dendro,
                 scale="none", revC = TRUE, ColSideColors=as.character(labeltree),
                 RowSideColors=as.character(labelrow), labRow=FALSE, labCol=FALSE, 
                 col = terrain.colors(100), setLayout = setLayout, ...) 
      } else {
-       .heatmap(as.matrix(dissim), Rowv=as.dendrogram(dendro, hang = 0.1), 
-                Colv= as.dendrogram(dendro, hang = 0.1), 
+       .heatmap(as.matrix(dissim), Rowv=dendro,
+                Colv= dendro,
                scale="none",revC = TRUE, ColSideColors=as.character(labeltree),
                RowSideColors=as.character(labelrow), labRow=FALSE, labCol=FALSE, setLayout = setLayout,
                ...)
@@ -2656,7 +2715,7 @@ TOMplot = function(dissim, dendro, Colors=NULL, ColorsLeft = Colors, terrainColo
 } #end of function
 
 
-plotNetworkHeatmap = function(datExpr,  plotGenes, useTOM = TRUE, power = 6 , 
+plotNetworkHeatmap = function(datExpr,  plotGenes, weights = NULL, useTOM = TRUE, power = 6 , 
                               networkType = "unsigned", main = "Heatmap of the network") 
 {
   match1=match( plotGenes ,names(data.frame(datExpr)) )
@@ -2674,7 +2733,8 @@ plotNetworkHeatmap = function(datExpr,  plotGenes, useTOM = TRUE, power = 6 ,
                   "   Hint: please input more genes.")); plot(1,1)
   } else {
     datErest=datExpr[, match1 ]
-    ADJ1 = adjacency(datErest, power = power, type = networkType)
+    if (!is.null(weights)) weights = weights[, match1];
+    ADJ1 = adjacency(datErest, weights = weights, power = power, type = networkType)
     if (useTOM) {
        diss1= 1-TOMsimilarity(ADJ1)   
     } else {
@@ -2777,6 +2837,7 @@ intramodularConnectivity = function(adjMat, colors, scaleByMax = FALSE)
 
 intramodularConnectivity.fromExpr = function(datExpr, colors, 
                           corFnc = "cor", corOptions = "use = 'p'",
+                          weights = NULL,
                           distFnc = "dist", distOptions = "method = 'euclidean'",
                           networkType = "unsigned", power = if (networkType=="distance") 1 else 6,
                           scaleByMax = FALSE,
@@ -2793,10 +2854,11 @@ intramodularConnectivity.fromExpr = function(datExpr, colors,
   for (i in c(1:nLevels) )
   {
     rest1=colors==colorLevels[i];
+    weights1 = if (is.null(weights)) weights else weights[, rest1];
     if (sum(rest1) <3 ) {
        kWithin[rest1]=0
     } else {
-       adjMat = adjacency(datExpr[, rest1], type = networkType, power = power,
+       adjMat = adjacency(datExpr[, rest1], weights = weights1, type = networkType, power = power,
                           corFnc = corFnc, corOptions = corOptions,
                           distFnc = distFnc, distOptions = distOptions);
        kWithin[rest1]=colSums(adjMat, na.rm = TRUE)-1;
@@ -2805,7 +2867,7 @@ intramodularConnectivity.fromExpr = function(datExpr, colors,
   }
   if (getWholeNetworkConnectivity)
   {
-    kTotal= softConnectivity(datExpr, corFnc = corFnc, corOptions = corOptions,
+    kTotal= softConnectivity(datExpr, weights = weights, corFnc = corFnc, corOptions = corOptions,
                            type = networkType, power = power);
     kOut=kTotal-kWithin
     if (scaleByMax) kOut=rep(NA, nNodes);
@@ -3144,16 +3206,26 @@ verboseBoxplot = function(x, g,
           main=paste(main,"p =",p1 ),
           xlab=xlab, ylab=ylab, cex=cex, cex.axis=cex.axis,cex.lab=cex.lab, cex.main=cex.main, ...);
 
-  if (exists(".Random.seed"))
+  if (addScatterplot)
   {
-    savedSeed = .Random.seed;
-    set.seed(randomSeed);
-    on.exit(.Random.seed <<- savedSeed);
-  }
+    if (exists(".Random.seed"))
+    {
+      savedSeed = .Random.seed;
+      set.seed(randomSeed);
+      on.exit(.Random.seed <<- savedSeed);
+    }
+    
 
-  set.seed(randomSeed)  # so we can make the identical plot again
-  points(jitter(rep(1:ncol(boxp$stats),boxp$n), jitter), unlist(tapply(x, g, identity)),
-         pch=pch, col=pt.col, bg = pt.bg, cex = pt.cex)
+    n = length(g);
+    pch = unlist(tapply(.extend(pch, n), g, identity));
+    pt.col = unlist(tapply(.extend(pt.col, n), g, identity));
+    pt.bg = unlist(tapply(.extend(pt.bg, n), g, identity));
+    pt.cex = unlist(tapply(.extend(pt.cex, n), g, identity));
+
+    set.seed(randomSeed)  # so we can make the identical plot again
+    points(jitter(rep(1:ncol(boxp$stats),boxp$n), jitter), unlist(tapply(x, g, identity)),
+           pch=pch, col=pt.col, bg = pt.bg, cex = pt.cex)
+  }
 
   invisible(boxp);
 }
@@ -3267,18 +3339,28 @@ verboseBarplot = function (x, g,  main = "",
         err.bp(as.vector(Means1), as.vector(SE), two.sided = two.sided, 
             numberStandardErrors = numberStandardErrors, horiz = horiz)
     }
-    if (exists(".Random.seed"))
+    if (addScatterplot)
     {
-      savedSeed = .Random.seed;
-      set.seed(randomSeed);
-      on.exit(.Random.seed <<- savedSeed);
-    }
+      if (exists(".Random.seed"))
+      {
+        savedSeed = .Random.seed;
+        set.seed(randomSeed);
+        on.exit(.Random.seed <<- savedSeed);
+      }
 
-    x.list = tapply(x, g, identity);
-    nPerGroup = sapply(x.list, length);
-    set.seed(randomSeed)  # so we can make the identical plot again
-    points(jitter(rep(ret, nPerGroup), jitter), unlist(x.list),
-           pch=pch, col=pt.col, bg = pt.bg, cex = pt.cex)
+      x.list = tapply(x, g, identity);
+      nPerGroup = sapply(x.list, length);
+      set.seed(randomSeed)  # so we can make the identical plot again
+
+      n = length(g);
+      pch = unlist(tapply(.extend(pch, n), g, identity));
+      pt.col = unlist(tapply(.extend(pt.col, n), g, identity));
+      pt.bg = unlist(tapply(.extend(pt.bg, n), g, identity));
+      pt.cex = unlist(tapply(.extend(pt.cex, n), g, identity));
+
+      points(jitter(rep(ret, nPerGroup), jitter), unlist(x.list),
+             pch=pch, col=pt.col, bg = pt.bg, cex = pt.cex)
+    }
 
     attr(ret, "height") = as.vector(Means1)
     attr(ret, "stdErr") = as.vector(SE)
@@ -4937,6 +5019,7 @@ labeledHeatmap = function (
   xLabelsPosition = "bottom",
   xLabelsAngle = 45,
   xLabelsAdj = 1,
+  yLabelsPosition = "left",
   xColorWidth = 2*strheight("M"),
   yColorWidth = 2*strwidth("M"),
   xColorOffset = strheight("M")/3, 
@@ -4946,11 +5029,14 @@ labeledHeatmap = function (
   naColor = "grey",
   textMatrix = NULL, cex.text = NULL, 
   textAdj = c(0.5, 0.5),
+  # labeling of rows and columns
   cex.lab = NULL, 
   cex.lab.x = cex.lab,
   cex.lab.y = cex.lab,
   colors.lab.x = 1,
   colors.lab.y = 1,
+  font.lab.x = 1,
+  font.lab.y = 1,
   bg.lab.x = NULL,
   bg.lab.y = NULL,
   x.adj.lab.y = 1,
@@ -5008,6 +5094,10 @@ labeledHeatmap = function (
   if (is.na(xLabPos))
     stop("Argument 'xLabelsPosition' must be (a unique abbreviation of) 'bottom', 'top'");
 
+  yLabPos = charmatch(yLabelsPosition, c("left", "right"));
+  if (is.na(yLabPos))
+    stop("Argument 'yLabelsPosition' must be (a unique abbreviation of) 'left', 'right'");
+
   if (is.null(colors)) colors = heat.colors(30);
   if (invertColors) colors = .reverseVector(colors);
   labPos = .heatmapWithLegend(Matrix, signed = FALSE, colors = colors, naColor = naColor, cex.legend = cex.lab, 
@@ -5031,8 +5121,8 @@ labeledHeatmap = function (
   yspacing = abs(labPos$yMid[2] - labPos$yMid[1]);
 
   nylabels = length(yLabels)
-  offsetx = xColorOffset;
-  offsety = yColorOffset;
+  offsetx = .extend(xColorOffset, nCols);
+  offsety = .extend(yColorOffset, nRows);
   xColW = xColorWidth;
   yColW = yColorWidth;
 
@@ -5045,15 +5135,18 @@ labeledHeatmap = function (
   # Create the background for column and row labels.
 
   extension.left = par("mai")[2] * # left margin width in inches
-                   par("cxy")[1] / par("cin")[1]   # charcter size in user corrdinates/character size in inches
+                   par("cxy")[1] / par("cin")[1]   # character size in user corrdinates/character size in inches
+
+  extension.right = par("mai")[4] * # right margin width in inches
+                   par("cxy")[1] / par("cin")[1]   # character size in user corrdinates/character size in inches
 
   extension.bottom = par("mai")[1] * 
-                   par("cxy")[2] / par("cin")[2]- # charcter size in user corrdinates/character size in inches
-                      offsety   
+                   par("cxy")[2] / par("cin")[2]- # character size in user corrdinates/character size in inches
+                      offsetx   
                      
   extension.top = par("mai")[3] * 
-                   par("cxy")[2] / par("cin")[2]-   # charcter size in user corrdinates/character size in inches
-                     offsety
+                   par("cxy")[2] / par("cin")[2]-   # character size in user corrdinates/character size in inches
+                     offsetx
 
   figureBox = par("usr");
   figXrange = figureBox[2] - figureBox[1];
@@ -5081,8 +5174,8 @@ labeledHeatmap = function (
 
     for (c in 1:nCols)
        polygon(x = c(xLeft[c], xLeft[c], xLeft[c] + ext.x, xRight[c] + ext.x, xRight[c], xRight[c]),
-               y = c(y0, y0-sign*offset, y0-sign*offset - ext.y, y0-sign*offset - ext.y, 
-                     y0-sign*offset, y0), 
+               y = c(y0, y0-sign*offset[c], y0-sign*offset[c] - ext.y, y0-sign*offset[c] - ext.y, 
+                     y0-sign*offset[c], y0), 
                border = bg.lab.x[c], col = bg.lab.x[c], xpd = TRUE);
   }
 
@@ -5094,54 +5187,98 @@ labeledHeatmap = function (
     {
       bg.lab.y = rev(bg.lab.y);
     }
+    if (yLabPos==1)
+    {
+      xl = xmin-extension.left;
+      xr = xmin;
+    } else {
+      xl = xmax;
+      xr = xmax + extension.right;
+    }
     for (r in 1:nRows)
-      rect(xmin-extension.left, yBot[r], xmin, yTop[r],
+      rect(xl, yBot[r], xr, yTop[r],
            col = bg.lab.y[r], border = bg.lab.y[r], xpd = TRUE);
   }
 
+  colors.lab.x = .extend(colors.lab.x, nCols);
+  font.lab.x = .extend(font.lab.x, nCols);
   # Write out labels
   if (sum(!xValidColors)>0)
   {
-    xLabYPos = ifelse(xLabPos==1, ymin - offsetx- textOffsetY, ymax + offsetx + textOffsetY)
+    xLabYPos = if(xLabPos==1) ymin - offsetx- textOffsetY else ymax + offsetx + textOffsetY;
     if (is.null(cex.lab)) cex.lab = 1;
-    mapply(textFnc, x = labPos$xMid[xTextLabInd], labels = xLabels[xTextLabInd],
-           MoreArgs = list(y = xLabYPos, srt = xLabelsAngle, 
-          adj = xLabelsAdj, xpd = TRUE, cex = cex.lab.x, col = colors.lab.x));
+    mapply(textFnc, x = labPos$xMid[xTextLabInd], 
+           y = xLabYPos, labels = xLabels[xTextLabInd],
+           col = colors.lab.x[xTextLabInd],
+           font = font.lab.x[xTextLabInd],
+           MoreArgs = list(srt = xLabelsAngle, 
+          adj = xLabelsAdj, xpd = TRUE, cex = cex.lab.x));
   }
   if (sum(xValidColors)>0)
   {
-    baseY = ifelse(xLabPos==1, ymin-offsetx, ymax + offsetx);
-    deltaY = ifelse(xLabPos==1, xColW, -xColW);
-    rect(xleft = labPos$xMid[xColorLabInd] - xspacing/2, ybottom = baseY,
-         xright = labPos$xMid[xColorLabInd] + xspacing/2, ytop = baseY + deltaY,
+    baseY = if (xLabPos==1) ymin-offsetx else  ymax + offsetx;
+    deltaY = if (xLabPos==1) xColW else -xColW;
+    rect(xleft = labPos$xMid[xColorLabInd] - xspacing/2, ybottom = baseY[xColorLabInd],
+         xright = labPos$xMid[xColorLabInd] + xspacing/2, ytop = baseY[xColorLabInd] + deltaY,
          density = -1,  col = substring(xLabels[xColorLabInd], 3), 
          border = substring(xLabels[xColorLabInd], 3), xpd = TRUE)
     if (!is.null(xSymbols))
-      mapply(textFnc, x = labPos$xMid[xColorLabInd], labels = xSymbols[xColorLabInd],
-              MoreArgs = list(baseY -textOffsetY - sign(deltaY)* strwidth("M")/3,
-             adj = xLabelsAdj, 
-             xpd = TRUE, srt = xLabelsAngle, cex = cex.lab.x, col = colors.lab.x));
+      mapply(textFnc, x = labPos$xMid[xColorLabInd], 
+             y = baseY[xColorLabInd] -textOffsetY - sign(deltaY)* strwidth("M")/3, 
+             labels = xSymbols[xColorLabInd],
+             col = colors.lab.x[xColorLabInd],
+             font = font.lab.x[xColorLabInd],
+              MoreArgs = list( adj = xLabelsAdj, 
+             xpd = TRUE, srt = xLabelsAngle, cex = cex.lab.x));
   }
   x.adj.lab.y = .extend(x.adj.lab.y, nRows)
-  leftMarginWidth = par("mai")[2] / par("pin")[1] * xrange
-  xSpaceForYLabels = leftMarginWidth-2*strwidth("M")/3 - c(0, offsety)[yValidColors + 1];
-  xPosOfYLabels.relative = xSpaceForYLabels * (1-x.adj.lab.y);
+  if (yLabPos==1)
+  {
+    marginWidth = par("mai")[2] / par("pin")[1] * xrange
+  } else {
+    marginWidth = par("mai")[4] / par("pin")[1] * xrange
+  }
+  xSpaceForYLabels = marginWidth-2*strwidth("M")/3 - ifelse(yValidColors, yColW, 0);
+  xPosOfYLabels.relative = xSpaceForYLabels * (1-x.adj.lab.y) + offsety
 
   colors.lab.y = .extend(colors.lab.y, nRows);
+  font.lab.y = .extend(font.lab.y, nRows);
 
   if (sum(!yValidColors)>0)
   {
     if (is.null(cex.lab)) cex.lab = 1;
+    if (yLabPos==1)
+    {
+      x = xmin - strwidth("M")/3 - xPosOfYLabels.relative[yTextLabInd]
+      adj = x.adj.lab.y[yTextLabInd]
+    } else {
+      x = xmax + strwidth("M")/3 + xPosOfYLabels.relative[yTextLabInd];
+      adj = 1-x.adj.lab.y[yTextLabInd];
+    }
     mapply(textFnc, y = labPos$yMid[yTextLabInd], labels = yLabels[yTextLabInd],
-           adj = lapply(x.adj.lab.y[yTextLabInd], c, 0.5),
-           x = xmin - strwidth("M")/3 - xPosOfYLabels.relative[yTextLabInd],
+           adj = lapply(adj, c, 0.5),
+           x = x,
            col = colors.lab.y[yTextLabInd],
+           font = font.lab.y[yTextLabInd],
            MoreArgs = list(srt = 0, xpd = TRUE, cex = cex.lab.y));
   } 
   if (sum(yValidColors)>0)
   {
-    rect(xleft = xmin- offsety, ybottom = rev(labPos$yMid[yColorLabInd]) - yspacing/2,
-         xright = xmin- offsety + yColW, ytop = rev(labPos$yMid[yColorLabInd]) + yspacing/2, 
+    if (yLabPos==1)
+    {
+      xl = xmin-offsety;
+      xr = xmin-offsety + yColW;
+      xtext = xmin - strwidth("M")/3 - xPosOfYLabels.relative[yColorLabInd];
+      adj = x.adj.lab.y[yColorLabInd]
+    } else {
+      xl = xmax + offsety - yColW;
+      xr = xmax + offsety;
+      xtext = xmin + strwidth("M")/3 + xPosOfYLabels.relative[yColorLabInd]
+      adj = 1-x.adj.lab.y[yColorLabInd];
+    }
+
+    rect(xleft = xl[yColorLabInd], ybottom = rev(labPos$yMid[yColorLabInd]) - yspacing/2,
+         xright = xr[yColorLabInd], ytop = rev(labPos$yMid[yColorLabInd]) + yspacing/2, 
          density = -1,  col = substring(rev(yLabels[yColorLabInd]), 3), 
          border = substring(rev(yLabels[yColorLabInd]), 3), xpd = TRUE)
     #for (i in yColorLabInd)
@@ -5151,8 +5288,9 @@ labeledHeatmap = function (
     #}
     if (!is.null(ySymbols))
       mapply(textFnc, y = labPos$yMid[yColorLabInd], labels = ySymbols[yColorLabInd],
-             adj = lapply(x.adj.lab.y[yColorLabInd], c, 0.5),
-             x = xmin - offsety - strwidth("M")/3 - xPosOfYLabels.relative[yColorLabInd], col = colors.lab.y,
+             adj = lapply(adj, c, 0.5),
+             x = xtext, col = colors.lab.y[yColorLabInd], 
+             font = font.lab.y[yColorLabInd],
           MoreArgs = list(srt = 0, xpd = TRUE, cex = cex.lab.y));
   }
 
@@ -5172,22 +5310,25 @@ labeledHeatmap = function (
       lines(rep(x.lines[l], 2), c(ymin, ymax), col = vs.col[l], lty = vs.lty[l], lwd = vs.lwd[l]);
 
     angle = xLabelsAngle/180*pi;
+    if (angle==0) angle = pi/2;
     if (xLabelsPosition =="bottom") 
     {
       sign = 1;
       y0 = ymin;
+      ext = extension.bottom;
     } else {
       sign = -1;
       y0 = ymax;
+      ext = extension.top;
     }
     figureDims = par("pin");
     ratio = figureDims[1]/figureDims[2] * figYrange/figXrange;
-    ext.x = -sign * extension.bottom * 1/tan(angle)/ratio;
-    ext.y = sign * extension.bottom * sign(sin(angle))
+    ext.x = -sign * ext * 1/tan(angle)/ratio;
+    ext.y = sign * ext * sign(sin(angle))
     offset = (sum(xValidColors)>0) * xColW + offsetx + textOffsetY;
     for (l in 1:nLines)
-         lines(c(x.lines[l], x.lines[l], x.lines[l] + vs.ext * ext.x), 
-               c(y0, y0-sign*offset, y0-sign*offset - vs.ext * ext.y),  
+         lines(c(x.lines[l], x.lines[l], x.lines[l] + vs.ext[l] * ext.x[l]), 
+               c(y0, y0-sign*offset[l], y0-sign*offset[l] - vs.ext[l] * ext.y[l]),  
                  col = vs.col[l], lty = vs.lty[l], lwd = vs.lwd[l], xpd = TRUE);
   }
 
@@ -5209,8 +5350,19 @@ labeledHeatmap = function (
     vs.lwd = .extend(horizontalSeparator.lwd, nLines);
     vs.ext = .extend(horizontalSeparator.ext, nLines);
     for (l in 1:nLines)
-      lines(c(xmin-vs.ext[l]*extension.left, xmax), rep(y.lines[l], 2), 
+    {
+      if (yLabPos==1)
+      {
+         xl = xmin-vs.ext[l]*extension.left;
+         xr = xmax;
+      } else {
+         xl = xmin;
+         xr = xmax + vs.ext[l]*extension.right;
+      }
+  
+      lines(c(xl, xr), rep(y.lines[l], 2), 
             col = vs.col[l], lty = vs.lty[l], lwd = vs.lwd[l], xpd = TRUE);
+    }
   }
 
   if (!is.null(textMatrix))
@@ -5241,7 +5393,7 @@ labeledHeatmap = function (
 #===================================================================================================
 
 labeledHeatmap.multiPage = function(
-   # Input data and ornaments
+   # Input data and ornament[s
    Matrix,
    xLabels, yLabels = NULL,
    xSymbols = NULL, ySymbols = NULL,
@@ -6267,13 +6419,15 @@ randIndex <- function(tab, adjust=TRUE)
 #
 #============================================================================================
 
-goodGenes = function(datExpr, useSamples = NULL, useGenes = NULL,
+goodGenes = function(datExpr, weights = NULL, useSamples = NULL, useGenes = NULL,
                      minFraction = 1/2, minNSamples = ..minNSamples, minNGenes = ..minNGenes,
-                     tol = NULL, verbose = 1, indent = 0)
+                     tol = NULL, minRelativeWeight = 0.1, verbose = 1, indent = 0)
 {
   datExpr = as.matrix(datExpr);
   if (is.atomic(datExpr) && (mode(datExpr)!='numeric')) 
      stop("datExpr must contain numeric data.");
+
+  weights = .checkAndScaleWeights(weights, datExpr, scaleByMax = TRUE);
 
   if (is.null(tol)) tol = 1e-10 * max(abs(datExpr), na.rm = TRUE)
   if (is.null(useGenes)) useGenes = rep(TRUE, ncol(datExpr));
@@ -6286,10 +6440,18 @@ goodGenes = function(datExpr, useSamples = NULL, useGenes = NULL,
 
   nSamples = sum(useSamples);
   nGenes = sum(useGenes);
-  nPresent = colSums(!is.na(datExpr[useSamples, useGenes]))
+  if (length(weights)==0)
+  {
+    nPresent = colSums(!is.na(datExpr[useSamples, useGenes]));
+  } else 
+    nPresent = colSums(!is.na(datExpr[useSamples, useGenes]) & weights[useSamples, useGenes]>minRelativeWeight, 
+                       na.rm = TRUE)
   gg = useGenes;
   gg[useGenes][nPresent<minNSamples] = FALSE;
-  var = colVars(datExpr[useSamples, gg, drop = FALSE], na.rm = TRUE);
+  var = colWeightedVars(datExpr,
+              w = if (length(weights)>0) weights else NULL,
+              rows = which(useSamples), cols = which(gg),
+              na.rm = TRUE);
   var[is.na(var)] = 0;
   nNAsGenes = colSums(is.na(datExpr[useSamples, gg]));
   gg[gg] = (nNAsGenes < (1-minFraction) * nSamples & var>tol^2 & (nSamples-nNAsGenes >= minNSamples));
@@ -6303,8 +6465,9 @@ goodGenes = function(datExpr, useSamples = NULL, useGenes = NULL,
   gg;
 }
 
-goodSamples = function(datExpr, useSamples = NULL, useGenes = NULL,
-                     minFraction = 1/2, minNSamples = ..minNSamples, minNGenes = ..minNGenes,
+goodSamples = function(datExpr, weights = NULL, useSamples = NULL, useGenes = NULL,
+                     minFraction = 1/2, minNSamples = ..minNSamples, minNGenes = ..minNGenes, 
+                     minRelativeWeight = 0.1, 
                      verbose = 1, indent = 0)
 {
   if (is.null(useGenes)) useGenes = rep(TRUE, ncol(datExpr));
@@ -6315,9 +6478,16 @@ goodSamples = function(datExpr, useSamples = NULL, useGenes = NULL,
   if (length(useSamples)!= nrow(datExpr))
     stop("Length of nSamples is not compatible with number of rows in datExpr.");
 
+  weights = .checkAndScaleWeights(weights, datExpr, scaleByMax = TRUE);
+
   nSamples = sum(useSamples);
   nGenes = sum(useGenes);
-  nNAsSamples = rowSums(is.na(datExpr[useSamples, useGenes, drop = FALSE]));
+  if (length(weights)==0)
+  {
+    nNAsSamples = rowSums(is.na(datExpr[useSamples, useGenes, drop = FALSE]))
+  } else 
+    nNAsSamples = rowSums(is.na(datExpr[useSamples, useGenes, drop = FALSE]) | 
+                        replaceMissing(weights[useSamples, useGenes]<minRelativeWeight, TRUE));
   goodSamples = useSamples;
   goodSamples[useSamples] = ((nNAsSamples < (1-minFraction)*nGenes) & 
                              (nGenes - nNAsSamples >= minNGenes));
@@ -6331,13 +6501,66 @@ goodSamples = function(datExpr, useSamples = NULL, useGenes = NULL,
   goodSamples;
 }
 
-goodGenesMS = function(multiExpr, useSamples = NULL, useGenes = NULL,
+.checkAndScaleWeights = function(weights, expr, scaleByMax = TRUE, verbose = 1)
+{
+  if (length(weights)==0) return(weights);
+  weights = as.matrix(weights);
+  if (!isTRUE(all.equal(dim(expr), dim(weights))))
+    stop("When 'weights' are given, they must have the same dimensions as 'expr'.")
+  if (any(weights<0, na.rm = TRUE))
+    stop("Found negative weights. All weights must be non-negative.");
+  nf = !is.finite(weights);
+  if (any(nf))
+  {
+    if (verbose > 0)
+      warning("Found non-finite weights. The corresponding data points will be removed.");
+    weights[nf] = NA;
+  }
+  if (scaleByMax)
+  {
+    maxw = colMaxs(weights, na.rm = TRUE);
+    maxw[maxw==0] = 1;
+    weights = weights/matrix(maxw, nrow(weights), ncol(weights), byrow = TRUE);
+  }
+  weights;
+}
+  
+.checkAndScaleMultiWeights = function(multiWeights, multiExpr, scaleByMax = TRUE)
+{
+  if (is.null(multiWeights)) return(NULL);
+  wSize = checkSets(multiWeights);
+  eSize = checkSets(multiExpr);
+  if (!isTRUE(all.equal(wSize, eSize)))
+    stop(".checkAndScaleMultiWeights: 'multiWeights' and 'multiExpr' ",
+         "do not have the same sizes across all sets.");
+  mtd.mapply(.checkAndScaleWeights, multiWeights, multiExpr, 
+                        MoreArgs = list(scaleByMax = scaleByMax));
+}
+
+.colWeightedVars = function(x, w = NULL)
+{
+  if (is.null(w)) return(colVars(x, na.rm = TRUE));
+  missing = !is.finite(x);
+  w[missing] = 0;
+  x[missing] = 0;
+  means = colMeans(x*w)/colMeans(w);
+  means[!is.finite(means)] = NA;
+  x.centered = x - matrix(means, nrow(x), ncol(x), byrow = TRUE);
+  out = colMeans(w*x.centered^2)/colMeans(w);
+  out[!is.finite(out)] = NA;
+  out;
+}
+
+
+goodGenesMS = function(multiExpr, multiWeights = NULL, useSamples = NULL, useGenes = NULL,
                        minFraction = 1/2, minNSamples = ..minNSamples, minNGenes = ..minNGenes,
-                       tol = NULL,
+                       tol = NULL, minRelativeWeight = 0.1, 
                        verbose = 1, indent = 0)
 {
   dataSize = checkSets(multiExpr);
   nSets = dataSize$nSets;
+  multiWeights = .checkAndScaleMultiWeights(multiWeights, multiExpr, scaleByMax = TRUE);
+
   if (is.null(useGenes)) useGenes = rep(TRUE, dataSize$nGenes);
   if (is.null(useSamples)) 
   {
@@ -6365,15 +6588,21 @@ goodGenesMS = function(multiExpr, useSamples = NULL, useGenes = NULL,
     if (sum(useSamples[[set]])==0) next;
     expr1 = multiExpr[[set]]$data[useSamples[[set]], goodGenes, drop = FALSE];
     if (mode(expr1)=="list") expr1 = as.matrix(expr1);
-    nPresent = colSums(!is.na(expr1))
-    goodGenes[goodGenes] = (nPresent >= minNGenes)
-    expr1 = expr1[, nPresent >= minNGenes, drop = FALSE];
+    if (is.null(multiWeights)) {
+      nPresent = colSums(!is.na(expr1))
+      w1 = NULL;
+    } else {
+      w1 = multiWeights[[set]]$data[useSamples[[set]], goodGenes, drop = FALSE];
+      nPresent = colSums(!is.na(expr1) & w1 > minRelativeWeight, na.rm = TRUE);
+    }
+    keep = nPresent >= minNGenes & nPresent >=minFraction*nSamples[set]
+    goodGenes[goodGenes] = keep
+    expr1 = expr1[, keep, drop = FALSE];
+    if (!is.null(multiWeights)) w1 = w1[, keep, drop = FALSE];
     if (any(goodGenes))
     {
-      var = colVars(expr1, na.rm = TRUE);
-      nNAsGenes = colSums(is.na(expr1));
-      goodGenes[goodGenes][nNAsGenes > (1-minFraction)*nSamples[set] | var <= tol1^2 | 
-                             (nSamples[set]-nNAsGenes < minNSamples)] = FALSE;
+      var = .colWeightedVars(expr1, w1);
+      goodGenes[goodGenes][var <= tol1^2] = FALSE;
     }
   }
   if (sum(goodGenes) < minNGenes)
@@ -6385,12 +6614,13 @@ goodGenesMS = function(multiExpr, useSamples = NULL, useGenes = NULL,
   goodGenes;
 }
 
-goodSamplesMS = function(multiExpr, useSamples = NULL, useGenes = NULL,
+goodSamplesMS = function(multiExpr, multiWeights = NULL, useSamples = NULL, useGenes = NULL,
                          minFraction = 1/2, minNSamples = ..minNSamples, minNGenes = ..minNGenes,
-                         verbose = 1, indent = 0)
+                         minRelativeWeight = 0.1, verbose = 1, indent = 0)
 {
   dataSize = checkSets(multiExpr);
   nSets = dataSize$nSets;
+  multiWeights = .checkAndScaleMultiWeights(multiWeights, multiExpr, scaleByMax = TRUE);
   if (is.null(useGenes)) useGenes = rep(TRUE, dataSize$nGenes);
   if (is.null(useSamples))
   {
@@ -6415,9 +6645,16 @@ goodSamplesMS = function(multiExpr, useSamples = NULL, useGenes = NULL,
   {
     if (sum(useGenes)==0) break;
     if (sum(goodSamples[[set]])==0) next;
-    nNAsSamples = rowSums(is.na(multiExpr[[set]]$data[useSamples[[set]], useGenes, drop = FALSE]));
+    if (is.null(multiWeights))
+    {
+      nGoodSamples = rowSums(!is.na(multiExpr[[set]]$data[useSamples[[set]], useGenes, drop = FALSE]))
+    } else {
+      nGoodSamples = rowSums(!is.na(multiExpr[[set]]$data[useSamples[[set]], useGenes, drop = FALSE]) &
+                       multiWeights[[set]]$data[useSamples[[set]], useGenes, drop = FALSE] > minRelativeWeight,
+                       na.rm = TRUE);
+    }
     goodSamples[[set]][useSamples[[set]]] = 
-          ((nNAsSamples < (1-minFraction) * nGenes) & (nGenes - nNAsSamples >= minNGenes));
+          ((nGoodSamples >= minFraction * nGenes) & (nGoodSamples >= minNGenes));
     if (sum(goodSamples[[set]]) < minNSamples)
       stop("Too few samples with valid expression levels for the required number of genes in set", set);
     if (verbose>0 & (nSamples[set] - sum(goodSamples[[set]])>0))
@@ -6427,9 +6664,9 @@ goodSamplesMS = function(multiExpr, useSamples = NULL, useGenes = NULL,
   goodSamples;
 }
 
-goodSamplesGenes = function(datExpr, minFraction = 1/2, minNSamples = ..minNSamples, 
+goodSamplesGenes = function(datExpr, weights = NULL, minFraction = 1/2, minNSamples = ..minNSamples, 
                             minNGenes = ..minNGenes, tol = NULL,
-                            verbose = 1, indent = 0)
+                            minRelativeWeight = 0.1, verbose = 1, indent = 0)
 {
   spaces = indentSpaces(indent)
   goodGenes = NULL;
@@ -6444,12 +6681,14 @@ goodSamplesGenes = function(datExpr, minFraction = 1/2, minNSamples = ..minNSamp
   {
     if (verbose>0)
       printFlush(paste(spaces, " ..step", iter));
-    goodGenes = goodGenes(datExpr, goodSamples, goodGenes,
+    goodGenes = goodGenes(datExpr, weights, goodSamples, goodGenes,
                             minFraction = minFraction, minNSamples = minNSamples,
-                            minNGenes = minNGenes, tol = tol, verbose = verbose - 1, indent = indent + 1);
-    goodSamples = goodSamples(datExpr, goodSamples, goodGenes,
+                            minNGenes = minNGenes, minRelativeWeight = minRelativeWeight,
+                            tol = tol, verbose = verbose - 1, indent = indent + 1);
+    goodSamples = goodSamples(datExpr, weights, goodSamples, goodGenes,
                             minFraction = minFraction, minNSamples = minNSamples,
-                            minNGenes = minNGenes, verbose = verbose - 1, indent = indent + 1);
+                            minNGenes = minNGenes, minRelativeWeight = minRelativeWeight,
+                            verbose = verbose - 1, indent = indent + 1);
     changed = ( (sum(!goodGenes)>nBadGenes) | (sum(!goodSamples)>nBadSamples) )
     nBadGenes = sum(!goodGenes);
     nBadSamples = sum(!goodSamples);
@@ -6459,8 +6698,9 @@ goodSamplesGenes = function(datExpr, minFraction = 1/2, minNSamples = ..minNSamp
   list(goodGenes = goodGenes, goodSamples = goodSamples, allOK = allOK);
 }
 
-goodSamplesGenesMS = function(multiExpr, minFraction = 1/2, minNSamples = ..minNSamples, 
-                              minNGenes = ..minNGenes, tol = NULL, verbose = 2, indent = 0)
+goodSamplesGenesMS = function(multiExpr, multiWeights = NULL, minFraction = 1/2, minNSamples = ..minNSamples, 
+                              minNGenes = ..minNGenes, tol = NULL, minRelativeWeight = 0.1, 
+                              verbose = 2, indent = 0)
 {
   spaces = indentSpaces(indent)
   size = checkSets(multiExpr)
@@ -6477,12 +6717,14 @@ goodSamplesGenesMS = function(multiExpr, minFraction = 1/2, minNSamples = ..minN
   {
     if (verbose>0)
       printFlush(paste(spaces, " ..step", iter));
-    goodGenes = goodGenesMS(multiExpr, goodSamples, goodGenes,
+    goodGenes = goodGenesMS(multiExpr, multiWeights, goodSamples, goodGenes,
                             minFraction = minFraction, minNSamples = minNSamples,
-                            minNGenes = minNGenes, tol = tol, verbose = verbose - 1, indent = indent + 1);
-    goodSamples = goodSamplesMS(multiExpr, goodSamples, goodGenes,
+                            minNGenes = minNGenes, tol = tol, 
+                            minRelativeWeight = minRelativeWeight, verbose = verbose - 1, indent = indent + 1);
+    goodSamples = goodSamplesMS(multiExpr, multiWeights, goodSamples, goodGenes,
                             minFraction = minFraction, minNSamples = minNSamples,
-                            minNGenes = minNGenes, verbose = verbose - 1, indent = indent + 1);
+                            minNGenes = minNGenes, minRelativeWeight = minRelativeWeight, 
+                            verbose = verbose - 1, indent = indent + 1);
     changed = FALSE;
     for (set in 1:nSets)
       changed = ( changed | (sum(!goodGenes)>nBadGenes) | (sum(!goodSamples[[set]])>nBadSamples[set]) )
@@ -6502,6 +6744,9 @@ goodSamplesGenesMS = function(multiExpr, minFraction = 1/2, minNSamples = ..minN
 # modified heatmap plot: allow specifying the hang parameter for both side and top dendrograms
 #
 #============================================================================================
+
+# Important change: work ith dendrograms of class hclust, not dendrogram.
+
 .heatmap = function (x, Rowv = NULL, Colv = if (symm) "Rowv" else NULL, 
     distfun = dist, hclustfun = fastcluster::hclust, reorderfun = function(d, 
         w) reorder(d, w), add.expr, symm = FALSE, revC = identical(Colv, 
@@ -6530,7 +6775,7 @@ goodSamplesGenesMS = function(multiExpr, minFraction = 1/2, minNSamples = ..minN
 
     ## get the dendrograms and reordering indices
     if (doRdend) {
-        if (inherits(Rowv, "dendrogram")) 
+        if (inherits(Rowv, "hclust")) 
             ddr <- Rowv
         else {
             hcr <- hclustfun(distfun(x))
@@ -6538,16 +6783,18 @@ goodSamplesGenesMS = function(multiExpr, minFraction = 1/2, minNSamples = ..minN
             {
               hcr$height = hcr$height-min(hcr$height) + hang * (max(hcr$height)-min(hcr$height));
             }
-            ddr <- as.dendrogram(hcr, hang = hang)
-            if (!is.logical(Rowv) || Rowv) 
-                ddr <- reorderfun(ddr, Rowv)
+            ddr = hcr;
+            #ddr <- as.dendrogram(hcr, hang = hang)
+            #if (!is.logical(Rowv) || Rowv) 
+            #    ddr <- reorderfun(ddr, Rowv)
         }
-        if (nr != length(rowInd <- order.dendrogram(ddr))) 
-            stop("row dendrogram ordering gave index of wrong length")
+        #if (nr != length(rowInd <- order.dendrogram(ddr))) 
+        #    stop("row dendrogram ordering gave index of wrong length")
+        rowInd = ddr$order;
     }
     else rowInd <- 1:nr
     if (doCdend) {
-        if (inherits(Colv, "dendrogram")) 
+        if (inherits(Colv, "hclust")) 
             ddc <- Colv
         else if (identical(Colv, "Rowv")) {
             if (nr != nc) stop("Colv = \"Rowv\" but nrow(x) != ncol(x)")
@@ -6559,11 +6806,13 @@ goodSamplesGenesMS = function(multiExpr, minFraction = 1/2, minNSamples = ..minN
             {
               hcc$height = hcc$height-min(hcc$height) + hang * (max(hcc$height)-min(hcc$height));
             }
-            ddc <- as.dendrogram(hcc, hang = hang)
-            if (!is.logical(Colv) || Colv) ddc <- reorderfun(ddc, Colv)
+            ddc = hcc;
+            #ddc <- as.dendrogram(hcc, hang = hang)
+            #if (!is.logical(Colv) || Colv) ddc <- reorderfun(ddc, Colv)
         }
-        if (nc != length(colInd <- order.dendrogram(ddc))) 
-            stop("column dendrogram ordering gave index of wrong length")
+        #if (nc != length(colInd <- order.dendrogram(ddc))) 
+        #    stop("column dendrogram ordering gave index of wrong length")
+        colInd = ddc$order;
     }
     else colInd <- 1:nc
 
@@ -6612,7 +6861,8 @@ goodSamplesGenesMS = function(multiExpr, minFraction = 1/2, minNSamples = ..minN
     op <- par(no.readonly = TRUE)
     if (revC) {
         iy <- nc:1
-        ddr <- rev(ddr)
+        #ddr <- rev(ddr)
+        ddr$order = rev(ddr$order);
         rowInd.colors = rev(rowInd)
         x <- x[, iy]
     } else iy <- 1:nr
@@ -6637,14 +6887,14 @@ goodSamplesGenesMS = function(multiExpr, minFraction = 1/2, minNSamples = ..minN
     if (!missing(add.expr)) eval.parent(substitute(add.expr))
     par(mar = c(margins[1], 0, 0, 0))
     if (doRdend) {
-         .plotDendrogram(as.hclust(ddr), horiz = TRUE, labels = FALSE, axes = FALSE);
+         .plotDendrogram(ddr, horiz = TRUE, labels = FALSE, axes = FALSE, adjustRange = TRUE);
     #    plot(ddr, horiz = TRUE, axes = FALSE, yaxs = "i", leaflab = "none" )
     }
     else frame()
     par(mar = c(0, 0, if (!is.null(main)) 1.8 else 0, margins[2]))
     if (doCdend) 
     {
-         .plotDendrogram(as.hclust(ddc), horiz = FALSE, labels = FALSE, axes = FALSE);
+         .plotDendrogram(ddc, horiz = FALSE, labels = FALSE, axes = FALSE, adjustRange = TRUE);
     #    plot(ddc, axes = FALSE, xaxs = "i", leaflab = "none" )
     }
     else if (!is.null(main)) frame()
@@ -6820,7 +7070,7 @@ if (!qValues) {
                   pvalueWald, pvalueLogrank, pvalueDeviance, 
                   corDeviance, HazardRatio, CI.LowerLimitHR, 
                   CI.UpperLimitHR, C.index)
-            }      # end of      if (!qValues) {
+            }      # end of      if (!qValues)
 
         } # end of for (i in 1:no.Columns) 
 
@@ -7404,6 +7654,7 @@ consensusKME = function(multiExpr, moduleLabels, multiEigengenes = NULL, consens
 hierarchicalConsensusKME = function(
    multiExpr, 
    moduleLabels, 
+   multiWeights = NULL,
    multiEigengenes = NULL, 
    consensusTree,
    signed = TRUE,
@@ -7413,7 +7664,7 @@ hierarchicalConsensusKME = function(
    corComponent = "cor", getFDR = FALSE,
    useRankPvalue = TRUE,
    rankPvalueOptions = list(calculateQvalue = getFDR, pValueMethod = "scale"),
-   setNames = NULL, excludeGrey = TRUE,
+   setNames = names(multiExpr), excludeGrey = TRUE,
    greyLabel = if (is.numeric(moduleLabels)) 0 else "grey",
    reportWeightType = NULL,
    getOwnModuleZ = TRUE,
@@ -7442,6 +7693,8 @@ hierarchicalConsensusKME = function(
   nSets = size$nSets;
   nGenes = size$nGenes;
   nSamples = size$nSamples;
+
+  .checkAndScaleMultiWeights(multiWeights, multiExpr, scaleByMax = FALSE);
 
   if (!is.null(metaAnalysisWeights))
      if (length(metaAnalysisWeights)!=nSets)
@@ -7481,6 +7734,8 @@ hierarchicalConsensusKME = function(
   {
     corOptions$x = multiExpr[[set]]$data;
     corOptions$y = multiEigengenes[[set]]$data;
+    if (!is.null(multiWeights))
+      corOptions$weights.x = multiWeights[[set]]$data;
     cp = do.call(corAndPvalueFnc, args = corOptions);
     corComp = grep(corComponent, names(cp));
     pComp = match("p", names(cp));
@@ -8018,15 +8273,20 @@ formatLabels = function(labels,
         eol = "\n", ellipsis = "...")
 {
   n = length(labels);
-  splitX = strsplit(labels, split = split, fixed = fixed);
-  newLabels= rep("", n);
+  labels2 = strsplit(labels, split = eol, fixed = TRUE);
+  index = unlist(mapply(function(l, i) rep(i, length(l)), labels2, 1:n));
+  labels3 = unlist(labels2);
+
+  n3 = length(labels3);
+  splitX = strsplit(labels3, split = split, fixed = fixed);
+  newLabels= rep("", n3);
   width.newsplit = if (is.null(maxWidth)) .effectiveNChar(newsplit) else strwidth(newsplit, cex = cex);
-  for (l in 1:n)
+  for (l in 1:n3)
   {
     nl = "";
     line = "";
     nLines = 1;
-    if (nchar(labels[l]) > 0) for (s in 1:length(splitX[[l]]))
+    if (nchar(labels3[l]) > 0) for (s in 1:length(splitX[[l]]))
     {
       newLen = .effectiveNChar(line) + width.newsplit + .effectiveNChar(splitX [[l]] [s]);
       cond = if (is.null(maxWidth)) {
@@ -8052,7 +8312,8 @@ formatLabels = function(labels,
     }
     newLabels[l] = nl;
   }
-  substring(newLabels, nchar(newsplit)+1);
+  newLabels = substring(newLabels, nchar(newsplit)+1);
+  unlist(tapply(newLabels, index, base::paste, collapse = eol));
 }
 
 #==================================================================================================
@@ -8343,6 +8604,24 @@ replaceMissing = function(x, replaceWith)
 }
 
 
+imputeByModule = function(
+   data, 
+   labels, 
+   excludeUnassigned = FALSE, 
+   unassignedLabel = if (is.numeric(labels)) 0 else "grey", 
+   scale = TRUE,
+   ...)
+{
+  labels = replaceMissing(labels, unassignedLabel);
+  labelLevels = unique(labels);
+  if (excludeUnassigned) labelLevels = setdiff(labelLevels, unassignedLabel);
+  if (scale) data = scale(data);
+  for (ll in labelLevels)
+  {
+    inMod = labels==ll;
+    data[, inMod] = t(impute.knn(t(data[, inMod]), ...)$data);
+  }
+  data;
+}
 
-  
 

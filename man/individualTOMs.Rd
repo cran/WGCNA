@@ -11,6 +11,7 @@ first pre-clustering input data into blocks.
 \usage{
 individualTOMs(
    multiExpr,
+   multiWeights = NULL,
    multiExpr.imputed = NULL,  
 
    # Data checking options
@@ -40,6 +41,9 @@ individualTOMs(
   \item{multiExpr}{ expression data in the multi-set format (see \code{\link{checkSets}}). A vector of
 lists, one per set. Each set must contain a component \code{data} that contains the expression data, with
 rows corresponding to samples and columns to genes or probes. }
+
+  \item{multiWeights}{ optional observation weights in the same format (and dimensions) as \code{multiExpr}.
+These weights are used for correlation calculations with data in  \code{multiExpr}.}
 
   \item{multiExpr.imputed}{
 Optional version of \code{multiExpr} with missing data imputed. If not given and \code{multiExpr} contains

@@ -13,7 +13,7 @@
 #include "exceptions.h"
 
 extern "C" {
-#include "corFunctions-common.h"
+#include "corFunctions-utils.h"
 }
 
 #ifndef __array_cc__

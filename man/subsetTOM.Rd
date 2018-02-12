@@ -10,6 +10,7 @@ subsetTOM(
   datExpr, 
   subset,
   corFnc = "cor", corOptions = "use = 'p'", 
+  weights = NULL,  
   networkType = "unsigned", 
   power = 6, 
   verbose = 1, indent = 0)
@@ -27,6 +28,11 @@ calculation. Recommended choices are \code{"cor"} and \code{"bicor"}, but other 
 well. }
 
   \item{corOptions}{  character string giving further options to be passed to the correlation function. }
+
+  \item{weights}{optional observation weights for \code{datExpr} to be used in correlation calculation.
+A matrix of the same dimensions as \code{datExpr}, containing non-negative weights. Only used with Pearson
+correlation.}
+
 
   \item{networkType}{ character string giving network type. Allowed values are (unique abbreviations of)
 \code{"unsigned"}, \code{"signed"}, \code{"signed hybrid"}. See \code{\link{adjacency}}. }

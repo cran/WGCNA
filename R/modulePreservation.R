@@ -1714,7 +1714,9 @@ TRUE))
      #ModuleCorData3=cor(datTest[,modGenes[[j]]],use="p", quick = as.numeric(opt$quickCor))
      corExpr = parse(text=paste(opt$corFnc, "(datTest[,modGenes[[j]]]", prepComma(opt$corOptions),
                                            ", quick = as.numeric(opt$quickCor))"));
-     ModuleCorData3 = eval(corExpr);
+     #printFlush(j);
+     ModuleCorData3 = try(eval(corExpr));
+     if (inherits(ModuleCorData3, "try-error")) browser();
      if (opt$nType==1)
      {
         SignedModuleCorData2 = abs(ModuleCorData2)

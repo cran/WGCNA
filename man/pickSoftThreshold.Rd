@@ -10,6 +10,7 @@ an appropriate soft-thresholding power for network construction.
 pickSoftThreshold(
   data, 
   dataIsExpr = TRUE,
+  weights = NULL,
   RsquaredCut = 0.85, 
   powerVector = c(seq(1, 10, by = 1), seq(12, 20, by = 2)), 
   removeFirst = FALSE, nBreaks = 10, blockSize = NULL, 
@@ -35,6 +36,10 @@ genes. }
 
   \item{dataIsExpr}{ logical: should the data be interpreted as expression (or other numeric) data, or as a
 similarity matrix of network nodes? }
+
+    \item{weights}{optional observation weights for \code{data} to be used in correlation calculation.
+A matrix of the same dimensions as \code{datExpr}, containing non-negative weights. Only used with Pearson
+correlation.}
 
   \item{similarity}{ similarity matrix: a symmetric matrix with entries between -1 and 1 and unit diagonal.}
 

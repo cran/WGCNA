@@ -17,6 +17,7 @@ labeledHeatmap(
   xLabelsPosition = "bottom",
   xLabelsAngle = 45,
   xLabelsAdj = 1,
+  yLabelsPosition = "left",
   xColorWidth = 2 * strheight("M"),
   yColorWidth = 2 * strwidth("M"), 
   xColorOffset = strheight("M")/3, 
@@ -31,6 +32,9 @@ labeledHeatmap(
   cex.lab.y = cex.lab,
   colors.lab.x = 1,
   colors.lab.y = 1,
+  font.lab.x = 1,
+  font.lab.y = 1,
+
   bg.lab.x = NULL,
   bg.lab.y = NULL,
   x.adj.lab.y = 1,
@@ -88,6 +92,9 @@ Recognized values are (unique abbreviations of) \code{"top", "bottom"}. }
   \item{xLabelsAdj}{ justification parameter for column labels. See \code{\link{par}} and the
 description of parameter \code{"adj"}. }
 
+  \item{yLabelsPosition}{ a character string specifying the position of labels for the columns.
+Recognized values are (unique abbreviations of) \code{"left", "right"}. }
+
   \item{xColorWidth}{ width of the color labels for the x axis expressed in user corrdinates.}
 
   \item{yColorWidth}{ width of the color labels for the y axis expressed in user coordinates.}
@@ -118,6 +125,10 @@ above. }
   \item{colors.lab.x}{colors for character labels or symbols along x axis.} 
 
   \item{colors.lab.y}{colors for character labels or symbols along y axis.} 
+
+  \item{font.lab.x}{integer specifying font for labels or symbols along x axis. See \code{\link{text}}.}
+
+  \item{font.lab.y}{integer specifying font for labels or symbols along y axis. See \code{\link{text}}.}
 
   \item{bg.lab.x}{background color for the margin along the x axis.}
   \item{bg.lab.y}{background color for the margin along the y axs.}

@@ -2,6 +2,58 @@ Note: as of 2009/03/10, changes that lead to different calculational results are
 
 
 
+	. New functions sampledBlockwiseModules and
+	  sampledHierarchicalConsensusModules carry out network analysis
+	  repeatedly on resampled data.  
+
+	. TOM calculations can optionally use internal matrix algebra rather
+	  than R- (or system-)provided BLAS, controlled by argument
+	  useInternalMatrixAlgebra.
+
+	. Pearson correlation (function cor) now accepts individual sample
+	  weights for arguments x and y. When both weights are supplied (and
+	  for correlation of a columns in a single matrix), the weights are a
+	  product of the weights for the two vectors being correlated.
+	  Denominators are calculated separately using separate weights, which
+	  leads to slightly different results than standard weighted
+	  correlation.
+
+	. Most network construction functions now also accept optional weights.
+
+	. hierarchicalConsensusModules can now optionally perform gene/module
+	  pruning and merging iteratively.
+
+	. New functions pruneConsensusModules and
+	  pruneAndMergeConsensusModules implement the pruning and iterative
+	  pruning/merging of hierarchical consensus modules.
+
+	. Network construction functions now accept argument
+	  suppressTOMForZeroAdjacencies whose effect is to set TOM to zero for
+	  all node pairs with zero adjacency.
+
+	. Bugfix in individualTOMs: function now works with default
+	  useDiskCache
+
+	. Module eigengenes returned by blockwiseConsensusModules now carry
+	  names copied from names of multiExpr
+
+	. New function imputeByModule 
+
+	. Bugfix in verboseBoxplot and verboseBarplot: the function now 
+	  honors the setting of addScatterplot and correctly interprets point 
+	  color and other arguments when they are vectors.
+
+	. Enhancements and bugfixes in TOMplot which should work with all
+	  data sizes and dendrogram complexities.
+
+	. Function formatLabels now avoids over-splitting labels that already
+	  contain a newline character.
+
+	. Function labeledHeatmap can plot row labels on the right, specified
+	  via argument yLabPosition.
+
+	. Bugfix in internal function .networkCalculation
+
 2017/08/04: 1.61
 
 	. Bugfix in consensusCalculation: function works with mean consensus.

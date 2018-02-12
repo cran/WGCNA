@@ -12,7 +12,7 @@
 #include <iostream>
 #include "array.h"
 
-#include "corFunctions-common.h"
+#include "corFunctions-utils.h"
 
 using namespace std;
 using namespace Rcpp;

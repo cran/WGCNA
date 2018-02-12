@@ -11,6 +11,7 @@ modules on the resampled data.
 \usage{
 sampledHierarchicalConsensusModules(
   multiExpr,
+  multiWeights = NULL,
 
   networkOptions,
   consensusTree,
@@ -23,7 +24,7 @@ sampledHierarchicalConsensusModules(
   randomSeed = 12345,
   checkSoftPower = TRUE,
   nPowerCheckSamples = 2000,
-  individualTOMFileNames = spaste("individualTOM-Run.\%r-Set\%s-Block\%b.RData"),
+  individualTOMFilePattern = "individualTOM-Run.\%r-Set\%s-Block.\%b.RData",
   keepConsensusTOMs = FALSE,
   consensusTOMFilePattern = "consensusTOM-Run.\%r-\%a-Block.\%b.RData",
   skipUnsampledCalculation = FALSE,
@@ -40,6 +41,9 @@ Expression data in the multi-set format (see \code{\link{checkSets}}). A vector 
 lists, one per set. Each set must contain a component \code{data} that contains the expression data, with
 rows corresponding to samples and columns to genes or probes.
 }
+
+  \item{multiWeights}{ optional observation weights in the same format (and dimensions) as \code{multiExpr}.
+These weights are used for correlation calculations with data in  \code{multiExpr}.}
 
   \item{networkOptions}{
 A single list of class \code{\link{NetworkOptions}} giving options for network calculation for all of the
@@ -77,7 +81,7 @@ of the sampled data set and the full data set?
 Number of genes to be sampled from the full data set to calculate connectivity and match soft-tresholding
 powers.
 }
-  \item{individualTOMFileNames}{Pattern for file names for files holding individual TOMs. The tags \code{"\%r, \%a,
+  \item{individualTOMFilePattern}{Pattern for file names for files holding individual TOMs. The tags \code{"\%r, \%a,
 \%b"} are replaced by run number, analysis name and block number, respectively. The TOM files are usually
 temporary but can be retained, see \code{keepConsensusTOM} below.}
 

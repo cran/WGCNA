@@ -4,16 +4,18 @@
 \alias{cor}
 \title{ Fast calculations of Pearson correlation. }
 \description{
-  These functions implements a faster calculation of Pearson correlation. 
+  These functions implements a faster calculation of (weighted) Pearson correlation. 
 
   The speedup against the R's standard \code{\link[stats]{cor}} function will be substantial particularly
 if the input matrix only contains a small number of missing data. If there are no missing data, or the
-missing data are numerous, the speedup will be smaller but still present.  
+missing data are numerous, the speedup will be smaller.
 }
 \usage{
 cor(x, y = NULL, 
     use = "all.obs", 
     method = c("pearson", "kendall", "spearman"),
+    weights.x = NULL,
+    weights.y = NULL,
     quick = 0, 
     cosine = FALSE, 
     cosineX = cosine,
@@ -42,6 +44,14 @@ correlation function \code{\link[stats]{cor}}.  Abbreviations are allowed. }
 
   \item{method}{ a character string specifying the method to be used. Fast calculations are currently
 available only for \code{"pearson"}. }
+
+  \item{weights.x}{optional observation weights for \code{x}. A matrix of the same dimensions as \code{x}, 
+containing non-negative weights. Only used in fast calculations: \code{methods} must be \code{"pearson"} and
+\code{use} must be one of \code{"all.obs", "pairwise.complete.obs"}.}
+
+  \item{weights.y}{optional observation weights for \code{y}. A matrix of the same dimensions as \code{y}, 
+containing non-negative weights. Only used in fast calculations: \code{methods} must be \code{"pearson"} and 
+\code{use} must be one of \code{"all.obs", "pairwise.complete.obs"}.}
 
   \item{quick}{ real number between 0 and 1 that controls the precision of handling of missing data in the
 calculation of correlations. See details. }
@@ -76,6 +86,8 @@ diagnostic messages to be printed. }
   The \code{corFast} function is a wrapper that calls the function \code{cor}. If the combination of
 \code{method} and \code{use} is implemented by the fast calculations, the fast code is executed; 
 otherwise, R's own correlation \code{\link[stats]{cor}} is executed.
+
+
 
   The argument \code{quick} specifies the precision of handling of missing data. Zero will cause all
 calculations to be executed precisely, which may be significantly slower than calculations without

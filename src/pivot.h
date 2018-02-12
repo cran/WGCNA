@@ -5,6 +5,7 @@
 #include <R.h>
 #include <Rinternals.h>
 
+void RprintV(double * v, size_t l);
 double vMax(double * v, size_t len);
 double vMin(double * v, size_t len);
 double pivot(double * v, size_t len, double target);

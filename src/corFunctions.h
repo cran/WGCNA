@@ -29,7 +29,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 
 
-void cor1Fast(double * x, int * nrow, int * ncol, double * quick, 
+void cor1Fast(double * x, int * nrow, int * ncol, double * weights, double * quick, 
           int * cosine,
           double * result, int *nNA, int * err, 
           int * nThreads,
@@ -54,17 +54,19 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
            int * verbose, int * indent);
 
 void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
+           double * weights_x, double * weights_y,
            double * quick,
            int * cosineX, int * cosineY,
            double * result, int *nNA, int * err,
            int * nThreads,
            int * verbose, int * indent);
 
-SEXP cor1Fast_call(SEXP x_s, SEXP quick_s, SEXP cosine_s,
+SEXP cor1Fast_call(SEXP x_s, SEXP weights, SEXP quick_s, SEXP cosine_s,
                    SEXP nNA_s, SEXP err_s,
                    SEXP nThreads_s, SEXP verbose_s, SEXP indent_s);
 
 SEXP corFast_call(SEXP x_s, SEXP y_s,
+                 SEXP weights_x_s, SEXP weights_y_s, 
                  SEXP quick_s,
                  SEXP cosineX_s, SEXP cosineY_s,
                  SEXP nNA_s, SEXP err_s,

@@ -20,7 +20,12 @@ newNetworkOptions(
 
     # Topological overlap options
     TOMType = c("signed", "unsigned", "none"),
-    TOMDenom = c("mean", "min"))
+    TOMDenom = c("mean", "min"),
+    suppressTOMForZeroAdjacencies = FALSE,
+
+    # Internal behavior options
+    useInternalMatrixAlgebra = FALSE)
+
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -46,6 +51,13 @@ correlations between neighbors.
 the \code{min} function in the denominator is replaced by \code{mean}. The \code{"mean"} may produce
 better results but at this time should be considered experimental.
 }
+  \item{suppressTOMForZeroAdjacencies}{logical: for those components that have zero adjacency, should TOM be
+set to zero as well?}
+
+  \item{useInternalMatrixAlgebra}{logical: should internal implementation of matrix multiplication be used
+instead of R-provided BLAS? The internal implementation is slow and this option should only be used if one
+suspects a bug in R-provided BLAS.}
+
 }
 \value{
 A list of class \code{NetworkOptions}.

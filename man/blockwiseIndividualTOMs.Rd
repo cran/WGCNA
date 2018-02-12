@@ -12,6 +12,7 @@ calculated in each block.
 \usage{
 blockwiseIndividualTOMs(
    multiExpr,
+   multiWeights = NULL,
 
    # Data checking options
 
@@ -39,6 +40,7 @@ blockwiseIndividualTOMs(
    networkType = "unsigned",
    checkPower = TRUE,
    replaceMissingAdjacencies = FALSE,
+   suppressTOMForZeroAdjacencies = FALSE,
 
    # Topological overlap options
 
@@ -53,6 +55,7 @@ blockwiseIndividualTOMs(
    # General options
 
    nThreads = 0,
+   useInternalMatrixAlgebra = FALSE,
    verbose = 2, indent = 0)
 }
 %- maybe also 'usage' for other objects documented here.
@@ -61,6 +64,9 @@ blockwiseIndividualTOMs(
 lists, one per set. Each set must contain a component \code{data} that contains the expression data, with
 rows corresponding to samples and columns to genes or probes.
 }
+  \item{multiWeights}{optional observation weights in the same format (and dimensions) as \code{multiExpr}.
+These weights are used in correlation calculation.}
+
   \item{checkMissingData}{logical: should data be checked for excessive numbers of missing entries in
 genes and samples, and for genes with zero variance? See details. }
 
@@ -123,6 +129,8 @@ caution. }
 
   \item{replaceMissingAdjacencies}{logical: should missing values in calculated adjacency be replaced by 0?}
 
+  \item{suppressTOMForZeroAdjacencies}{Logical: should TOM be set to zero for zero adjacencies?}
+
   \item{TOMType}{ one of \code{"none"}, \code{"unsigned"}, \code{"signed"}. If \code{"none"}, adjacency
 will be used for clustering. If \code{"unsigned"}, the standard TOM will be used (more generally, TOM
 function will receive the adjacency as input). If \code{"signed"}, TOM will keep track of the sign of
@@ -157,6 +165,9 @@ parts of correlation calculations. This option only has an effect on systems on 
 library is available (which currently includes Linux and Mac OSX, but excludes Windows).
 If zero, the number of online processors will be used if it can be determined dynamically, otherwise
 correlation calculations will use 2 threads. }
+
+  \item{useInternalMatrixAlgebra}{Logical: should WGCNA's own, slow, matrix multiplication be used instead of
+R-wide BLAS? Only useful for debugging.}
 
   \item{verbose}{ integer level of verbosity. Zero means silent, higher values make the output
 progressively more and more verbose. }

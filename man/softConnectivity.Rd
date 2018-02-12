@@ -10,6 +10,7 @@ node calculates its connectivity, that is the sum of the adjacency to the other 
 softConnectivity(
   datExpr, 
   corFnc = "cor", corOptions = "use = 'p'", 
+  weights = NULL,
   type = "unsigned",
   power = if (type == "signed") 15 else 6, 
   blockSize = 1500, 
@@ -35,6 +36,10 @@ calculation. Recommended choices are \code{"cor"} and \code{"bicor"}, but other 
 well. }
 
   \item{corOptions}{  character string giving further options to be passed to the correlation function. }
+
+  \item{weights}{optional observation weights for \code{datExpr} to be used in correlation calculation.
+A matrix of the same dimensions as \code{datExpr}, containing non-negative weights. Only used with Pearson
+correlation.}
 
   \item{type}{network type. Allowed values are (unique abbreviations of) \code{"unsigned"},
 \code{"signed"}, \code{"signed hybrid"}. }

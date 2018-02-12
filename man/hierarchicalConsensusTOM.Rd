@@ -11,6 +11,7 @@ This function calculates consensus topological overlap in a hierarchical manner.
 hierarchicalConsensusTOM(
       # ... information needed to calculate individual TOMs
       multiExpr,
+      multiWeights = NULL,
 
       # Data checking options
       checkMissingData = TRUE,
@@ -67,6 +68,10 @@ hierarchicalConsensusTOM(
   \item{multiExpr}{ Expression data in the multi-set format (see \code{\link{checkSets}}). A vector of
 lists, one per set. Each set must contain a component \code{data} that contains the expression data, with
 rows corresponding to samples and columns to genes or probes. }
+
+  \item{multiWeights}{ optional observation weights in the same format (and dimensions) as \code{multiExpr}.
+These weights are used for correlation calculations with data in  \code{multiExpr}.}
+
   \item{checkMissingData}{
 Logical: should data be checked for excessive numbers of missing entries in
 genes and samples, and for genes with zero variance? See details.

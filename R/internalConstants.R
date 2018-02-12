@@ -23,6 +23,7 @@
 .corTypes = c("pearson", "bicor");
 
 .corFnc = c("cor", "bicor", "cor");
-.corOptions = c("use = 'p'", "use = 'p'", "use = 'p', method = spearman");
+.corOptions = c("use = 'p'", "use = 'p'", "use = 'p', method = 'spearman'");
+.corOptionList = list( list(use = 'p'), list(use = 'p'), list(use = 'p', method = "spearman"));
 
 

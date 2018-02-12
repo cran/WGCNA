@@ -11,16 +11,21 @@ of missing genes must be below a given threshold.
 
 }
 \usage{
-goodSamples(datExpr, 
-      useSamples = NULL, 
-      useGenes = NULL, 
-      minFraction = 1/2, 
-      minNSamples = ..minNSamples, 
-      minNGenes = ..minNGenes, 
-      verbose = 1, indent = 0)
+goodSamples(
+  datExpr, 
+  weights = NULL,
+  useSamples = NULL, 
+  useGenes = NULL, 
+  minFraction = 1/2, 
+  minNSamples = ..minNSamples, 
+  minNGenes = ..minNGenes, 
+  minRelativeWeight = 0.1,
+  verbose = 1, indent = 0)
 }
 \arguments{
   \item{datExpr}{  expression data. A data frame in which columns are genes and rows ar samples. }
+
+  \item{weights}{optional observation weights in the same format (and dimensions) as \code{datExpr}.}
 
   \item{useSamples}{ optional specifications of which samples to use for the check. Should be a logical
 vector; samples whose entries are \code{FALSE} will be ignored for the missing value counts. Defaults to
@@ -33,11 +38,12 @@ using all genes.}
   \item{minFraction}{ minimum fraction of non-missing samples for a gene to be considered good. }
 
   \item{minNSamples}{ minimum number of good samples for the data set to be considered fit for analysis.
-If
-the actual number of good samples falls below this threshold, an error will be issued. }
-
+If the actual number of good samples falls below this threshold, an error will be issued. }
 
   \item{minNGenes}{ minimum number of non-missing samples for a sample to be considered good.  }
+
+  \item{minRelativeWeight}{ observations whose weight divided by the maximum weight is below this threshold
+will be considered missing. }
 
   \item{verbose}{ integer level of verbosity. Zero means silent, higher values make the output
 progressively more and more verbose. }

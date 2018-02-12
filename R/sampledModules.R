@@ -120,6 +120,7 @@ sampledBlockwiseModules = function(
 
 sampledHierarchicalConsensusModules = function(
   multiExpr, 
+  multiWeights = NULL,
 
   networkOptions,
   consensusTree,
@@ -132,7 +133,7 @@ sampledHierarchicalConsensusModules = function(
   randomSeed = 12345,
   checkSoftPower = TRUE,
   nPowerCheckSamples = 2000,
-  individualTOMFileNames = spaste("individualTOM-Run.%r-Set%s-Block%b.RData"),
+  individualTOMFilePattern = "individualTOM-Run.%r-Set%s-Block.%b.RData",
   keepConsensusTOMs = FALSE,
   consensusTOMFilePattern = "consensusTOM-Run.%r-%a-Block.%b.RData",
   skipUnsampledCalculation = FALSE,
@@ -148,6 +149,8 @@ sampledHierarchicalConsensusModules = function(
   exprSize = checkSets(multiExpr);
   nSets = exprSize$nSets;
   nSamples = exprSize$nSamples;
+
+  .checkAndScaleMultiWeights(multiWeights, multiExpr, scaleByMax = FALSE);
 
   if (inherits(networkOptions, "NetworkOptions"))
     networkOptions = list2multiData(replicate(nSets, networkOptions, simplify = FALSE));
@@ -174,6 +177,7 @@ sampledHierarchicalConsensusModules = function(
     for (set in 1:nSets)
     {
       adj = adjacency(multiExpr[[set]]$data[, useGenes], 
+                      weights = if (is.null(multiWeights)) NULL else multiWeights[[set]]$data[, useGenes],
                       power = networkOptions[[set]]$data$power, type = networkOptions[[set]]$data$networkType,
                       corFnc = networkOptions[[set]]$data$corFnc,
                       corOptions = networkOptions[[set]]$data$corOptions)
@@ -184,7 +188,7 @@ sampledHierarchicalConsensusModules = function(
   for (run in startRunIndex:endRunIndex)
   {
     runTOMFileBase = .substituteTags(consensusTOMFilePattern, "%r", run);
-    individualTOMFiles1 = .substituteTags(individualTOMFileNames, "%r", run);
+    individualTOMFiles1 = .substituteTags(individualTOMFilePattern, "%r", run);
     set.seed(randomSeed + 2*run + 1);
     
     if (verbose > 0) printFlush(paste(spaces, "Working on run", run, ".."));
@@ -200,6 +204,12 @@ sampledHierarchicalConsensusModules = function(
          useSamples[[set]] = c(1:nSamples[set]);
     }
     samExpr = mtd.subset(multiExpr, useSamples);
+    if (!is.null(multiWeights)) 
+    {
+      samWeights = mtd.subset(multiWeights, useSamples) 
+    } else {
+      samWeights = NULL;
+    }
     samPowers = powers;
     if (checkSoftPower)
     {
@@ -208,6 +218,7 @@ sampledHierarchicalConsensusModules = function(
       for (set in 1:nSets)
       {
         adj = adjacency(samExpr[[set]]$data[, useGenes], 
+                        weights = if (is.null(multiWeights)) NULL else samWeights[[set]]$data[, useGenes],
                         power = networkOptions[[set]]$data$power, type = networkOptions[[set]]$data$networkType,
                         corFnc = networkOptions[[set]]$data$corFnc,
                         corOptions = networkOptions[[set]]$data$corOptions)
@@ -224,6 +235,7 @@ sampledHierarchicalConsensusModules = function(
 
     mods = hierarchicalConsensusModules(
       multiExpr = samExpr, 
+      multiWeights = samWeights,
       randomSeed = NULL,
 
       networkOptions = networkOptions1,
@@ -239,7 +251,7 @@ sampledHierarchicalConsensusModules = function(
       ...,
       verbose = verbose-2, indent = indent+2)
 
-    result[[run]] = list(mods = mods, samples = useSamples, powers = samPowers)
+    result[[run - startRunIndex + 1]] = list(mods = mods, samples = useSamples, powers = samPowers)
 
     if (saveRunningResults) save(result, file = runningResultsFile);
 

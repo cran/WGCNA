@@ -11,7 +11,9 @@ eigengenes.
 \usage{
 hierarchicalMergeCloseModules(
   # input data
-  multiExpr, labels,
+  multiExpr, 
+  multiExpr.imputed = NULL,
+  labels,
 
   # Optional starting eigengenes
   MEs = NULL,
@@ -48,17 +50,21 @@ hierarchicalMergeCloseModules(
     \item{multiExpr}{ Expression data in the multi-set format (see \code{\link{multiData}}). A vector of
 lists, one per set. Each set must contain a component \code{data} that contains the expression data, with
 rows corresponding to samples and columns to genes or probes. }
+
+  \item{multiExpr.imputed}{If \code{multiExpr} contain missing data, this argument can be used to supply the
+expression data with missing data imputed. If not given, the \code{\link[impute]{impute.knn}} function will
+be used to impute the missing data within each module (see \code{\link{imputeByModule}}.}
+
 \item{labels}{
-A vector (numeric, character or a factor) giving module colors for genes.
-The method only makes sense when genes have the
-same color label in all sets, hence a single vector. 
+A vector (numeric, character or a factor) giving module labels for genes (variables) in \code{multiExpr}.
 }
   \item{MEs}{
 If module eigengenes have been calculated before, the user can save some computational time
 by inputting them. \code{MEs} should have the same format as \code{multiExpr}.
 If they are not given, they will be calculated.
 }
-  \item{unassdColor}{Specifies the string that labels unassigned genes. Module of this color will
+  \item{unassdColor}{The label (value in \code{labels})
+that represents unassigned genes. Module of this label will
 not enter the module eigengene clustering and will not be merged with other modules.}
 
   \item{impute}{Should missing values be imputed in eigengene calculation? If imputation is disabled, the

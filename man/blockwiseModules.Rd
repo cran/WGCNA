@@ -10,6 +10,7 @@ blockwiseModules(
   # Input data
 
   datExpr, 
+  weights = NULL,
 
   # Data checking options
 
@@ -41,6 +42,7 @@ blockwiseModules(
   power = 6,
   networkType = "unsigned",
   replaceMissingAdjacencies = FALSE,
+  suppressTOMForZeroAdjacencies = FALSE,
 
   # Topological overlap options
 
@@ -94,6 +96,7 @@ blockwiseModules(
   # Options controlling behaviour
 
   nThreads = 0,
+  useInternalMatrixAlgebra = FALSE,
   verbose = 0, indent = 0,
   ...)
 
@@ -102,6 +105,9 @@ blockwiseModules(
   \item{datExpr}{ Expression data. A matrix (preferred) or 
 data frame in which columns are genes and rows ar samples. NAs are
 allowed, but not too many. See \code{checkMissingData} below and details.} 
+
+  \item{weights}{optional observation weights in the same format (and dimensions) as \code{datExpr}.
+These weights are used in correlation calculation.}
 
   \item{checkMissingData}{logical: should data be checked for excessive numbers of missing entries in
 genes and samples, and for genes with zero variance? See details. }
@@ -166,6 +172,8 @@ cosine calculation differs from the standard one in that it does not subtract th
 
   \item{replaceMissingAdjacencies}{logical: should missing values in the calculation of adjacency be replaced
 by 0?}
+
+  \item{suppressTOMForZeroAdjacencies}{Logical: should TOM be set to zero for zero adjacencies?}
 
   \item{TOMType}{ one of \code{"none"}, \code{"unsigned"}, \code{"signed"}. If \code{"none"}, adjacency
 will be used for clustering. If \code{"unsigned"}, the standard TOM will be used (more generally, TOM
@@ -283,6 +291,9 @@ library is available (which currently includes Linux and Mac OSX, but excludes W
 If zero, the number of online processors will be used if it can be determined dynamically, otherwise
 correlation calculations will use 2 threads. }
 
+  \item{useInternalMatrixAlgebra}{Logical: should WGCNA's own, slow, matrix multiplication be used instead of
+R-wide BLAS? Only useful for debugging.}  
+
   \item{verbose}{ integer level of verbosity. Zero means silent, higher values make the output
 progressively more and more verbose. }
 
@@ -377,7 +388,6 @@ first-processed block. }
 }
 
 \note{
-If the input dataset has a large number of genes, consider carefully the \code{maxBlockSize} as it
 significantly affects the memory footprint (and whether the function will fail with a memory allocation
 error). From a theoretical point of view it is advantageous to use blocks as large as possible; on the
 other hand, using smaller blocks is substantially faster and often the only way to work with large

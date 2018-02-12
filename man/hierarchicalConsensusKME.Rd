@@ -11,6 +11,7 @@ This function calculates several measures of fuzzy module membership in hiearchi
 hierarchicalConsensusKME(
    multiExpr,
    moduleLabels,
+   multiWeights = NULL,
    multiEigengenes = NULL,
    consensusTree,
    signed = TRUE,
@@ -20,7 +21,7 @@ hierarchicalConsensusKME(
    corComponent = "cor", getFDR = FALSE,
    useRankPvalue = TRUE,
    rankPvalueOptions = list(calculateQvalue = getFDR, pValueMethod = "scale"),
-   setNames = NULL, excludeGrey = TRUE,
+   setNames = names(multiExpr), excludeGrey = TRUE,
    greyLabel = if (is.numeric(moduleLabels)) 0 else "grey",
    reportWeightType = NULL,
    getOwnModuleZ = TRUE,
@@ -50,6 +51,12 @@ rows corresponding to samples and columns to genes or probes. }
     \item{moduleLabels}{
 A vector with one entry per column (gene or probe) in \code{multiExpr}, giving the module labels. 
 }
+
+  \item{multiWeights}{ optional observation weights for data in \code{multiExpr}, 
+in the same format (and dimensions) as \code{multiExpr}.
+These weights are used in calculation of KME, i.e., the correlation of module eigengenes with data in
+\code{multiExpr}. The module eigengenes are not weighted in this calculation.}
+
   \item{multiEigengenes}{
 Optional specification of module eigengenes of the modules (\code{moduleLabels}) in data sets within
 \code{multiExpr}. If not given, will be calculated.
@@ -189,7 +196,8 @@ but for some genes the assigned module and module of maximum KME may be differen
 
 The function \code{corAndPvalueFnc} is currently
 is expected to accept arguments \code{x} (gene expression profiles), \code{y} (eigengene expression
-profiles), and \code{alternative} with possibilities at least \code{"greater", "two.sided"}.
+profiles), and \code{alternative} with possibilities at least \code{"greater", "two.sided"}. If weights are
+given, these are passed to \code{corAndPvalueFnc} as argument \code{weights.x}.
 Any additional arguments can be passed via \code{corOptions}.
 
 The function \code{corAndPvalueFnc} should return a list which at the least contains (1) a matrix

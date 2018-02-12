@@ -10,8 +10,10 @@ adjacency(datExpr,
           selectCols = NULL, 
           type = "unsigned", 
           power = if (type=="distance") 1 else 6,
-          corFnc = "cor", corOptions = "use = 'p'",
-          distFnc = "dist", distOptions = "method = 'euclidean'")
+          corFnc = "cor", corOptions = list(use = "p"),
+          weights = NULL,
+          distFnc = "dist", distOptions = "method = 'euclidean'",
+          weightArgNames = c("weights.x", "weights.y"))
 
 adjacency.fromSimilarity(similarity, 
                          type = "unsigned", 
@@ -38,9 +40,13 @@ to be used. }
 similarity for correlation networks. 
 Defaults to Pearson correlation. Any function returning values between -1 and 1 can be used. }
 
-  \item{corOptions}{ character string or a llist specifying additional arguments to be passed to the function given
+  \item{corOptions}{ character string or a list specifying additional arguments to be passed to the function given
 by \code{corFnc}. Use \code{"use = 'p', method = 'spearman'"} or, equivalently, 
 \code{list(use = 'p', method = 'spearman')} to obtain Spearman correlation.   }
+
+  \item{weights}{optional observation weights for \code{datExpr} to be used in correlation calculation.
+A matrix of the same dimensions as \code{datExpr}, containing non-negative weights. Only used with Pearson
+correlation.}
 
   \item{distFnc}{ character string specifying the function to be used to calculate co-expression
 similarity for distance networks. Defaults to the function \code{\link{dist}}. 
@@ -49,6 +55,9 @@ Any function returning non-negative values can be used.}
   \item{distOptions}{ character string or a list specifying additional arguments to be passed to the function given
 by \code{distFnc}. For example, when the function  \code{\link{dist}} is used, the argument \code{method}
 can be used to specify various ways of computing the distance. }
+
+  \item{weightArgNames}{character vector of length 2 giving the names of the arguments to \code{corFnc} that
+represent weights for variable x and y. Only used if \code{weights} are non-NULL.}
 
 }
 \details{

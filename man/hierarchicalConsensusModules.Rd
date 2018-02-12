@@ -10,6 +10,7 @@ Hierarchical consensus network construction and module identification across mul
 \usage{
 hierarchicalConsensusModules(
    multiExpr, 
+   multiWeights = NULL,
    multiExpr.imputed = NULL,
 
    # Data checking options
@@ -67,6 +68,7 @@ hierarchicalConsensusModules(
 
    pamStage = TRUE,  pamRespectsDendro = TRUE,
 
+   iteratePruningAndMerging = FALSE,
    minCoreKME = 0.5, minCoreKMESize = minModuleSize/3,
    minKMEtoStay = 0.2,
 
@@ -90,6 +92,10 @@ hierarchicalConsensusModules(
   \item{multiExpr}{ Expression data in the multi-set format (see \code{\link{checkSets}}). A vector of
 lists, one per set. Each set must contain a component \code{data} that contains the expression data, with
 rows corresponding to samples and columns to genes or probes. }
+
+  \item{multiWeights}{ optional observation weights in the same format (and dimensions) as \code{multiExpr}.
+These weights are used for correlation calculations with data in  \code{multiExpr}.}
+
   \item{multiExpr.imputed}{If \code{multiExpr} contain missing data, this argument can be used to supply the
 expression data with missing data imputed. If not given, the \code{\link[impute]{impute.knn}} function will
 be used to impute the missing data.}
@@ -243,6 +249,10 @@ respect the dendrogram in the sense an object can be PAM-assigned only to cluste
 the branch that the object is merged into.
      See \code{\link[dynamicTreeCut]{cutreeDynamic}} for more details. }
 
+  \item{iteratePruningAndMerging}{Logical: should pruning of low-KME genes and module merging be iterated?
+For backward compatibility, the default is \code{FALSE} but it setting it to \code{TRUE} may lead to
+better-defined modules.}
+
   \item{minCoreKME}{ a number between 0 and 1. If a detected module does not have at least
 \code{minModuleKMESize} genes with eigengene connectivity at least \code{minCoreKME}, the module is
 disbanded (its genes are unlabeled and returned to the pool of genes waiting for mofule detection). }
@@ -300,7 +310,9 @@ Steps 1-4 (up to and including the calculation of consensus network from the ind
 handled by the function \code{\link{hierarchicalConsensusTOM}}. 
 
 Variables (genes) are clustered using average-linkage hierarchical clustering and modules are identified in the
-resulting dendrogram by the Dynamic Hybrid tree cut. Found modules are trimmed of genes whose
+resulting dendrogram by the Dynamic Hybrid tree cut. 
+
+Found modules are trimmed of genes whose
 consensus module membership kME (that is, correlation with module eigengene)
 is less than \code{minKMEtoStay}.
 Modules in which
@@ -318,6 +330,9 @@ clustering module eigengenes using the dissimilarity given by one minus their co
 cutting the dendrogram at the height \code{mergeCutHeight} and merging all modules on each branch. The
 process is iterated until no modules are merged. See \code{\link{mergeCloseModules}} for more details on
 module merging.
+
+The module trimming and merging process is optionally iterated. Iterations are recommended but are (for now)
+not the default for backward compatibility.
 
 }
 \value{

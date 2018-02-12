@@ -11,6 +11,7 @@ intramodularConnectivity(adjMat, colors, scaleByMax = FALSE)
 
 intramodularConnectivity.fromExpr(datExpr, colors, 
               corFnc = "cor", corOptions = "use = 'p'",
+              weights = NULL,
               distFnc = "dist", distOptions = "method = 'euclidean'",
               networkType = "unsigned", power = if (networkType=="distance") 1 else 6,
               scaleByMax = FALSE,
@@ -25,7 +26,7 @@ gene (node) of the network.}
   \item{scaleByMax}{ logical: should intramodular connectivities be scaled by the maximum IM connectivity
 in each module? }
 
-  \item{datExpr}{ data frame containing expression data. Columns correspond to genes and rows to
+  \item{datExpr}{ data frame or matrix containing expression data. Columns correspond to genes and rows to
 samples.}
 
   \item{corFnc}{ character string specifying the function to be used to calculate co-expression
@@ -34,6 +35,9 @@ Defaults to Pearson correlation. Any function returning values between -1 and 1 
 
   \item{corOptions}{ character string specifying additional arguments to be passed to the function given
 by \code{corFnc}. Use \code{"use = 'p', method = 'spearman'"} to obtain Spearman correlation.   }
+
+  \item{weights}{optional matrix of the same dimensions as \code{datExpr}, giving the weights for individual
+observations in \code{datExpr}. These will be passed on to the correlation function.}
 
   \item{distFnc}{ character string specifying the function to be used to calculate co-expression
 similarity for distance networks. Defaults to the function \code{\link{dist}}.

@@ -33,8 +33,9 @@
 
 #include "parallelQuantile_stdC.h"
 #include "pivot_declarations.h"
-#include "corFunctions-common.h"
+#include "corFunctions-utils.h"
 #include "corFunctions.h"
+#include "myMatrixMultiplication.h"
 
 /* =============================================================================================
  *
@@ -62,9 +63,11 @@ const plString 	AdjErrors[] = {"No error. Just a placeholder.",
                                "Unrecognized adjacency type."};
 
 void tomSimilarityFromAdj(double * adj, int * nGenes,
-                   int * tomType, int * denomType, double * tom,
+                   int * tomType, int * denomType,
+                   int * suppressTOMForZeroAdj, 
+                   int * useInternalMatrixAlgebra, 
+                   double * tom,
                    int * verbose, int * indent);
-
 
 //===============================================================================================
 
@@ -72,13 +75,13 @@ void tomSimilarityFromAdj(double * adj, int * nGenes,
 
 //===============================================================================================
 
-void adjacency(double * expr, int nSamples, int nGenes, int corType, int adjType, double power, 
+void adjacency(double * expr, double * weights, int nSamples, int nGenes, int corType, int adjType, double power, 
                double maxPOutliers, double quick, int fallback, int cosine, 
                int replaceMissing, 
                double * adj, int * errCode, int *warn, int * nThreads, int verbose, int indent)
 {
-  int 	nElems = nGenes * nGenes;
-  int 	nNA = 0;
+  size_t nElems = ((size_t) nGenes) * ((size_t ) nGenes);
+  int nNA = 0;
   double replacementValue = 0;
 
   // Rprintf("Received nGenes: %d, nSamples: %d\n", nGenes, nSamples);
@@ -90,7 +93,7 @@ void adjacency(double * expr, int nSamples, int nGenes, int corType, int adjType
   {
      case CorTypePearson :
         // Rprintf("Calling cor_pairwise1...");
-        cor1Fast(expr, &nSamples, &nGenes, &quick, &cosine, adj, &nNA, &err, nThreads, &verbose, &indent);
+        cor1Fast(expr, &nSamples, &nGenes, weights, &quick, &cosine, adj, &nNA, &err, nThreads, &verbose, &indent);
         // Rprintf("..done.\n");
         if ((nNA > 0) && (!replaceMissing))
         {
@@ -126,7 +129,7 @@ void adjacency(double * expr, int nSamples, int nGenes, int corType, int adjType
     Rprintf("Replacing missing adjacency values.\n");
     *errCode = 0;
     if (adjType==AdjTypeSigned) replacementValue = -1;
-    for (int i=0; i < nElems; i++)
+    for (size_t i=0; i < nElems; i++)
        if (ISNAN(adj[i])) adj[i] = replacementValue;
     
   }
@@ -137,19 +140,19 @@ void adjacency(double * expr, int nSamples, int nGenes, int corType, int adjType
   switch (adjType) 
   {
     case AdjTypeUnsigned :
-       for (int i=0; i < nElems; i++)
+       for (size_t i=0; i < nElems; i++)
           adj[i] = pow(fabs(adj[i]), power);
        break;
     case AdjTypeUnsignedKeepSign : 
-       for (int i=0; i < nElems; i++)
+       for (size_t i=0; i < nElems; i++)
          adj[i] = (signbit(adj[i])? -1: 1) * pow(fabs(adj[i]), power);
        break;
     case AdjTypeSigned :
-       for (int i=0; i < nElems; i++)
+       for (size_t i=0; i < nElems; i++)
           adj[i] = pow((1+adj[i])/2, power);
        break;
     case AdjTypeHybrid :
-       for (int i=0; i < nElems; i++)
+       for (size_t i=0; i < nElems; i++)
           adj[i] = adj[i] > 0 ? pow(adj[i], power) : 0;
        break;
     default : 
@@ -158,12 +161,12 @@ void adjacency(double * expr, int nSamples, int nGenes, int corType, int adjType
        
 }
     
-void testAdjacency(double * expr, int * nSamples, int * nGenes, int * corType, int * adjType, 
+void testAdjacency(double * expr, double * weights, int * nSamples, int * nGenes, int * corType, int * adjType, 
                    double * power, double * maxPOutliers, double * quick, int * fallback, int * cosine, 
                    double * adj, 
                    int * errCode, int * warn, int * nThreads)
 {
- adjacency(expr, * nSamples, * nGenes, * corType, * adjType, * power, 
+ adjacency(expr, weights, * nSamples, * nGenes, * corType, * adjType, * power, 
            *maxPOutliers, *quick, *fallback, *cosine, 0,
            adj, errCode, warn, nThreads, 1, 0);
 }
@@ -208,10 +211,13 @@ size_t checkAvailableMemory()
 //====================================================================================================
 
 void tomSimilarityFromAdj(double * adj, int * nGenes, 
-                   int * tomType, int * denomType, double * tom, 
+                   int * tomType, int * denomType, 
+                   int * suppressTOMForZeroAdj, 
+                   int * useInternalMatrixAlgebra, 
+                   double * tom, 
                    int * verbose, int * indent)
 {
-  int		ng = *nGenes;
+  size_t		ng = (size_t) *nGenes;
   // int 		err = 0;
 
   char		spaces[2* *indent+1];
@@ -224,37 +230,52 @@ void tomSimilarityFromAdj(double * adj, int * nGenes,
     error("Memmory allocation error (connectivity)");
 
   if (*verbose > 0) Rprintf("%s..connectivity..\n", spaces);
-  for (int gene = 0; gene < ng; gene++)
+  double *tom2 = tom;
+  for (size_t gene = 0; gene < ng; gene++)
   {
     double * adj2 = (adj + gene * ng);
     // set diagonal to 1.
     *(adj2 + gene) = 1;
     // Calculate connectivity
     double sum = 0.0;
-    for (int g2 = 0; g2 < ng; g2++)
+    for (size_t g2 = 0; g2 < ng; g2++)
+    {
       sum += fabs(adj2[g2]);
+      *tom2 = 0;
+      tom2++;
+    }
     conn[gene] = sum;
   }
 
-  if (*verbose > 0) Rprintf("%s..matrix multiplication..\n", spaces);
-  double alpha = 1.0, beta = 0.0;
-  F77_NAME(dsyrk)("L", "N", nGenes, nGenes, & alpha, adj, nGenes, 
-         & beta, tom, nGenes);
+  if (*useInternalMatrixAlgebra > 0)
+  {
+    if (*verbose > 0) Rprintf("%s..matrix multiplication (custom code)..\n", spaces);
+    squareSymmetricMatrix(adj, *nGenes, tom);
+  } else {
+    if (*verbose > 0) Rprintf("%s..matrix multiplication (system BLAS)..\n", spaces);
+    double alpha = 1.0, beta = 0.0;
+    F77_NAME(dsyrk)("L", "N", nGenes, nGenes, & alpha, adj, nGenes, 
+           & beta, tom, nGenes);
+  }
 
   if (*verbose > 0) Rprintf("%s..normalization..\n", spaces);
   // Rprintf("Using denomType %d\n", *denomType);
-  double * tom2;
+  tom2 = tom;
   double * adj2;
-  int ng1 = ng-1;
-  int nAbove1 = 0;
+  size_t ng1 = ng-1;
+  size_t nAbove1 = 0, nSuppressed = 0;
+  if (*suppressTOMForZeroAdj)
+  {
+    Rprintf("%s..will suppress TOM for pairs of nodes with zero adjacency.\n", spaces);
+  }
   switch (* tomType)
   {
     case TomTypeUnsigned:
-      for (int j=0; j< ng1; j++)
+      for (size_t j=0; j< ng1; j++)
       {
         tom2 = tom + (ng+1)*j + 1;  
         adj2 = adj + (ng+1)*j + 1;
-        for (int i=j+1; i< ng; i++)
+        for (size_t i=j+1; i< ng; i++)
         {
           double den1;
           if ((* denomType) == TomDenomMin)
@@ -270,24 +291,30 @@ void tomSimilarityFromAdj(double * adj, int * nGenes,
       }
       break;
     case TomTypeSigned:
-      for (int j=0; j< ng1; j++)
+      for (size_t j=0; j < ng1; j++)
       {
         tom2 = tom + (ng+1)*j + 1;  
         adj2 = adj + (ng+1)*j + 1;
-        for (int i=j+1; i< ng; i++)
+        for (size_t i=j+1; i< ng; i++)
         {
-          double den1;
-          if ((* denomType) == TomDenomMin)
-             den1 = fmin(conn[i], conn[j]);
-          else
-             den1 = (conn[i] + conn[j])/2;
-          *tom2 = fabs( *tom2 - *adj2) / ( den1 - fabs(*adj2) );
-          if (*tom2 > 1) 
+          if ((*suppressTOMForZeroAdj == 0) || (*adj2 > 0))
           {
-	    Rprintf("TOM greater than 1: actual value: %f, i: %d, j: %d\n", *tom2, i, j);
-	    nAbove1++;
-	  }
-          *(tom + ng*i + j) = *tom2;
+            double den1;
+            if ((* denomType) == TomDenomMin)
+               den1 = fmin(conn[i], conn[j]);
+            else
+               den1 = (conn[i] + conn[j])/2;
+            *(tom + ng*i + j) = *tom2 = fabs( *tom2 - *adj2) / ( den1 - fabs(*adj2) );
+            if (*tom2 > 1) 
+            {
+              Rprintf("TOM greater than 1: actual value: %f, i: %d, j: %d\n", *tom2, i, j);
+              nAbove1++;
+            }
+          } else {
+            *tom2 = 0;
+            *(tom + ng*i + j) = 0;
+            nSuppressed++;
+          }
           tom2++;
           adj2++;
         }
@@ -295,8 +322,12 @@ void tomSimilarityFromAdj(double * adj, int * nGenes,
       break;
   }
 
+  if (nSuppressed > 0)
+    Rprintf("%s.. %lu TOM elements were set to zero because of zero adjacencies.\n", spaces, 
+             (unsigned long) nSuppressed); 
+  
   // Set the diagonal of tom to 1
-  for (int i=0; i<ng; i++)
+  for (size_t i=0; i<ng; i++)
     *(tom + ng*i + i) = 1;
 
   if (nAbove1 > 0)
@@ -315,7 +346,7 @@ void tomSimilarityFromAdj(double * adj, int * nGenes,
 //===========================================================================================
 //
 
-void tomSimilarity(double * expr, int * nSamples, int * nGenes, 
+void tomSimilarity(double * expr, double * weights, int * nSamples, int * nGenes, 
                    int * corType, 
                    int * adjType,
                    double * power, 
@@ -326,6 +357,8 @@ void tomSimilarity(double * expr, int * nSamples, int * nGenes,
                    int * fallback,
                    int * cosine,
                    int * replaceMissing,
+                   int * suppressTOMForZeroAdj,
+                   int * useInternalMatrixAlgebra, 
                    double * tom, 
                    int * warn,
                    int * nThreads,
@@ -364,7 +397,7 @@ void tomSimilarity(double * expr, int * nSamples, int * nGenes,
   if (*verbose > 0) Rprintf("%sTOM calculation: adjacency..\n", spaces);
   if (* tomType==TomTypeNone)  // just calculate adjacency.
   {
-    adjacency(expr, ns, ng, *corType, *adjType, *power, *maxPOutliers, *quick, *fallback, *cosine, 
+    adjacency(expr, weights, ns, ng, *corType, *adjType, *power, *maxPOutliers, *quick, *fallback, *cosine, 
               *replaceMissing, tom, &err, warn, nThreads, *verbose, *indent);
     if (*verbose > 0) Rprintf("\n");
     if (err) error(AdjErrors[err]);
@@ -380,7 +413,7 @@ void tomSimilarity(double * expr, int * nSamples, int * nGenes,
   if ((* tomType == TomTypeUnsigned) && (* adjType == AdjTypeUnsignedKeepSign))
     * adjType = AdjTypeUnsigned;
 
-  adjacency(expr, ns, ng, * corType, * adjType, * power, * maxPOutliers, * quick, *fallback, *cosine, 
+  adjacency(expr, weights, ns, ng, * corType, * adjType, * power, * maxPOutliers, * quick, *fallback, *cosine, 
             *replaceMissing, adj, & err, warn, nThreads, *verbose, *indent);
 
   // Rprintf("TOM 1\n");
@@ -390,7 +423,8 @@ void tomSimilarity(double * expr, int * nSamples, int * nGenes,
      free(adj);
      error(AdjErrors[err]);
   } else {
-    tomSimilarityFromAdj(adj, nGenes, tomType, denomType, tom, verbose, indent);
+    tomSimilarityFromAdj(adj, nGenes, tomType, denomType, suppressTOMForZeroAdj, useInternalMatrixAlgebra, 
+                         tom, verbose, indent);
     free(adj);
   }
 }
@@ -406,12 +440,12 @@ void minWhichMin(double * matrix, int * nRows, int * nColumns, double * min, dou
 {
   int nrows = *nRows, ncols = *nColumns;
 
-  for (int i=0; i<ncols; i++)
+  for (size_t i=0; i<ncols; i++)
   {
     double * col = matrix + i*nrows;
     double curmin = *col;
     double curwhich = 0;
-    for (int j=1; j<nrows; j++)
+    for (size_t j=1; j<nrows; j++)
     {
       col++;
       if ( ISNAN(curmin) || (!ISNAN(*col) && (*col < curmin))) { curmin = *col; curwhich = (double) j; }
@@ -425,12 +459,12 @@ void minWhichMin_row(double * matrix, int * nRows, int * nColumns, double * min,
 {
   int nrows = *nRows, ncols = *nColumns;
 
-  for (int i=0; i<nrows; i++)
+  for (size_t i=0; i<nrows; i++)
   {
     double * val = matrix + i;
     double curmin = *val;
     double curwhich = 0;
-    for (int j=1; j<ncols; j++)
+    for (size_t j=1; j<ncols; j++)
     {
       val+=nrows;
       if ( ISNAN(curmin) || (!ISNAN(*val) && (*val < curmin))) { curmin = *val; curwhich = (double) j; }
@@ -451,12 +485,12 @@ void mean(double * matrix, int * nRows, int * nColumns, double * mean)
 {
   int nrows = *nRows, ncols = *nColumns;
 
-  for (int i=0; i<ncols; i++)
+  for (size_t i=0; i<ncols; i++)
   {
     double * col = matrix + i*nrows;
     double sum = 0;
-    int count = 0;
-    for (int j=1; j<nrows; j++)
+    size_t count = 0;
+    for (size_t j=1; j<nrows; j++)
     {
       col++;
       if (!ISNAN(*col))
@@ -478,13 +512,15 @@ void mean(double * matrix, int * nRows, int * nColumns, double * mean)
 
 SEXP tomSimilarityFromAdj_call(SEXP adj_s, 
                         SEXP tomType_s, SEXP denomType_s,
+                        SEXP suppressTOMForZeroAdj_s,
+                        SEXP useInternalMatrixAlgebra_s,
                         SEXP verbose_s, SEXP indent_s)
 {
   // Rprintf("Step 1\n");
   SEXP dim, tom_s;
 
   int *nGenes, *verbose, *indent;
-  int *tomType, *denomType, *replaceMissing;
+  int *tomType, *denomType, *suppressTOMForZeroAdj, *useInternalMatrixAlgebra;
 
   double *adj, *tom, *maxPOutliers;
   // Rprintf("Step 2\n");
@@ -503,6 +539,8 @@ SEXP tomSimilarityFromAdj_call(SEXP adj_s,
   // Rprintf("Step 3\n");
   tomType = INTEGER(tomType_s);
   denomType = INTEGER(denomType_s);
+  suppressTOMForZeroAdj = INTEGER(suppressTOMForZeroAdj_s);
+  useInternalMatrixAlgebra = INTEGER(useInternalMatrixAlgebra_s);
   verbose = INTEGER(verbose_s);
   indent = INTEGER(indent_s);
 
@@ -512,7 +550,7 @@ SEXP tomSimilarityFromAdj_call(SEXP adj_s,
 
   // Rprintf("Calling tomSimilarity...\n");
   tomSimilarityFromAdj(adj, nGenes,
-                tomType, denomType, tom, 
+                tomType, denomType, suppressTOMForZeroAdj, useInternalMatrixAlgebra, tom, 
                 verbose, indent);
 
   // Rprintf("Returned from tomSimilarity...\n");
@@ -525,11 +563,14 @@ SEXP tomSimilarityFromAdj_call(SEXP adj_s,
 //
 
 SEXP tomSimilarity_call(SEXP expr_s, 
+                        SEXP weights_s,
                         SEXP corType_s, SEXP adjType_s, SEXP power_s,
                         SEXP tomType_s, SEXP denomType_s,
                         SEXP maxPOutliers_s, SEXP quick_s,  
                         SEXP fallback_s, SEXP cosine_s, 
                         SEXP replaceMissing_s,
+                        SEXP suppressTOMForZeroAdj_s,
+                        SEXP useInternalMatrixAlgebra_s,
                         SEXP warn_s, // This is an "output" variable
                         SEXP nThreads_s, SEXP verbose_s, SEXP indent_s)
 {
@@ -537,9 +578,9 @@ SEXP tomSimilarity_call(SEXP expr_s,
   SEXP dim, tom_s;
 
   int *nSamples, *nGenes, *fallback, *cosine, *warn, *nThreads, *verbose, *indent;
-  int *corType, *adjType, *tomType, *denomType, *replaceMissing;
+  int *corType, *adjType, *tomType, *denomType, *replaceMissing, *suppressTOMForZeroAdj, *useInternalMatrixAlgebra;
 
-  double *expr, *power, *quick, *tom, *maxPOutliers;
+  double *expr, *weights, *power, *quick, *tom, *maxPOutliers;
   // Rprintf("Step 2\n");
 
   /* Get dimensions of 'expr'. */
@@ -547,6 +588,8 @@ SEXP tomSimilarity_call(SEXP expr_s,
   nSamples = INTEGER(dim);
   nGenes = INTEGER(dim)+1;
   expr = REAL(expr_s);
+
+  weights = isNull(weights_s)? NULL : REAL(weights_s);
 
   // Rprintf("Step 3\n");
   corType = INTEGER(corType_s);
@@ -556,6 +599,8 @@ SEXP tomSimilarity_call(SEXP expr_s,
   fallback = INTEGER(fallback_s);
   cosine = INTEGER(cosine_s);
   replaceMissing = INTEGER(replaceMissing_s);
+  suppressTOMForZeroAdj = INTEGER(suppressTOMForZeroAdj_s);
+  useInternalMatrixAlgebra = INTEGER(useInternalMatrixAlgebra_s);
   warn = INTEGER(warn_s);
   nThreads = INTEGER(nThreads_s);
   verbose = INTEGER(verbose_s);
@@ -570,11 +615,12 @@ SEXP tomSimilarity_call(SEXP expr_s,
   tom = REAL(tom_s);
 
   // Rprintf("Calling tomSimilarity...\n");
-  tomSimilarity(expr, nSamples, nGenes,
+  tomSimilarity(expr, weights, nSamples, nGenes,
                 corType, adjType, power,
                 tomType, denomType, 
                 maxPOutliers, quick, fallback, cosine,
                 replaceMissing,
+                suppressTOMForZeroAdj, useInternalMatrixAlgebra,
                 tom, warn, nThreads, verbose, indent);
 
   // Rprintf("Returned from tomSimilarity...\n");
@@ -597,12 +643,12 @@ void checkAvailableMemoryForR(double * size)
 void R_init_WGCNA(DllInfo * info)
 {
   static const R_CallMethodDef callMethods[]  = {
-    {"tomSimilarity_call", (DL_FUNC) &tomSimilarity_call, 15},
-    {"tomSimilarityFromAdj_call", (DL_FUNC) &tomSimilarityFromAdj_call, 5},
-    {"cor1Fast_call", (DL_FUNC) &cor1Fast_call, 8},
+    {"tomSimilarity_call", (DL_FUNC) &tomSimilarity_call, 18},
+    {"tomSimilarityFromAdj_call", (DL_FUNC) &tomSimilarityFromAdj_call, 7},
+    {"cor1Fast_call", (DL_FUNC) &cor1Fast_call, 9},
     {"bicor1_call", (DL_FUNC) &bicor1_call, 11},
     {"bicor2_call", (DL_FUNC) &bicor2_call, 16},
-    {"corFast_call", (DL_FUNC) &corFast_call, 10},
+    {"corFast_call", (DL_FUNC) &corFast_call, 12},
     {"parallelQuantile", (DL_FUNC) &parallelQuantile, 2},
     {"parallelMean", (DL_FUNC) &parallelMean, 2},
     {"parallelMin", (DL_FUNC) &parallelMin, 1},

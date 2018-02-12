@@ -8,6 +8,7 @@
 plotNetworkHeatmap(
   datExpr, 
   plotGenes, 
+  weights = NULL,
   useTOM = TRUE, 
   power = 6, 
   networkType = "unsigned", 
@@ -19,6 +20,10 @@ to genes. Missing values are allowed and will be ignored. }
 
   \item{plotGenes}{ a character vector giving the names of genes to be included in the plot. The names
 will be matched against \code{names(datExpr)}. }
+
+  \item{weights}{optional observation weights for \code{datExpr} to be used in correlation calculation.
+A matrix of the same dimensions as \code{datExpr}, containing non-negative weights. Only used with Pearson
+correlation.}
 
   \item{useTOM}{ logical: should TOM be plotted (\code{TRUE}), or correlation-based adjacency
 (\code{FALSE})? }

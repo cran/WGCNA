@@ -25,6 +25,31 @@
   ticks;
 }
 
+.plotStandaloneLegend = function(
+                            colors,
+                            lim,
+                            tickLen = 0.7* strwidth("M"),
+                            tickGap = 0.3 * strwidth("M"),
+                            minBarWidth = strwidth("M"),
+                            maxBarWidth = Inf,
+                            mar = c(0.5, 0.2, 0.5, 0.1))
+{
+  par(mar = mar);
+  plot(c(0, 1), c(0, 1), type = "n", axes = FALSE, xlab = "", ylab = "");
+  box = par("usr");
+  tickVal = .autoTicks(lim[1], lim[2]);
+  maxTickWidth = max(strwidth(tickVal));
+  if (maxTickWidth + tickLen + tickGap > box[2]-box[1]-minBarWidth) 
+     warning("Some tick labels will be truncated.");
+  xMax = max(box[2]-maxTickWidth - tickLen - tickGap, box[1] + minBarWidth);
+  if (xMax - box[1] > maxBarWidth) xMax = box[1] + maxBarWidth;
+  .plotColorLegend(box[1], xMax,
+                   box[3], box[4], 
+                   colors = colors,
+                   lim = lim,
+                   tickLen = tickLen,
+                   tickGap = tickGap);
+}
 
 .plotColorLegend = function(xmin, xmax, ymin, ymax,
                             colors,

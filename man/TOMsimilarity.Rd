@@ -3,11 +3,26 @@
 \alias{TOMdist}
 \title{ Topological overlap matrix similarity and dissimilarity}
 \description{
-  Calculation of the topological overlap matrix from a given adjacency matrix.
+  Calculation of the topological overlap matrix, and the corresponding dissimilarity, 
+from a given adjacency matrix.
 }
 \usage{
-TOMsimilarity(adjMat, TOMType = "unsigned", TOMDenom = "min", verbose = 1, indent = 0)
-TOMdist(adjMat, TOMType = "unsigned", TOMDenom = "min", verbose = 1, indent = 0)
+TOMsimilarity(
+    adjMat,
+    TOMType = "unsigned",
+    TOMDenom = "min",
+    suppressTOMForZeroAdjacencies = FALSE,
+    useInternalMatrixAlgebra = FALSE,
+    verbose = 1,
+    indent = 0)
+TOMdist(
+    adjMat,
+    TOMType = "unsigned",
+    TOMDenom = "min",
+    suppressTOMForZeroAdjacencies = FALSE,
+    useInternalMatrixAlgebra = FALSE,
+    verbose = 1,
+    indent = 0)
 }
 \arguments{
   \item{adjMat}{ adjacency matrix, that is a square, symmetric matrix with entries between 0 and 1 
@@ -25,6 +40,11 @@ better results but at this time should be considered experimental.}
 %The default mean denominator variant
 %is preferrable and we recommend using it unless the user needs to reproduce older results obtained using
 %the standard, minimum denominator TOM. }
+
+  \item{suppressTOMForZeroAdjacencies}{Logical: should TOM be set to zero for zero adjacencies?}
+
+  \item{useInternalMatrixAlgebra}{Logical: should WGCNA's own, slow, matrix multiplication be used instead of
+R-wide BLAS? Only useful for debugging.}
 
   \item{verbose}{ integer level of verbosity. Zero means silent, higher values make the output
 progressively more and more verbose. }

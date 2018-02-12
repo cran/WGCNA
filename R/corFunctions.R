@@ -36,9 +36,9 @@ bicor = function(x, y = NULL, robustX = TRUE, robustY = TRUE, use = 'all.obs', m
   if (prod(dim(x))==0) stop("'x' has a zero dimension."); 
   storage.mode(x) = "double";
   nNA = 0L;
-  err = 0L;
-  warnX = 0L;
-  warnY = 0L;
+  err = as.integer(nNA-1 + 1/1);
+  warnX = as.integer(1L- 1/1)
+  warnY = as.integer(2L- 1/1 - 3/3);
   quick = as.double(quick);
   maxPOutliers = as.double(maxPOutliers);
   fallback = as.integer(fallback);
@@ -111,11 +111,8 @@ bicor = function(x, y = NULL, robustX = TRUE, robustY = TRUE, use = 'all.obs', m
   res;
 }
 
-# Code to call my implementation of correlation
-# For less than 100 correlations, use stats::cor since that is usually faster, particularly when no missing
-# data are present, likely due to the complicated threading I do in the WGCNA correlations.  
-
 cor = function(x, y = NULL, use = "all.obs", method = c("pearson", "kendall", "spearman"),
+               weights.x = NULL, weights.y = NULL,
                quick = 0, 
                cosine = FALSE, 
                cosineX = cosine, cosineY = cosine,
@@ -125,6 +122,9 @@ cor = function(x, y = NULL, use = "all.obs", method = c("pearson", "kendall", "s
     na.method <- pmatch(use, c("all.obs", "complete.obs", "pairwise.complete.obs", 
         "everything", "na.or.complete"), nomatch = 0)
     method <- match.arg(method)
+
+    if (length(weights.x)==0) weights.x = NULL;
+    if (length(weights.y)==0) weights.y = NULL;
 
     x = as.matrix(x);
     nx = ncol(x);
@@ -158,16 +158,70 @@ cor = function(x, y = NULL, use = "all.obs", method = c("pearson", "kendall", "s
       if (is.null(nThreads) || (nThreads==0)) nThreads = .useNThreads();
  
       if (prod(dim(x))==0) stop("'x' has a zero dimension."); 
+
+      if (!is.null(weights.x))
+      {
+        if (is.null(dim(weights.x)))
+        {
+          if (length(weights.x)!=nrow(x))
+            stop("When 'weights.x' are given, they must be a vector of length 'nrow(x)' or a matrix\n",
+                 "of the same dimensions as 'x'.");
+          weights.x = matrix(weights.x, nrow(x), ncol(x));
+        } else
+          if (!isTRUE(all.equal(dim(weights.x), dim(x))))
+             stop("When 'weights.x' are given, they must be a vector of length 'nrow(x)' or a matrix\n",
+                 "of the same dimensions as 'x'.");
+        if (any(!is.finite(weights.x))) 
+        {
+          if (verbose > 0)
+            warning("cor: found non-finite weights. These will be removed (set to missing), ",
+                    "and the corresponding entries in 'x' will be treated as missing.");
+          weights.x[!is.finite(weights.x)] = NA;
+        }
+        if (any(weights.x < 0, na.rm = TRUE))
+          stop("All weights must be non-negative.");
+
+        if (!is.null(y) && is.null(weights.y)) weights.y = matrix(1, nrow(y), ncol(y));
+      }
+
+      if (!is.null(weights.y))
+      {
+        if (is.null(y)) stop("'weights.y' can only be used if 'y' is non-NULL.");
+        if (is.null(dim(weights.y)))
+        {
+          if (length(weights.y)!=nrow(y))
+            stop("When 'weights.y' are given, they must be a vector of length 'nrow(y)' or a matrix\n",
+                 "of the same dimensions as 'y'.");
+          weights.y = matrix(weights.y, nrow(y), ncol(y));
+        } else
+          if (!isTRUE(all.equal(dim(weights.y), dim(y))))
+             stop("When 'weights.y' are given, they must be a vector of length 'nrow(y)' or a matrix\n",
+                 "of the same dimensions as 'y'.");
+        if (any(!is.finite(weights.y)))
+        {
+          if (verbose > 0) 
+            warning("cor: found non-finite weights. These will be removed (set to missing), ",
+                    "and the corresponding entries in 'x' will be treated as missing.");
+          weights.y[!is.finite(weights.y)] = NA;
+        }
+        if (any(weights.y < 0, na.rm = TRUE))
+          stop("All weights must be non-negative.");
+
+        if (is.null(weights.x)) weights.x = matrix(1, nrow(x), ncol(x));
+      }
+
       storage.mode(x)= "double";
+      if (!is.null(weights.x)) storage.mode(weights.x) = "double";
+      if (!is.null(weights.y)) storage.mode(weights.y) = "double";
       nNA = 0L
-      err = 0L
+      err = as.integer(nNA-1 + 1/1);
       cosineX = as.integer(cosineX);
       nThreads = as.integer(nThreads);
       verbose = as.integer(verbose);
       indent = as.integer(indent);
       if (is.null(y))
       {
-         res = .Call("cor1Fast_call", x,
+         res = .Call("cor1Fast_call", x, weights.x,
                    quick, cosine,
                    nNA, err, nThreads,
                    verbose, indent, PACKAGE = "WGCNA");
@@ -180,6 +234,7 @@ cor = function(x, y = NULL, use = "all.obs", method = c("pearson", "kendall", "s
          if (nrow(x)!=nrow(y))
             stop("'x' and 'y' have incompatible dimensions (unequal numbers of rows).");
          res = .Call("corFast_call", x, y, 
+                 weights.x, weights.y,
                  quick, 
                  cosineX, 
                  cosineY,
@@ -225,4 +280,3 @@ corFast = function(x, y = NULL, use = "all.obs",
 }
 
 
-      
