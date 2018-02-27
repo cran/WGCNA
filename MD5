@@ -1,5 +1,5 @@
-17ec35a2c91292bc174ea17adf238620 *Changelog
-e10bbc863f67592f387632b4e7e25808 *DESCRIPTION
+a3c0cc396914df144279b0b01abeb486 *Changelog
+555e7f3dd7ce6c0f4f812838d22a9d13 *DESCRIPTION
 f910de2dfb54ed572d2b2842ed53f80c *NAMESPACE
 2640fb7286cab45b6de425c01109f80e *R/AFcorMI.R
 ea14a2a861b238bbb31d9f54117b7fdb *R/Functions-fromSimilarity.R
@@ -11,7 +11,7 @@ a741dd19796b763560aba5d13f00fc48 *R/TrueTrait.R
 6694f89a89e904eb1bc90d28cf28fc37 *R/adjacency.polyReg.R
 3532a8d0c9e1ea87935747498e952c75 *R/adjacency.splineReg.R
 7dc920318959f0b951ca0821cb847907 *R/blockwiseData.R
-10bab61ebe2a359294d4a16157b6ef3d *R/blockwiseModulesC.R
+a77c8b888872673d95e497a4946c019f *R/blockwiseModulesC.R
 c4e596d1a2e144840649406792a197be *R/branchSplit.R
 15468ef5e298f2fdb6320a53fe144051 *R/coClustering.R
 ceee787204a986fedae3e8b3ce86d121 *R/collapseRows.R
@@ -28,7 +28,7 @@ aa9c7ff1a228742079e2cbd4a1f4c28e *R/dendrogramAdjustmentFunctions.R
 201ca197e87d90d86847a4ecbfea9088 *R/empiricalBayesLM.R
 189b8511440c0ada06cf0e91abd56db8 *R/exportFunctions.R
 5e4be85b18d1cd4047b1f50814173139 *R/heatmapWithLegend.R
-3586fad3dc4040b7f057bdb7eefdce75 *R/hierarchicalConsensusModules.R
+6a714ec52e2bfa8549e8051177a363ea *R/hierarchicalConsensusModules.R
 e4a9b962ea9955a5becb94b42929d717 *R/internalConstants.R
 da2729744a42bda91cc02ddf3714a612 *R/kMEcomparisonScatterplot.R
 9ad0513b5a21e56e67fba7c9b9647d3d *R/labelPoints.R
@@ -97,7 +97,7 @@ d3e975d3323a46bfaba290ebf3958e52 *man/bicovWeights.Rd
 65ac3edef958fd60295b57734824b37f *man/blockSize.Rd
 acd19796b11e28d24c53269d55385671 *man/blockwiseConsensusModules.Rd
 f32b1ef35c6cf6abae8f05f17c8e94a4 *man/blockwiseIndividualTOMs.Rd
-eb7963a198cafd5b0141f45cb53f524b *man/blockwiseModules.Rd
+4a94b12e0445eecd4fd79d28a291bb37 *man/blockwiseModules.Rd
 14bb292cc65cc5a633416667c939a390 *man/blueWhiteRed.Rd
 c5db45284538a7acbd1ac63d47eb4f8c *man/branchEigengeneDissim.Rd
 bffaf7af5a6432a63c4d5513d71aef5d *man/branchSplit.Rd

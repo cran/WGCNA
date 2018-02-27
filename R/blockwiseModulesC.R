@@ -234,8 +234,6 @@ blockwiseModules = function(
   stabilityLabels = NULL,
   stabilityCriterion = c("Individual fraction", "Common fraction"),
   minStabilityDissim = NULL,
-
-
   pamStage = TRUE, pamRespectsDendro = TRUE,
 
   # Gene reassignment, module trimming, and module "significance" criteria
@@ -259,6 +257,7 @@ blockwiseModules = function(
 
   nThreads = 0,
   useInternalMatrixAlgebra = FALSE,
+  useCorOptionsThroughout = TRUE,
   verbose = 0, indent = 0,
   ...)
 {
@@ -356,7 +355,16 @@ blockwiseModules = function(
      datExpr.scaled.imputed = scale(datExpr);
 
   corFnc = .corFnc[intCorType];
-  corOptions = list(use = 'p');
+  corOptions = .corOptionList[[intCorType]];
+
+  corFncAcceptsWeights = intCorType==1;
+
+  if (useCorOptionsThroughout)   
+    corOptions = c(corOptions, list(cosine = cosineCorrelation));
+    # Do not add the quick argument here. The calculations carried out here will not be slow anyway.
+  if (intCorType==2 && useCorOptionsThroughout )
+    corOptions = c(corOptions, list(maxPOutliers = maxPOutliers, pearsonFallback = pearsonFallback));
+
   signed = networkType %in% c("signed", "signed hybrid");
 
   # Set up advanced tree cut methods
@@ -615,27 +623,6 @@ blockwiseModules = function(
     deleteModules = NULL;
     changedModules = NULL;
 
-    # find genes whose closest module eigengene has cor higher than minKMEtoJoin , record blockLabels and
-    # remove them from the pool
-    # This block has been removed for now because it conflicts with the assumption that the blocks cannot
-    # be changed until they have been clustered.   
-    #unassGenes = c(c(1:nGGenes)[-block][allLabels[-block]==0], block[blockLabels==0]);
-    #if (length(unassGenes) > 0)
-    #{
-    #  corEval = parse(text = paste(.corFnc[intCorType], "(datExpr[, unassGenes], propMEs,", 
-    #                               .corOptions[intCorType], ")"));
-    #  KME = eval(corEval);
-    #  if (intNetworkType==1) KME = abs(KME);
-    #  KMEmax = apply(KME, 1, max);
-    #  ClosestModule = blockLabelIndex[apply(KME, 1, which.max)];
-    #  assign = (KMEmax >= minKMEtoJoin );
-    #  if (sum(assign>0))
-    #  {
-    #    allLabels[unassGenes[assign]] = ClosestModule[assign]; 
-    #    changedModules = union(changedModules, ClosestModule[assign]);
-    #  }
-    #}
-
     # Check modules: make sure that of the genes present in the module, at least a minimum number
     # have a correlation with the eigengene higher than a given cutoff.
 
@@ -643,11 +630,12 @@ blockwiseModules = function(
     for (mod in 1:ncol(propMEs))
     {
       modGenes = (blockLabels==blockLabelIndex[mod]);
-      KME = do.call(match.fun(corFnc),
-                    c(list(selExpr[, modGenes], propMEs[, mod], 
+      KME = do.call(corFnc, 
+                c(list(selExpr[, modGenes], propMEs[, mod]),
+                  if (corFncAcceptsWeights) list(
                            weights.x = if (haveWeights) weights[, modGenes] else NULL,
-                           weights.y = NULL),
-                      .corOptionList[[intCorType]]));
+                           weights.y = NULL) else NULL,
+                  corOptions));
       if (intNetworkType==1) KME = abs(KME);
       if (sum(KME>minCoreKME) < minCoreKMESize) 
       {
@@ -755,10 +743,11 @@ blockwiseModules = function(
      propLabels = goodLabels[goodLabels!=0];
      assGenes = (c(1:nGenes)[gsg$goodGenes])[goodLabels!=0];
      KME = do.call(match.fun(corFnc),
-                c(list(datExpr[, goodLabels!=0], AllMEs,
+             c(list(datExpr[, goodLabels!=0], AllMEs),
+               if (corFncAcceptsWeights) list(
                      weights.x = if(haveWeights) weights[, goodLabels!=0] else NULL,
-                     weights.y = NULL),
-                  .corOptionList[[intCorType]]));
+                     weights.y = NULL) else NULL,
+               corOptions));
      if (intNetworkType == 1) KME = abs(KME)
      nMods = ncol(AllMEs);
      for (mod in 1:nMods)
@@ -820,6 +809,7 @@ blockwiseModules = function(
   MEsOK = TRUE;
   mergedMods = try(mergeCloseModules(datExpr, colors[gsg$goodGenes], cutHeight = mergeCutHeight, 
                                  relabel = TRUE, # trapErrors = FALSE, 
+                                 corFnc = corFnc, corOptions = corOptions,
                                  impute = impute, 
                                  verbose = verbose-2, indent = indent + 2), silent = TRUE);
   if (class(mergedMods)=='try-error')

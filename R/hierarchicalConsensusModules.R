@@ -508,7 +508,8 @@ pruneConsensusModules = function(
      # print(netOpt$corOptions);
       haveWeights = length(dim(weights))==2;
       kme = do.call(netOpt$corFnc, 
-                 c(list(x = expr, y = me, weights.x = weights), netOpt$corOptions));
+                 c(if (haveWeights) list(x = expr, y = me, weights.x = weights) else list(x = expr, y = me), 
+                   netOpt$corOptions));
       if (!grepl("signed", netOpt$networkType)) kme = abs(kme);
       kme;
     }, multiExpr, multiWeights, MEs, networkOptions, returnList = TRUE);

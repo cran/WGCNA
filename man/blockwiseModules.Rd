@@ -97,6 +97,7 @@ blockwiseModules(
 
   nThreads = 0,
   useInternalMatrixAlgebra = FALSE,
+  useCorOptionsThroughout = TRUE,
   verbose = 0, indent = 0,
   ...)
 
@@ -293,6 +294,9 @@ correlation calculations will use 2 threads. }
 
   \item{useInternalMatrixAlgebra}{Logical: should WGCNA's own, slow, matrix multiplication be used instead of
 R-wide BLAS? Only useful for debugging.}  
+
+  \item{useCorOptionsThroughout}{Logical: should correlation options passed to network analysis also be used
+in calculation of kME? Set to \code{FALSE} to reproduce results obtained with WGCNA 1.62 and older.}
 
   \item{verbose}{ integer level of verbosity. Zero means silent, higher values make the output
 progressively more and more verbose. }

@@ -1,6 +1,16 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
+2018/02/26: 1.63
 
+	. Bugfix in blockwiseModules fixes a crash caused by supplying weights
+	  to bicor
+
+	. DIFF: correlation options such as maxPOutliers are now by default
+	  used throughout function blockwiseModules. New argument
+	  useCorOptionsThroughout can be used to switch to old behaviour where
+	  the arguments were used only for network construction.
+
+2018/02/10: 1.62
 
 	. New functions sampledBlockwiseModules and
 	  sampledHierarchicalConsensusModules carry out network analysis
