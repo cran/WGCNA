@@ -92,7 +92,7 @@ GOenrichmentAnalysis = function(labels, entrezCodes,
         entrezCodes = yeastORFs
       } else {
         # Map the entrez IDs to yeast ORFs
-        x = eval(parse(text = "org.Sc.sgd:::org.Sc.sgdENTREZID"))
+        x = eval(parse(text = "org.Sc.sgd.db:::org.Sc.sgdENTREZID"))
         # x = org.Sc.sgd:::org.Sc.sgdENTREZID
         xx = as.list(x[mapped_genes])
         allORFs = names(xx);
