@@ -282,7 +282,11 @@ void tomSimilarityFromAdj(double * adj, int * nGenes,
              den1 = fmin(conn[i], conn[j]);
           else
              den1 = (conn[i] + conn[j])/2;
-          *tom2 = ( *tom2 - *adj2) / ( den1 - * adj2 ) ;
+          double den = den1 - * adj2;
+          if (den==0)
+            *tom2 = 0;
+          else
+            *tom2 = ( *tom2 - *adj2) / den ;
           *(tom + ng*i + j) = *tom2;
           if (*tom2 > 1) nAbove1++;
           tom2++;
@@ -304,7 +308,12 @@ void tomSimilarityFromAdj(double * adj, int * nGenes,
                den1 = fmin(conn[i], conn[j]);
             else
                den1 = (conn[i] + conn[j])/2;
-            *(tom + ng*i + j) = *tom2 = fabs( *tom2 - *adj2) / ( den1 - fabs(*adj2) );
+            double den = den1 - fabs(*adj2);
+            if (den==0)
+              *tom2 = 0;
+            else
+              *tom2 = fabs( *tom2 - *adj2) / den;
+            *(tom + ng*i + j) = *tom2;
             if (*tom2 > 1) 
             {
               Rprintf("TOM greater than 1: actual value: %f, i: %d, j: %d\n", *tom2, i, j);

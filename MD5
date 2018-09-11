@@ -1,18 +1,18 @@
-a3c0cc396914df144279b0b01abeb486 *Changelog
-555e7f3dd7ce6c0f4f812838d22a9d13 *DESCRIPTION
+1ab557ab0b199d7a5a78b3fb353d7d56 *Changelog
+4afda6dd5dfae51c77d62f559f5de050 *DESCRIPTION
 f910de2dfb54ed572d2b2842ed53f80c *NAMESPACE
 2640fb7286cab45b6de425c01109f80e *R/AFcorMI.R
-ea14a2a861b238bbb31d9f54117b7fdb *R/Functions-fromSimilarity.R
+52127eb669cb64a9c916fff9200fcb0a *R/Functions-fromSimilarity.R
 f0a23a7cf2d4b05f06b2b1dbe29eeb21 *R/Functions-multiData.R
-35264883b51466246ff427531e46a534 *R/Functions.R
-dedc67cc205260a91ef1d8f82cfa2d34 *R/GOenrichmentAnalysis.R
+63a598b89d779b390fd6a01055b94fda *R/Functions.R
+b042b30d8f5d4721298fb105a49bd369 *R/GOenrichmentAnalysis.R
 a741dd19796b763560aba5d13f00fc48 *R/TrueTrait.R
 3747f2e4a71105d8e3ac4c54914b6bd4 *R/accuracyMeasures.R
 6694f89a89e904eb1bc90d28cf28fc37 *R/adjacency.polyReg.R
 3532a8d0c9e1ea87935747498e952c75 *R/adjacency.splineReg.R
 7dc920318959f0b951ca0821cb847907 *R/blockwiseData.R
 a77c8b888872673d95e497a4946c019f *R/blockwiseModulesC.R
-c4e596d1a2e144840649406792a197be *R/branchSplit.R
+f0fe6229bc66753b130696f9f9b0d6d8 *R/branchSplit.R
 15468ef5e298f2fdb6320a53fe144051 *R/coClustering.R
 ceee787204a986fedae3e8b3ce86d121 *R/collapseRows.R
 93b1234770b325950074537bc2aad873 *R/collapseRowsUsingKME.R
@@ -22,7 +22,7 @@ ceee787204a986fedae3e8b3ce86d121 *R/collapseRows.R
 6a3752172cc4c31d53eec0cdc1463ea7 *R/consensusRepresentatives.R
 fe08c4af47f46acd075082eafb00f634 *R/consensusTOM.R
 239273bfb01626e6a7a6ea7eb966bca7 *R/corAndPvalue.R
-7cdca3111480ef12cbf886b795e0a512 *R/corFunctions.R
+ae38c4a3af8cf6f039c093f158c8be75 *R/corFunctions.R
 f5dfb236765806a3eb39bd028bff071b *R/coxRegressionResiduals.R
 aa9c7ff1a228742079e2cbd4a1f4c28e *R/dendrogramAdjustmentFunctions.R
 201ca197e87d90d86847a4ecbfea9088 *R/empiricalBayesLM.R
@@ -35,7 +35,7 @@ da2729744a42bda91cc02ddf3714a612 *R/kMEcomparisonScatterplot.R
 c4bbf0eec5c48beb6b66053f66cfd335 *R/matchLabels.R
 de5a35825d9b736b61c515ebee717d25 *R/moduleMergeUsingKME.R
 1c73c0e3011caa94097182ed9920e90f *R/modulePreservation.R
-3e43f0d46f0e7513e016511293f13ad1 *R/multiData.R
+dbd00cc0838fdeb1aa724e950b205b03 *R/multiData.R
 d96c4db72edd76ecee257f03f3743c3e *R/mutualInfoAdjacency.R
 f01e9b205225218592759842ec81a61a *R/nearestCentroidPredictor.R
 ff247c78f289e887d88ea719e482e2ee *R/networkConcepts.R
@@ -48,7 +48,7 @@ f17cfef92906bb48ef2d09a25a8b57c4 *R/quantileC.R
 69f368afdd00a44008445ba5d90cdd6b *R/returnGeneSetsAsList.R
 7a9e4d431b89e8da319b6935e4e165b2 *R/sampledModules.R
 9150985fe60317f9ad20f66cacaf7170 *R/smaFunctions.R
-101bc6f0e31a5343456b98ccfb1ce6cb *R/standardScreeningBinaryTrait.R
+e7af15046afab56942ec17ef97e4661c *R/standardScreeningBinaryTrait.R
 f20cae9009e6bca9e4f19328f17a229f *R/stratifiedBarplot.R
 838bed5c4cbe28e4c942be6e9ca537ac *R/transposeBigData.R
 8603738eadb272fa798eb71c9cb173df *R/useNThreads.R
@@ -77,7 +77,6 @@ a1c383c7c833d5d3e336f02b5fead2f6 *man/SCsLists.Rd
 31221a58073381cdc0ff5b6059594bcb *man/TOMsimilarity.Rd
 0153d62743c9f895b45e99db4f02d84d *man/TOMsimilarityFromExpr.Rd
 21b9aa92bf787c203518a52b9fc4c486 *man/TrueTrait.Rd
-6b8731981e9a76be2f063815e0e5cd9d *man/WGCNA-package.Rd
 f3daf1abc96634906122136454ee140b *man/accuracyMeasures.Rd
 051b9a0b6e3d224367101ae392fdee22 *man/addErrorBars.Rd
 2703e1c680bae62e4c5aaecdcfbbd424 *man/addGrid.Rd
@@ -91,9 +90,11 @@ f73c92a0f512782324e4b56eed5cbe65 *man/allocateJobs.Rd
 b7ea7d2217d2af07fb52698036093d99 *man/allowWGCNAThreads.Rd
 f0af93e682c1e4f9ed671d5dc26b5c47 *man/automaticNetworkScreening.Rd
 37f7ceee377056bc41dfc56146e44c22 *man/automaticNetworkScreeningGS.Rd
-1117412198085a1e2ef0513c1468fec1 *man/bicor.Rd
+9d5ef23d09c8ad31a581439ce9a45921 *man/bicor.Rd
 93111bb5e42234852ced49447cd72fc6 *man/bicorAndPvalue.Rd
 d3e975d3323a46bfaba290ebf3958e52 *man/bicovWeights.Rd
+6be1882171439c629ee9d1265458a422 *man/binarizeCategoricalColumns.Rd
+7e1f6831ec4f0bfeceb47e61d6bb6692 *man/binarizeCategoricalVariable.Rd
 65ac3edef958fd60295b57734824b37f *man/blockSize.Rd
 acd19796b11e28d24c53269d55385671 *man/blockwiseConsensusModules.Rd
 f32b1ef35c6cf6abae8f05f17c8e94a4 *man/blockwiseIndividualTOMs.Rd
@@ -124,7 +125,8 @@ bdb934e0d83055b9761c0241ca0180cd *man/consensusKME.Rd
 95b1b6e256a3f74f55c682502d317941 *man/consensusProjectiveKMeans.Rd
 48c16095ea58df4111408b497f51fe30 *man/consensusRepresentatives.Rd
 f45e188a899b1a2691b3cb78b016bb45 *man/consensusTOM.Rd
-249fb20159bb74170f501c63a67918a7 *man/cor.Rd
+cfe0f218bfeb5025973dd853ae48782e *man/convertNumericColumnsToNumeric.Rd
+ec6ea3da4f9701d08fb28775aeebae35 *man/cor.Rd
 816782162c19cddf11f637162f4cb0dc *man/corAndPvalue.Rd
 19cd6ac7f5c9891b6f6be8fd4034f484 *man/corPredictionSuccess.Rd
 ddd90d6b54aac459bd8af75db5f5e8a6 *man/corPvalueFisher.Rd
@@ -138,6 +140,7 @@ ec2017b186d25a4707f66d4069f3f18c *man/dynamicMergeCut.Rd
 eb024962b21b1535d8baa24fad961591 *man/empiricalBayesLM.Rd
 46e29dcd87c583e3d449493600141016 *man/exportNetworkToCytoscape.Rd
 932f2ec52d299afe70b469264398fa27 *man/exportNetworkToVisANT.Rd
+65e62fed0cdf47bc3d30d014841cd5a9 *man/factorizeNonNumericColumns.Rd
 4f2aee2616cd6c8a62a69753510b8911 *man/fixDataStructure.Rd
 c5e50271ec9b716960866022c693589d *man/formatLabels.Rd
 a0878ec86150188ec97abfc2a3533b2e *man/fundamentalNetworkConcepts.Rd
@@ -165,7 +168,7 @@ e4481641ca0ff1c2a648e3427f60ca2e *man/kMEcomparisonScatterplot.Rd
 367c8efa7aff57c91f508f4d6993ee0c *man/keepCommonProbes.Rd
 8e09108aa6a9aa781d9be2d546e838bd *man/labelPoints.Rd
 4ed4ad8fb3eefb8fb3ebc018d50f24c1 *man/labeledBarplot.Rd
-18f420dd11d9656281acbddca3f5e709 *man/labeledHeatmap.Rd
+45f825a086e0f34896768a529ef50b4b *man/labeledHeatmap.Rd
 c23d113bc424610eaa055485c9fc2fbd *man/labeledHeatmap.multiPage.Rd
 4bbe76c64e465dd5d480f649370d8c31 *man/labels2colors.Rd
 7fc163ef52818f5539648901398c4449 *man/list2multiData.Rd
@@ -216,7 +219,7 @@ d11dd614b07f5d5cb8818a26a774ea3d *man/newNetworkOptions.Rd
 9ba4ff24a88a7d6bc72960f6d5bead4b *man/overlapTable.Rd
 f74547f3ebfc1ed7142e0d052b4cb2a7 *man/overlapTableUsingKME.Rd
 a00873ae7623437f433140b20db1e64d *man/pickHardThreshold.Rd
-eb3ff8efc37c085cacceaec9a4fe1011 *man/pickSoftThreshold.Rd
+4238d25f597551527f75cf2974c83c43 *man/pickSoftThreshold.Rd
 3293cecd4d3f5f802361270b9dc23be9 *man/plotClusterTreeSamples.Rd
 7d1fffe42704e238342c53b1bc602ad8 *man/plotColorUnderTree.Rd
 b541802cfa67c468d0afb34862a8f881 *man/plotCor.Rd
@@ -259,6 +262,7 @@ ea6d8d82152fae0924bc92d24c8ae02f *man/scaleFreePlot.Rd
 6e5711f9ad7cc86add003a1e29e8db9f *man/shortenStrings.Rd
 9cce33e7a075bc301deb614f4f23b8ed *man/sigmoidAdjacencyFunction.Rd
 e32c273ed291919bc9814d6de5d636ce *man/signedKME.Rd
+5a66f319627490da0d4d48171b01e4f8 *man/signifNumeric.Rd
 dede43eacc71262d01c19b6f9db9dc51 *man/signumAdjacencyFunction.Rd
 d48f3b3c3df5f1587508dc770a4134a3 *man/simpleConsensusCalculation.Rd
 c13b97b9ac1177650cbeb1c1b36b7f3a *man/simpleHierarchicalConsensusCalculation.Rd
@@ -303,7 +307,7 @@ db35a97d45c6268d49c6a3a7b8e396ac *src/corFunctions-utils.h
 5ce06b070466f09b11f2745166ab226a *src/exceptions.h
 8685af37af7b142facb727e97d74b3ec *src/myMatrixMultiplication.c
 364e2ccaa651126865bafa7177613cf6 *src/myMatrixMultiplication.h
-b2993fb9579d376b92715c92bc0a00c8 *src/networkFunctions.c
+1e7310b2c46f39df77fdab8794d61184 *src/networkFunctions.c
 7af49e3b3a1e536aa35f4c946644d7e3 *src/parallelQuantile.cc
 73219e59ee796dc44d848434cfb818c4 *src/parallelQuantile.h
 7d69c97a3259a124c1b80b1b452dba29 *src/parallelQuantile_stdC.h

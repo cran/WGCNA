@@ -1,5 +1,56 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
+
+2018/09/09: 1.64-1
+
+	. binarizeCategoricalColumns.for... have re-ordered and in some cases
+	  added arguments to make them more useful.
+
+2018/09/05: 1.64
+
+	. Web site link updated
+
+	. Documentation for cor has been improved by making more precise what
+	  nThreads actually affects
+
+	. Documentation for pickSoftThreshold.fromSimilarity has been improved
+	  thanks to a suggestion from Paolo Inglese.
+
+	. Function signedKME has been streamlined and a bug in which gene
+	  names in the output were passed through check.names in coercing the
+	  input to a data frmae is now fixed.
+
+	. New functions binarizeCategoricalVariable,
+	  binarizeCategoricalColumns, and related wrappers for binarizing
+	  categorical covariates into sets of binary indicators
+
+	. labeledHeatmap now accepts arguments showRows and showCols that
+	  allow one show a subset of the heatmap without having to explicitly
+	  subset all row- and column-specific arguments
+
+	. branchSplitFromStabilityLabels.individualFraction can now work with
+	  missing entries in cluster labels
+
+	. New function signifNumeric for rounding numeric columns of a data
+	  frame.
+
+	. Bugfix in corFast: argument 'use' is now interpreted properly
+	  (thanks to Thomas Mohr for the report).
+	
+	. Argument networkType has been removed from the function
+	  pickSoftThreshold.fromSimilarity where it has not been used; help
+	  file has been adjusted accordingly (thanks to Max Moldovan for
+	  reporting the issue).
+
+	. mtd.mapply now prints a more informative error message.
+
+	. bugfix in GOenrichmentAnalysis which now works again.
+
+2018/03/21: 1.63-2
+
+	. TOM calculation now gives 0 for completely unconnected nodes,
+	  instead of returning NaN
+
 2018/02/26: 1.63
 
 	. Bugfix in blockwiseModules fixes a crash caused by supplying weights

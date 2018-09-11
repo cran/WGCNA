@@ -92,8 +92,8 @@ GOenrichmentAnalysis = function(labels, entrezCodes,
         entrezCodes = yeastORFs
       } else {
         # Map the entrez IDs to yeast ORFs
-        x = eval(parse(text = "org.Sc.sgd:::org.Sc.sgdENTREZID"))
-        # x = org.Sc.sgd:::org.Sc.sgdENTREZID
+        x = eval(parse(text = "org.Sc.sgd::org.Sc.sgdENTREZID"))
+        # x = org.Sc.sgd::org.Sc.sgdENTREZID
         xx = as.list(x[mapped_genes])
         allORFs = names(xx);
         mappedECs = as.character(sapply(xx, as.character))
@@ -121,7 +121,7 @@ GOenrichmentAnalysis = function(labels, entrezCodes,
    } else
      keepEC = c(1:nGivenRaw);
 
-   egGO = eval(parse(text = paste(packageName, ":::org.", orgCodes[orgInd], orgExtensions[orgInd], 
+   egGO = eval(parse(text = paste(packageName, "::org.", orgCodes[orgInd], orgExtensions[orgInd], 
                                   "GO", sep = "")));
 
    if (orgInd==5)
@@ -143,7 +143,7 @@ GOenrichmentAnalysis = function(labels, entrezCodes,
      stop(paste("None of the supplied gene identifiers map to the GO database.\n",
                 "Please make sure you have specified the correct organism (default is human)."))
 
-   Go2eg = eval(parse(text = paste("AnnotationDbi::as.list(", packageName, ":::org.", orgCodes[orgInd], 
+   Go2eg = eval(parse(text = paste("AnnotationDbi::as.list(", packageName, "::org.", orgCodes[orgInd], 
                                            reverseMap[orgInd],")", sep = "")));
    nTerms = length(Go2eg);
 
@@ -384,11 +384,11 @@ GOenrichmentAnalysis = function(labels, entrezCodes,
                  dbind = match(termID, dbGoNames);
                  if (is.finite(dbind))
                  {
-                   enrTab$termName[rci] = eval(parse(text = "AnnotationDbi:::Term(goInfo[[dbind]])"));
+                   enrTab$termName[rci] = eval(parse(text = "AnnotationDbi::Term(goInfo[[dbind]])"));
                    enrTab$termDefinition[rci] = 
-                         eval(parse(text = "AnnotationDbi:::Definition(goInfo[[dbind]])"));
+                         eval(parse(text = "AnnotationDbi::Definition(goInfo[[dbind]])"));
                    enrTab$termOntology[rci] = 
-                         eval(parse(text = "AnnotationDbi:::Ontology(goInfo[[dbind]])"));
+                         eval(parse(text = "AnnotationDbi::Ontology(goInfo[[dbind]])"));
                  } 
                  if (getTermDetails)
                  {
@@ -462,10 +462,10 @@ GOenrichmentAnalysis = function(labels, entrezCodes,
                  dbind = match(termID, dbGoNames);
                  if (is.finite(dbind))
                  {
-                   enrTab$termName[rci] = eval(parse(text="AnnotationDbi:::Term(goInfo[[dbind]])"));
+                   enrTab$termName[rci] = eval(parse(text="AnnotationDbi::Term(goInfo[[dbind]])"));
                    enrTab$termDefinition[rci] =
-                       eval(parse(text="AnnotationDbi:::Definition(goInfo[[dbind]])"));
-                   enrTab$termOntology[rci] = eval(parse(text="AnnotationDbi:::Ontology(goInfo[[dbind]])"));
+                       eval(parse(text="AnnotationDbi::Definition(goInfo[[dbind]])"));
+                   enrTab$termOntology[rci] = eval(parse(text="AnnotationDbi::Ontology(goInfo[[dbind]])"));
                  }
                  if (getTermDetails)
                  {

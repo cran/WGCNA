@@ -12,7 +12,7 @@ standardScreeningBinaryTrait=function(datExpr, y,
            getAreaUnderROC = TRUE) 
 {
 
-   datExpr=data.frame(datExpr)
+   datExpr=data.frame(datExpr, check.names = FALSE)
    levelsy=levels(factor(y))
    if (length(levelsy)>2 ) 
      stop("The sample trait y contains more than 2 levels. Please input a binary variable y")

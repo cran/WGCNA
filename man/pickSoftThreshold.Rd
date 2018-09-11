@@ -25,7 +25,6 @@ pickSoftThreshold.fromSimilarity(
     RsquaredCut = 0.85, 
     powerVector = c(seq(1, 10, by = 1), seq(12, 20, by = 2)),
     removeFirst = FALSE, nBreaks = 10, blockSize = 1000,
-    networkType = "unsigned", 
     moreNetworkConcepts=FALSE, 
     verbose = 0, indent = 0)
 
@@ -41,7 +40,8 @@ similarity matrix of network nodes? }
 A matrix of the same dimensions as \code{datExpr}, containing non-negative weights. Only used with Pearson
 correlation.}
 
-  \item{similarity}{ similarity matrix: a symmetric matrix with entries between -1 and 1 and unit diagonal.}
+  \item{similarity}{ similarity matrix: a symmetric matrix with entries between 0 and 1 and unit diagonal. The only
+transformation applied to \code{similarity} is raising it to a power. }
 
   \item{RsquaredCut}{ desired minimum scale free topology fitting index \eqn{R^2}. }
 
@@ -83,7 +83,9 @@ interpreting \code{data} directly as similarity, or first transforming it to sim
 specified by \code{networkType}.
 The weighted networks are obtained by raising the similarity to the powers given in \code{powerVector}. 
 For each power the scale free topology fit index is calculated
-and returned along with other information on connectivity. 
+and returned along with other information on connectivity.
+
+ 
 
 On systems with multiple cores or processors, 
 the function pickSoftThreshold takes advantage of parallel processing if the function 

@@ -2718,14 +2718,14 @@ TOMplot = function(dissim, dendro, Colors=NULL, ColorsLeft = Colors, terrainColo
 plotNetworkHeatmap = function(datExpr,  plotGenes, weights = NULL, useTOM = TRUE, power = 6 , 
                               networkType = "unsigned", main = "Heatmap of the network") 
 {
-  match1=match( plotGenes ,names(data.frame(datExpr)) )
+  match1=match( plotGenes ,colnames(datExpr) )
   match1=match1[ !is.na(match1)]
   nGenes=length(match1)
   if (  sum( !is.na(match1) )  != length(plotGenes) ) 
   {
     printFlush(paste("Warning: Not all gene names were recognized.", 
                      "Only the following genes were recognized. "));
-    printFlush(paste("   ", names(data.frame(datExpr))[match1], collapse = ", " ))
+    printFlush(paste("   ", colnames(datExpr)[match1], collapse = ", " ))
   }
   if (nGenes< 3 ) 
   { 
@@ -2922,19 +2922,19 @@ checkAdjMat = function(adjMat, min = 0, max = 1)
 signedKME = function(datExpr, datME, outputColumnName="kME",
                      corFnc = "cor", corOptions = "use = 'p'") 
 {
-  datExpr=data.frame(datExpr)
-  datME=data.frame(datME)
+  datExpr=as.matrix(as.data.frame(datExpr))
+  datME=as.matrix(data.frame(datME))
   output=list()
-  if (dim(as.matrix(datME))[[1]] != dim(as.matrix(datExpr))[[1]] ) 
+  if (dim(datME)[[1]] != dim(datExpr)[[1]] ) 
      stop("Number of samples (rows) in 'datExpr' and 'datME' must be the same.")
-  varianceZeroIndicatordatExpr=as.vector(apply(as.matrix(datExpr),2,var, na.rm = TRUE))==0
-  varianceZeroIndicatordatME =as.vector(apply(as.matrix(datME),2,var, na.rm = TRUE))==0
+  varianceZeroIndicatordatExpr=colVars(datExpr, na.rm = TRUE)==0
+  varianceZeroIndicatordatME =colVars(datME, na.rm = TRUE)==0
   if (sum(varianceZeroIndicatordatExpr,na.rm = TRUE)>0 ) 
     warning("Some genes are constant. Hint: consider removing constant columns from datExpr." )
   if (sum(varianceZeroIndicatordatME,na.rm = TRUE)>0 ) 
     warning(paste("Some module eigengenes are constant, which is suspicious.\n",
             "    Hint: consider removing constant columns from datME." ))
-  no.presentdatExpr=as.vector(apply(!is.na(as.matrix(datExpr)),2, sum) )
+  no.presentdatExpr=colSums(!is.na(datExpr))
   if (min(no.presentdatExpr)<..minNSamples ) 
     warning(paste("Some gene expressions have fewer than 4 observations.\n",
             "    Hint: consider removing genes with too many missing values or collect more arrays."))
@@ -2944,8 +2944,8 @@ signedKME = function(datExpr, datME, outputColumnName="kME",
   output = eval(corExpr);
 
   output[no.presentdatExpr<..minNSamples, ]=NA
-  names(output)=paste(outputColumnName, substring(names(datME), first=3, last=100), sep="")  
-  dimnames(output)[[1]] = names(datExpr) 
+  names(output)=paste(outputColumnName, substring(colnames(datME), first=3, last=100), sep="")  
+  dimnames(output)[[1]] = colnames(datExpr) 
   output
 } # end of function signedKME
  
@@ -4991,11 +4991,19 @@ networkScreening = function(
   rep(x, nRep)[1:n];
 }
 
+# Adapt a numeric index to a subset
+# Aim: if 'index' is a numeric index of special entries of a vector,
+#    create a new index that references 'subset' elements of the vector  
+.restrictIndex = function(index, subset)
+{
+  out = match(index, subset);
+  out[!is.na(out)];
+}
 
   
 #--------------------------------------------------------------------------
 #
-# labeledHeatmap = function ( Matrix, xLabels, yLabels, ... ) { 
+# labeledHeatmap
 #
 #--------------------------------------------------------------------------
 # This function plots a heatmap of the specified matrix 
@@ -5054,6 +5062,10 @@ labeledHeatmap = function (
   horizontalSeparator.lty = 1,
   horizontalSeparator.lwd = 1,
   horizontalSeparator.ext = 0,
+  # optional restrictions on which rows and columns to actually show
+  showRows = NULL,
+  showCols = NULL,
+  # Other arguments...
   ... ) 
 {
   textFnc = match.fun("text");
@@ -5065,6 +5077,21 @@ labeledHeatmap = function (
   nCols = ncol(Matrix);
   nRows = nrow(Matrix);
 
+  if (length(xLabels)!=nCols) 
+    stop("Length of 'xLabels' must equal the number of columns in 'Matrix.'");
+
+  if (length(yLabels)!=nRows)
+    stop("Length of 'yLabels' must equal the number of rows in 'Matrix.'");
+
+  if (is.null(showRows)) showRows = c(1:nRows);
+  if (is.null(showCols)) showCols = c(1:nCols);
+
+  nShowCols = length(showCols);
+  nShowRows = length(showRows);
+
+  if (nShowCols==0) stop("'showCols' is empty.");
+  if (nShowRows==0) stop("'showRows' is empty.");
+
   if (checkColorsValid)
   {
     xValidColors = !is.na(match(substring(xLabels, 3), colors()));
@@ -5074,11 +5101,11 @@ labeledHeatmap = function (
     yValidColors = rep(TRUE, length(yLabels));
   }
 
-  if (sum(xValidColors)>0) xColorLabInd = c(1:length(xLabels))[xValidColors]
-  if (sum(!xValidColors)>0) xTextLabInd = c(1:length(xLabels))[!xValidColors]
+  if (sum(xValidColors)>0) xColorLabInd = xValidColors[showCols]
+  if (sum(!xValidColors)>0) xTextLabInd = !xValidColors[showCols]
 
-  if (sum(yValidColors)>0) yColorLabInd = c(1:length(yLabels))[yValidColors]
-  if (sum(!yValidColors)>0) yTextLabInd = c(1:length(yLabels))[!yValidColors]
+  if (sum(yValidColors)>0) yColorLabInd = yValidColors[showRows]
+  if (sum(!yValidColors)>0) yTextLabInd = !yValidColors[showRows]
 
   if (setStdMargins)
   {
@@ -5090,6 +5117,25 @@ labeledHeatmap = function (
     }
   }
 
+  xLabels.show = xLabels[showCols];
+  yLabels.show = yLabels[showRows];
+
+  if (!is.null(xSymbols))
+  {
+     if (length(xSymbols)!=nCols)
+       stop("When 'xSymbols' are give, their length must equal the number of columns in 'Matrix.'");
+     xSymbols.show = xSymbols[showCols];
+  } else 
+     xSymbols.show = NULL;
+
+  if (!is.null(ySymbols))
+  {
+     if (length(ySymbols)!=nRows)
+       stop("When 'xSymbols' are give, their length must equal the number of rows in 'Matrix.'");
+     ySymbols.show = ySymbols[showRows];
+  } else 
+     ySymbols.show = NULL;
+
   xLabPos = charmatch(xLabelsPosition, c("bottom", "top"));
   if (is.na(xLabPos))
     stop("Argument 'xLabelsPosition' must be (a unique abbreviation of) 'bottom', 'top'");
@@ -5100,18 +5146,14 @@ labeledHeatmap = function (
 
   if (is.null(colors)) colors = heat.colors(30);
   if (invertColors) colors = .reverseVector(colors);
-  labPos = .heatmapWithLegend(Matrix, signed = FALSE, colors = colors, naColor = naColor, cex.legend = cex.lab, 
+
+  labPos = .heatmapWithLegend(Matrix[showRows, showCols], 
+                              signed = FALSE, colors = colors, naColor = naColor, cex.legend = cex.lab, 
                               plotLegend = plotLegend,  keepLegendSpace = keepLegendSpace, ...)
-  #if (plotLegend)
-  #{
-  #  image.plot(t(.reverseRows(Matrix)), xaxt = "n", xlab="", yaxt="n", ylab="", col=colors, ...);
-  #} else {
-  #  image(z = t(.reverseRows(Matrix)), xaxt = "n", xlab="", yaxt="n", ylab="", col=colors, ...);
-  #}
-  nxlabels = length(xLabels)
   plotbox = labPos$box;
   xmin = plotbox[1]; xmax = plotbox[2]; ymin = plotbox[3]; yrange = plotbox[4]-ymin;
   ymax = plotbox[4]; xrange = xmax - xmin;
+  # The positions below are for showCols/showRows-restriceted data
   xLeft = labPos$xLeft;
   xRight = labPos$xRight;
   yTop = labPos$yTop;
@@ -5120,9 +5162,8 @@ labeledHeatmap = function (
   xspacing = labPos$xMid[2] - labPos$xMid[1];
   yspacing = abs(labPos$yMid[2] - labPos$yMid[1]);
 
-  nylabels = length(yLabels)
-  offsetx = .extend(xColorOffset, nCols);
-  offsety = .extend(yColorOffset, nRows);
+  offsetx = .extend(xColorOffset, nCols)[showCols]
+  offsety = .extend(yColorOffset, nRows)[showRows]
   xColW = xColorWidth;
   yColW = yColorWidth;
 
@@ -5153,7 +5194,7 @@ labeledHeatmap = function (
   figYrange = figureBox[4] - figureBox[3];
   if (!is.null(bg.lab.x))
   {
-    bg.lab.x = .extend(bg.lab.x, nCols);
+    bg.lab.x = .extend(bg.lab.x, nCols)[showCols];
     if (xLabPos==1)
     {
       y0 = ymin;
@@ -5172,21 +5213,20 @@ labeledHeatmap = function (
 
     offset = (sum(xValidColors)>0) * xColW + offsetx + textOffsetY;
 
-    for (c in 1:nCols)
-       polygon(x = c(xLeft[c], xLeft[c], xLeft[c] + ext.x, xRight[c] + ext.x, xRight[c], xRight[c]),
-               y = c(y0, y0-sign*offset[c], y0-sign*offset[c] - ext.y, y0-sign*offset[c] - ext.y, 
-                     y0-sign*offset[c], y0), 
-               border = bg.lab.x[c], col = bg.lab.x[c], xpd = TRUE);
+    for (cc in 1:nShowCols)
+       polygon(x = c(xLeft[cc], xLeft[cc], xLeft[cc] + ext.x, xRight[cc] + ext.x, xRight[cc], xRight[cc]),
+               y = c(y0, y0-sign*offset[cc], y0-sign*offset[cc] - ext.y, y0-sign*offset[cc] - ext.y, 
+                     y0-sign*offset[cc], y0), 
+               border = bg.lab.x[cc], col = bg.lab.x[cc], xpd = TRUE);
   }
 
   if (!is.null(bg.lab.y))
   {
-    bg.lab.y = .extend(bg.lab.y, nRows);
+    bg.lab.y = .extend(bg.lab.y, nRows)
     reverseRows = TRUE;
-    if (reverseRows)
-    {
-      bg.lab.y = rev(bg.lab.y);
-    }
+    if (reverseRows) bg.lab.y = rev(bg.lab.y);
+    bg.lab.y = bg.lab.y[showRows];
+
     if (yLabPos==1)
     {
       xl = xmin-extension.left;
@@ -5195,20 +5235,20 @@ labeledHeatmap = function (
       xl = xmax;
       xr = xmax + extension.right;
     }
-    for (r in 1:nRows)
+    for (r in 1:nShowRows)
       rect(xl, yBot[r], xr, yTop[r],
            col = bg.lab.y[r], border = bg.lab.y[r], xpd = TRUE);
   }
 
-  colors.lab.x = .extend(colors.lab.x, nCols);
-  font.lab.x = .extend(font.lab.x, nCols);
+  colors.lab.x = .extend(colors.lab.x, nCols)[showCols];
+  font.lab.x = .extend(font.lab.x, nCols)[showCols];
   # Write out labels
   if (sum(!xValidColors)>0)
   {
     xLabYPos = if(xLabPos==1) ymin - offsetx- textOffsetY else ymax + offsetx + textOffsetY;
     if (is.null(cex.lab)) cex.lab = 1;
     mapply(textFnc, x = labPos$xMid[xTextLabInd], 
-           y = xLabYPos, labels = xLabels[xTextLabInd],
+           y = xLabYPos, labels = xLabels.show[xTextLabInd],
            col = colors.lab.x[xTextLabInd],
            font = font.lab.x[xTextLabInd],
            MoreArgs = list(srt = xLabelsAngle, 
@@ -5220,29 +5260,29 @@ labeledHeatmap = function (
     deltaY = if (xLabPos==1) xColW else -xColW;
     rect(xleft = labPos$xMid[xColorLabInd] - xspacing/2, ybottom = baseY[xColorLabInd],
          xright = labPos$xMid[xColorLabInd] + xspacing/2, ytop = baseY[xColorLabInd] + deltaY,
-         density = -1,  col = substring(xLabels[xColorLabInd], 3), 
-         border = substring(xLabels[xColorLabInd], 3), xpd = TRUE)
+         density = -1,  col = substring(xLabels.show[xColorLabInd], 3), 
+         border = substring(xLabels.show[xColorLabInd], 3), xpd = TRUE)
     if (!is.null(xSymbols))
       mapply(textFnc, x = labPos$xMid[xColorLabInd], 
              y = baseY[xColorLabInd] -textOffsetY - sign(deltaY)* strwidth("M")/3, 
-             labels = xSymbols[xColorLabInd],
+             labels = xSymbols.show[xColorLabInd],
              col = colors.lab.x[xColorLabInd],
              font = font.lab.x[xColorLabInd],
               MoreArgs = list( adj = xLabelsAdj, 
              xpd = TRUE, srt = xLabelsAngle, cex = cex.lab.x));
   }
-  x.adj.lab.y = .extend(x.adj.lab.y, nRows)
+  x.adj.lab.y = .extend(x.adj.lab.y, nRows)[showRows]
   if (yLabPos==1)
   {
     marginWidth = par("mai")[2] / par("pin")[1] * xrange
   } else {
     marginWidth = par("mai")[4] / par("pin")[1] * xrange
   }
-  xSpaceForYLabels = marginWidth-2*strwidth("M")/3 - ifelse(yValidColors, yColW, 0);
+  xSpaceForYLabels = marginWidth-2*strwidth("M")/3 - ifelse(yValidColors[showRows], yColW, 0);
   xPosOfYLabels.relative = xSpaceForYLabels * (1-x.adj.lab.y) + offsety
 
-  colors.lab.y = .extend(colors.lab.y, nRows);
-  font.lab.y = .extend(font.lab.y, nRows);
+  colors.lab.y = .extend(colors.lab.y, nRows)[showRows];
+  font.lab.y = .extend(font.lab.y, nRows)[showRows];
 
   if (sum(!yValidColors)>0)
   {
@@ -5255,7 +5295,7 @@ labeledHeatmap = function (
       x = xmax + strwidth("M")/3 + xPosOfYLabels.relative[yTextLabInd];
       adj = 1-x.adj.lab.y[yTextLabInd];
     }
-    mapply(textFnc, y = labPos$yMid[yTextLabInd], labels = yLabels[yTextLabInd],
+    mapply(textFnc, y = labPos$yMid[yTextLabInd], labels = yLabels.show[yTextLabInd],
            adj = lapply(adj, c, 0.5),
            x = x,
            col = colors.lab.y[yTextLabInd],
@@ -5279,15 +5319,15 @@ labeledHeatmap = function (
 
     rect(xleft = xl[yColorLabInd], ybottom = rev(labPos$yMid[yColorLabInd]) - yspacing/2,
          xright = xr[yColorLabInd], ytop = rev(labPos$yMid[yColorLabInd]) + yspacing/2, 
-         density = -1,  col = substring(rev(yLabels[yColorLabInd]), 3), 
-         border = substring(rev(yLabels[yColorLabInd]), 3), xpd = TRUE)
+         density = -1,  col = substring(rev(yLabels.show[yColorLabInd]), 3), 
+         border = substring(rev(yLabels.show[yColorLabInd]), 3), xpd = TRUE)
     #for (i in yColorLabInd)
     #{
     #  lines(c(xmin- offsetx, xmin- offsetx+yColW), y = rep(labPos$yMid[i] - yspacing/2, 2), col = i, xpd = TRUE)
     #  lines(c(xmin- offsetx, xmin- offsetx+yColW), y = rep(labPos$yMid[i] + yspacing/2, 2), col = i, xpd = TRUE)
     #}
     if (!is.null(ySymbols))
-      mapply(textFnc, y = labPos$yMid[yColorLabInd], labels = ySymbols[yColorLabInd],
+      mapply(textFnc, y = labPos$yMid[yColorLabInd], labels = ySymbols.show[yColorLabInd],
              adj = lapply(adj, c, 0.5),
              x = xtext, col = colors.lab.y[yColorLabInd], 
              font = font.lab.y[yColorLabInd],
@@ -5296,17 +5336,30 @@ labeledHeatmap = function (
 
   # Draw separator lines, if requested
 
+  showCols.ext = c(if (1 %in% showCols) 0 else NULL, showCols);
+  showCols.shift = if (0 %in% showCols.ext) 1 else 0;
+
   if (length(verticalSeparator.x) > 0)
   {
-    nLines = length(verticalSeparator.x);
-    vs.col = .extend(verticalSeparator.col, nLines);
-    vs.lty = .extend(verticalSeparator.lty, nLines);
-    vs.lwd = .extend(verticalSeparator.lwd, nLines);
-    vs.ext = .extend(verticalSeparator.ext, nLines);
     if (any(verticalSeparator.x < 0 | verticalSeparator.x > nCols))
       stop("If given. 'verticalSeparator.x' must all be between 0 and the number of columns.");
-    x.lines = ifelse(verticalSeparator.x>0, labPos$xRight[verticalSeparator.x], labPos$xLeft[1]);
-    for (l in 1:nLines)
+    shownVertSep = verticalSeparator.x[ verticalSeparator.x %in% showCols.ext];
+    verticalSeparator.x.show = .restrictIndex(verticalSeparator.x, showCols.ext)-showCols.shift;
+    rowSepShowIndex = match(shownVertSep, verticalSeparator.x)
+  } else
+    verticalSeparator.x.show = NULL;
+
+  if (length(verticalSeparator.x.show) > 0)
+  {
+    nLines = length(verticalSeparator.x);
+    vs.col = .extend(verticalSeparator.col, nLines)[rowSepShowIndex];
+    vs.lty = .extend(verticalSeparator.lty, nLines)[rowSepShowIndex];
+    vs.lwd = .extend(verticalSeparator.lwd, nLines)[rowSepShowIndex];
+    vs.ext = .extend(verticalSeparator.ext, nLines)[rowSepShowIndex];
+
+    x.lines = ifelse(verticalSeparator.x.show>0, labPos$xRight[verticalSeparator.x.show], labPos$xLeft[1]);
+    nLines.show = length(verticalSeparator.x.show);
+    for (l in 1:nLines.show)
       lines(rep(x.lines[l], 2), c(ymin, ymax), col = vs.col[l], lty = vs.lty[l], lwd = vs.lwd[l]);
 
     angle = xLabelsAngle/180*pi;
@@ -5326,30 +5379,43 @@ labeledHeatmap = function (
     ext.x = -sign * ext * 1/tan(angle)/ratio;
     ext.y = sign * ext * sign(sin(angle))
     offset = (sum(xValidColors)>0) * xColW + offsetx + textOffsetY;
-    for (l in 1:nLines)
+    for (l in 1:nLines.show)
          lines(c(x.lines[l], x.lines[l], x.lines[l] + vs.ext[l] * ext.x[l]), 
                c(y0, y0-sign*offset[l], y0-sign*offset[l] - vs.ext[l] * ext.y[l]),  
                  col = vs.col[l], lty = vs.lty[l], lwd = vs.lwd[l], xpd = TRUE);
   }
 
+  showRows.ext = c(if (1 %in% showRows) 0 else NULL, showRows);
+  showRows.shift = if (0 %in% showRows.ext) 1 else 0;
+
   if (length(horizontalSeparator.y) >0)
   {
     if (any(horizontalSeparator.y < 0 | horizontalSeparator.y > nRows))
       stop("If given. 'horizontalSeparator.y' must all be between 0 and the number of rows.");
+    shownHorizSep = horizontalSeparator.y[ horizontalSeparator.y %in% showRows.ext];
+    horizontalSeparator.y.show = .restrictIndex(horizontalSeparator.y, showRows.ext)-showRows.shift;
+    rowSepShowIndex = match(shownHorizSep, horizontalSeparator.y)
+  } else 
+    horizontalSeparator.y.show = NULL;
+  
+  if (length(horizontalSeparator.y.show) > 0)
+  {
     reverseRows = TRUE;
     if (reverseRows) 
     {
-      horizontalSeparator.y = nRows - horizontalSeparator.y+1;
-      y.lines = ifelse( horizontalSeparator.y <=nRows, labPos$yBot[horizontalSeparator.y], labPos$yTop[nRows]);
+      horizontalSeparator.y.show = nShowRows - horizontalSeparator.y.show+1;
+      y.lines = ifelse( horizontalSeparator.y.show <=nShowRows, 
+                               labPos$yBot[horizontalSeparator.y.show], labPos$yTop[nShowRows]);
     } else {
-      y.lines = ifelse( horizontalSeparator.y > 0, labPos$yBot[horizontalSeparator.y], labPos$yTop[1]);
+      y.lines = ifelse( horizontalSeparator.y.show > 0, labPos$yBot[horizontalSeparator.y.show], labPos$yTop[1]);
     }
     nLines = length(horizontalSeparator.y);
-    vs.col = .extend(horizontalSeparator.col, nLines);
-    vs.lty = .extend(horizontalSeparator.lty, nLines);
-    vs.lwd = .extend(horizontalSeparator.lwd, nLines);
-    vs.ext = .extend(horizontalSeparator.ext, nLines);
-    for (l in 1:nLines)
+    vs.col = .extend(horizontalSeparator.col, nLines)[rowSepShowIndex];
+    vs.lty = .extend(horizontalSeparator.lty, nLines)[rowSepShowIndex];
+    vs.lwd = .extend(horizontalSeparator.lwd, nLines)[rowSepShowIndex];
+    vs.ext = .extend(horizontalSeparator.ext, nLines)[rowSepShowIndex];
+    nLines.show = length(horizontalSeparator.y.show);
+    for (l in 1:nLines.show)
     {
       if (yLabPos==1)
       {
@@ -5372,11 +5438,11 @@ labeledHeatmap = function (
       if (length(textMatrix)==prod(dim(Matrix))) dim(textMatrix)=dim(Matrix);
     if (!isTRUE(all.equal(dim(textMatrix), dim(Matrix))))
       stop("labeledHeatmap: textMatrix was given, but has dimensions incompatible with Matrix.");
-    for (rw in 1:dim(Matrix)[1])
-      for (cl in 1:dim(Matrix)[2])
+    for (rw in 1:nShowRows)
+      for (cl in 1:nShowCols)
       {
         text(labPos$xMid[cl], labPos$yMid[rw],
-             as.character(textMatrix[rw,cl]), xpd = TRUE, cex = cex.text, adj = textAdj);
+             as.character(textMatrix[showRows[rw],showCols[cl]]), xpd = TRUE, cex = cex.text, adj = textAdj);
       }
   }
   axis(1, labels = FALSE, tick = FALSE)
@@ -6971,7 +7037,7 @@ standardScreeningCensoredTime= function (
    qValues = TRUE,
    fastCalculation = TRUE)
 {
-datExpr=data.frame(datExpr)
+datExpr=data.frame(datExpr, check.names = FALSE)
     no.Columns = dim(as.matrix(datExpr))[[2]]
     m = dim(as.matrix(datExpr))[[1]]
     if (length(time) != m) 
@@ -8622,6 +8688,331 @@ imputeByModule = function(
     data[, inMod] = t(impute.knn(t(data[, inMod]), ...)$data);
   }
   data;
+}
+
+signifNumeric = function(x, digits, fnc = "signif")
+{
+  x = as.data.frame(x);
+  isNumeric = sapply(x, is.numeric);
+  isDecimal = isNumeric;
+  if (any(isNumeric)) {
+    isDecimal[isNumeric] = sapply(x[, isNumeric, drop = FALSE], function(xx) { any(round(xx)!=xx, na.rm = TRUE)});
+  } else browser()
+  fnc = match.fun(fnc);
+  x[, isDecimal] = do.call(fnc, list(x = x[, isDecimal], digits = digits));
+  x;
+}
+
+#=======================================================================================================
+#
+# binarizeCategoricalVar
+#
+#=======================================================================================================
+# Assumes x is a vector but can easily be modified to also work with matrices.
+
+binarizeCategoricalVariable = function(
+   x, 
+   levelOrder = NULL, 
+   ignore = NULL, 
+   minCount = 3, 
+   val1 = 0, val2 = 1,
+   includePairwise = TRUE,
+   includeLevelVsAll = FALSE,
+   dropFirstLevelVsAll = FALSE,
+   dropUninformative = TRUE,
+   namePrefix = "",
+   levelSep = NULL,
+   nameForAll = "all",
+   levelSep.pairwise = if (length(levelSep)==0) ".vs." else levelSep,
+   levelSep.vsAll = if (length(levelSep)==0) (if (nameForAll=="") "" else ".vs.") else levelSep,
+   checkNames = FALSE,
+   includeLevelInformation = TRUE)
+
+{
+  tab = table(x);
+  levels0 = names(tab);
+  tab = tab[ tab >= minCount & !(levels0 %in% ignore) ];
+  levels = names(tab);
+  if (!is.null(levelOrder))
+  {
+    order = match(levelOrder, levels);
+    order = order[is.finite(order)];
+    levels0 = levels[order];
+    levels1 = levels[ !levels %in% levels0];
+    levels = c(levels0, levels1);
+  }
+  nSamples = length(x);
+  nLevels = length(levels)
+  if (!is.logical(dropFirstLevelVsAll))
+  {
+    dropFirstLevelVsAll.num = pmatch(dropFirstLevelVsAll, c("none", "binary", "all"));
+    if (is.na(dropFirstLevelVsAll.num)) 
+       stop("If 'dropFirstLevelVsAll' is not logical, it must be one of\n",
+            " 'none', 'binary', 'all'.");
+    dropFirstLevelVsAll = dropFirstLevelVsAll.num == 3 | (dropFirstLevelVsAll.num == 2 &&  nLevels==2)
+  }
+  nBinaryVars = includePairwise * nLevels * (nLevels - 1)/2 + 
+                      includeLevelVsAll * (nLevels - dropFirstLevelVsAll)
+  if (nBinaryVars==0) 
+  {
+    if (dropUninformative) 
+    {
+      return(NULL)
+    } else {
+      out = as.matrix(rep(val2, nSamples));
+      colnames(out) = levels[1];
+      return(out);
+    }
+  }
+  out = matrix(NA, nSamples, nBinaryVars)
+  levelTable = matrix("", 2, nBinaryVars);
+  ind = 1; 
+  names = rep("", nBinaryVars);
+  if (includePairwise)
+  {
+    for (v1 in 1:(nLevels-1)) for (v2 in (v1+1):nLevels)
+    {
+       out[ x==levels[v1], ind] = val1;
+       out[ x==levels[v2], ind] = val2;
+       names[ind] = spaste(namePrefix, levels[v2], levelSep.pairwise, levels[v1]);
+       levelTable[, ind] = levels[ c(v1, v2)];
+       ind = ind + 1;
+    }
+  }
+  if (includeLevelVsAll)
+  { 
+    for (v1 in (1 + as.numeric(dropFirstLevelVsAll)):nLevels)
+    {
+      out[, ind] = c(val1, val2) [ as.numeric(x==levels[v1])+1 ];
+      names[ind] = spaste(namePrefix, levels[v1], levelSep.vsAll, nameForAll);
+      levelTable[, ind] = c(nameForAll, levels[v1]);
+      ind = ind+1;
+    is.numeric}
+  }
+  colnames(out) = names;
+  if (includeLevelInformation)  
+  {
+    colnames(levelTable) = names;
+    rownames(levelTable) = spaste("Value.", c(val1, val2));
+    attr(out, "includedLevels") = levelTable;
+  }
+  out;
+}
+
+
+# This function attempts to determine whether a vector is numeric in the sense that coercing it to numeric
+# will not lead to information loss.
+
+.isNumericVector = function(x, naStrings = c("NA", "NULL", "NO DATA"))
+{
+  if (is.numeric(x)) return(TRUE)
+
+  x[x%in% naStrings] = NA
+  x.num = suppressWarnings(as.numeric(x));
+  missing = is.na(x.num);
+  t = table(x[missing])
+  if (length(t) ==0 ) return (TRUE)
+  if (length(t)>1) return(FALSE)
+  #if (all(missing)) return(TRUE) else return(FALSE);
+  return(FALSE);
+}
+
+convertNumericColumnsToNumeric = function(data, naStrings = c("NA", "NULL", "NO DATA"),
+                                          unFactor = TRUE)
+{
+  data = as.data.frame(data);
+  if (unFactor) data = as.data.frame(lapply(data, function(x) if (is.factor(x)) as.character(x) else x));
+  num = sapply(data, .isNumericVector);
+  for (i in which(num))
+    data[, i] = as.numeric(data[, i]);
+  data;
+} 
+
+# This function turn all non-numeric columns into factors
+
+factorizeNonNumericColumns = function(data)
+{
+  data = as.data.frame(data);
+  isNumeric = sapply(data, is.numeric);
+
+  nonNumeric = (1:ncol(data))[!isNumeric];
+
+  for (c in nonNumeric) if (!is.factor(data[[c]]))
+    data[, c] = factor(data[, c]);
+
+  data;
+}
+
+binarizeCategoricalColumns = function(
+   data,
+   convertColumns = NULL,
+   considerColumns = NULL,
+   maxOrdinalLevels = 3,
+   levelOrder = NULL,
+   minCount = 3,
+   val1 = 0, val2 = 1,
+   includePairwise = FALSE,
+   includeLevelVsAll = TRUE,
+   dropFirstLevelVsAll = TRUE,
+   dropUninformative = TRUE,
+   includePrefix = TRUE,
+   prefixSep = ".",
+   nameForAll = "all",
+   levelSep = NULL,
+   levelSep.pairwise = if (length(levelSep)==0) ".vs." else levelSep,
+   levelSep.vsAll = if (length(levelSep)==0) (if (nameForAll=="") "" else ".vs.") else levelSep,
+   checkNames = FALSE,
+   includeLevelInformation = FALSE)
+{
+  data = as.data.frame(data);
+  index = c(1:ncol(data));
+  if (is.null(convertColumns))
+  {
+    isNumeric = sapply(data, is.numeric);
+    nLevels = sapply(data, function(x) length(unique(x)) );
+    convertColumns = !isNumeric | nLevels <= maxOrdinalLevels | index %in% convertColumns;
+  }
+  if (is.character(convertColumns)) convertColumns = match(convertColumns, colnames(data));
+  if (is.numeric(convertColumns))
+  {
+    if (any(!is.finite(convertColumns))) 
+       stop("All entries in 'convertColumns' must correspond to columns or column names in 'data'.");
+    cc = rep(FALSE, ncol(data));
+    cc[convertColumns] = TRUE;
+    convertColumns = cc;
+  }
+  if (!is.null(considerColumns))
+  {
+    if (is.character(considerColumns)) considerColumns =  match(considerColumns, colnames(data));
+    if (is.numeric(considerColumns))
+    {
+       if (any(!is.finite(considerColumns)))
+       stop("All entries in 'considerColumns' must correspond to columns or column names in 'data'.");
+       cc = rep(FALSE, ncol(data));
+       cc[considerColumns] = TRUE;
+       considerColumns = cc;
+    }
+    convertColumns = convertColumns & considerColumns;
+  }
+
+  out = data.frame(hgfdouroio3r9384r93yu9289283yr92owihfiw = rep(NA, nrow(data)));
+  levelInfo = NULL;
+  for (c in index) 
+  {
+    if (convertColumns[c])
+    {
+       nonMissing = !is.na(data[, c]);
+       if (!any(nonMissing) || all(data[which(nonMissing)[1], c]==data[nonMissing, c]))
+       {
+         if (!dropUninformative)
+         {
+            df1 = data.frame(rep(1, nrow(data)));
+            names(df1) = spaste(names(data)[c], ".", data[1, c]);
+            out = cbind(out, df1);
+         }
+       } else {
+         out1 = binarizeCategoricalVariable(data[, c], minCount = minCount, val1 = val1, val2 = val2,
+                      namePrefix = if (includePrefix) spaste(names(data)[c], prefixSep) else "",
+                      levelSep = levelSep, levelSep.pairwise = levelSep.pairwise, levelSep.vsAll = levelSep.vsAll,
+                      nameForAll = nameForAll, includePairwise = includePairwise,
+                      includeLevelVsAll = includeLevelVsAll,
+                      dropFirstLevelVsAll = dropFirstLevelVsAll,
+                      dropUninformative = dropUninformative, 
+                      levelOrder = levelOrder[[c]], includeLevelInformation = includeLevelInformation);
+         if (!is.null(out1))
+         {
+            out = as.data.frame(cbind(out, out1));
+            if (includeLevelInformation) 
+              levelInfo = if (is.null(levelInfo)) attr(out1, "includedLevels") else 
+                                cbind(levelInfo, attr(out1, "includedLevels"));
+         }
+       }
+    } else {
+       out = as.data.frame(cbind(out, data[, c, drop = FALSE]));
+    }
+  }
+  out = out[, -1, drop = FALSE];
+  if (checkNames)
+    names(out) = make.unique(make.names(names(out)));
+  if (includeLevelInformation) attr(out, "includedLevels") = levelInfo;
+  out
+}
+
+
+# Convenience wrappers
+
+binarizeCategoricalColumns.forRegression = function(data, maxOrdinalLevels = 3,
+                                      convertColumns = NULL,
+                                      considerColumns = NULL,
+                                      levelOrder = NULL,
+                                      val1 = 0, val2 = 1,
+                                      includePrefix = TRUE,
+                                      prefixSep = ".",
+                                      checkNames = TRUE)
+{
+  binarizeCategoricalColumns(data, 
+           maxOrdinalLevels = maxOrdinalLevels, 
+           convertColumns = convertColumns,
+           considerColumns = considerColumns,
+           val1 = val1, val2 = val2,
+           levelOrder = levelOrder,
+           minCount = 1,
+           includePairwise = FALSE, includeLevelVsAll = TRUE,
+           dropFirstLevelVsAll = TRUE,
+           dropUninformative = TRUE,
+           includePrefix = includePrefix,
+           prefixSep = prefixSep,
+           includeLevelInformation = FALSE, checkNames = checkNames);
+}
+
+binarizeCategoricalColumns.forPlots = function(data, maxOrdinalLevels = 3,
+                                      convertColumns = NULL,
+                                      considerColumns = NULL,
+                                      levelOrder = NULL,
+                                      val1 = 0, val2 = 1,
+                                      includePrefix = TRUE,
+                                      prefixSep = ".")
+{
+  binarizeCategoricalColumns(data,
+           maxOrdinalLevels = maxOrdinalLevels,
+           convertColumns = convertColumns,
+           considerColumns = considerColumns,
+           val1 = val1, val2 = val2,
+           levelOrder = levelOrder,
+           minCount = 1,
+           includePairwise = FALSE, includeLevelVsAll = TRUE,
+           dropFirstLevelVsAll = FALSE,
+           dropUninformative = TRUE,
+           includePrefix = includePrefix,
+           includeLevelInformation = FALSE,
+           prefixSep = prefixSep, nameForAll = "");
+}
+
+binarizeCategoricalColumns.pairwise = function(data, maxOrdinalLevels = 3,
+                                      convertColumns = NULL,
+                                      considerColumns = NULL,
+                                      levelOrder = NULL, 
+                                      val1 = 0, val2 = 1, 
+                                      includePrefix = TRUE,
+                                      prefixSep = ".", 
+                                      levelSep = ".vs.", 
+                                      checkNames = FALSE)
+{
+  binarizeCategoricalColumns(data,
+           maxOrdinalLevels = maxOrdinalLevels,
+           convertColumns = convertColumns,
+           considerColumns = considerColumns,
+           val1 = val1, val2 = val2,
+           levelOrder = levelOrder,
+           minCount = 1,
+           includePairwise = TRUE, includeLevelVsAll = FALSE,
+           dropFirstLevelVsAll = FALSE,
+           dropUninformative = TRUE,
+           levelSep = levelSep,
+           includePrefix = includePrefix,
+           prefixSep = prefixSep,
+           includeLevelInformation = FALSE,
+           checkNames = checkNames);
 }
 
 

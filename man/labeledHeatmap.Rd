@@ -54,6 +54,9 @@ labeledHeatmap(
   horizontalSeparator.lty = 1,
   horizontalSeparator.lwd = 1,
   horizontalSeparator.ext = 0,
+  # optional restrictions on which rows and columns to actually show
+  showRows = NULL,
+  showCols = NULL,
   ...)
 }
 \arguments{
@@ -158,6 +161,9 @@ of the margin width. 0 means no extension, 1 means extend all the way through th
   \item{horizontalSeparator.ext}{number giving the extension of the separator line into the margin as a
 fraction 
 of the margin width. 0 means no extension, 1 means extend all the way through the margin. }
+
+  \item{showRows}{A numeric vector giving the indices of rows that are actually to be shown. Defaults to all rows.}
+  \item{showCols}{A numeric vector giving the indices of columns that are actually to be shown. Defaults to all columns.}
 
   \item{\dots}{ other arguments to function \code{\link{heatmap}}. }
 }

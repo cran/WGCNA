@@ -84,12 +84,12 @@ pickHardThreshold.fromSimilarity=function (similarity,
 pickSoftThreshold.fromSimilarity = function (similarity, 
     RsquaredCut = 0.85, powerVector = c(seq(1, 10, by = 1), seq(12, 20, by = 2)), 
     removeFirst = FALSE, nBreaks = 10, blockSize = 1000,
-    networkType = "unsigned", moreNetworkConcepts=FALSE, verbose = 0, indent = 0)
+    moreNetworkConcepts=FALSE, verbose = 0, indent = 0)
 {
   checkSimilarity(similarity)
   pickSoftThreshold(similarity, dataIsExpr = FALSE, RsquaredCut =  RsquaredCut, powerVector = powerVector,
                     removeFirst = removeFirst, nBreaks = nBreaks, 
-                    blockSize = blockSize, networkType = networkType,
+                    blockSize = blockSize, networkType = "signed",
                     moreNetworkConcepts = moreNetworkConcepts,
                     verbose = verbose, indent = indent);
 

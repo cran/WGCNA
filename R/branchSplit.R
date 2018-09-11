@@ -551,8 +551,8 @@ branchSplitFromStabilityLabels.individualFraction= function(
     for (cl in commonLevels)
     {
       #printFlush(spaste("Common level ", cl, " in clustering ", l))
-      o1 = sum(lab1==cl);
-      o2 = sum(lab2==cl);
+      o1 = sum(lab1==cl, na.rm = TRUE);
+      o2 = sum(lab2==cl, na.rm = TRUE);
       o12 = o1 + o2;
       coef1 = max(0.5, o1/o12);
       coef2 = max(0.5, o2/o12);
@@ -563,6 +563,7 @@ branchSplitFromStabilityLabels.individualFraction= function(
     }
     s1 = s1 + s1.all;
     s2 = s2 + s2.all;
+    #if (is.na(s1) | is.na(s2)) browser();
   }
   distinctness1 = 2*s1/(n1 * nLabels) -1
   distinctenss2 = 2*s2/(n2 * nLabels)-1;

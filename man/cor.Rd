@@ -69,10 +69,14 @@ and can be used to give a hybrid cosine-standard correlation. }
   \item{drop}{logical: should the result be turned into a vector if it is effectively one-dimensional? }
 
   \item{nThreads}{ non-negative integer specifying the number of parallel threads to be used by certain
-parts of correlation calculations. This option only has an effect on systems on which a POSIX thread
+parts of correlation calculations. 
+This option only has an effect on systems on which a POSIX thread
 library is available (which currently includes Linux and Mac OSX, but excludes Windows).
 If zero, the number of online processors will be used if it can be determined dynamically, otherwise
-correlation calculations will use 2 threads. }
+correlation calculations will use 2 threads. 
+Note that this option does not affect what is usually the most expensive part of the
+calculation, namely the matrix multiplication. The matrix multiplication is carried out by BLAS routines provided by R;
+these can be sped up by installing a fast BLAS and making R use it. }
 
   \item{verbose}{ Controls the level of verbosity. Values above zero will cause a small amount of
 diagnostic messages to be printed. }

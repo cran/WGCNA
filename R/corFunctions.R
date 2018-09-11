@@ -276,7 +276,7 @@ cor1 = function(x, use = "all.obs", verbose = 0, indent = 0)
 corFast = function(x, y = NULL, use = "all.obs",
                 quick = 0, nThreads = 0, verbose = 0, indent = 0)
 {
-  cor(x,y, use, method = "pearson", quick, nThreads, verbose, indent)
+  cor(x,y, use=use, method = "pearson", quick, nThreads, verbose, indent)
 }
 
 

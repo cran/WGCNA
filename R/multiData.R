@@ -319,9 +319,14 @@ mtd.mapply = function(
     stop("No arguments were specified. Please type ?mtd.mapply to see the help page.");
   dotLengths = sapply(dots, length);
   if (any(dotLengths!=dotLengths[1]))
+  {
+    tmp = data.frame(name = names(dots), length = dotLengths);
+    rownames(tmp) = NULL;
+    on.exit(print(tmp));
     stop(spaste("All arguments to vectorize over must have the same length.\n", 
                 "Scalar arguments should be put into the 'MoreArgs' argument.\n",
-                "Note: lengths of '...' arguments are: ", paste(dotLengths, collapse = ", ")));
+                "Note: lengths of '...' arguments are: "));
+  }
   nArgs = length(dots);
   res = list();
   if (is.null(mdma.argIsMultiData)) mdma.argIsMultiData = sapply(dots, isMultiData, strict = FALSE);
