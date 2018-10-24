@@ -631,6 +631,7 @@ hierarchicalConsensusMEDissimilarity = function(MEs, networkOptions, consensusTr
   useMEs = which(mtd.colnames(multiMEs)!=greyName);
   useNames = mtd.colnames(multiMEs)[useMEs];
   nUseMEs = length(useMEs);
+  if (nUseMEs == 0) return(matrix(numeric(0), 0, 0));
 #  if (nUseMEs<2) 
 #    stop("Something is wrong: there are two or more proper modules, but less than two proper",
 #         "eigengenes. Please check that the grey color label and module eigengene label", 
@@ -1156,7 +1157,6 @@ mergeCloseModules = function(
                         grey = unassdColor,
                         verbose = verbose-1, indent = indent+1);
         MEs = consensusOrderMEs(MEs, useAbs = useAbs, useSets = useSets, greyLast = FALSE);
-        collectGarbage();
       } else if (nlevels(as.factor(colors))!=checkMEs$nGenes)
       {
         if ((iteration==1) & (verbose>0)) printFlush(paste(spaces, "  Number of given module colors", 
@@ -1167,7 +1167,6 @@ mergeCloseModules = function(
                         grey = unassdColor,
                         verbose = verbose-1, indent = indent+1);
         MEs = consensusOrderMEs(MEs, useAbs = useAbs, useSets = useSets, greyLast = FALSE);
-        collectGarbage();
       }
       if (iteration==1) oldMEs = MEs;
   
@@ -1380,6 +1379,9 @@ hierarchicalMergeCloseModules = function(
   origColors = labels;
 
   labels = labels[, drop = TRUE];
+
+  if (all(replaceMissing(labels==unassdColor, TRUE)))
+    return( list(labels = labels, allOK = FALSE));
 
   greyName = paste(moduleColor.getMEprefix(), unassdColor, sep="");
 
@@ -1963,7 +1965,7 @@ pickSoftThreshold = function (
     indcut = NA
     indcut = if (sum(ind1) > 0) min(c(1:length(ind1))[ind1]) else indcut;
     powerEstimate = powerVector[indcut][[1]]
-    collectGarbage()
+    gc();
     list(powerEstimate = powerEstimate, fitIndices = data.frame(datout))
 }
 
@@ -2240,7 +2242,7 @@ vectorTOM = function(datExpr, vect, subtract1 = FALSE, blockSize = 2000,
     TOM[blockInd, ] = num/denom;
     if (verbose > 0) pind = updateProgInd(end/nGenes, pind);
     start = end + 1;
-    collectGarbage();
+    gc()
   }
   if (verbose>0) printFlush(" ");
 
@@ -2339,13 +2341,13 @@ adjacency = function(datExpr, selectCols=NULL,
        {
          weightOpt = list(weights.x = weights);
          names(weightOpt) = weightArgNames[1];
-       } else spaste(weightArgNames[1], " = weights");
+       } else weightOpt = spaste(weightArgNames[1], " = weights");
     } else {
        if (is.list(corOptions))
        {
          weightOpt = list(weights.x = weights, weights.y = weights[, selectCols]);
          names(weightOpt) = weightArgNames[c(1,2)];
-       } else spaste(weightArgNames[1], " = weights", weightArgNames[2], " = weights[, selectCols]");
+       } else weightOpt = spaste(weightArgNames[1], " = weights, ", weightArgNames[2], " = weights[, selectCols]");
     }
   } else {
     weightOpt = if (is.list(corOptions)) list() else ""
@@ -2922,8 +2924,10 @@ checkAdjMat = function(adjMat, min = 0, max = 1)
 signedKME = function(datExpr, datME, outputColumnName="kME",
                      corFnc = "cor", corOptions = "use = 'p'") 
 {
-  datExpr=as.matrix(as.data.frame(datExpr))
-  datME=as.matrix(data.frame(datME))
+  datExpr=as.matrix(datExpr)
+  if (is.null(colnames(datExpr))) colnames(datExpr) = spaste("Gene.", 1:ncol(datExpr));
+  if (any(duplicated(colnames(datExpr)))) colnames(datExpr) = make.unique(colnames(datExpr));
+  datME=as.matrix(datME)
   output=list()
   if (dim(datME)[[1]] != dim(datExpr)[[1]] ) 
      stop("Number of samples (rows) in 'datExpr' and 'datME' must be the same.")
@@ -2944,8 +2948,8 @@ signedKME = function(datExpr, datME, outputColumnName="kME",
   output = eval(corExpr);
 
   output[no.presentdatExpr<..minNSamples, ]=NA
-  names(output)=paste(outputColumnName, substring(colnames(datME), first=3, last=100), sep="")  
-  dimnames(output)[[1]] = colnames(datExpr) 
+  names(output)=paste(outputColumnName, substring(colnames(datME), first=3), sep="")  
+  rownames(output) = colnames(datExpr) 
   output
 } # end of function signedKME
  
@@ -3239,6 +3243,9 @@ verboseBarplot = function (x, g,  main = "",
     addScatterplot = FALSE,
     pt.cex = 0.8, pch = 21, pt.col = "blue", pt.bg = "skyblue",
     randomSeed = 31425, jitter = 0.6,
+    pointLabels = NULL,
+    label.cex = 0.8,
+    label.offs = 0.06,
     adjustYLim = TRUE) 
 {
    g.factor = as.factor(g);
@@ -3358,8 +3365,14 @@ verboseBarplot = function (x, g,  main = "",
       pt.bg = unlist(tapply(.extend(pt.bg, n), g, identity));
       pt.cex = unlist(tapply(.extend(pt.cex, n), g, identity));
 
-      points(jitter(rep(ret, nPerGroup), jitter), unlist(x.list),
-             pch=pch, col=pt.col, bg = pt.bg, cex = pt.cex)
+      x = jitter(rep(ret, nPerGroup), jitter);
+      y = unlist(x.list);
+      points(x, y, pch=pch, col=pt.col, bg = pt.bg, cex = pt.cex);
+      if (!is.null(pointLabels))
+      {
+        labels.lst = tapply(pointLabels, g, identity);
+        labelPoints(x, y, unlist(labels.lst), offs = label.offs, cex = label.cex);
+      }
     }
 
     attr(ret, "height") = as.vector(Means1)
@@ -3613,7 +3626,7 @@ nearestNeighborConnectivity = function(datExpr, nNeighbors = 50, power = 6,
     nearestNeighborConn[blockIndex] = apply(sortedAdj, 2, sum)-subtract[blockIndex];
     start = end+1;
     if (verbose>0) pind = updateProgInd(end/nGenes, pind);
-    collectGarbage();
+    gc();
   }
   if (verbose>0) printFlush(" ");
   nearestNeighborConn;
@@ -3731,10 +3744,9 @@ nearestNeighborConnectivityMS = function(multiExpr, nNeighbors = 50, power=6,
       adj_mat[is.na(adj_mat)] = 0;
       sortedAdj = as.matrix(apply(adj_mat, 2, sort, decreasing = TRUE)[1:(nNeighbors+1), ]);
       nearestNeighborConn[blockIndex, set] = apply(sortedAdj, 2, sum)-subtract[blockIndex];
-      collectGarbage();
+      gc();
       start = end + 1;
       if (verbose > 0) pind = updateProgInd(end/nGenes, pind);
-      collectGarbage();
     }
     if (verbose>0) printFlush(" ");
   }
@@ -4393,7 +4405,7 @@ simulateDatExpr=function(eigengenes, nGenes, modProportions,
                                     averageExprInSubmodule, submoduleSpacing, 
                                     verbose = verbose-1, indent = indent+1);
   }
-  collectGarbage();
+  gc();
   if (verbose>1) printFlush(paste(spaces, "  Adding background noise with amplitude", backgroundNoise));
   datExpr = datExpr + rnorm(n = nGenes*nSamples, sd = backgroundNoise);
   means = colMeans(datExpr);
@@ -4978,13 +4990,6 @@ networkScreening = function(
   #Matrix
 }
 
-.reverseVector = function(Vector)
-{
-  ind = seq(from=length(Vector), to=1, by=-1);
-  Vector[ind];
-  #Vector
-}
-
 .extend = function(x, n)
 {
   nRep = ceiling(n/length(x));
@@ -5123,7 +5128,7 @@ labeledHeatmap = function (
   if (!is.null(xSymbols))
   {
      if (length(xSymbols)!=nCols)
-       stop("When 'xSymbols' are give, their length must equal the number of columns in 'Matrix.'");
+       stop("When 'xSymbols' are given, their length must equal the number of columns in 'Matrix.'");
      xSymbols.show = xSymbols[showCols];
   } else 
      xSymbols.show = NULL;
@@ -5131,7 +5136,7 @@ labeledHeatmap = function (
   if (!is.null(ySymbols))
   {
      if (length(ySymbols)!=nRows)
-       stop("When 'xSymbols' are give, their length must equal the number of rows in 'Matrix.'");
+       stop("When 'ySymbols' are given, their length must equal the number of rows in 'Matrix.'");
      ySymbols.show = ySymbols[showRows];
   } else 
      ySymbols.show = NULL;
@@ -5145,9 +5150,9 @@ labeledHeatmap = function (
     stop("Argument 'yLabelsPosition' must be (a unique abbreviation of) 'left', 'right'");
 
   if (is.null(colors)) colors = heat.colors(30);
-  if (invertColors) colors = .reverseVector(colors);
+  if (invertColors) colors = rev(colors);
 
-  labPos = .heatmapWithLegend(Matrix[showRows, showCols], 
+  labPos = .heatmapWithLegend(Matrix[showRows, showCols, drop = FALSE], 
                               signed = FALSE, colors = colors, naColor = naColor, cex.legend = cex.lab, 
                               plotLegend = plotLegend,  keepLegendSpace = keepLegendSpace, ...)
   plotbox = labPos$box;
@@ -5947,7 +5952,7 @@ preservationNetworkConnectivity = function(
     for (set in 1:length(useSets))
       useExpr[[set]] = list(data = multiExpr[[useSets[set]]]$data[, useGenes]);
     multiExpr = useExpr;
-    rm(useExpr); collectGarbage();
+    rm(useExpr); gc();
   }
   size = checkSets(multiExpr);
   nGenes = size$nGenes;
@@ -6098,7 +6103,7 @@ preservationNetworkConnectivity = function(
 
     start = end+1;
     if (verbose>0) pind = updateProgInd(end/nGenes, pind);
-    collectGarbage();
+    gc();
   }
   if (verbose>0) printFlush(" ");
   list(pairwise = pairPres, complete = allPres, pairwiseWeighted = pairPresW,
@@ -6931,7 +6936,7 @@ goodSamplesGenesMS = function(multiExpr, multiWeights = NULL, minFraction = 1/2,
         ddr$order = rev(ddr$order);
         rowInd.colors = rev(rowInd)
         x <- x[, iy]
-    } else iy <- 1:nr
+    } else { iy <- 1:nr; rowInd.colors = rowInd}
     #on.exit(par(op))
     # print(paste("main:", main));
     if (setLayout) layout(lmat, widths = lwid, heights = lhei, respect = TRUE)
@@ -6944,7 +6949,7 @@ goodSamplesGenesMS = function(multiExpr, multiWeights = NULL, minFraction = 1/2,
         image(cbind(1:nc), col = ColSideColors[colInd], axes = FALSE)
     }
     par(mar = c(margins[1], 0, 0, margins[2]))
-    image(1:nc, 1:nr, x, xlim = 0.5 + c(0, nc), ylim = 0.5 + c(0, nr), axes = FALSE, 
+    image(x = 1:nc, y = 1:nr, x, xlim = 0.5 + c(0, nc), ylim = 0.5 + c(0, nr), axes = FALSE, 
           xlab = "", ylab = "", ...)
     axis(1, 1:nc, labels = labCol, las = 2, line = -0.5, tick = 0, cex.axis = cexCol)
     if (!is.null(xlab)) mtext(xlab, side = 1, line = margins[1] - 1.25)

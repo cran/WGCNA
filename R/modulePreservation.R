@@ -178,6 +178,25 @@ modulePreservation = function(
      }
    }
 
+   # Check for presence of dimnames, assign if none, and make them unique.
+
+   multiData = mtd.apply(multiData, function(.data)
+   {
+     if (is.null(colnames(.data))) colnames(.data) = spaste("Column.", 1:ncol(.data));
+     colnames(.data) = make.unique(colnames(.data));
+     .data;
+   });
+
+   if (!dataIsExpr)
+   {
+     multiData = mtd.apply(multiData, function(.data)
+     {
+        rownames(.data) = colnames(.data);
+        .data;
+     });
+   }
+
+
    # Check for names; if there are none, create artificial labels.
    setNames = names(multiData);
    if (is.null(setNames))
@@ -1422,8 +1441,14 @@ modulePreservation = function(
              datRef = .combineAdj(datRef, goldRef);
              datRefP = .combineAdj(datRefP, goldRefP);
              datTest = .combineAdj(datTest, goldTest);
+             rownames(datRef) = make.unique(rownames(datRef));
+             rownames(datRefP) = make.unique(rownames(datRefP));
+             rownames(datTest) = make.unique(rownames(datTest));
              collectGarbage();
           }
+          colnames(datRef) = make.unique(colnames(datRef));
+          colnames(datRefP) = make.unique(colnames(datRefP));
+          colnames(datTest) = make.unique(colnames(datTest));
              
           gold = rep(goldName, goldModSize)
           colorRef_2 = c(as.character(colorRef),gold)

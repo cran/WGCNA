@@ -129,15 +129,8 @@ hierarchicalConsensusModules = function(
      printFlush(paste(spaces, "Calculating consensus modules and module eigengenes", 
                       "block-wise from all genes"));
 
-  # prepare scaled and imputed multiExpr.
-  multiExpr.scaled = mtd.apply(multiExpr, scale);
-  hasMissing = unlist(multiData2list(mtd.apply(multiExpr, function(x) { any(is.na(x)) })));
-  # Impute those that have missing data
-  if (is.null(multiExpr.imputed)) {
-     multiExpr.imputed = mtd.mapply(function(x, doImpute) 
-                         { if (doImpute) t(impute.knn(t(x))$data) else x },
-                                   multiExpr.scaled, hasMissing);
-  } else {
+  if (!is.null(multiExpr.imputed))
+  {
     size.imp = checkSets(multiExpr.imputed);
     if (!isTRUE(all.equal(size.imp, dataSize)))
       stop("If given, 'multiExpr.imputed' must have the same dimensions in each set as 'multiExpr'.");
@@ -225,8 +218,9 @@ hierarchicalConsensusModules = function(
     if (is.null(consensusTree)) consensusTree = consensusTOMInfo$consensusTree;
 
     removeConsensusTOMOnExit = FALSE;
-    networkOptions = consensusTOMInfo$individualTOMInfo$networkOptions;
   }
+  ## Re-set network options to make them a multiData structure with 1 entry per input set.
+  networkOptions = consensusTOMInfo$individualTOMInfo$networkOptions;
   
   allLabels = mergedLabels = rep(0, nGenes);
   allLabelIndex = NULL;
@@ -238,9 +232,17 @@ hierarchicalConsensusModules = function(
   if (!gsg$allOK)
   {
     multiExpr = mtd.subset(multiExpr, gsg$goodSamples, gsg$goodGenes);
-    multiExpr.imputed = mtd.subset(multiExpr.imputed, gsg$goodSamples, gsg$goodGenes);
+    if (!is.null(multiExpr.imputed)) multiExpr.imputed = mtd.subset(multiExpr.imputed, gsg$goodSamples, gsg$goodGenes);
     if (haveWeights) multiWeights = mtd.subset(multiWeights, gsg$goodSamples, gsg$goodGenes);
   }
+
+  hasMissing = unlist(multiData2list(mtd.apply(multiExpr, function(x) { any(is.na(x)) })));
+  # prepare scaled and imputed multiExpr.
+  multiExpr.scaled = mtd.apply(multiExpr, scale);
+  if (is.null(multiExpr.imputed)) 
+     multiExpr.imputed = mtd.mapply(function(x, doImpute) 
+                         { if (doImpute) t(impute.knn(t(x))$data) else x },
+                                   multiExpr.scaled, hasMissing);
 
   nGGenes = sum(gsg$goodGenes);
   nGSamples = sapply(gsg$goodSamples, sum);
@@ -344,7 +346,8 @@ hierarchicalConsensusModules = function(
     }
   }
 
-  prune = try(pruneAndMergeConsensusModules(
+  #prune = try(pruneAndMergeConsensusModules(
+  prune = pruneAndMergeConsensusModules(
      multiExpr = multiExpr,
      multiWeights = multiWeights,
      multiExpr.imputed = multiExpr.imputed,
@@ -371,7 +374,7 @@ hierarchicalConsensusModules = function(
      iterate = iteratePruningAndMerging,
      collectGarbage = collectGarbage,
      getDetails = TRUE,
-     verbose = verbose, indent=indent), silent = TRUE);
+     verbose = verbose, indent=indent)#, silent = TRUE);
 
   if (inherits(prune, "try-error"))
   {
@@ -504,8 +507,6 @@ pruneConsensusModules = function(
 
   KME = mtd.mapply(function(expr, weights, me, netOpt)
     {
-     # printFlush("=============================================================");
-     # print(netOpt$corOptions);
       haveWeights = length(dim(weights))==2;
       kme = do.call(netOpt$corFnc, 
                  c(if (haveWeights) list(x = expr, y = me, weights.x = weights) else list(x = expr, y = me), 
@@ -596,6 +597,10 @@ pruneAndMergeConsensusModules = function(
   verbose = 1, indent=0)
   
 {
+  # Check that there is at least 1 module
+  if (all(labels==unassignedLabel, na.rm = TRUE)) 
+     return(if (getDetails) list(labels = labels, lastMergeInfo = NULL, details = NULL) else labels);
+
   spaces = indentSpaces(indent);
   if (is.null(multiExpr.imputed)) 
     multiExpr.imputed = mtd.apply(multiExpr, function(x) t(impute.knn(t(scale(x)))$data));

@@ -1,6 +1,61 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
 
+2018/10/22: 1.66
+
+	. Function consensusDissTOMandTree is now a it faster because of more
+	  efficient garbage collection.
+
+	. Function verboseBarplot can now optionally add text labels to the
+	  (also optional) scatterplot. 
+
+	. In internal functions plotting heatmap legends, widths are now
+	  specified in inches rather than in user coordinates.
+
+	. Hierarchical consensus module merging is now more robust to unusual
+	  cases with 0 or only 1 module.
+
+	. Bugfix in hierarchicalConsensusModules: supplying a single
+	  networkOptions dows not produce an error.
+
+	. pruneAndMergeConsensusModules now checks for presence of at least
+	  one module; if no modules are present, it returns the input labels
+	  rather than throwing an error.
+
+	. DIFF: Bugfix in hierarchicalConsensusModules changes the order of
+	  imputation and removal of genes and samples with too many missing
+	  values. This may lead to slightly different module eigengenes.
+
+2018/10/02: 1.65
+
+	. Bugfix in modulePreservation fixes duplicate rownames error.
+
+	. Function signedKME now checks that colnames of the input data are
+	  unique and makes them unique if not.
+
+	. Consensus calculations now return origin count for all consensus
+	  quantiles and the mean consensus. Origin count for each set is the
+	  number of (calibrated) values from the set that are less than or equal
+	  the consensus.
+
+	. New function consensusTreeInputs for getting inputs of a consensus
+	  tree.
+
+2018/09/24: 1.64-81
+
+	. Fixed crash in softConnectivity when weights are used.
+
+	. Fixed bug in labeledHeatmap that transposed a 1-row matrix into a
+	  1-column one.
+
+	. Fixed minor typos in errors emitted by labeledHeatmap.
+
+2018/09/14: 1.64-80
+
+	. empiricalBayesLM now accepts optional argument fitToSamples that can
+	  restrict the fitting process to a subset of samples. The argument
+	  order was also rearranged to make the order more logical.
+
 2018/09/09: 1.64-1
 
 	. binarizeCategoricalColumns.for... have re-ordered and in some cases

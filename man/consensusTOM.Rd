@@ -352,11 +352,8 @@ and each column to one input set.}
 
 \item{consensusQuantile}{a copy of the input \code{consensusQuantile}.}
 
-\item{originCount}{a vector with one component per input set. 
-When \code{consensusQuantile} equals zero, \code{originCount} contains the number of
-entries in the consensus TOM that come from each set (i.e., the number of times the TOM in the set was the
-minimum). When \code{consensusQuantile} is not zero or the "mean" consensus is used, this vector contains
-zeroes.}
+\item{originCount}{A vector of length \code{nSets} that
+contains, for each set, the number of (calibrated) elements that were less than or equal the consensus for that element.}
 
 }
 \references{

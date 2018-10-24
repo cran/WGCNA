@@ -543,9 +543,8 @@ order in which the blocks were processed (since we do not require this for the i
 \code{blockGenes} above is returned. For example, \code{blockOrder[1]} contains the label of the
 first-processed block. } 
 
-  \item{originCount}{if the input \code{consensusQuantile==0}, this vector will contain counts of how
-many times each set contributed the consensus gene similarity value. If the counts are highly unbalanced,
-the consensus may be biased. }
+  \item{originCount}{A vector of length \code{nSets} that
+contains, for each set, the number of (calibrated) elements that were less than or equal the consensus for that element.}
 
   \item{networkCalibrationSamples}{if the input \code{getNetworkCalibrationSamples} is \code{TRUE}, this component is a
 list with one component per block. Each component is again a list with two components:

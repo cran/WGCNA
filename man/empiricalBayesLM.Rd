@@ -21,17 +21,20 @@ empiricalBayesLM(
   initialFitRequiresFormula = NULL,
   initialFit.returnWeightName = NULL,
 
+  fitToSamples = NULL,
+
   weights = NULL,
-  weightType = c("apriori", "empirical"),
-  stopOnSmallWeights = TRUE,
-  tol = 1e-4, maxIterations = 1000,
-  scaleMeanToSamples = NULL,
-  robustPriors = FALSE,
   automaticWeights = c("none", "bicov"),
   aw.maxPOutliers = 0.1,
+  weightType = c("apriori", "empirical"),
+  stopOnSmallWeights = TRUE,
+
   minDesignDeviation = 1e-10,
+  robustPriors = FALSE,
+  tol = 1e-4, maxIterations = 1000,
   garbageCollectInterval = 50000,
 
+  scaleMeanToSamples = NULL,
   getOLSAdjustedData = TRUE,
   getResiduals = TRUE,
   getFittedValues = TRUE,
@@ -82,12 +85,26 @@ Name of the component of the return value of \code{initialFitFunction} that cont
 fit. Suitable default value will be chosen automatically for \code{\link[MASS]{rlm}} and
 \code{\link[robust]{lmRob}}.
 }
+  \item{fitToSamples}{
+Optional index of samples from which the linear model fits should be calculated. Defaults to all samples. If given, the
+models will be only fit to the specified samples but all samples will be transformed using the calculated coefficients.
+}
   \item{weights}{
 Optional 2-dimensional matrix or data frame of the same dimensions as \code{data} giving weights for each
 entry in \code{data}. These weights will be used in the initial fit and are are separate from the ones returned by
 \code{initialFitFunction} if it is specified.
 }
 
+  \item{automaticWeights}{
+One of (unique abrreviations of) \code{"none"} or \code{"bicov"}, instructing the function to calculate
+weights from the given \code{data}. Value \code{"none"} will result in trivial weights; value \code{"bicov"}
+will result in biweight midcovariance weights being used.
+}
+  \item{aw.maxPOutliers}{
+If \code{automaticWeights} above is \code{"bicov"}, this argument gets passed to the function
+\code{\link{bicovWeights}} and determines the maximum proportion of outliers in calculating the weights. See
+\code{\link{bicovWeights}} for more details.
+}
   \item{weightType}{
 One of (unique abbreviations of) \code{"apriori"} or \code{"empirical"}. Determines whether a standard
 (\code{"apriori"}) or a modified (\code{"empirical"}) weighted regression is used. The \code{"apriori"} choice is
@@ -102,6 +119,14 @@ Logical: should presence of small \code{"apriori"} weights trigger an error? Bec
 assumes that all weights are non-zero (otherwise estimates of standard errors will be biased), this function
 will by default complain about the presence of too small \code{"apriori"} weights.
 }
+  \item{minDesignDeviation}{
+Minimum standard deviation for columns of the design matrix to be retained. Columns with standard deviations
+below this number will be removed (effectively removing the corresponding terms from the design).
+}
+  \item{robustPriors}{
+Logical: should robust priors be used? This essentially means replacing mean by median and covariance by
+biweight mid-covariance.
+}
   \item{tol}{
 Convergence criterion used in the numerical equation solver. When the relative change in coefficients falls
 below this threshold, the system will be considered to have converged.
@@ -109,34 +134,16 @@ below this threshold, the system will be considered to have converged.
   \item{maxIterations}{
 Maximum number of iterations to use.
 }
-  \item{scaleMeanToSamples}{
-Optional specification of samples (given as a vector of indices) to whose means the resulting adjusted data
-should be scaled (more precisely, shifted). If not given, the mean of all samples will be used.
-}
-  \item{robustPriors}{
-Logical: should robust priors be used? This essentially means replacing mean by median and covariance by
-biweight mid-covariance.
-}
-  \item{automaticWeights}{
-One of (unique abrreviations of) \code{"none"} or \code{"bicov"}, instructing the function to calculate
-weights from the given \code{data}. Value \code{"none"} will result in trivial weights; value \code{"bicov"}
-will result in biweight midcovariance weights being used.
-}
-  \item{aw.maxPOutliers}{
-If \code{automaticWeights} above is \code{"bicov"}, this argument gets passed to the function
-\code{\link{bicovWeights}} and determines the maximum proportion of outliers in calculating the weights. See
-\code{\link{bicovWeights}} for more details.
-}
 
-  \item{minDesignDeviation}{
-Minimum standard deviation for columns of the design matrix to be retained. Columns with standard deviations
-below this number will be removed (effectively removing the corresponding terms from the design).
-}
 
   \item{garbageCollectInterval}{
 Number of variables after which to call garbage collection.
 }
 
+  \item{scaleMeanToSamples}{
+Optional specification of samples (given as a vector of indices) to whose means the resulting adjusted data
+should be scaled (more precisely, shifted). If not given, the mean of all samples will be used.
+}
   \item{getOLSAdjustedData}{Logical: should data adjusted by ordinary least squares or by
 \code{initialFitFunction}, if specified, be returned?} 
 
@@ -180,9 +187,8 @@ on bimodal data.
 The automatic bicov weights are determined from \code{data} only. It is implicitly assumed that there are no
 outliers in the retained and removed covariates. Outliers in the covariates are more difficult to work with
 since, even if the regression is made robust to them, they can influence the adjusted values for the sample in
-which they appear. Unless the the covariate outliers can be attributed to a relevant vriation in experimental
+which they appear. Unless the the covariate outliers can be attributed to a relevant variation in experimental
 conditions, samples with covariate outliers are best removed entirely before calling this function.
-
 }
 \value{
 A list with the following components (some of which may be missing depending on input options):

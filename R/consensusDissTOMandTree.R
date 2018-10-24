@@ -11,7 +11,7 @@ consensusDissTOMandTree <- function (multiExpr, softPower, TOM=NULL){
 			write(paste("Adjacency, set",set),"")
 			TOM[[set]] = TOMsimilarity(adjacencies[[set]], TOMType="signed");
 			write(paste("Similarity, set",set),"")
-			collectGarbage()
+			gc();
 		}
 	}
 	nSets  = length(TOM)

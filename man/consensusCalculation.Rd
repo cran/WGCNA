@@ -123,8 +123,8 @@ individual data for the corresponding input individual data set.}
 \item{calibrationSamples}{If \code{consensusOptions$calibration} is \code{"single quantile"} and 
 \code{getCalibrationSamples} is \code{TRUE}, a list in which eahc component contains the calibration samples
 for the corresponding input individual data set.}
-\code{originCount}{When \code{consensusOptions$consensusQuantile} is 0, this vector of length \code{nSets}
-contains the counts of the minima from each set.}
+\code{originCount}{A vector of length \code{nSets} that
+contains, for each set, the number of (calibrated) elements that were less than or equal the consensus for that element.}
 }
 \references{
 Consensus network analysis was originally described in 

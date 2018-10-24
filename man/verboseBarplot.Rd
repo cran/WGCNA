@@ -14,6 +14,9 @@ verboseBarplot(x, g,
                addScatterplot = FALSE,
                pt.cex = 0.8, pch = 21, pt.col = "blue", pt.bg = "skyblue",
                randomSeed = 31425, jitter = 0.6,
+               pointLabels = NULL,
+               label.cex = 0.8,
+               label.offs = 0.06,
                adjustYLim = TRUE)
 }
 %- maybe also 'usage' for other objects documented here.
@@ -45,6 +48,10 @@ automatically.}
   \item{pt.bg}{background color for the points.}
   \item{randomSeed}{integer random seed to make plots reproducible.}
   \item{jitter}{amount of random jitter to add to the position of the points along the x axis.}
+  \item{pointLabels}{Optional text labels for the points displayed using the scatterplot. If given, should be a character
+vector of the same length as x. See \code{\link{labelPoints}}.}
+  \item{label.cex}{Character expansion (size) factor for \code{pointLabels}.}
+  \item{label.offs}{Offset for \code{pointLabels}, as a fraction of the plot width.}
   \item{adjustYLim}{logical: should the limits of the y axis be set so as to accomodate the individual points?
 The adjustment is only carried out if input \code{ylim} is \code{NULL} and \code{addScatterplot} is
 \code{TRUE}. In particular, if the user supplies \code{ylim}, it is not touched.}

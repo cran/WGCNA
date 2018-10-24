@@ -183,6 +183,7 @@ additional operations specific to calculations of topological overlaps.
 }
 \value{
 A list that contains the output of \code{\link{hierarchicalConsensusCalculation}} and two extra components:
+
 \item{individualTOMInfo}{A copy of the input \code{individualTOMInfo} if it was non-\code{NULL}, or the
 result of \code{\link{individualTOMs}}.
 }

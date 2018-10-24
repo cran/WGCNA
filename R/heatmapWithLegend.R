@@ -28,9 +28,10 @@
 .plotStandaloneLegend = function(
                             colors,
                             lim,
-                            tickLen = 0.7* strwidth("M"),
-                            tickGap = 0.3 * strwidth("M"),
-                            minBarWidth = strwidth("M"),
+                            ## These dimensions are in inches
+                            tickLen = 0.09,
+                            tickGap = 0.04,
+                            minBarWidth = 0.09,
                             maxBarWidth = Inf,
                             mar = c(0.5, 0.2, 0.5, 0.1))
 {
@@ -38,23 +39,29 @@
   plot(c(0, 1), c(0, 1), type = "n", axes = FALSE, xlab = "", ylab = "");
   box = par("usr");
   tickVal = .autoTicks(lim[1], lim[2]);
+  pin = par("pin");
+  xrange = box[2] - box[1];
+  tickLen.usr = tickLen/pin[1] * xrange
+  tickGap.usr = tickGap/pin[1] * xrange
+  minBarWidth.usr = minBarWidth/pin[1] * xrange
+  maxBarWidth.usr = maxBarWidth/pin[1] * xrange
   maxTickWidth = max(strwidth(tickVal));
-  if (maxTickWidth + tickLen + tickGap > box[2]-box[1]-minBarWidth) 
+  if (maxTickWidth + tickLen.usr + tickGap.usr > box[2]-box[1]-minBarWidth.usr) 
      warning("Some tick labels will be truncated.");
-  xMax = max(box[2]-maxTickWidth - tickLen - tickGap, box[1] + minBarWidth);
-  if (xMax - box[1] > maxBarWidth) xMax = box[1] + maxBarWidth;
+  xMax = max(box[2]-maxTickWidth - tickLen.usr - tickGap.usr, box[1] + minBarWidth.usr);
+  if (xMax - box[1] > maxBarWidth.usr) xMax = box[1] + maxBarWidth.usr;
   .plotColorLegend(box[1], xMax,
                    box[3], box[4], 
                    colors = colors,
                    lim = lim,
-                   tickLen = tickLen,
-                   tickGap = tickGap);
+                   tickLen.usr = tickLen.usr,
+                   tickGap.usr = tickGap.usr);
 }
 
 .plotColorLegend = function(xmin, xmax, ymin, ymax,
                             colors,
-                            tickLen = 0.7* strwidth("M"),
-                            tickGap = 0.3 * strwidth("M"),
+                            tickLen.usr = 0.7* strwidth("M"),
+                            tickGap.usr = 0.3 * strwidth("M"),
                             lim, cex.legend = 1)
 {
       tickVal = .autoTicks(lim[1], lim[2]);
@@ -63,8 +70,8 @@
 
       # Ticks:
       for (t in 1:nTicks)
-        lines(c(xmax, xmax + tickLen), c(tickY[t], tickY[t]), xpd = TRUE);
-      text(rep(xmax + tickLen + tickGap), tickY, tickVal, adj = c(0, 0.5), cex = cex.legend,
+        lines(c(xmax, xmax + tickLen.usr), c(tickY[t], tickY[t]), xpd = TRUE);
+      text(rep(xmax + tickLen.usr + tickGap.usr), tickY, tickVal, adj = c(0, 0.5), cex = cex.legend,
            xpd = TRUE);
 
       # Fill with color:
@@ -84,11 +91,12 @@
                      keepLegendSpace = plotLegend,
                      cex.legend = 1, 
                      legendShrink = 0.94,
-                     legendSpace = 4 * strwidth("M"),
-                     legendWidth = 1 * strwidth("M"),
-                     legendGap = 0.7 * strwidth("M"),
+                     ## The following arguments are now in inches
+                     legendSpace = 0.5,   
+                     legendWidth = 0.13,
+                     legendGap = 0.09,
                      frame = TRUE,
-                     frameTicks = FALSE, tickLen = 0.7* strwidth("M"),
+                     frameTicks = FALSE, tickLen = 0.09,
                      ...)
 {
   data = as.matrix(data); nCols = ncol(data); nRows = nrow(data);
@@ -101,23 +109,29 @@
   barplot(1, col = "white", border = "white", axisnames = FALSE,
                   axes = FALSE, ...);
 
+  pin = par("pin");
   box = par("usr");
   xminAll = box[1]; 
   xmaxAll = box[2]; 
   yminAll = box[3]; 
   ymaxAll = box[4]; 
 
+  legendSpace.usr = legendSpace/pin[1] * (xmaxAll-xminAll);
+  legendWidth.usr = legendWidth/pin[1] * (xmaxAll-xminAll);
+  legendGap.usr = legendGap/pin[1] * (xmaxAll-xminAll);
+  tickLen.usr = tickLen/pin[1] * (xmaxAll-xminAll);
+
   if (!keepLegendSpace && !plotLegend)
   {
-     legendSpace = 0;
-     legendWidth = 0;
-     legendGap = 0;
+     legendSpace.usr = 0;
+     legendWidth.usr = 0;
+     legendGap.usr = 0;
   }
 
   ymin = yminAll; 
   ymax = ymaxAll; 
   xmin = xminAll; 
-  xmax = xmaxAll - legendSpace;
+  xmax = xmaxAll - legendSpace.usr;
   if (xmax < xmin) stop("'legendSpace is too large, not enough space for the heatmap."); 
 
   xStep = (xmax - xmin)/nCols; 
@@ -147,18 +161,18 @@
   if (plotLegend)
   {
       # Now plot the legend.
-      .plotColorLegend(xmin = xmaxAll - (legendSpace - legendGap),
-                       xmax = xmaxAll - (legendSpace - legendGap - legendWidth),
+      .plotColorLegend(xmin = xmaxAll - (legendSpace.usr - legendGap.usr),
+                       xmax = xmaxAll - (legendSpace.usr - legendGap.usr - legendWidth.usr),
                        ymin = yminAll + (1-legendShrink) * (ymaxAll - yminAll),
                        ymax =  ymaxAll - (1-legendShrink) * (ymaxAll - yminAll),
                        lim = zlim,
                        colors = colors,
-                       tickLen = tickLen,
+                       tickLen.usr = tickLen.usr,
                        cex.legend = cex.legend);
     
   }
 
-  list(xMid = xMid, yMid = if (reverseRows) .reverseVector(yMid) else yMid, 
+  list(xMid = xMid, yMid = if (reverseRows) rev(yMid) else yMid, 
        box = c(xmin, xmax, ymin, ymax), xLeft = xLeft, xRight = xRight,
        yTop = yTop, yBot = yBot);
   

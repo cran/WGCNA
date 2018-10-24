@@ -68,26 +68,29 @@
 
 
 empiricalBayesLM = function(
-  data, 
+  data,
   removedCovariates,
-  retainedCovariates = NULL, 
+  retainedCovariates = NULL,
 
   initialFitFunction = NULL,
   initialFitOptions = NULL,
   initialFitRequiresFormula = NULL,
   initialFit.returnWeightName = NULL,
 
+  fitToSamples = NULL,
+
   weights = NULL,
-  weightType = c("apriori", "empirical"),
-  stopOnSmallWeights = TRUE,
-  tol = 1e-4, maxIterations = 1000,
-  scaleMeanToSamples = NULL,
-  robustPriors = FALSE,
   automaticWeights = c("none", "bicov"),
   aw.maxPOutliers = 0.1,
+  weightType = c("apriori", "empirical"),
+  stopOnSmallWeights = TRUE,
+
   minDesignDeviation = 1e-10,
+  robustPriors = FALSE,
+  tol = 1e-4, maxIterations = 1000,
   garbageCollectInterval = 50000,
 
+  scaleMeanToSamples = NULL,
   getOLSAdjustedData = TRUE,
   getResiduals = TRUE,
   getFittedValues = TRUE,
@@ -138,6 +141,7 @@ empiricalBayesLM = function(
   if (nrow(removedCovariates)!=nSamples)
     stop("Numbers of rows in 'data' and 'removedCovariates' differ.");
   removedCovariates = as.data.frame(removedCovariates);
+  
   mm = model.matrix(~., data = removedCovariates)[, -1, drop = FALSE];
   colSDs = colSds(mm);
   if (any(colSDs==0))
@@ -198,18 +202,36 @@ empiricalBayesLM = function(
   N = ncol(y);
   nc = ncol(designMat);
 
-  # Scale y to mean zero and variance 1. This is needed for the prior to make sense.
-
   if (verbose > 0) printFlush(paste(spaces, "..standardizing responses.."));
   if (is.null(scaleMeanToSamples)) scaleMeanToSamples = c(1:nSamples);
+  if (is.null(fitToSamples)) fitToSamples = c(1:nSamples);
 
   mean.y.target = .colWeightedMeans.x(y[scaleMeanToSamples, ], weights[scaleMeanToSamples, ], na.rm = TRUE);
-  y = .weightedScale(y, weights);
-  mean.y = attr(y, "scaled:center");
+
+  if (is.logical(fitToSamples)) fitToSamples = which(fitToSamples);
+  nRefSamples = length(fitToSamples);
+  yFinite.refSamples = yFinite[fitToSamples, ];
+  weights.refSamples = weights[fitToSamples, ];
+
+  # Scale y to mean zero and variance 1. This is needed for the prior to make sense.
+
+  y.refSamples = .weightedScale(y[fitToSamples, ], weights.refSamples);
+  mean.y = attr(y.refSamples, "scaled:center");
+  scale.y = attr(y.refSamples, "scaled:scale");
+  y.refSamples[!yFinite.refSamples] = 0;
+
+  ## Note to self: original code above used y = .weightedScale(y, weights.refSamples);
+  ## We now need to scale y according to the mean and scale calculated above.
+
   mean.y.mat = matrix(mean.y, nrow = nrow(y), ncol = ncol(y), byrow = TRUE);
-  scale.y = attr(y, "scaled:scale");
   scale.y.mat = matrix(scale.y, nrow = nrow(y), ncol = ncol(y), byrow = TRUE);
-  y[!yFinite] = 0;
+  y.scaled = (y-mean.y.mat)/scale.y.mat;
+
+  designMat.refSamples = designMat[fitToSamples, ];
+
+  if (any(is.na(designMat.refSamples))) 
+    stop("The design matrix contains missing values. Please check that all variables\n",
+         " entering the desing matrix have all values present.");
 
   if (verbose > 0) printFlush(paste(spaces, "..initial model fitting.."));
   # Prepaer ordinary regression to get starting points for beta and sigma
@@ -219,9 +241,9 @@ empiricalBayesLM = function(
   regressionValid = rep(TRUE, N);
 
   # Get the means of the design matrix with respect to all weight vectors.
-  V1 = colSums(weights);
-  V2 = colSums(weights^2);
-  means.dm = t(designMat) %*% weights / matrix(V1, nrow = nc, ncol = N, byrow = TRUE);
+  V1 = colSums(weights.refSamples);
+  V2 = colSums(weights.refSamples^2);
+  means.dm = t(designMat.refSamples) %*% weights.refSamples / matrix(V1, nrow = nc, ncol = N, byrow = TRUE);
   i = 0;
   on.exit(printFlush(spaste("Error occurred at i = ", i)));
   #on.exit(browser());
@@ -229,15 +251,15 @@ empiricalBayesLM = function(
   if (is.null(initialFitFunction))
   {
     # Ordinary weighted least squares, in two varieties.
-    oldWeights = rep(-1, nSamples);
+    oldWeights = rep(-1, nRefSamples);
     if (verbose > 1) pind = initProgInd();
     for (i in 1:N)
     {
-      w1 = weights[, i];
-      y1 = y[, i];
+      w1 = weights.refSamples[, i];
+      y1 = y.refSamples[, i];
       if (any(w1!=oldWeights))
       {
-        centeredDM = designMat - matrix(means.dm[, i], nSamples, nc, byrow = TRUE);
+        centeredDM = designMat.refSamples - matrix(means.dm[, i], nRefSamples, nc, byrow = TRUE);
         #dmVar = colSds(centeredDM);
         dmVar.w = apply(centeredDM, 2, .weightedVar, weights = w1);
         #keepDM = dmVar > 0 & dmVar.w > 0;
@@ -273,7 +295,7 @@ empiricalBayesLM = function(
       if (verbose > 1 && i%%pindStep==0) pind = updateProgInd(i/N, pind);
     }
     if (verbose > 1) {pind = updateProgInd(i/N, pind); printFlush()}
-    rweights = weights;
+    rweights = weights.refSamples;
   } else {
     fitFnc = match.fun(initialFitFunction);
     if (is.null(initialFit.returnWeightName))
@@ -285,22 +307,22 @@ empiricalBayesLM = function(
     if (is.null(initialFitRequiresFormula))
       initialFitRequiresFormula = .initialFit.requiresFormula(initialFitFunction);
       
-    rweights = weights;
+    rweights = weights.refSamples;
     if (verbose > 1) pind = initProgInd();
     for (i in 1:N)
     {
-      y1 = y[, i];
-      w1 = weights[, i]
-      dmVar.w = apply(designMat, 2, .weightedVar, weights = w1);
+      y1 = y.refSamples[, i];
+      w1 = weights.refSamples[, i]
+      dmVar.w = apply(designMat.refSamples, 2, .weightedVar, weights = w1);
       keepDM = dmVar.w > 0;
       if (initialFitRequiresFormula)
       {
-        modelData = data.frame(designMat[, keepDM, drop = FALSE]);
+        modelData = data.frame(designMat.refSamples[, keepDM, drop = FALSE]);
         fit = try(do.call(fitFnc, c(list(formula = "y1~.", data = data.frame(y1 = y1, modelData), w = w1), 
                                             initialFitOptions)));
       } else {
-        fit = try(do.call(fitFnc, c(list(x = cbind(intercept = rep(1, nSamples), 
-                                                   designMat[, keepDM, drop = FALSE]), 
+        fit = try(do.call(fitFnc, c(list(x = cbind(intercept = rep(1, nRefSamples), 
+                                                   designMat.refSamples[, keepDM, drop = FALSE]), 
                                          y = y1, w = w1),
                                     initialFitOptions)));
       }
@@ -309,7 +331,7 @@ empiricalBayesLM = function(
         beta.OLS[keepDM, i] = fit$coefficients[-1];
         betaValid[!keepDM, i] = FALSE;
         rw1 = getElement(fit, initialFit.returnWeightName);
-        if (length(rw1)!=nSamples) 
+        if (length(rw1)!=nRefSamples) 
           stop("Length of component '", initialFit.returnWeightName, 
                "' does not match the number of samples.\n",
                "Please check that the name of the component containing robustness weights\n",
@@ -348,14 +370,14 @@ empiricalBayesLM = function(
   # Debugging...
   if (FALSE)
   {
-    fit = lm(y~., data = data.frame(designMat))
-    fit2 = lm(y~., data = as.data.frame(centeredDM));
+    fit = lm(y.refSamples~., data = data.frame(designMat.refSamples))
+    fit2 = lm(y.refSamples~., data = as.data.frame(centeredDM));
 
     max(abs(fit2$coefficients[1,]))
 
     all.equal(c(fit$coefficients[-1, ]), c(fit2$coefficients[-1, ]))
     all.equal(c(fit$coefficients[-1, ]), c(beta.OLS))
-    sigma.fit = apply(fit$residuals, 2, var)*(nSamples-1)/(nSamples-1-nc)
+    sigma.fit = apply(fit$residuals, 2, var)*(nRefSamples-1)/(nRefSamples-1-nc)
     all.equal(as.numeric(sigma.fit), as.numeric(sigma.OLS))
 
   }
@@ -392,7 +414,7 @@ empiricalBayesLM = function(
     # Get the means of the design matrix with respect to all rweight vectors.
     rV1 = colSums(rweights);
     rV2 = colSums(rweights^2);
-    rmeans.dm = t(designMat) %*% weights / matrix(V1, nrow = nc, ncol = N, byrow = TRUE);
+    rmeans.dm = t(designMat.refSamples) %*% rweights / matrix(V1, nrow = nc, ncol = N, byrow = TRUE);
   
     if (verbose > 1) pind = initProgInd();
     for (i in which(regressionValid))
@@ -403,10 +425,10 @@ empiricalBayesLM = function(
       difference = 1;
       iteration = 1;
   
-      y1 = y[, i];
+      y1 = y.refSamples[, i];
       w1 = rweights[, i];
   
-      centeredDM = designMat - matrix(rmeans.dm[, i], nSamples, nc, byrow = TRUE);
+      centeredDM = designMat.refSamples - matrix(rmeans.dm[, i], nRefSamples, nc, byrow = TRUE);
       dmVar.w = apply(centeredDM, 2, .weightedVar, weights = w1);
       keepDM = dmVar.w > 0 & betaValid[, i];
   
@@ -429,7 +451,7 @@ empiricalBayesLM = function(
         if (wtype==1)
         {
           # Apriori weights.
-          fin1 = yFinite[, i];
+          fin1 = yFinite.refSamples[, i];
           nSamples1 = sum(fin1);
           sigma.new = (sum(fin1 * (y1-y.pred)^2) + 2*prior.b)/ (nSamples1-nc + 2 * prior.a + 1);
         } else {
@@ -475,8 +497,8 @@ empiricalBayesLM = function(
   fitAndCoeffs = function(beta, sigma)
   {
       #fitted.removed = fitted = matrix(NA, nSamples, N);
-      fitted.removed = y;
-      if (getFittedValues) fitted = y;
+      fitted.removed = y;   ### this assignment and the one below just sets the dimensions and dimnames
+      if (getFittedValues) fitted = y;  ### Actual values will be set below.
       beta.fin = beta;
       beta.fin[is.na(beta)] = 0;
       for (i in which(regressionValid))
@@ -489,7 +511,7 @@ empiricalBayesLM = function(
       }
       #browser()
       
-      residuals = (y - fitted.removed) * scale.y.mat;
+      residuals = (y.scaled - fitted.removed) * scale.y.mat;
       # Residuals now have weighted column means equal zero.
 
       meanShift =  matrix(mean.y.target, nSamples, N, byrow = TRUE)
@@ -513,7 +535,6 @@ empiricalBayesLM = function(
       residualsWithMean.all[, keepY] = residuals + meanShift;
       residualsWithMean.all[, varYZero] = 0;
       residualsWithMean.all[is.na(y.original)] = NA;
-
 
       beta.all = beta.all.scaled = matrix(NA, nc+1, N.original);
       sigma.all = sigma.all.scaled = rep(NA, N.original);
@@ -550,8 +571,7 @@ empiricalBayesLM = function(
   dimnames(betaValid.all) = dimnames(fc.OLS$beta);
 
   finalWeights = originalWeights;
-  finalWeights[, keepY] = rweights;
-  
+  finalWeights[fitToSamples, keepY] = rweights;
 
   list( adjustedData = if (getEBadjustedData) fc.EB$residualsWithMean else NULL,
        residuals = if (getResiduals & getEBadjustedData) fc.EB$residuals else NULL,
@@ -570,12 +590,10 @@ empiricalBayesLM = function(
        sigmaSq.OLS.scaled = fc.OLS$sigmaSq.scaled,
        fittedValues.OLS = if (getFittedValues) fc.OLS$fittedValues else NULL,
 
-
        # Weights used in the model
        initialWeights = if (getWeights) originalWeights else NULL,
        finalWeights = if (getWeights) finalWeights else NULL,
        
-
        # indices of valid fits
        dataColumnValid = keepY,
        dataColumnWithZeroVariance = varYZero,

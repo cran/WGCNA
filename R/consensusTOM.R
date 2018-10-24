@@ -81,6 +81,13 @@ newConsensusTree = function(consensusOptions = newConsensusOptions(),
   out;
 }
 
+consensusTreeInputs = function(consensusTree, flatten = TRUE)
+{
+  out = lapply(consensusTree$inputs, function(inp) if (inherits(inp, "ConsensusTree")) consensusTreeInputs(inp) else inp)
+  if (flatten) out = unlist(out);
+  out;
+}
+
 newConsensusOptions = function(
       calibration = c("full quantile", "single quantile", "none"),
 
@@ -433,8 +440,7 @@ newNetworkOptions = function(
   nSets = ncol(data);
   if (nSets==1)
   {
-    out.list = list(consensus = data);
-    if (consensusQuantile==0) out.list$originCount = c(`1`=nrow(data))
+    out.list = list(consensus = as.vector(data));
   } else {
     if (useMean)
     {
@@ -449,19 +455,16 @@ newNetworkOptions = function(
        out.list = list(consensus = out);
     } else if (consensusQuantile == 0) 
     {
-        #min = rep(0, nrow(data));
-        #which = rep(0, nrow(data));
-        #whichmin = .C("minWhichMin_row", as.double(data),
-        #              as.integer(nrow(data)), as.integer(ncol(data)),
-        #              as.double(min), as.double(which), PACKAGE = "WGCNA");
-        #min = whichmin[[4]];
-        #which = whichmin[[5]] + 1;
-        #rm(whichmin);
         whichmin = .Call("minWhich_call", data, 1L, PACKAGE = "WGCNA");
-        out.list = list(consensus = whichmin$min, originCount = table(as.integer(whichmin$which)));
+        out.list = list(consensus = whichmin$min);
     } else {
        out.list = list(consensus = rowQuantileC(data, p = consensusQuantile));
     }
+  }
+  if (is.null(out.list$originCount))
+  {
+    out.list$originCount = apply(data, 2, function(x) sum(x <= out.list$consensus, na.rm = TRUE));
+    names(out.list$originCount) = 1:nSets
   }
   out.list;
 }
@@ -472,7 +475,6 @@ newNetworkOptions = function(
   if (nSets==1)
   {
     out.list = list(consensus = dataList[[1]]);
-    if (consensusQuantile == 0) out.list$originCount = c(`1`=length(dataList[[1]]))
   } else {
     if (useMean)
     {
@@ -480,12 +482,15 @@ newNetworkOptions = function(
     } else if (consensusQuantile == 0)
     {
         whichmin = pminWhich.fromList(dataList);
-        min = whichmin$min;
-        which = whichmin$which;
-        out.list = list(consensus = min, originCount = table(as.integer(which)));
+        out.list = list(consensus = whichmin$min);
     } else {
        out.list = list(consensus = pquantile.fromList(dataList, prob = consensusQuantile));
     }
+  }
+  if (is.null(out.list$originCount))
+  {
+    out.list$originCount = sapply(dataList, function(x) sum(x <= out.list$consensus, na.rm = TRUE));
+    names(out.list$originCount) = 1:nSets
   }
   out.list;
 }
@@ -1100,6 +1105,9 @@ consensusTOM = function(
                nSets = nSets.all, nGenes = nGenes);
 
   }
+
+  setNames = individualTOMInfo$setNames;
+  if (is.null(setNames)) setNames = spaste("Set.", 1:individualTOMInfo$nSets)
   
   nGoodGenes = length(individualTOMInfo$gBlocks);
 
@@ -1206,7 +1214,8 @@ consensusTOM = function(
     if (!useDiskCache)
     {
       # Note: setTomDS will contained the scaled set TOM matrices.
-      setTomDS = array(0, dim = c(nBlockGenes*(nBlockGenes-1)/2, nSets));
+      setTomDS = matrix(0, nBlockGenes*(nBlockGenes-1)/2, nSets);
+      colnames(setTomDS) = setNames;
     } 
 
     # create an empty consTomDS distance structure.
@@ -1381,34 +1390,22 @@ consensusTOM = function(
           setChunks[, set] = temp;
           file.remove(chunkFileNames[chunk, set]);
         }
-        if (useMean | consensusQuantile > 0)
-        {
-          consTomDS[start:end] = .consensusCalculation.base(
-                     setChunks, useMean = useMean, setWeightMat = setWeightMat,
-                     consensusQuantile = consensusQuantile)$consensus;
-        } else {
-          tmp = .consensusCalculation.base(setChunks, useMean = useMean, setWeightMat = setWeightMat,
-                                             consensusQuantile = consensusQuantile);
-          consTomDS[start:end] = tmp$consensus;
-          countIndex = as.numeric(names(tmp$originCount));
-          originCount[countIndex] = originCount[countIndex] + tmp$originCount; 
-          rm(tmp);
-        } 
+        colnames(setChunks) = setNames;
+        tmp = .consensusCalculation.base(setChunks, useMean = useMean, setWeightMat = setWeightMat,
+                                           consensusQuantile = consensusQuantile);
+        consTomDS[start:end] = tmp$consensus;
+        countIndex = as.numeric(names(tmp$originCount));
+        originCount[countIndex] = originCount[countIndex] + tmp$originCount; 
+        rm(tmp);
         start = end + 1;
       }
     } else {
-      if (useMean | consensusQuantile > 0)
-      {
-         consTomDS[] = .consensusCalculation.base(setTomDS, useMean = useMean, setWeightMat = setWeightMat,
-                                             consensusQuantile = consensusQuantile)$consensus;
-      } else {
-          tmp = .consensusCalculation.base(setTomDS, useMean = useMean, setWeightMat = setWeightMat,
-                                             consensusQuantile = consensusQuantile);
-          consTomDS[] = tmp$consensus;
-          countIndex = as.numeric(names(tmp$originCount));
-          originCount[countIndex] = originCount[countIndex] + tmp$originCount; 
-          rm(tmp);
-      }
+      tmp = .consensusCalculation.base(setTomDS, useMean = useMean, setWeightMat = setWeightMat,
+                                         consensusQuantile = consensusQuantile);
+      consTomDS[] = tmp$consensus;
+      countIndex = as.numeric(names(tmp$originCount));
+      originCount[countIndex] = originCount[countIndex] + tmp$originCount; 
+      rm(tmp);
     }
     
     # Save the consensus TOM if requested
