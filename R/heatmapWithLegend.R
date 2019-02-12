@@ -89,7 +89,7 @@
                      reverseRows = TRUE,
                      plotLegend = TRUE,
                      keepLegendSpace = plotLegend,
-                     cex.legend = 1, 
+                     cex.legend = cex.legend, 
                      legendShrink = 0.94,
                      ## The following arguments are now in inches
                      legendSpace = 0.5,   
