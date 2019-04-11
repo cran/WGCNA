@@ -16,7 +16,7 @@
 
 .networkTypes = c("unsigned", "signed", "signed hybrid");
 .adjacencyTypes = c(.networkTypes, "distance");
-.TOMTypes = c("none", "unsigned", "signed");
+.TOMTypes = c("none", "unsigned", "signed", "signed Nowick");
 
 .TOMDenoms = c("min", "mean");
 

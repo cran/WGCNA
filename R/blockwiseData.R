@@ -137,6 +137,11 @@ BD.getMetaData = function(bwData, blocks = NULL, simplify = TRUE)
   out;
 }
 
+.getBDorPlainData = function(data, blocks = NULL, simplify = TRUE)
+{
+  if (inherits(data, "BlockwiseData")) BD.getData(data, blocks, simplify) else data;
+}
+
 BD.getData = function(bwData, blocks = NULL, simplify = TRUE)
 {
   if (!inherits(bwData, "BlockwiseData")) stop("'bwData' is not a blockwise data structure.");

@@ -33,6 +33,7 @@ TOMsimilarityFromExpr = function(
   cosineCorrelation = FALSE, 
   replaceMissingAdjacencies = FALSE,
   suppressTOMForZeroAdjacencies = FALSE,
+  suppressNegativeTOM = FALSE,
   useInternalMatrixAlgebra = FALSE,
   nThreads = 0,
   verbose = 1, indent = 0)
@@ -94,6 +95,7 @@ TOMsimilarityFromExpr = function(
         as.integer(fallback), as.integer(cosineCorrelation),
         as.integer(replaceMissingAdjacencies),
         as.integer(suppressTOMForZeroAdjacencies),
+        as.integer(suppressNegativeTOM),
         as.integer(useInternalMatrixAlgebra),
         warn, 
         as.integer(nThreads), as.integer(verbose), as.integer(indent), PACKAGE = "WGCNA");
@@ -111,7 +113,8 @@ TOMsimilarityFromExpr = function(
 #===================================================================================================
 
 TOMsimilarity = function(adjMat, TOMType = "unsigned", TOMDenom = "min", 
-          suppressTOMForZeroAdjacencies = FALSE, useInternalMatrixAlgebra = FALSE, verbose = 1, indent = 0)
+          suppressTOMForZeroAdjacencies = FALSE, suppressNegativeTOM = FALSE,
+          useInternalMatrixAlgebra = FALSE, verbose = 1, indent = 0)
 {
   TOMTypeC = pmatch(TOMType, .TOMTypes)-1;
   if (is.na(TOMTypeC))
@@ -144,6 +147,7 @@ TOMsimilarity = function(adjMat, TOMType = "unsigned", TOMDenom = "min",
         as.integer(TOMTypeC),
         as.integer(TOMDenomC),
         as.integer(suppressTOMForZeroAdjacencies),
+        as.integer(suppressNegativeTOM),
         as.integer(useInternalMatrixAlgebra),
         as.integer(verbose), as.integer(indent), PACKAGE = "WGCNA")                       
   gc();
@@ -158,9 +162,11 @@ TOMsimilarity = function(adjMat, TOMType = "unsigned", TOMDenom = "min",
 #==========================================================================================================
 
 TOMdist = function(adjMat, TOMType = "unsigned", TOMDenom = "min", 
- suppressTOMForZeroAdjacencies = FALSE, useInternalMatrixAlgebra = FALSE, verbose = 1, indent = 0)
+ suppressTOMForZeroAdjacencies = FALSE, suppressNegativeTOM = FALSE,
+ useInternalMatrixAlgebra = FALSE, verbose = 1, indent = 0)
 {
   1-TOMsimilarity(adjMat, TOMType, TOMDenom, suppressTOMForZeroAdjacencies = suppressTOMForZeroAdjacencies,
+   suppressNegativeTOM = suppressNegativeTOM,
    useInternalMatrixAlgebra = useInternalMatrixAlgebra, verbose = verbose, indent = indent)
 }
 
@@ -204,12 +210,13 @@ blockwiseModules = function(
   power = 6,
   networkType = "unsigned",
   replaceMissingAdjacencies = FALSE,
-  suppressTOMForZeroAdjacencies = FALSE,
 
   # Topological overlap options
 
   TOMType = "signed",
   TOMDenom = "min",
+  suppressTOMForZeroAdjacencies = FALSE,
+  suppressNegativeTOM = FALSE,
 
   # Saving or returning TOM
 
@@ -320,6 +327,9 @@ blockwiseModules = function(
   allLabels = rep(0, nGenes);
   AllMEs = NULL;
   allLabelIndex = NULL;
+
+  originalSampleNames = rownames(datExpr);
+  originalGeneNames = colnames(datExpr);
 
   #if (maxBlockSize >= floor(sqrt(2^31)) )
   #  stop("'maxBlockSize must be less than ", floor(sqrt(2^31)), ". Please decrease it and try again.")
@@ -513,6 +523,7 @@ blockwiseModules = function(
           as.integer(cosineCorrelation),
           as.integer(replaceMissingAdjacencies),
           as.integer(suppressTOMForZeroAdjacencies),
+          as.integer(suppressNegativeTOM),
           as.integer(useInternalMatrixAlgebra),
           warn, as.integer(nThreads),
           as.integer(callVerb), as.integer(callInd), PACKAGE = "WGCNA");
@@ -835,24 +846,28 @@ blockwiseModules = function(
     } else {
       if (sum(!MEs$validMEs)>0)
       {
-        colors[gsg$goodGenes] = MEs$validColors;
+        mergedAllColors[gsg$goodGenes] = MEs$validColors;
         MEs = MEs$eigengenes[, MEs$validMEs];
       } else MEs = MEs$eigengenes;
       allSampleMEs = as.data.frame(matrix(NA, nrow = nSamples, ncol = ncol(MEs)));
       allSampleMEs[gsg$goodSamples, ] = MEs[,];
       names(allSampleMEs) = names(MEs);
+      rownames(allSampleMEs) = originalSampleNames;
     }
   } else {
     mergedAllColors[gsg$goodGenes] = mergedMods$colors;
     allSampleMEs = as.data.frame(matrix(NA, nrow = nSamples, ncol = ncol(mergedMods$newMEs)));
     allSampleMEs[gsg$goodSamples, ] = mergedMods$newMEs[,];
     names(allSampleMEs) = names(mergedMods$newMEs);
+    rownames(allSampleMEs) = originalSampleNames;
   }
 
   if (seedSaved) .Random.seed <<- savedSeed;
 
   if (!saveTOMs) TOMFiles = NULL;
 
+  names(colors) = originalGeneNames;
+  names(mergedAllColors) = originalGeneNames;
   list(colors = mergedAllColors, 
        unmergedColors = colors, 
        MEs = allSampleMEs, 
@@ -944,6 +959,9 @@ recutBlockwiseTrees = function(datExpr,
   allLabels = rep(0, nGenes);
   AllMEs = NULL;
   allLabelIndex = NULL;
+
+  originalSampleNames = rownames(datExpr);
+  originalGeneNames = colnames(datExpr);
 
   if (length(blocks)!=nGenes)
     stop("Input error: the length of 'geneRank' does not equal the number of genes in given 'datExpr'.");
@@ -1294,8 +1312,11 @@ recutBlockwiseTrees = function(datExpr,
     allSampleMEs = as.data.frame(matrix(NA, nrow = nSamples, ncol = ncol(mergedMods$newMEs)));
     allSampleMEs[gsg$goodSamples, ] = mergedMods$newMEs[,];
     names(allSampleMEs) = names(mergedMods$newMEs);
+    rownames(allSampleMEs) = originalSampleNames;
   }
 
+  names(colors) = originalGeneNames;
+  names(mergedAllColors) = originalGeneNames;
   list(colors = mergedAllColors, 
        unmergedColors = colors, 
        cutreeLabels = cutreeLabels,
@@ -1367,11 +1388,12 @@ blockwiseIndividualTOMs = function(
    networkType = "unsigned", 
    checkPower = TRUE,
    replaceMissingAdjacencies = FALSE,
-   suppressTOMForZeroAdjacencies = FALSE,
 
    # Topological overlap options
    TOMType = "unsigned",           
    TOMDenom = "min",
+   suppressTOMForZeroAdjacencies = FALSE,
+   suppressNegativeTOM = FALSE,
 
    # Save individual TOMs? If not, they will be returned in the session.
    saveTOMs = TRUE,
@@ -1574,6 +1596,7 @@ blockwiseIndividualTOMs = function(
           as.integer(cosineCorrelation),
           as.integer(replaceMissingAdjacencies),
           as.integer(suppressTOMForZeroAdjacencies),
+          as.integer(suppressNegativeTOM),
           as.integer(useInternalMatrixAlgebra),
           warn, as.integer(nThreads),
           as.integer(callVerb), as.integer(callInd), PACKAGE = "WGCNA");
@@ -1695,6 +1718,7 @@ blockwiseConsensusModules = function(
 
          TOMType = "unsigned",           
          TOMDenom = "min",
+         suppressNegativeTOM = FALSE,
 
          # Save individual TOMs?
 
@@ -1826,13 +1850,9 @@ blockwiseConsensusModules = function(
      printFlush(paste(spaces, "Calculating consensus modules and module eigengenes", 
                       "block-wise from all genes"));
 
-  # prepare scaled and imputed multiExpr.
-  multiExpr.scaled = mtd.apply(multiExpr, scale);
-  hasMissing = unlist(multiData2list(mtd.apply(multiExpr, function(x) { any(is.na(x)) })));
-  # Impute those that have missing data
-  multiExpr.scaled.imputed = mtd.mapply(function(x, doImpute) 
-                         { if (doImpute) t(impute.knn(t(x))$data) else x },
-                                   multiExpr.scaled, hasMissing);
+  originalGeneNames = mtd.colnames(multiExpr);
+  originalSampleNames = mtd.apply(multiExpr, rownames);
+
   branchSplitFnc = NULL;
   minBranchDissimilarities = numeric(0);
   externalSplitFncNeedsDistance = logical(0);
@@ -1902,6 +1922,7 @@ blockwiseConsensusModules = function(
                            replaceMissingAdjacencies= replaceMissingAdjacencies,
                            TOMType = TOMType,
                            TOMDenom = TOMDenom,
+                           suppressNegativeTOM = suppressNegativeTOM,
                            saveTOMs = useDiskCache | nBlocks.0>1,
                            individualTOMFileNames = individualTOMFileNames,
                            nThreads = nThreads,
@@ -1953,6 +1974,14 @@ blockwiseConsensusModules = function(
   gsg$goodSamples = gsg$goodSamples[useIndivTOMSubset];
   if (!gsg$allOK)
     multiExpr = mtd.subset(multiExpr, gsg$goodSamples, gsg$goodGenes);
+
+  # prepare scaled and imputed multiExpr.
+  multiExpr.scaled = mtd.apply(multiExpr, scale);
+  hasMissing = unlist(multiData2list(mtd.apply(multiExpr, function(x) { any(is.na(x)) })));
+  # Impute those that have missing data
+  multiExpr.scaled.imputed = mtd.mapply(function(x, doImpute) 
+                         { if (doImpute) t(impute.knn(t(x))$data) else x },
+                                   multiExpr.scaled, hasMissing);
 
   nGGenes = sum(gsg$goodGenes);
   nGSamples = rep(0, nSets);
@@ -2396,12 +2425,14 @@ blockwiseConsensusModules = function(
     } else {
       if (!MEs[[1]]$allOK) mergedColors[gsg$goodGenes] = MEs[[1]]$validColors;
       allSampleMEs = vector(mode = "list", length = nSets);
+      names(allSampleMEs) = names(multiExpr);
       for (set in 1:nSets)
       {
         allSampleMEs[[set]] =
-           list(data = as.data.frame(matrix(NA, nrow = nGSamples[set], ncol = ncol(MEs[[set]]$data))));
+           list(data = as.data.frame(matrix(NA, nrow = nSamples[set], ncol = ncol(MEs[[set]]$data))));
         allSampleMEs[[set]]$data[gsg$goodSamples[[set]], ] = MEs[[set]]$data[,];
         names(allSampleMEs[[set]]$data) = names(MEs[[set]]$data);
+        rownames(allSampleMEs[[set]]$data) = originalSampleNames[[set]]$data;
       }
     }
   } else {
@@ -2411,10 +2442,11 @@ blockwiseConsensusModules = function(
     for (set in 1:nSets)
     {
       allSampleMEs[[set]] = 
-         list(data = as.data.frame(matrix(NA, nrow = nGSamples[set], 
+         list(data = as.data.frame(matrix(NA, nrow = nSamples[set], 
                                           ncol = ncol(mergedMods$newMEs[[1]]$data))));
       allSampleMEs[[set]]$data[gsg$goodSamples[[set]], ] = mergedMods$newMEs[[set]]$data[,];
       names(allSampleMEs[[set]]$data) = names(mergedMods$newMEs[[set]]$data);
+      rownames(allSampleMEs[[set]]$data) = originalSampleNames[[set]]$data;
     }
   }
 
@@ -2436,6 +2468,7 @@ blockwiseConsensusModules = function(
   consensusTOMInfo$consensusTOM = NULL;
   individualTOMInfo$TOMSimilarities = NULL
 
+  names(mergedColors) = names(colors) = originalGeneNames;
   list(colors = mergedColors, 
        unmergedColors = colors,
        multiMEs = allSampleMEs, 
@@ -2497,6 +2530,9 @@ recutConsensusTrees = function(multiExpr,
   nGenes = dataSize$nGenes;
   nSamples = dataSize$nSamples;
 
+  originalGeneNames = mtd.colnames(multiExpr);
+  originalSampleNames = mtd.apply(multiExpr, rownames);
+
   if (length(blocks)!=nGenes)
     stop("Input error: length of 'blocks' must equal number of genes in 'multiExpr'.");
 
@@ -2504,20 +2540,6 @@ recutConsensusTrees = function(multiExpr,
   #   printFlush(paste(spaces, "Calculating consensus modules and module eigengenes", 
   #                    "block-wise from all genes"));
 
-  # If we're merging branches by correlation within cutreeHybrid, prepare scaled and imputed multiExpr.
-
-  if (useBranchEigennodeDissim)
-  {
-    multiExpr.scaled = mtd.apply(multiExpr, scale);
-    hasMissing = unlist(multiData2list(mtd.apply(multiExpr, function(x) { any(is.na(x)) })));
-    # Impute those that have missing data
-    multiExpr.scaled.imputed = mtd.mapply(function(x, doImpute)
-                           { if (doImpute) t(impute.knn(t(x))$data) else x },
-                                     multiExpr.scaled, hasMissing);
-    branchSplitFnc = "mtd.branchEigengeneDissim";
-  }
-
-    
   intCorType = pmatch(corType, .corTypes);
   if (is.na(intCorType))
     stop(paste("Invalid 'corType'. Recognized values are", paste(.corTypes, collapse = ", ")))
@@ -2913,27 +2935,32 @@ recutConsensusTrees = function(multiExpr,
     } else {
       if (!MEs[[1]]$allOK) mergedColors[gsg$goodGenes] = MEs[[1]]$validColors;
       allSampleMEs = vector(mode = "list", length = nSets);
+      names(allSampleMEs) = names(multiExpr);
       for (set in 1:nSets)
       {
         allSampleMEs[[set]] =
-           list(data = as.data.frame(matrix(NA, nrow = nGSamples[set], ncol = ncol(MEs[[set]]$data))));
+           list(data = as.data.frame(matrix(NA, nrow = nSamples[set], ncol = ncol(MEs[[set]]$data))));
         allSampleMEs[[set]]$data[gsg$goodSamples[[set]], ] = MEs[[set]]$data[,];
         names(allSampleMEs[[set]]$data) = names(MEs[[set]]$data);
+        rownames(allSampleMEs[[set]]$data) = originalSampleNames[[set]]$data;
       }
     }
   } else {
     mergedColors[gsg$goodGenes] = mergedMods$colors;
     allSampleMEs = vector(mode = "list", length = nSets);
+    names(allSampleMEs) = names(multiExpr);
     for (set in 1:nSets)
     {
       allSampleMEs[[set]] = 
-         list(data = as.data.frame(matrix(NA, nrow = nGSamples[set], 
+         list(data = as.data.frame(matrix(NA, nrow = nSamples[set], 
                                           ncol = ncol(mergedMods$newMEs[[1]]$data))));
       allSampleMEs[[set]]$data[gsg$goodSamples[[set]], ] = mergedMods$newMEs[[set]]$data[,];
       names(allSampleMEs[[set]]$data) = names(mergedMods$newMEs[[set]]$data);
+      rownames(allSampleMEs[[set]]$data) = originalSampleNames[[set]]$data;
     }
   }
 
+  names(mergedColors) = names(colors) = originalGeneNames;
   list(colors = mergedColors, 
        unmergedColors = colors,
        multiMEs = allSampleMEs
@@ -2946,13 +2973,11 @@ recutConsensusTrees = function(multiExpr,
       );
 }
 
-
-
-#======================================================================================================
+#===================================================================================================================
 #
-# preliminary partitioning
+# Preliminary clustering via projective k-means
 #
-#======================================================================================================
+#===================================================================================================================
 
 projectiveKMeans = function (
       datExpr,
@@ -3192,65 +3217,103 @@ projectiveKMeans = function (
   }
 
   
+  merged = sizeRestrictedClusterMerge(
+    datExpr, 
+    clusters = membership,
+    clusterSizes = clusterSizes,
+    centers = centers,
+    maxSize = preferredSize,
+    networkType = networkType,
+    verbose = verbose,
+    indent = indent);
 
-  # merge nearby clusters if their sizes allow merging
+  list(clusters = merged$clusters, centers = merged$centers);
+}
+
+
+sizeRestrictedClusterMerge = function(
+    datExpr,
+    clusters,
+    clusterSizes = NULL,
+    centers = NULL,
+    maxSize,
+    networkType = "unsigned",
+    verbose = 0,
+    indent = 0)
+{
+
+  spaces = indentSpaces(indent);
+  intNetworkType = charmatch(networkType, .networkTypes);
+  if (is.null(clusterSizes))
+  {
+    clusterSizes = table(clusters);
+    centers = NULL;
+  }
+
+  nCenters = length(clusterSizes);
+  nSamples = nrow(datExpr);
+
+  if (is.null(centers))
+  {
+    centers = matrix(0, nSamples, nCenters);
+    for (i in 1:nCenters)
+    {
+      if (clusterSizes[i] > 1)
+      {
+         centers[, i] = .alignedFirstPC(datExpr[, clusters==i], verbose = verbose-2,
+                                          indent = indent+2)
+      } else centers[, i] = scale(datExpr[, clusters==i])/(sum(is.finite(datExpr[, i]))-1)
+    }
+  }
+      
   if (verbose > 0) printFlush(paste(spaces, "..merging smaller clusters..."));
-  small = (clusterSizes < preferredSize);
+  small = (clusterSizes < maxSize);  # typically all clusters will be below the max size, but is not a requirement.
+  if (intNetworkType==1)
+  {
+     clustDist = 1-abs(cor(centers[, small]));
+  } else {
+     clustDist = 1-cor(centers[, small]);
+  }
+  diag(clustDist) = 10;
+  
+  # merge nearby clusters if their sizes allow merging
   done = FALSE;
   while (!done & (sum(small)>1))
   {
     smallIndex = c(1:nCenters)[small]
     nSmall = sum(small);
-    if (intNetworkType==1)
-    {
-       clustDist = 1-abs(cor(centers[, small]));
-    } else {
-       clustDist = 1-cor(centers[, small]);
-    }
-
-    diag(clustDist) = 10;
     distOrder = order(as.vector(clustDist))[seq(from=2, to = nSmall * (nSmall-1), by=2)];
     i = 1; canMerge = FALSE;
     while (i <= length(distOrder) && (!canMerge))
     {
-      whichJ = smallIndex[as.integer( (distOrder[i]-1)/nSmall + 1)];    
-      whichI = smallIndex[distOrder[i] - (whichJ-1) * nSmall];    
-      canMerge = sum(clusterSizes[c(whichI, whichJ)]) < preferredSize;
+      jj = as.integer( (distOrder[i]-1)/nSmall + 1);
+      ii = distOrder[i] - (jj-1) * nSmall
+      whichI = smallIndex[ii]
+      whichJ = smallIndex[jj];
+      canMerge = sum(clusterSizes[c(whichI, whichJ)]) <= maxSize;
       i = i + 1;
     }
     if (canMerge)
     {
-      membership[membership==whichJ] = whichI;
+      clusters[clusters==whichJ] = whichI;
       clusterSizes[whichI] = clusterSizes[whichI] + clusterSizes[whichJ];
-      centers[, whichI] = .alignedFirstPC(datExpr[, membership==whichI], verbose = verbose-2, 
+      centers[, whichI] = .alignedFirstPC(datExpr[, clusters==whichI], verbose = verbose-2,
                                           indent = indent+2);
       nCenters = nCenters -1;
-      if (verbose > 3) 
+      if (verbose > 3)
         printFlush(paste(spaces, "  ..merged clusters", whichI, "and", whichJ,
                    "whose combined size is", clusterSizes[whichI]));
-      membership[membership>whichJ] = membership[membership>whichJ] - 1;
-      centers = centers[,-whichJ];
+      clusters[clusters>whichJ] = clusters[clusters>whichJ] - 1;
+      centers = centers[ , -whichJ, drop = FALSE];
       clusterSizes = clusterSizes[-whichJ];
-      small = (clusterSizes < preferredSize);
+      small = clusterSizes < maxSize;
+      clustDist = clustDist[-jj, -jj, drop = FALSE];
+      cr1 = c(cor(centers[, small], centers[, whichI]));
+      clustDist[, ii] = clustDist[ii, ] = if (intNetworkType==1) 1-abs(cr1) else 1-cr1;
+      clustDist[ii, ii] = 10;
     } else done = TRUE;
   }
-
-  if (checkData)
-  {
-    membershipAll = rep(NA, nAllGenes);
-    membershipAll[gsg$goodGenes] = membership;
-  } else
-    membershipAll = membership;
-
-  if (seedSaved) .Random.seed <<- savedSeed;
-
-  if (verbose > 2) 
-  {
-    printFlush("Sorted sizes of final clusters:");
-    print(sort(as.numeric(table(membership))));
-  }
-
-  return( list(clusters = membershipAll, centers = centers) );
+  list(clusters = clusters, centers = centers);
 }
 
 #======================================================================================================

@@ -51,7 +51,7 @@
 */
 
 enum { CorTypePearson = 0, CorTypeBicor = 1, CorTypeSpearman = 2 };
-enum { TomTypeNone = 0, TomTypeUnsigned = 1, TomTypeSigned = 2 };
+enum { TomTypeNone = 0, TomTypeUnsigned = 1, TomTypeSigned = 2, TomTypeSignedNowick = 3 };
 enum { TomDenomMin = 0, TomDenomMean = 1 };
 enum { AdjTypeUnsigned = 0, AdjTypeSigned = 1, AdjTypeHybrid = 2, AdjTypeUnsignedKeepSign = 3 };
 
@@ -64,7 +64,7 @@ const plString 	AdjErrors[] = {"No error. Just a placeholder.",
 
 void tomSimilarityFromAdj(double * adj, int * nGenes,
                    int * tomType, int * denomType,
-                   int * suppressTOMForZeroAdj, 
+                   int * suppressTOMForZeroAdj, int * suppressNegativeTOM,
                    int * useInternalMatrixAlgebra, 
                    double * tom,
                    int * verbose, int * indent);
@@ -213,6 +213,7 @@ size_t checkAvailableMemory()
 void tomSimilarityFromAdj(double * adj, int * nGenes, 
                    int * tomType, int * denomType, 
                    int * suppressTOMForZeroAdj, 
+                   int * suppressNegativeTOM,
                    int * useInternalMatrixAlgebra, 
                    double * tom, 
                    int * verbose, int * indent)
@@ -329,6 +330,43 @@ void tomSimilarityFromAdj(double * adj, int * nGenes,
         }
       }
       break;
+    case TomTypeSignedNowick:  // Differs from the above only in one missing fabs and potential suppression of negative values
+      // Rprintf("Calculating Nowick-type TOM. SuppressNegativeTOM: %d\n", *suppressNegativeTOM);
+      for (size_t j=0; j < ng1; j++)
+      {
+        tom2 = tom + (ng+1)*j + 1;
+        adj2 = adj + (ng+1)*j + 1;
+        for (size_t i=j+1; i< ng; i++)
+        {
+          if ((*suppressTOMForZeroAdj == 0) || (*adj2 > 0))
+          {
+            double den1;
+            if ((* denomType) == TomDenomMin)
+               den1 = fmin(conn[i], conn[j]);
+            else
+               den1 = (conn[i] + conn[j])/2;
+            double den = den1 - fabs(*adj2);
+            if (den==0)
+              *tom2 = 0;
+            else
+              *tom2 = ( *tom2 - *adj2) / den;
+            *(tom + ng*i + j) = *tom2;
+            if (fabs(*tom2) > 1)
+            {
+              Rprintf("TOM greater than 1: actual value: %f, i: %d, j: %d\n", *tom2, i, j);
+              nAbove1++;
+            }
+          } else {
+            *tom2 = 0;
+            *(tom + ng*i + j) = 0;
+            nSuppressed++;
+          }
+          if (*suppressNegativeTOM && (*tom2 < 0)) { *tom2 = 0; *(tom + ng*i + j) = 0; }
+          tom2++;
+          adj2++;
+        }
+      }
+      break;
   }
 
   if (nSuppressed > 0)
@@ -367,6 +405,7 @@ void tomSimilarity(double * expr, double * weights, int * nSamples, int * nGenes
                    int * cosine,
                    int * replaceMissing,
                    int * suppressTOMForZeroAdj,
+                   int * suppressNegativeTOM,
                    int * useInternalMatrixAlgebra, 
                    double * tom, 
                    int * warn,
@@ -418,6 +457,8 @@ void tomSimilarity(double * expr, double * weights, int * nSamples, int * nGenes
 
   if ((* tomType == TomTypeSigned) && (* adjType == AdjTypeUnsigned))
     * adjType = AdjTypeUnsignedKeepSign;
+    
+  if (*tomType == TomTypeSignedNowick) *adjType = AdjTypeUnsignedKeepSign;
 
   if ((* tomType == TomTypeUnsigned) && (* adjType == AdjTypeUnsignedKeepSign))
     * adjType = AdjTypeUnsigned;
@@ -432,7 +473,8 @@ void tomSimilarity(double * expr, double * weights, int * nSamples, int * nGenes
      free(adj);
      error(AdjErrors[err]);
   } else {
-    tomSimilarityFromAdj(adj, nGenes, tomType, denomType, suppressTOMForZeroAdj, useInternalMatrixAlgebra, 
+    tomSimilarityFromAdj(adj, nGenes, tomType, denomType, suppressTOMForZeroAdj, suppressNegativeTOM,
+                         useInternalMatrixAlgebra, 
                          tom, verbose, indent);
     free(adj);
   }
@@ -522,6 +564,7 @@ void mean(double * matrix, int * nRows, int * nColumns, double * mean)
 SEXP tomSimilarityFromAdj_call(SEXP adj_s, 
                         SEXP tomType_s, SEXP denomType_s,
                         SEXP suppressTOMForZeroAdj_s,
+                        SEXP suppressNegativeTOM_s,
                         SEXP useInternalMatrixAlgebra_s,
                         SEXP verbose_s, SEXP indent_s)
 {
@@ -529,7 +572,7 @@ SEXP tomSimilarityFromAdj_call(SEXP adj_s,
   SEXP dim, tom_s;
 
   int *nGenes, *verbose, *indent;
-  int *tomType, *denomType, *suppressTOMForZeroAdj, *useInternalMatrixAlgebra;
+  int *tomType, *denomType, *suppressTOMForZeroAdj, *suppressNegativeTOM, *useInternalMatrixAlgebra;
 
   double *adj, *tom, *maxPOutliers;
   // Rprintf("Step 2\n");
@@ -549,6 +592,7 @@ SEXP tomSimilarityFromAdj_call(SEXP adj_s,
   tomType = INTEGER(tomType_s);
   denomType = INTEGER(denomType_s);
   suppressTOMForZeroAdj = INTEGER(suppressTOMForZeroAdj_s);
+  suppressNegativeTOM = INTEGER(suppressNegativeTOM_s);
   useInternalMatrixAlgebra = INTEGER(useInternalMatrixAlgebra_s);
   verbose = INTEGER(verbose_s);
   indent = INTEGER(indent_s);
@@ -559,7 +603,8 @@ SEXP tomSimilarityFromAdj_call(SEXP adj_s,
 
   // Rprintf("Calling tomSimilarity...\n");
   tomSimilarityFromAdj(adj, nGenes,
-                tomType, denomType, suppressTOMForZeroAdj, useInternalMatrixAlgebra, tom, 
+                tomType, denomType, suppressTOMForZeroAdj, suppressNegativeTOM,
+                useInternalMatrixAlgebra, tom, 
                 verbose, indent);
 
   // Rprintf("Returned from tomSimilarity...\n");
@@ -579,6 +624,7 @@ SEXP tomSimilarity_call(SEXP expr_s,
                         SEXP fallback_s, SEXP cosine_s, 
                         SEXP replaceMissing_s,
                         SEXP suppressTOMForZeroAdj_s,
+                        SEXP suppressNegativeTOM_s,
                         SEXP useInternalMatrixAlgebra_s,
                         SEXP warn_s, // This is an "output" variable
                         SEXP nThreads_s, SEXP verbose_s, SEXP indent_s)
@@ -587,7 +633,8 @@ SEXP tomSimilarity_call(SEXP expr_s,
   SEXP dim, tom_s;
 
   int *nSamples, *nGenes, *fallback, *cosine, *warn, *nThreads, *verbose, *indent;
-  int *corType, *adjType, *tomType, *denomType, *replaceMissing, *suppressTOMForZeroAdj, *useInternalMatrixAlgebra;
+  int *corType, *adjType, *tomType, *denomType, *replaceMissing, *suppressTOMForZeroAdj, *suppressNegativeTOM,
+      *useInternalMatrixAlgebra;
 
   double *expr, *weights, *power, *quick, *tom, *maxPOutliers;
   // Rprintf("Step 2\n");
@@ -609,6 +656,7 @@ SEXP tomSimilarity_call(SEXP expr_s,
   cosine = INTEGER(cosine_s);
   replaceMissing = INTEGER(replaceMissing_s);
   suppressTOMForZeroAdj = INTEGER(suppressTOMForZeroAdj_s);
+  suppressNegativeTOM = INTEGER(suppressNegativeTOM_s);
   useInternalMatrixAlgebra = INTEGER(useInternalMatrixAlgebra_s);
   warn = INTEGER(warn_s);
   nThreads = INTEGER(nThreads_s);
@@ -629,7 +677,8 @@ SEXP tomSimilarity_call(SEXP expr_s,
                 tomType, denomType, 
                 maxPOutliers, quick, fallback, cosine,
                 replaceMissing,
-                suppressTOMForZeroAdj, useInternalMatrixAlgebra,
+                suppressTOMForZeroAdj, suppressNegativeTOM, 
+                useInternalMatrixAlgebra,
                 tom, warn, nThreads, verbose, indent);
 
   // Rprintf("Returned from tomSimilarity...\n");
@@ -652,8 +701,8 @@ void checkAvailableMemoryForR(double * size)
 void R_init_WGCNA(DllInfo * info)
 {
   static const R_CallMethodDef callMethods[]  = {
-    {"tomSimilarity_call", (DL_FUNC) &tomSimilarity_call, 18},
-    {"tomSimilarityFromAdj_call", (DL_FUNC) &tomSimilarityFromAdj_call, 7},
+    {"tomSimilarity_call", (DL_FUNC) &tomSimilarity_call, 19},
+    {"tomSimilarityFromAdj_call", (DL_FUNC) &tomSimilarityFromAdj_call, 8},
     {"cor1Fast_call", (DL_FUNC) &cor1Fast_call, 9},
     {"bicor1_call", (DL_FUNC) &bicor1_call, 11},
     {"bicor2_call", (DL_FUNC) &bicor2_call, 16},

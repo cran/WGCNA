@@ -100,6 +100,10 @@ newConsensusOptions = function(
       consensusQuantile = 0,
       useMean = FALSE,
       setWeights = NULL,
+
+      # Consensus post-processing
+      suppressNegativeResults = FALSE,  # Potentially useful for Nowick-type signed TOM
+
       # Name to prevent clashing of files
       analysisName = "")
 {
@@ -114,6 +118,7 @@ newConsensusOptions = function(
               consensusQuantile = consensusQuantile,
               useMean = useMean,
               setWeights = setWeights,
+              suppressNegativeResults = suppressNegativeResults,
               analysisName = analysisName);
   class(out) = c("ConsensusOptions", class(out))
   out;
@@ -171,9 +176,10 @@ newNetworkOptions = function(
     checkPower = TRUE,
 
     # Topological overlap options
-    TOMType = c("signed", "unsigned", "none"),
+    TOMType = c("signed", "signed Nowick", "unsigned", "none"),
     TOMDenom = c("mean", "min"),
     suppressTOMForZeroAdjacencies = FALSE,
+    suppressNegativeTOM = FALSE,
 
     # Internal behavior options
     useInternalMatrixAlgebra = FALSE)
@@ -192,6 +198,7 @@ newNetworkOptions = function(
            TOMType.code = match(TOMType, .TOMTypes),
            TOMDenom.code = match(TOMDenom, .TOMDenoms),
            suppressTOMForZeroAdjacencies = suppressTOMForZeroAdjacencies,
+           suppressNegativeTOM = suppressNegativeTOM,
            useInternalMatrixAlgebra = useInternalMatrixAlgebra));
   class(out) = c("NetworkOptions", class(correlationOptions));
   out;
@@ -244,6 +251,7 @@ newNetworkOptions = function(
           as.integer(networkOptions$cosineCorrelation),
           as.integer(networkOptions$replaceMissingAdjacencies),
           as.integer(networkOptions$suppressTOMForZeroAdjacencies),
+          as.integer(networkOptions$suppressNegativeTOM),
           as.integer(networkOptions$useInternalMatrixAlgebra),
           warn, as.integer(min(1, networkOptions$nThreads)),
           as.integer(callVerb), as.integer(callInd), PACKAGE = "WGCNA");
@@ -987,6 +995,7 @@ consensusTOM = function(
 
       TOMType = "unsigned",
       TOMDenom = "min",
+      suppressNegativeTOM = FALSE,
 
       # Save individual TOMs?
 
@@ -1088,6 +1097,7 @@ consensusTOM = function(
                          networkType = networkType, 
                          TOMType = TOMType,
                          TOMDenom = TOMDenom,
+                         suppressNegativeTOM = suppressNegativeTOM,
                          saveTOMs = useDiskCache | saveIndividualTOMs,
                          individualTOMFileNames = individualTOMFileNames,
                          nThreads = nThreads,
@@ -1183,7 +1193,7 @@ consensusTOM = function(
     calibratedIndividualTOMFileNames = matrix("", nSets, nBlocks);
     for (set in 1:nSets) for (b in 1:nBlocks)
       calibratedIndividualTOMFileNames[set, b] = .processFileName(calibratedIndividualTOMFilePattern, 
-                                 setNumber = set, blockNumber = b);
+                                 setNumber = set, setNames = setNames, blockNumber = b);
 
   }
   gc();

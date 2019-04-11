@@ -97,6 +97,7 @@ moduleEigengenes = function(expr, colors, impute = TRUE, nPC = 1, align = "along
   validColors = colors;
   names(PrinComps)=paste(moduleColor.getMEprefix(), modlevels, sep="")
   names(averExpr)=paste("AE",modlevels,sep="")
+  rownames(PrinComps) = rownames(averExpr) = rownames(expr);
   for(i in c(1:length(modlevels)) )
   {
     if (verbose>1) 
@@ -225,9 +226,9 @@ moduleEigengenes = function(expr, colors, impute = TRUE, nPC = 1, align = "along
   allOK = (sum(!validMEs)==0)
   if (returnValidOnly && sum(!validMEs)>0) 
   {
-    PrinComps = PrinComps[, validMEs]
-    averExpr = averExpr[, validMEs];
-    varExpl = varExpl[, validMEs];
+    PrinComps = PrinComps[, validMEs, drop = FALSE]
+    averExpr = averExpr[, validMEs, drop = FALSE];
+    varExpl = varExpl[, validMEs, drop = FALSE];
     validMEs = rep(TRUE, times = ncol(PrinComps));
     isPC = isPC[validMEs];
     isHub = isHub[validMEs];
@@ -1015,9 +1016,9 @@ multiSetMEs = function(exprData, colors, universalColors = NULL, useSets = NULL,
     if (returnValidOnly)
     {
       valid = (MEs[[set]]$validMEs > 0);
-      MEs[[set]]$data = MEs[[set]]$data[, valid];
-      MEs[[set]]$averageExpr = MEs[[set]]$averageExpr[, valid];
-      MEs[[set]]$varExplained = MEs[[set]]$varExplained[, valid];
+      MEs[[set]]$data = MEs[[set]]$data[, valid, drop = FALSE];
+      MEs[[set]]$averageExpr = MEs[[set]]$averageExpr[, valid, drop = FALSE];
+      MEs[[set]]$varExplained = MEs[[set]]$varExplained[, valid, drop = FALSE];
       MEs[[set]]$isPC =  MEs[[set]]$isPC[valid];
       MEs[[set]]$allPC = (sum(!MEs[[set]]$isPC)==0)
       MEs[[set]]$isHub =  MEs[[set]]$isHub[valid];
@@ -5216,7 +5217,8 @@ labeledHeatmap = function (
     ext.x = -sign * ext * 1/tan(angle)/ratio;
     ext.y = sign * ext * sign(sin(angle))
 
-    offset = (sum(xValidColors)>0) * xColW + offsetx + textOffsetY;
+    #offset = (sum(xValidColors)>0) * xColW + offsetx + textOffsetY;
+    offset = offsetx + textOffsetY;
 
     for (cc in 1:nShowCols)
        polygon(x = c(xLeft[cc], xLeft[cc], xLeft[cc] + ext.x, xRight[cc] + ext.x, xRight[cc], xRight[cc]),
@@ -5383,7 +5385,8 @@ labeledHeatmap = function (
     ratio = figureDims[1]/figureDims[2] * figYrange/figXrange;
     ext.x = -sign * ext * 1/tan(angle)/ratio;
     ext.y = sign * ext * sign(sin(angle))
-    offset = (sum(xValidColors)>0) * xColW + offsetx + textOffsetY;
+    #offset = (sum(xValidColors)>0) * xColW + offsetx + textOffsetY;
+    offset = offsetx + textOffsetY;
     for (l in 1:nLines.show)
          lines(c(x.lines[l], x.lines[l], x.lines[l] + vs.ext[l] * ext.x[l]), 
                c(y0, y0-sign*offset[l], y0-sign*offset[l] - vs.ext[l] * ext.y[l]),  
@@ -7444,6 +7447,7 @@ qvalue.restricted = function(p, trapErrors = TRUE, ...)
   matrices = matrices[keep];
 
   nMats = length(matrices)
+  matrices = lapply(matrices, function(x) if (length(dim(x)) < 2) as.matrix(x) else x);
   nCols = ncol(matrices[[1]]);
 
   dims = lapply(matrices, dim);
@@ -7461,7 +7465,9 @@ qvalue.restricted = function(p, trapErrors = TRUE, ...)
                                           function(x, i) x[, i, drop = FALSE], index)),
                              matrices));
 
-  rownames(out) = rownames(matrices[[1]]);
+  #xx = try({rownames(out) = rownames(matrices[[1]])})
+  #if (inherits(xx, "try-error")) browser()
+  if (!is.null(rownames(matrices[[1]]))) rownames(out) = make.unique(rownames(matrices[[1]]));
   out;
 }
 
@@ -7745,6 +7751,8 @@ hierarchicalConsensusKME = function(
    getAverageKME = FALSE,
    getConsensusKME = TRUE,
    
+   getMetaColsFor1Set = FALSE,
+
    getMetaP = FALSE,
    getMetaFDR = getMetaP && getFDR,
    
@@ -7764,6 +7772,10 @@ hierarchicalConsensusKME = function(
   nSets = size$nSets;
   nGenes = size$nGenes;
   nSamples = size$nSamples;
+
+  nSets.effective = length(consensusTreeInputs(consensusTree));
+
+  getMetaCols = nSets.effective > 1 || getMetaColsFor1Set;
 
   .checkAndScaleMultiWeights(multiWeights, multiExpr, scaleByMax = FALSE);
 
@@ -7918,7 +7930,7 @@ hierarchicalConsensusKME = function(
 
   # Call rankPvalue
 
-  if (useRankPvalue)
+  if (useRankPvalue && getMetaCols)
   {
     for (mod in 1:nModules) for (m in 1:nWeights)
     {
@@ -7943,7 +7955,7 @@ hierarchicalConsensusKME = function(
       } else 
         rp = cbind(rp, rp1);
     }
-  }
+  } else rp = NULL;
 
   # Format the output... this will entail some rearranging of the individual set results.
   if (is.null(setNames))
@@ -7980,7 +7992,16 @@ hierarchicalConsensusKME = function(
   {
     if (!is.null(dim(arr)))
     {
-      split = lapply(1:dim(arr)[3], function(i) arr[, , i]);
+      split = lapply(1:dim(arr)[3], function(i) 
+      { 
+        out = arr[, , i]; 
+        if (is.null(dim(out)))
+        {
+          dim(out) = dim(arr)[1:2]; 
+          dimnames(out) = dimnames(arr)[1:2];
+        }
+        out
+      } );
       .interleave(split, nameBase = setNames, baseFirst = FALSE)
     } else NULL;
   })
@@ -7998,7 +8019,7 @@ hierarchicalConsensusKME = function(
   if (getOwnModuleZ)
     out = cbind(out, Z.kME.inOwnModule= Z.kME.meta[index]);
 
-  if (getBestModuleZ)
+  if (getBestModuleZ && getMetaCols)
   {
      maxData = minWhichMin(-Z.kME.meta, byRow = TRUE)
      maxMMmodule = modLevels[maxData$which];
@@ -8016,40 +8037,48 @@ hierarchicalConsensusKME = function(
 
   if (!includeID) out = out[, -1, drop = FALSE];
 
-  combinedMeta.0 = rbind(
-             if (getConsensusKME) kME.consensus else NULL,
-             if (getAverageKME) kME.weightedAverage else NULL,
-             Z.kME.meta,
-             if (getMetaP) p.kME.meta else NULL,
-             if (getMetaFDR) q.kME.meta else NULL);
+  if (getMetaCols)
+  {
+     combinedMeta.0 = rbind(
+                if (getConsensusKME) kME.consensus else NULL,
+                if (getAverageKME) kME.weightedAverage else NULL,
+                Z.kME.meta,
+                if (getMetaP) p.kME.meta else NULL,
+                if (getMetaFDR) q.kME.meta else NULL);
 
 
-  combinedMeta = matrix(combinedMeta.0, nGenes, 
-                            (getConsensusKME + getAverageKME * nWeights + 
-                             (haveZs* (1 + getMetaP + getMetaFDR)*nWeights)) * nModules);
+     combinedMeta = matrix(combinedMeta.0, nGenes, 
+                               (getConsensusKME + getAverageKME * nWeights + 
+                                (haveZs* (1 + getMetaP + getMetaFDR)*nWeights)) * nModules);
 
-  metaNames = c("consensus.kME", 
-                spaste("weightedAverage.", 
-                        if (includeWeightTypeInColnames) spaste(weightNames, ".") else "", "kME"), 
-                spaste("meta.Z.", 
-                        if (includeWeightTypeInColnames) spaste(weightNames, ".") else "", "kME"), 
-                spaste("meta.p.", 
-                        if (includeWeightTypeInColnames) spaste(weightNames, ".") else "", "kME"), 
-                spaste("meta.FDR.", 
-                        if (includeWeightTypeInColnames) spaste(weightNames, ".") else "", "kME")
-                )[ c(getConsensusKME, rep(getAverageKME, nWeights), 
-                     rep(haveZs, nWeights), 
-                     rep(haveZs && getMetaP, nWeights), 
-                     rep(haveZs && getMetaFDR, nWeights))];
+     metaNames = c("consensus.kME", 
+                   spaste("weightedAverage.", 
+                           if (includeWeightTypeInColnames) spaste(weightNames, ".") else "", "kME"), 
+                   spaste("meta.Z.", 
+                           if (includeWeightTypeInColnames) spaste(weightNames, ".") else "", "kME"), 
+                   spaste("meta.p.", 
+                           if (includeWeightTypeInColnames) spaste(weightNames, ".") else "", "kME"), 
+                   spaste("meta.FDR.", 
+                           if (includeWeightTypeInColnames) spaste(weightNames, ".") else "", "kME")
+                   )[ c(getConsensusKME, rep(getAverageKME, nWeights), 
+                        rep(haveZs, nWeights), 
+                        rep(haveZs && getMetaP, nWeights), 
+                        rep(haveZs && getMetaFDR, nWeights))];
 
-  nMetaVars = length(metaNames);
-  colnames(combinedMeta) = spaste (rep(metaNames, nModules), 
-                                   rep(modLevels, rep(nMetaVars, nModules)));
+     nMetaVars = length(metaNames);
+     colnames(combinedMeta) = spaste (rep(metaNames, nModules), 
+                                      rep(modLevels, rep(nMetaVars, nModules)));
+  } else combinedMeta = NULL;
 
-  if (useRankPvalue) {
-     out = data.frame(out, combinedMeta, rp, recast);
-  } else 
-     out = data.frame(out, combinedMeta, recast);
+  if (getMetaCols)
+  {
+    if (useRankPvalue) {
+       out = data.frame(out, combinedMeta, rp, recast);
+    } else 
+       out = data.frame(out, combinedMeta, recast);
+  } else
+    out = data.frame(out, recast);
+
   out
 }
 
@@ -8339,6 +8368,7 @@ formatLabels = function(labels,
         maxWidth = NULL, 
         maxLines = Inf,
         cex = 1,
+        font = 1,
         split = " ", fixed = TRUE, newsplit = split,
         keepSplitAtEOL = TRUE, capitalMultiplier = 1.4,
         eol = "\n", ellipsis = "...")
@@ -8351,7 +8381,7 @@ formatLabels = function(labels,
   n3 = length(labels3);
   splitX = strsplit(labels3, split = split, fixed = fixed);
   newLabels= rep("", n3);
-  width.newsplit = if (is.null(maxWidth)) .effectiveNChar(newsplit) else strwidth(newsplit, cex = cex);
+  width.newsplit = if (is.null(maxWidth)) .effectiveNChar(newsplit) else strwidth(newsplit, cex = cex, font = font);
   for (l in 1:n3)
   {
     nl = "";
@@ -8475,23 +8505,26 @@ multiSub = function(patterns, replacements, x, ...)
   x;
 }
 
-
-multiGrep = function(patterns, x, ..., sort = TRUE, invert = FALSE)
+multiGrep = function(patterns, x, ..., sort = TRUE, value = FALSE, invert = FALSE)
 {
   if (invert)
   {
-    out = multiIntersect(lapply(patterns, grep, x, ..., invert = TRUE))
+    out = multiIntersect(lapply(patterns, grep, x, ..., value = FALSE, invert = TRUE))
   } else
-    out = unique(unlist(lapply(patterns, grep, x, ..., invert = FALSE)));
+    out = unique(unlist(lapply(patterns, grep, x, ..., value = FALSE, invert = FALSE)));
   if (sort) out = sort(out);
+  if (value) out = x[out];
   out;
 }
 
 multiGrepl = function(patterns, x, ...)
 {
-  mat = do.call(cbind, lapply(patterns, function(p) as.numeric(grepl(p, x, ...))));
+  if (length(patterns)==0) return(rep(FALSE, length(x)))
+  if (length(x)==0) return(logical(0));
+  mat = as.matrix(do.call(cbind, lapply(patterns, function(p) as.numeric(grepl(p, x, ...)))));
   rowSums(mat)>0;
 }
+
 
 #========================================================================================================
 #

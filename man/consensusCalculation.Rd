@@ -19,7 +19,7 @@ consensusCalculation(
   calibratedIndividualDataFilePattern = "calibratedIndividualData-\%a-Set\%s-Block\%b.RData",
 
   # Return options: the data can be either saved or returned but not both.
-  saveConsensusData = TRUE,
+  saveConsensusData = NULL,
   consensusDataFileNames = "consensusData-\%a-Block\%b.RData",
   getCalibrationSamples= FALSE,
 
@@ -62,6 +62,7 @@ Pattern from which file names for saving calibrated individual data are determin
 respectively.}
   \item{saveConsensusData}{
 Logical: should final consensus be saved (\code{TRUE}) or returned in the return value (\code{FALSE})?
+If \code{NULL}, data will be saved only if input data were blockwise data saved on disk rather than held in memory
 }
   \item{consensusDataFileNames}{
 Pattern from which file names for saving the final consensus are determined. The conversions

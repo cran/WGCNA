@@ -6,35 +6,35 @@
 
   if (inherits(ourVer, "try-error")) ourVer = "";
 
-  printFlush("==========================================================================\n*");
-  printFlush(paste("*  Package WGCNA", ourVer, "loaded.\n*"))
-
-  if (.useNThreads()==1 && .nProcessorsOnline() > 1)
-  {
-   printFlush(spaste(
-         "*    Important note: It appears that your system supports multi-threading,\n",
-         "*    but it is not enabled within WGCNA in R. \n",
-         "*    To allow multi-threading within WGCNA with all available cores, use \n",
-         "*\n",
-         "*          allowWGCNAThreads()\n",
-         "*\n",
-         "*    within R. Use disableWGCNAThreads() to disable threading if necessary.\n",
-         "*    Alternatively, set the following environment variable on your system:\n", 
-         "*\n",
-         "*          ", .threadAllowVar, "=<number_of_processors>\n",
-         "*\n",
-         "*    for example \n",
-         "*\n",
-         "*          ", .threadAllowVar, "=", .nProcessorsOnline(), "\n",
-         "*\n",
-         "*    To set the environment variable in linux bash shell, type \n",
-         "*\n",
-         "*           export ", .threadAllowVar, "=", .nProcessorsOnline(), 
-         "\n*",
-         "\n*     before running R. Other operating systems or shells will", 
-         "\n*     have a similar command to achieve the same aim.\n*"));
-  }
-  printFlush("==========================================================================\n\n");
+#  printFlush("==========================================================================\n*");
+#  printFlush(paste("*  Package WGCNA", ourVer, "loaded.\n*"))
+#
+#  if (.useNThreads()==1 && .nProcessorsOnline() > 1)
+#  {
+#   printFlush(spaste(
+#         "*    Important note: It appears that your system supports multi-threading,\n",
+#         "*    but it is not enabled within WGCNA in R. \n",
+#         "*    To allow multi-threading within WGCNA with all available cores, use \n",
+#         "*\n",
+#         "*          allowWGCNAThreads()\n",
+#         "*\n",
+#         "*    within R. Use disableWGCNAThreads() to disable threading if necessary.\n",
+#         "*    Alternatively, set the following environment variable on your system:\n", 
+#         "*\n",
+#         "*          ", .threadAllowVar, "=<number_of_processors>\n",
+#         "*\n",
+#         "*    for example \n",
+#         "*\n",
+#         "*          ", .threadAllowVar, "=", .nProcessorsOnline(), "\n",
+#         "*\n",
+#         "*    To set the environment variable in linux bash shell, type \n",
+#         "*\n",
+#         "*           export ", .threadAllowVar, "=", .nProcessorsOnline(), 
+#         "\n*",
+#         "\n*     before running R. Other operating systems or shells will", 
+#         "\n*     have a similar command to achieve the same aim.\n*"));
+#  }
+#  printFlush("==========================================================================\n\n");
 
 
   imputeVer = try( gsub("[^0-9_.-]", "", packageVersion("impute"), fixed = FALSE) );

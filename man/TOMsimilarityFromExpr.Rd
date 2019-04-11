@@ -19,6 +19,7 @@ TOMsimilarityFromExpr(
   cosineCorrelation = FALSE, 
   replaceMissingAdjacencies = FALSE,
   suppressTOMForZeroAdjacencies = FALSE,
+  suppressNegativeTOM = FALSE,
   useInternalMatrixAlgebra = FALSE,
   nThreads = 0,
   verbose = 1, indent = 0)
@@ -39,7 +40,6 @@ midcorrelation, respectively. Missing values are handled using the \code{pairwis
 \code{"signed"}, \code{"signed hybrid"}. See \code{\link{adjacency}}. }
 
   \item{power}{ soft-thresholding power for netwoek construction. }
-
 
   \item{TOMType}{ one of \code{"none"}, \code{"unsigned"}, \code{"signed"}. If \code{"none"}, adjacency
 will be used for clustering. If \code{"unsigned"}, the standard TOM will be used (more generally, TOM
@@ -83,7 +83,9 @@ cosine calculation differs from the standard one in that it does not subtract th
   \item{replaceMissingAdjacencies}{logical: should missing values in the calculation of adjacency be
 replaced by 0?}
 
-  \item{suppressTOMForZeroAdjacencies}{Logical: should TOM be set to zero for zero adjacencies?}
+  \item{suppressTOMForZeroAdjacencies}{Logical: should the result be set to zero for zero adjacencies?}
+
+  \item{suppressNegativeTOM}{Logical: should the result be set to zero when negative?}
 
   \item{useInternalMatrixAlgebra}{Logical: should WGCNA's own, slow, matrix multiplication be used instead of
 R-wide BLAS? Only useful for debugging.}
@@ -100,6 +102,13 @@ progressively more and more verbose. }
   \item{indent}{ indentation for diagnostic messages. Zero means no indentation, each unit adds
 two spaces. }
 }
+\details{
+For \code{"unsigned"} and \code{"signed"} the resulting TOM entries, as
+well as the corresponding dissimilarities, lie between 0 and 1. The \code{"signed Nowick"} version retains the signs of
+the input adjacency matrix throughout the calculation and will typically return negative values for nodes with (sufficiently
+strongly) negative adjacencies.
+}
+
 \value{
   A matrix holding the topological overlap.
 }

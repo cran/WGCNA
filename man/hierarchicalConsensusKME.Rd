@@ -31,6 +31,7 @@ hierarchicalConsensusKME(
    getAverageKME = FALSE,
    getConsensusKME = TRUE,
 
+   getMetaColsFor1Set = FALSE,
    getMetaP = FALSE,
    getMetaFDR = getMetaP && getFDR,
 
@@ -136,6 +137,10 @@ Logical: Should average KME be calculated?
 }
   \item{getConsensusKME}{
 Logical: should consensus KME be calculated?
+}
+  \item{getMetaColsFor1Set}{
+Logical: should the meta-statistics be returned if the input data only have 1 set? For 1 set, meta- and individual kME
+values are the same, so meta-columns essentially duplicate individual columns.
 }
   \item{getMetaP}{
 Logical: should meta-analysis p-values corresponding to the KME meta-analysis Z statistics be calculated?

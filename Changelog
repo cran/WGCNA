@@ -1,6 +1,65 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
 
+	. moduleEigengenes and derived functions (multiSetMEs) now copy
+	  row names of the input data as row names of the output matrices.
+
+	. blockwiseModules, blockwiseConsensusModules, their 'recut' versions
+	  and blockwiseHierarchicalModules now copy the column names of input
+	  data into names of output module labels and colors. Row names of
+	  input data are copied into row names of the corresponding module
+	  eigengene matrices.
+
+	. Startup message regarding setting up multi-threading is now
+	  disabled.
+
+2019/04/09: 1.66-92
+
+	. bugfix in labeledHeatmap makes vertical separator lines better
+	  aligned with standard position of labels.
+
+	. exportNetworkToCytoscape does not check column names in nodeAttr for
+	  being valid language names. 
+
+2019/02/25: 1.66-90
+
+	. Bugfix in consensusTOM: saving calibrated TOMs should work now.
+
+	. Function formatLabels now accepts optional argument font.
+
+	. Function hierarchicalConsensusKME now accepts argument
+	  getMetaColsFor1Set that controls whether meta-statistics are
+	  returned when the consensus only has 1 input set.
+
+	. One more bugfix in internal code (.interleave) 
+
+	. Bugfix in internal code (.interleave) fixes crashes in
+	  hierarchicalConsensusKME 
+
+	. Bugfix in multiGrep fixes sorting order when returning values rather
+	  than indices.
+
+	. Functions consensusKME and hierachicalConsensusKME now don't throw
+	  an error on duplicate column names in input data.
+
+	. Changed default for argument saveConsensusData from TRUE to NULL
+	  (automatically determined from input data) in function
+	  consensusCalculation
+
+	. Signed TOM described by Nowick et al (PNAS, 2009) is implemented and
+	  can be accessed using TOMType = "signed Nowick" for all TOM
+	  calculation and module identification functions that take argument
+	  TOMType. Argument suppressNegativeTOM can be used to automatically
+	  set all negative TOM values to zero.
+
+	. New argument suppressNegativeResults for newConsensusOptions.
+
+	. New function sizeRestrictedClusterMerge for merging clusters such
+	  that the resulting clusters do not exceed a specified size.
+
+	. hierarchicalConsensusKME is now more robust and works with a single
+	  module as well.
+
 2018/10/22: 1.66
 
 	. Function consensusDissTOMandTree is now a it faster because of more

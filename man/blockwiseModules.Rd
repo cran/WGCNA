@@ -42,12 +42,13 @@ blockwiseModules(
   power = 6,
   networkType = "unsigned",
   replaceMissingAdjacencies = FALSE,
-  suppressTOMForZeroAdjacencies = FALSE,
 
   # Topological overlap options
 
   TOMType = "signed",
   TOMDenom = "min",
+  suppressTOMForZeroAdjacencies = FALSE,
+  suppressNegativeTOM = FALSE,
 
   # Saving or returning TOM
 
@@ -174,8 +175,6 @@ cosine calculation differs from the standard one in that it does not subtract th
   \item{replaceMissingAdjacencies}{logical: should missing values in the calculation of adjacency be replaced
 by 0?}
 
-  \item{suppressTOMForZeroAdjacencies}{Logical: should TOM be set to zero for zero adjacencies?}
-
   \item{TOMType}{ one of \code{"none"}, \code{"unsigned"}, \code{"signed"}. If \code{"none"}, adjacency
 will be used for clustering. If \code{"unsigned"}, the standard TOM will be used (more generally, TOM
 function will receive the adjacency as input). If \code{"signed"}, TOM will keep track of the sign of
@@ -189,6 +188,11 @@ better results but at this time should be considered experimental.}
 %variant
 %is preferrable and we recommend using it unless the user needs to reproduce older results obtained using
 %the standard, minimum denominator TOM. }
+
+  \item{suppressTOMForZeroAdjacencies}{Logical: should TOM be set to zero for zero adjacencies?}
+
+  \item{suppressNegativeTOM}{Logical: should the result be set to zero when negative? Negative TOM values can occur when
+\code{TOMType} is \code{"signed Nowick"}.}
 
   \item{getTOMs}{ deprecated, please use saveTOMs below. }
 

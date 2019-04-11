@@ -104,6 +104,9 @@ hierarchicalConsensusModules = function(
   nGenes = dataSize$nGenes;
   # nSamples = dataSize$nSamples;
 
+  originalGeneNames = mtd.colnames(multiExpr);
+  originalSampleNames = mtd.apply(multiExpr, rownames);
+
   haveWeights = !is.null(multiWeights);
   .checkAndScaleMultiWeights(multiWeights, multiExpr, scaleByMax = FALSE);
 
@@ -403,6 +406,7 @@ hierarchicalConsensusModules = function(
       out;
     });
     allSampleMEs = mtd.subset(MEs, index);
+    for (set in 1:nSets) rownames(allSampleMEs[[set]]$data) = originalSampleNames[[set]]$data;
   }
 
   if (removeConsensusTOMOnExit) 
@@ -411,6 +415,7 @@ hierarchicalConsensusModules = function(
     consensusTOMInfo$consensusData = NULL;
   }
 
+  names(mergedLabels) = names(allLabels) = originalGeneNames;
   list(labels = mergedLabels,
        unmergedLabels = allLabels,
        colors = labels2colors(mergedLabels),

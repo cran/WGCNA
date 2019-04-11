@@ -15,6 +15,7 @@ formatLabels(
    maxWidth = NULL,
    maxLines = Inf,
    cex = 1,
+   font = 1,
    split = " ", 
    fixed = TRUE, 
    newsplit = split,
@@ -39,6 +40,8 @@ usually gives a much more efficient formatting.}
 
   \item{cex}{Character expansion factor that the user intends to use when adding \code{labels} to the current
 figure. Only used when \code{maxWidth} is specified.}
+
+  \item{font}{Integer specifying the font. See \code{\link{par}} for details. }
 
   \item{split}{
 Pattern to be replaced by newline ('\\n') characters.

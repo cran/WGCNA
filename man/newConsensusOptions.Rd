@@ -22,7 +22,8 @@ newConsensusOptions(
       consensusQuantile = 0,
       useMean = FALSE,
       setWeights = NULL,
-      # Name to prevent clashing of files
+      suppressNegativeResults = FALSE,
+      # Name to prevent files clashes
       analysisName = "")
 }
 %- maybe also 'usage' for other objects documented here.
@@ -52,6 +53,9 @@ Logical: should the consensus be calculated using (weighted) mean rather than a 
   \item{setWeights}{
 Optional specification of weights when \code{useMean} is \code{TRUE}.
 }
+  \item{suppressNegativeResults}{Logical: should negative consensus results be replaced by 0? In a typical network
+connstruction, negative topological overlap values may results with \code{TOMType = "signed Nowick"}.}
+
   \item{analysisName}{
 Optional character string naming the consensus analysis. Useful for identifying partial consensus calculation
 in hierarchical consensus analysis.

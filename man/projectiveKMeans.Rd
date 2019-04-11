@@ -75,9 +75,10 @@ principal component is approximated by a weighted average of expression profiles
 }
 \value{
   A list with the following components:
-  \item{clusters}{ a numerical vector with one component per input gene, giving the cluster number in
+  \item{clusters}{A numerical vector with one component per input gene, giving the cluster number in
 which the gene is assigned. }
-  \item{centers}{ cluster centers, that is their first principal components. }
+  \item{centers}{Cluster centers, that is their first principal components. }
 }
 \author{ Peter Langfelder }
+\seealso{ \code{\link{sizeRestrictedClusterMerge}} which implements the last step of merging smaller clusters.}
 \keyword{ cluster }

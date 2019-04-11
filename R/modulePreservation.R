@@ -337,7 +337,7 @@ modulePreservation = function(
    permGoldName = 0.1;
    permGreyName = 0;
 
-   collectGarbage();
+   gc();
 
    if (verbose > 0) printFlush(paste(spaces, " ..calculating observed preservation values"))
    observed = .modulePreservationInternal(multiData, multiColor, dataIsExpr = dataIsExpr,
@@ -563,7 +563,7 @@ modulePreservation = function(
                                 .multicombine = TRUE, .maxcombine = nPermutations+10)%dopar% 
                {
                       set.seed(seed + perm + perm^2); 
-                      collectGarbage();
+                      gc();
                       .modulePreservationInternal(permExpr, permColors, dataIsExpr = dataIsExpr,
                                                   calculatePermutation = TRUE,
                                                   multiColorForAccuracy = permColorsForAcc,
@@ -627,7 +627,7 @@ modulePreservation = function(
                                                                   datout[[1]]$intra[[2]], 
                                                                   datout[[1]]$inter[[2]]));
                permOut[[iref]][[tnet]]$fixStats[, , perm] = as.matrix(datout[[1]]$accuracy[[2]]);
-               collectGarbage();
+               gc();
             }
             regStatNames = c(colnames(datout[[1]]$quality[[2]])[-1], colnames(datout[[1]]$intra[[2]]), 
                              colnames(datout[[1]]$inter[[2]]));
@@ -652,7 +652,7 @@ modulePreservation = function(
               fixModuleNames, permutationsPresent, interpolationUsed, permOut, file=permutedStatisticsFile)
    }  # if (!psLoaded)
 
-   collectGarbage();
+   gc();
 
    if (any(interpolationUsed, na.rm = TRUE))
    {
@@ -1226,7 +1226,7 @@ modulePreservation = function(
    MEgrey = paste("ME", greyName, sep="");
    MEgold = paste("ME", goldName, sep="");
      
-   collectGarbage();
+   gc();
 
    for (s in 1:nNets)
    {
@@ -1444,7 +1444,7 @@ modulePreservation = function(
              rownames(datRef) = make.unique(rownames(datRef));
              rownames(datRefP) = make.unique(rownames(datRefP));
              rownames(datTest) = make.unique(rownames(datTest));
-             collectGarbage();
+             gc();
           }
           colnames(datRef) = make.unique(colnames(datRef));
           colnames(datRefP) = make.unique(colnames(datRefP));

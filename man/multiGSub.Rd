@@ -12,7 +12,7 @@ These functions provide convenient pattern finding and substitution for multiple
 \usage{
 multiGSub(patterns, replacements, x, ...)
 multiSub(patterns, replacements, x, ...)
-multiGrep(patterns, x, ..., sort = TRUE, invert = FALSE)
+multiGrep(patterns, x, ..., sort = TRUE, value = FALSE, invert = FALSE)
 multiGrepl(patterns, x, ...)
 }
 \arguments{
@@ -26,8 +26,12 @@ A character vector of replacements; must be of the same length as \code{patterns
 Character vector of strings in which the pattern finding and replacements should be carried out.
 }
   \item{sort}{Logical: should the output indices be sorted in increasing order?}
+
+  \item{value}{Logical: should value rather than the index of the value be returned?}
+
   \item{invert}{Logical: should the search be inverted and only indices of elements of \code{x} matching none
 of the patterns be returned?}
+
   \item{\dots}{
 Other arguments to \code{\link{sub}} or \code{\link{grep}}
 }
@@ -42,7 +46,8 @@ patterns replaces by their replacements in each element of \code{x}. \code{multi
 each element of \code{x} only once, \code{multiGSub} as many times as the pattern is found.
 
 \code{multiGrep} returns the indices of those elements in \code{x} in which at least one of \code{patterns}
-was found, or, if \code{invert} is TRUE, the indices of elements in which none of the patterns were found. 
+was found, or, if \code{invert} is TRUE, the indices of elements in which none of the patterns were found. If \code{value}
+is TRUE, values rather than indices are returned.
 
 \code{multiGrepl} returns a logical vector of the same length as \code{x}, with \code{TRUE} is any of the
 patterns matched the element of \code{x}, and \code{FALSE} otherwise. 

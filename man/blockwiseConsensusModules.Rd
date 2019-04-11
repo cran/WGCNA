@@ -44,6 +44,7 @@ blockwiseConsensusModules(
 
      TOMType = "unsigned",
      TOMDenom = "min",
+     suppressNegativeTOM = FALSE,
 
      # Save individual TOMs?
 
@@ -225,6 +226,10 @@ better results but at this time should be considered experimental.}
 %variant
 %is preferrable and we recommend using it unless the user needs to reproduce older results obtained using
 %the standard, minimum denominator TOM. }
+
+  \item{suppressNegativeTOM}{Logical: should the result be set to zero when negative? Negative TOM values can occur when
+\code{TOMType} is \code{"signed Nowick"}.}
+
 
 %%%%%%%%%%%%%%%
 

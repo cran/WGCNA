@@ -19,9 +19,10 @@ newNetworkOptions(
     checkPower = TRUE,
 
     # Topological overlap options
-    TOMType = c("signed", "unsigned", "none"),
+    TOMType = c("signed", "signed Nowick", "unsigned", "none"),
     TOMDenom = c("mean", "min"),
     suppressTOMForZeroAdjacencies = FALSE,
+    suppressNegativeTOM = FALSE,
 
     # Internal behavior options
     useInternalMatrixAlgebra = FALSE)
@@ -41,7 +42,7 @@ A list of correlation options. See \code{\link{newCorrelationOptions}}.
 }
   \item{checkPower}{Logicel: should the power be checked for sanity? 
 }
-  \item{TOMType}{One of \code{"none"}, \code{"unsigned"}, \code{"signed"}. If \code{"none"}, adjacency
+  \item{TOMType}{One of \code{"signed"}, \code{"signed Nowick"}, \code{"unsigned"}, \code{"none"}. If \code{"none"}, adjacency
 will be used for clustering. If \code{"unsigned"}, the standard TOM will be used (more generally, TOM
 function will receive the adjacency as input). If \code{"signed"}, TOM will keep track of the sign of
 correlations between neighbors. 
@@ -53,6 +54,10 @@ better results but at this time should be considered experimental.
 }
   \item{suppressTOMForZeroAdjacencies}{logical: for those components that have zero adjacency, should TOM be
 set to zero as well?}
+
+ \item{suppressNegativeTOM}{Logical: should the result be set to zero when negative? Negative TOM values can occur when
+\code{TOMType} is \code{"signed Nowick"}.}
+
 
   \item{useInternalMatrixAlgebra}{logical: should internal implementation of matrix multiplication be used
 instead of R-provided BLAS? The internal implementation is slow and this option should only be used if one

@@ -3,14 +3,14 @@ consensusCalculation = function(
       individualData,  
 
       consensusOptions,
-      
       useBlocks = NULL,
       randomSeed = NULL,
       saveCalibratedIndividualData = FALSE,
       calibratedIndividualDataFilePattern = "calibratedIndividualData-%a-Set%s-Block%b.RData",
 
       # Return options: the data can be either saved or returned but not both.
-      saveConsensusData = TRUE,
+      # if NULL, data will be saved only if input data were blockwise data saved on disk rather than held in memory
+      saveConsensusData = NULL,
       consensusDataFileNames = "consensusData-%a-Block%b.RData",
       getCalibrationSamples= FALSE,
 
@@ -37,14 +37,17 @@ consensusCalculation = function(
   {
     blockDimnames = .mtd.checkDimConsistencyAndGetDimnames(individualData);
     blockLengths = length(individualData[[1]]$data);
-    blockAttributes = attributes(individualData[[1]]$data);
+    blockAttributes = list(attributes(individualData[[1]]$data))  # in this list each element corresponds to 1 block
     metaData = list();
   } else {
     blockLengths = BD.blockLengths(individualData[[1]]$data);
-    blockAttributes = individualData[[1]]$data$attributes;
+    blockAttributes = individualData[[1]]$data$attributes;  # List of attributes of all blocks from the 1st indiv. data
     metaData = BD.getMetaData(individualData[[1]]$data, blocks = 1);
   }
   nBlocks = length(blockLengths);
+
+  if (is.null(saveConsensusData))
+    saveConsensusData = if (blockwise) individualData[[1]]$data$external else FALSE
 
   spaces = indentSpaces(indent);
 
@@ -161,7 +164,7 @@ consensusCalculation = function(
         if (verbose>2) printFlush(spaste(spaces, "....Working on set ", set, " (", setNames[set], ")"))
 
         # We need to drop dimensions here but we may need them later. Keep that in mind.
-        tomDS = as.numeric(BD.getData(individualData[[set]]$data, block, simplify = TRUE));
+        tomDS = as.numeric(.getBDorPlainData(individualData[[set]]$data, block, simplify = TRUE));
         
         if (consensusOptions$calibration=="single quantile")
         {
@@ -196,7 +199,6 @@ consensusCalculation = function(
         } 
 
         # Save the calculated Data either to disk in chunks or to memory.
-      
         if (useDiskCache1)
         {
           if (verbose > 3) printFlush(paste(spaces, "......saving Data similarity to disk cache.."));
@@ -220,7 +222,7 @@ consensusCalculation = function(
       for (set in 1:nSets)
       {
         if (verbose>2) printFlush(spaste(spaces, "....Working on set ", set, " (", setNames[set], ")"))
-        tomDS = as.numeric(BD.getData(individualData[[set]]$data, block, simplify = TRUE));
+        tomDS = as.numeric(.getBDorPlainData(individualData[[set]]$data, block, simplify = TRUE));
 
         if (useDiskCache1)
         {
@@ -344,6 +346,10 @@ consensusCalculation = function(
           originCount[countIndex] = originCount[countIndex] + tmp$originCount; 
       }
     }
+
+    # If requested, suppress negative values of output
+    if (consensusOptions$suppressNegativeResults)
+      consTomDS[ consTomDS < 0 ] = 0;
     
     # Save the consensus Data if requested
     if (saveConsensusData)
@@ -582,9 +588,11 @@ simpleConsensusCalculation = function(
       stop("Length of 'setWeights' must equal the number of sets.");
   } else setWeights = NULL;
 
-  .consensusCalculation.base.FromList(individualData, useMean = consensusOptions$useMean, 
+  out = .consensusCalculation.base.FromList(individualData, useMean = consensusOptions$useMean, 
                                    setWeights = setWeights,
                                    consensusQuantile = consensusOptions$consensusQuantile)$consensus;
+  if (consensusOptions$suppressNegativeResults) out[out<0] = 0;
+  out;
 }
 
 

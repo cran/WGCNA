@@ -40,12 +40,13 @@ blockwiseIndividualTOMs(
    networkType = "unsigned",
    checkPower = TRUE,
    replaceMissingAdjacencies = FALSE,
-   suppressTOMForZeroAdjacencies = FALSE,
 
    # Topological overlap options
 
    TOMType = "unsigned",
    TOMDenom = "min",
+   suppressTOMForZeroAdjacencies = FALSE,
+   suppressNegativeTOM = FALSE,
 
    # Save individual TOMs? If not, they will be returned in the session.
 
@@ -129,14 +130,14 @@ caution. }
 
   \item{replaceMissingAdjacencies}{logical: should missing values in calculated adjacency be replaced by 0?}
 
-  \item{suppressTOMForZeroAdjacencies}{Logical: should TOM be set to zero for zero adjacencies?}
-
-  \item{TOMType}{ one of \code{"none"}, \code{"unsigned"}, \code{"signed"}. If \code{"none"}, adjacency
+  \item{TOMType}{ one of \code{"none"}, \code{"unsigned"}, \code{"signed"} and \code{"signed Nowick"}. 
+If \code{"none"}, adjacency
 will be used for clustering. If \code{"unsigned"}, the standard TOM will be used (more generally, TOM
 function will receive the adjacency as input). If \code{"signed"}, TOM will keep track of the sign of
 correlations between neighbors. Note that the \code{"unsigned"} vs. \code{"signed"} distinction is only
-relevant when \code{networkType} is \code{"unsigned"}. When  \code{networkType} is \code{"signed"} or
-\code{"signed hybrid"}, there is no difference between \code{TOMType="signed"} and \code{TOMType="unsigned".
+relevant when \code{networkType} is \code{"unsigned"}. When \code{networkType} is \code{"signed"} or
+\code{"signed hybrid"}, there is no difference between \code{TOMType="signed"}, \code{TOMType="signed Nowick"} 
+and \code{TOMType="unsigned".
 } }
 
   \item{TOMDenom}{ a character string specifying the TOM variant to be used. Recognized values are
@@ -148,6 +149,10 @@ better results in certain special situations but at this time should be consider
 %is preferrable and we recommend using it unless the user needs to reproduce older results obtained using
 %the standard, minimum denominator TOM. }
 
+  \item{suppressTOMForZeroAdjacencies}{Logical: should TOM be set to zero for zero adjacencies?}
+
+  \item{suppressNegativeTOM}{Logical: should the result be set to zero when negative? Negative TOM values can occur when
+\code{TOMType} is \code{"signed Nowick"}.}
 
   \item{saveTOMs}{logical: should calculated TOMs be saved to disk (\code{TRUE}) or returned in the return
 value (\code{FALSE})? Returning calculated TOMs via the return value ay be more convenient bt not always
@@ -190,6 +195,8 @@ in each set. The topological overlaps can be saved to disk as RData files, or re
 return value (see below). Note that the matrices can be big and returning them within the return value can
 quickly exhaust the system's memory. In particular, if the block-wise calculation is necessary, it is
 nearly certain that returning all matrices via the return value will be impossible.
+
+
 }
 
 \value{

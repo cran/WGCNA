@@ -40,6 +40,7 @@ consensusTOM(
 
       TOMType = "unsigned",
       TOMDenom = "min",
+      suppressNegativeTOM = FALSE,
 
       # Save individual TOMs?
 
@@ -166,6 +167,10 @@ correlations between neighbors. }
 \code{"min"} giving the standard TOM described in Zhang and Horvath (2005), and \code{"mean"} in which
 the \code{min} function in the denominator is replaced by \code{mean}. The \code{"mean"} may produce
 better results but at this time should be considered experimental.}
+
+ \item{suppressNegativeTOM}{Logical: should the result be set to zero when negative? Negative TOM values can occur when
+\code{TOMType} is \code{"signed Nowick"}.}
+
 
 %%%%%%%%%%%%%%%
 
