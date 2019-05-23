@@ -6,9 +6,13 @@
 }
 \usage{
 signedKME(
-  datExpr, datME, 
+  datExpr, 
+  datME, 
+  exprWeights = NULL,
+  MEWeights = NULL,
   outputColumnName = "kME", 
-  corFnc = "cor", corOptions = "use = 'p'")
+  corFnc = "cor", 
+  corOptions = "use = 'p'")
 }
 \arguments{
   \item{datExpr}{ a data frame containing the gene expression data. Rows correspond to samples and
@@ -16,6 +20,14 @@ columns to genes. Missing values are allowed and will be ignored. }
 
   \item{datME}{ a data frame containing module eigengenes. Rows  correspond to samples and columns to
 module eigengenes. }
+
+  \item{exprWeights}{ optional weight matrix of observation weights for \code{datExpr}, of the same dimensions as
+\code{datExpr}. If given, the weights must be non-negative and will be passed on to the correlation function given in
+argument \code{corFnc} as argument \code{weights.x}.}
+
+  \item{MEWeights}{ optional weight matrix of observation weights for \code{datME}, of the same dimensions as
+\code{datME}. If given, the weights must be non-negative and will be passed on to the correlation function given in
+argument \code{corFnc} as argument \code{weights.y}.}
 
   \item{outputColumnName}{ a character string specifying the prefix of column names of the output. }
 

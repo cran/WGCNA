@@ -519,6 +519,7 @@ void bicor1Fast(double * x, int * nrow, int * ncol, double * maxPOutliers,
   // The main loop is actually a matrix multiplication
 
   double alpha = 1.0, beta = 0.0;
+  Rprintf("alpha: %f\n", alpha);
   F77_NAME(dsyrk)("L", "T", ncol, nrow, & alpha, multMat, nrow, & beta, result, ncol);
 
   // Here I need to recalculate results that have NA's in them.

@@ -41,10 +41,10 @@ midcorrelation, respectively. Missing values are handled using the \code{pairwis
 
   \item{power}{ soft-thresholding power for netwoek construction. }
 
-  \item{TOMType}{ one of \code{"none"}, \code{"unsigned"}, \code{"signed"}. If \code{"none"}, adjacency
-will be used for clustering. If \code{"unsigned"}, the standard TOM will be used (more generally, TOM
-function will receive the adjacency as input). If \code{"signed"}, TOM will keep track of the sign of
-correlations between neighbors. }
+  \item{TOMType}{ one of \code{"none"}, \code{"unsigned"}, \code{"signed"}, \code{"signed Nowick"},
+\code{"unsigned 2"}, \code{"signed 2"} and \code{"signed Nowick 2"}. If \code{"none"}, adjacency
+will be used for clustering. See details and keep in mind that the "2" versions should be considered experimental and are
+subject to change.}
 
   \item{TOMDenom}{ a character string specifying the TOM variant to be used. Recognized values are 
 \code{"min"} giving the standard TOM described in Zhang and Horvath (2005), and \code{"mean"} in which 
@@ -103,10 +103,50 @@ progressively more and more verbose. }
 two spaces. }
 }
 \details{
-For \code{"unsigned"} and \code{"signed"} the resulting TOM entries, as
-well as the corresponding dissimilarities, lie between 0 and 1. The \code{"signed Nowick"} version retains the signs of
-the input adjacency matrix throughout the calculation and will typically return negative values for nodes with (sufficiently
-strongly) negative adjacencies.
+Several alternate definitions of topological overlap are available. The oldest version is now called "unsigned"; in this
+version, all adjacencies are assumed to be non-negative and the topological overlap of nodes \eqn{i,j} is given by
+
+\deqn{TOM_{ij} = \frac{a_{ij} + \sum_{k\neq i,j} a_{ik}a_{kj} }{f(k_i, k_j) + 1 - a_{ij}} \, ,}{%
+      TOM[i,j] = ( a[i,j] + \sum a[i,k] a[k,j] )/(f(k[i], k[j]) + 1 - a[i,j]),}
+
+where the sum is over \eqn{k} not equal to either \eqn{i} or \eqn{j}, the function \eqn{f} in the denominator can be
+either min or mean (goverened by argument \code{TOMDenom}), and \eqn{k_i = \sum_{j\neq i} a_{ij}}{k[i] = sum a[i,j]} is
+the connectivity of node \eqn{i}. The signed versions assume that the adjacency matrix was obtained from an underlying
+correlation matrix, and the element \eqn{a_{ij}}{a[i,j]} carries the sign of the underlying correlation of the two
+vectors. (Within WGCNA, this can really only apply to the unsigned adjacency since signed adjacencies are (essentially)
+zero when the underlying correlation is negative.) The signed and signed Nowick versions are similar to the above unsigned
+version, differing only in absolute
+values placed in the expression: the signed Nowick expression is
+
+\deqn{TOM_{ij} = \frac{a_{ij} + \sum_{k\neq i,j} a_{ik}a_{kj} }{f(k_i, k_j) + 1 - |a_{ij}|} \, .}{%
+      TOM[i,j] = ( a[i,j] + \sum a[i,k] a[k,j] )/(f(k[i], k[j]) + 1 - |a[i,j]|).}
+
+This TOM lies between -1 and 1, and typically is negative when the underlying adjacency is negative. The signed TOM is
+simply the absolute value of the signed Nowick TOM and is hence always non-negative. For non-negative
+adjacencies, all 3 version give the same result. 
+
+A brief note on terminology: the original article by Nowick et al use the name "weighted TO" or wTO; since all of the
+topological overlap versions calculated in this function are weighted, we use the name signed to indicate that this TOM
+keeps track of the sign of the underlying correlation.
+
+The "2" versions of all 3 adjacency types have a somewhat different form in which the adjacency and the product are
+normalized separately. Thus, the "unsigned 2" version is 
+
+\deqn{TOM^{(2)}_{ij} = \frac{1}{2}\left[a_{ij} + \frac{\sum_{k\neq i,j} a_{ik}a_{kj} }{f(k_i, k_j) - a_{ij}}\right] \, .}{%
+      TOM2[i,j] = 0.5 ( a[i,j] + \sum a[i,k] a[k,j] /(f(k[i], k[j]) - a[i,j])).}
+
+At present the relative weight of the adjacency and the normalized product term are equal and fixed; in the future a
+user-specified or automatically determined weight may be implemented. The "signed Nowick 2" and "signed 2" are defined
+analogously to their original versions. The adjacency is assumed to be signed, and the expression for "signed Nowick 2"
+TOM is
+
+\deqn{TOM^{(2)}_{ij} = \frac{1}{2}\left[a_{ij} + \frac{\sum_{k\neq i,j} a_{ik}a_{kj} }{f(k_i, k_j) - |a_{ij}| } \right] \, .}{%
+      TOM2[i,j] = 0.5 ( a[i,j] + \sum a[i,k] a[k,j] /(f(k[i], k[j]) - |a[i,j]|)).}
+
+Analogously to "signed" TOM, "signed 2" differs from "signed Nowick 2" TOM only in taking the absolute value of the result.
+
+At present the "2" versions should all be considered experimental and are subject to change.
+
 }
 
 \value{

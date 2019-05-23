@@ -19,7 +19,8 @@ newNetworkOptions(
     checkPower = TRUE,
 
     # Topological overlap options
-    TOMType = c("signed", "signed Nowick", "unsigned", "none"),
+    TOMType = c("signed", "signed Nowick", "unsigned", "none",
+                "signed 2", "signed Nowick 2", "unsigned 2"),
     TOMDenom = c("mean", "min"),
     suppressTOMForZeroAdjacencies = FALSE,
     suppressNegativeTOM = FALSE,
@@ -42,11 +43,10 @@ A list of correlation options. See \code{\link{newCorrelationOptions}}.
 }
   \item{checkPower}{Logicel: should the power be checked for sanity? 
 }
-  \item{TOMType}{One of \code{"signed"}, \code{"signed Nowick"}, \code{"unsigned"}, \code{"none"}. If \code{"none"}, adjacency
-will be used for clustering. If \code{"unsigned"}, the standard TOM will be used (more generally, TOM
-function will receive the adjacency as input). If \code{"signed"}, TOM will keep track of the sign of
-correlations between neighbors. 
-}
+  \item{TOMType}{One of \code{"none"}, \code{"unsigned"}, \code{"signed"}, \code{"signed Nowick"},
+\code{"unsigned 2"}, \code{"signed 2"} and \code{"signed Nowick 2"}. If \code{"none"}, adjacency
+will be used for clustering. See \code{\link{TOMsimilarityFromExpr}} for details.}
+
   \item{TOMDenom}{Character string specifying the TOM variant to be used. Recognized values are
 \code{"min"} giving the standard TOM described in Zhang and Horvath (2005), and \code{"mean"} in which
 the \code{min} function in the denominator is replaced by \code{mean}. The \code{"mean"} may produce

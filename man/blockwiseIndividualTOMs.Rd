@@ -24,7 +24,7 @@ blockwiseIndividualTOMs(
    maxBlockSize = 5000,
    blockSizePenaltyPower = 5,
    nPreclusteringCenters = NULL,
-   randomSeed = 12345,
+   randomSeed = 54321,
 
    # Network construction arguments: correlation options
 
@@ -130,15 +130,9 @@ caution. }
 
   \item{replaceMissingAdjacencies}{logical: should missing values in calculated adjacency be replaced by 0?}
 
-  \item{TOMType}{ one of \code{"none"}, \code{"unsigned"}, \code{"signed"} and \code{"signed Nowick"}. 
-If \code{"none"}, adjacency
-will be used for clustering. If \code{"unsigned"}, the standard TOM will be used (more generally, TOM
-function will receive the adjacency as input). If \code{"signed"}, TOM will keep track of the sign of
-correlations between neighbors. Note that the \code{"unsigned"} vs. \code{"signed"} distinction is only
-relevant when \code{networkType} is \code{"unsigned"}. When \code{networkType} is \code{"signed"} or
-\code{"signed hybrid"}, there is no difference between \code{TOMType="signed"}, \code{TOMType="signed Nowick"} 
-and \code{TOMType="unsigned".
-} }
+  \item{TOMType}{ one of \code{"none"}, \code{"unsigned"}, \code{"signed"}, \code{"signed Nowick"},
+\code{"unsigned 2"}, \code{"signed 2"} and \code{"signed Nowick 2"}. If \code{"none"}, adjacency
+will be used for clustering. See \code{\link{TOMsimilarityFromExpr}} for details.}
 
   \item{TOMDenom}{ a character string specifying the TOM variant to be used. Recognized values are
 \code{"min"} giving the standard TOM described in Zhang and Horvath (2005), and \code{"mean"} in which

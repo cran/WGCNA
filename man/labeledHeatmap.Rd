@@ -48,12 +48,14 @@ labeledHeatmap(
   verticalSeparator.lty = 1,
   verticalSeparator.lwd = 1,
   verticalSeparator.ext = 0,
+  verticalSeparator.interval = 0,
 
   horizontalSeparator.y = NULL,
   horizontalSeparator.col = 1,
   horizontalSeparator.lty = 1,
   horizontalSeparator.lwd = 1,
   horizontalSeparator.ext = 0,
+  horizontalSeparator.interval = 0,
   # optional restrictions on which rows and columns to actually show
   showRows = NULL,
   showCols = NULL,
@@ -145,22 +147,28 @@ above. }
   \item{keepLegendSpace}{ logical: if the color legend is not drawn, should the space be left empty
 (\code{TRUE}), or should the heatmap fill the space (\code{FALSE})?}
 
-  \item{verticalSeparator.x}{indices of columns after which separator lines (vertical lines between columns) 
+  \item{verticalSeparator.x}{indices of columns in input \code{Matrix} after 
+      which separator lines (vertical lines between columns) 
       should be drawn. \code{NULL} means no lines will be drawn.}
   \item{verticalSeparator.col}{color(s) of the vertical separator lines. Recycled if need be. }
   \item{verticalSeparator.lty}{line type of the vertical separator lines. Recycled if need be. }
   \item{verticalSeparator.lwd}{line width of the vertical separator lines. Recycled if need be. }
   \item{verticalSeparator.ext}{number giving the extension of the separator line into the margin as a fraction
 of the margin width. 0 means no extension, 1 means extend all the way through the margin. }
+  \item{verticalSeparator.interval}{number giving the interval for vertical separators. If larger than zero, vertical
+separators will be drawn after every \code{verticalSeparator.interval} of displayed columns. 
+Used only when length of \code{verticalSeparator.x} is zero. }
 
-  \item{horizontalSeparator.y}{indices of columns after which separator lines (horizontal lines between columns) 
-      should be drawn. \code{NULL} means no lines will be drawn.}
+  \item{horizontalSeparator.y}{indices of columns in input \code{Matrix} after which separator lines (horizontal lines
+      between columns) should be drawn. \code{NULL} means no lines will be drawn.}
   \item{horizontalSeparator.col}{ color(s) of the horizontal separator lines. Recycled if need be. }
   \item{horizontalSeparator.lty}{line type of the horizontal separator lines. Recycled if need be. }
   \item{horizontalSeparator.lwd}{line width of the horizontal separator lines. Recycled if need be. }
   \item{horizontalSeparator.ext}{number giving the extension of the separator line into the margin as a
-fraction 
-of the margin width. 0 means no extension, 1 means extend all the way through the margin. }
+fraction of the margin width. 0 means no extension, 1 means extend all the way through the margin. }
+  \item{horizontalSeparator.interval}{number giving the interval for horizontal separators. If larger than zero, horizontal
+separators will be drawn after every \code{horizontalSeparator.interval} of displayed rows. 
+Used only when length of \code{horizontalSeparator.y} is zero. }
 
   \item{showRows}{A numeric vector giving the indices of rows that are actually to be shown. Defaults to all rows.}
   \item{showCols}{A numeric vector giving the indices of columns that are actually to be shown. Defaults to all columns.}

@@ -1,6 +1,54 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
 
+2019/05/22: 1.68
+
+	. Bugfix in sizeRestrictedClusterMerge which also benefits
+	  projectiveKMeans and blockwiseModules fixes an occasional crash.
+	  Bug reports and assistance of several users, especially Luis Revilla,
+	  is gratefully acknowledged. 
+
+	. Bugfixes in blockwiseModules, blockwiseConsensusModules and
+	  individualTOMs fix non-propagation of randomSeed to
+	  projectiveKMeans. The default randomSeed for the 3 functions has
+	  changed to match that of projectiveKMeans and
+	  consensusProjectiveKMeans to make previous results reproducible.
+	
+	. plotOrderedColor now returns some of the plotting information,
+	  useful for adding to the plot.
+
+	. modulePreservation gains arguments multiWeights representing
+	  optional observation weights of expression data, and goldName that
+	  can be used to change the label used for all-network sample.
+
+	. Adding arguments horizontalSeparator.interval and
+	  verticalSeparator.interval to labeledHeatmap
+
+	. Change in sampledHierarchicalModules: saveIndividualTOMs and
+	  saveConsensusTOM arguments for the underlying
+	  hierarchicalConsensusModules can be set as arguments rather than
+	  being hardcoded.
+
+2019/05/05: 1.67-90
+
+	. Bugfix in sizeRestrictedClusterMerge and projectiveKMeans that calls
+	  it fixes occassional crash (reported on Stackexchange by user holly)
+
+	. Bugfix in modulePreservation: empty rownames of certain
+	  matrices do not cause a crash anymore.
+
+	. New (experimental) versions of Topological Overlap (TOM) are
+	  available.
+
+	. bugfix in exportNetworkToVisANT thanks to Guangjian Du
+
+	. consensusProjectiveKMeans is a bit more efficient, especially when
+	  the number of sets is 1.
+
+	. goodGenes should be faster when weights are not supplied
+
+2019/04/11: 1.67
+
 	. moduleEigengenes and derived functions (multiSetMEs) now copy
 	  row names of the input data as row names of the output matrices.
 

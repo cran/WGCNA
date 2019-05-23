@@ -51,7 +51,8 @@
 */
 
 enum { CorTypePearson = 0, CorTypeBicor = 1, CorTypeSpearman = 2 };
-enum { TomTypeNone = 0, TomTypeUnsigned = 1, TomTypeSigned = 2, TomTypeSignedNowick = 3 };
+enum { TomTypeNone = 0, TomTypeUnsigned = 1, TomTypeSigned = 2, TomTypeSignedNowick = 3,
+       TomTypeUnsigned2 = 4, TomTypeSigned2 = 5, TomTypeSignedNowick2 = 6 };
 enum { TomDenomMin = 0, TomDenomMean = 1 };
 enum { AdjTypeUnsigned = 0, AdjTypeSigned = 1, AdjTypeHybrid = 2, AdjTypeUnsignedKeepSign = 3 };
 
@@ -269,9 +270,12 @@ void tomSimilarityFromAdj(double * adj, int * nGenes,
   {
     Rprintf("%s..will suppress TOM for pairs of nodes with zero adjacency.\n", spaces);
   }
+  int form = *tomType > TomTypeSignedNowick;
+
   switch (* tomType)
   {
     case TomTypeUnsigned:
+    case TomTypeUnsigned2:
       for (size_t j=0; j< ng1; j++)
       {
         tom2 = tom + (ng+1)*j + 1;  
@@ -284,10 +288,17 @@ void tomSimilarityFromAdj(double * adj, int * nGenes,
           else
              den1 = (conn[i] + conn[j])/2;
           double den = den1 - * adj2;
-          if (den==0)
-            *tom2 = 0;
-          else
-            *tom2 = ( *tom2 - *adj2) / den ;
+          if (form > 0)
+          {
+            double r;
+            if (den <= 1) r = 0; else r = (*tom2 - *adj2 * 2)/(den-1);
+            *tom2 = (*adj2 + r)/2;
+          } else {
+            if (den==0)
+              *tom2 = 0;
+            else
+              *tom2 = ( *tom2 - *adj2) / den ;
+          }
           *(tom + ng*i + j) = *tom2;
           if (*tom2 > 1) nAbove1++;
           tom2++;
@@ -296,6 +307,7 @@ void tomSimilarityFromAdj(double * adj, int * nGenes,
       }
       break;
     case TomTypeSigned:
+    case TomTypeSigned2:
       for (size_t j=0; j < ng1; j++)
       {
         tom2 = tom + (ng+1)*j + 1;  
@@ -310,10 +322,17 @@ void tomSimilarityFromAdj(double * adj, int * nGenes,
             else
                den1 = (conn[i] + conn[j])/2;
             double den = den1 - fabs(*adj2);
-            if (den==0)
-              *tom2 = 0;
-            else
-              *tom2 = fabs( *tom2 - *adj2) / den;
+            if (form > 0)
+            {
+              double r;
+              if (den <= 1) r = 0; else r = (*tom2 - *adj2 * 2)/(den-1);
+              *tom2 = fabs(*adj2 + r)/2;
+            } else {
+              if (den==0)
+                *tom2 = 0;
+              else
+                *tom2 = fabs( *tom2 - *adj2) / den ;
+            }
             *(tom + ng*i + j) = *tom2;
             if (*tom2 > 1) 
             {
@@ -330,7 +349,8 @@ void tomSimilarityFromAdj(double * adj, int * nGenes,
         }
       }
       break;
-    case TomTypeSignedNowick:  // Differs from the above only in one missing fabs and potential suppression of negative values
+    case TomTypeSignedNowick: 
+    case TomTypeSignedNowick2:  // Differs from the above only in one missing fabs and potential suppression of negative values
       // Rprintf("Calculating Nowick-type TOM. SuppressNegativeTOM: %d\n", *suppressNegativeTOM);
       for (size_t j=0; j < ng1; j++)
       {
@@ -346,10 +366,17 @@ void tomSimilarityFromAdj(double * adj, int * nGenes,
             else
                den1 = (conn[i] + conn[j])/2;
             double den = den1 - fabs(*adj2);
-            if (den==0)
-              *tom2 = 0;
-            else
-              *tom2 = ( *tom2 - *adj2) / den;
+            if (form > 0)
+            {
+              double r;
+              if (den <= 1) r = 0; else r = (*tom2 - *adj2 * 2)/(den-1);
+              *tom2 = (*adj2 + r)/2;
+            } else {
+              if (den==0)
+                *tom2 = 0;
+              else
+                *tom2 = ( *tom2 - *adj2) / den ;
+            }
             *(tom + ng*i + j) = *tom2;
             if (fabs(*tom2) > 1)
             {

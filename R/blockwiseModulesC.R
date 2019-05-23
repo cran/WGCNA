@@ -191,7 +191,7 @@ blockwiseModules = function(
   maxBlockSize = 5000,
   blockSizePenaltyPower = 5,
   nPreclusteringCenters = as.integer(min(ncol(datExpr)/20, 100*ncol(datExpr)/maxBlockSize)),
-  randomSeed = 12345,
+  randomSeed = 54321,
 
   # load TOM from previously saved file?
 
@@ -433,6 +433,7 @@ blockwiseModules = function(
                                     checkData = FALSE,
                                     sizePenaltyPower = blockSizePenaltyPower,
                                     nCenters = nPreclusteringCenters, 
+                                    randomSeed = randomSeed,
                                     verbose = verbose-2, indent = indent + 1);
       gBlocks = .orderLabelsBySize(clustering$clusters)
       if (verbose > 2) { printFlush("Block sizes:"); print(table(gBlocks)); }
@@ -1374,7 +1375,7 @@ blockwiseIndividualTOMs = function(
    maxBlockSize = 5000, 
    blockSizePenaltyPower = 5,
    nPreclusteringCenters = NULL,
-   randomSeed = 12345,
+   randomSeed = 54321,
 
    # Network construction arguments: correlation options
    corType = "pearson",
@@ -1428,17 +1429,6 @@ blockwiseIndividualTOMs = function(
       stop("Invalid arguments: Length of 'power' must equal number of sets given in 'multiExpr'.");
   } else {
     power = rep(power, nSets);
-  }
-
-  seedSaved = FALSE;
-  if (!is.null(randomSeed))
-  {
-    if (exists(".Random.seed"))
-    {
-       seedSaved = TRUE;
-       savedSeed = .Random.seed
-    } 
-    set.seed(randomSeed);
   }
 
   #if (maxBlockSize >= floor(sqrt(2^31)) )
@@ -1509,6 +1499,7 @@ blockwiseIndividualTOMs = function(
       clustering = consensusProjectiveKMeans(multiExpr, preferredSize = maxBlockSize,
                                          sizePenaltyPower = blockSizePenaltyPower, checkData = FALSE,
                                          nCenters = nPreclusteringCenters,
+                                         randomSeed = randomSeed,
                                          verbose = verbose-2, indent = indent + 1);
       gBlocks = .orderLabelsBySize(clustering$clusters);
     } else 
@@ -1623,9 +1614,6 @@ blockwiseIndividualTOMs = function(
     gsg$goodSamples = gsg$goodSamples[[1]];
   }
 
-  # Re-set random number generator if necessary
-  if (seedSaved) .Random.seed <<- savedSeed;
-
   list(actualTOMFileNames = actualFileNames, 
        TOMSimilarities = if(!saveTOMs) setTomDS else NULL,
        blocks = blocks,
@@ -1694,7 +1682,7 @@ blockwiseConsensusModules = function(
          maxBlockSize = 5000, 
          blockSizePenaltyPower = 5,
          nPreclusteringCenters = NULL,
-         randomSeed = 12345,
+         randomSeed = 54321,
 
          # individual TOM information
 
@@ -1911,7 +1899,7 @@ blockwiseConsensusModules = function(
                            maxBlockSize = maxBlockSize,
                            blockSizePenaltyPower = blockSizePenaltyPower,
                            nPreclusteringCenters = nPreclusteringCenters,
-                           randomSeed = NULL,
+                           randomSeed = randomSeed,
                            corType = corType,
                            maxPOutliers = maxPOutliers,
                            quickCor = quickCor,
@@ -3306,11 +3294,19 @@ sizeRestrictedClusterMerge = function(
       clusters[clusters>whichJ] = clusters[clusters>whichJ] - 1;
       centers = centers[ , -whichJ, drop = FALSE];
       clusterSizes = clusterSizes[-whichJ];
-      small = clusterSizes < maxSize;
-      clustDist = clustDist[-jj, -jj, drop = FALSE];
-      cr1 = c(cor(centers[, small], centers[, whichI]));
-      clustDist[, ii] = clustDist[ii, ] = if (intNetworkType==1) 1-abs(cr1) else 1-cr1;
-      clustDist[ii, ii] = 10;
+      small = clusterSizes < maxSize;  
+      if (sum(small) > 1) # Only update if there are at least 2 small clusters left
+      {
+        clustDist = clustDist[-jj, -jj, drop = FALSE];
+        if (clusterSizes[whichI] < maxSize) 
+        {
+           cr1 = c(cor(centers[, small], centers[, whichI]));
+           clustDist[, ii] = clustDist[ii, ] = if (intNetworkType==1) 1-abs(cr1) else 1-cr1;
+           clustDist[ii, ii] = 10;
+        } else {
+           clustDist = clustDist[-ii, -ii, drop = FALSE]
+        }
+      }
     } else done = TRUE;
   }
   list(clusters = clusters, centers = centers);
@@ -3335,7 +3331,6 @@ consensusProjectiveKMeans = function (
       maxIterations = 1000,
       verbose = 0, indent = 0 )
 {
-
   centerGeneDist = function(centers, oldDst = NULL, changed = c(1:nCenters))
   {
     if (is.null(oldDst))
@@ -3355,12 +3350,17 @@ consensusProjectiveKMeans = function (
         } else {
            dstX[set, , ] = 1-cor(centers[[set]]$data[, changed], multiExpr[[set]]$data);
         }
-      dst = array(0, c(nChanged, nGenes));
-      if (useMean)
+      if (nSets==1)
       {
-        dstAll[changed, ] = base::colMeans(dstX, dims = 1);
+        dstAll[changed, ] = dstX[1, , ];
       } else {
-        dstAll[changed, ] = -minWhichMin(-dstX, byRow = FALSE, dims = 1)$min;
+        #dst = array(0, c(nChanged, nGenes));
+        if (useMean)
+        {
+          dstAll[changed, ] = base::colMeans(dstX, dims = 1);
+        } else {
+          dstAll[changed, ] = -minWhichMin(-dstX, byRow = FALSE, dims = 1)$min;
+        }
       }
     }
     dstAll;
@@ -3420,7 +3420,6 @@ consensusProjectiveKMeans = function (
     printFlush(spaste(
             spaces, " Support for blocks larger than sqrt(2^31) is experimental; please report\n",
             spaces, " any issues to Peter.Langfelder@gmail.com."));
-
 
   if (exists(".Random.seed"))
   {
@@ -3569,7 +3568,10 @@ consensusProjectiveKMeans = function (
          distX[set, , ] = 1-cor(centers[[set]]$data[, select]);
       }
     }
-    -minWhichMin(-distX, byRow = FALSE, dims = 1)$min;
+    if (nSets==1) {
+      distX[1, , ]
+    } else 
+      -minWhichMin(-distX, byRow = FALSE, dims = 1)$min;
   }
 
   unmergedMembership = membership;

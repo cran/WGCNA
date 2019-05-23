@@ -2578,6 +2578,7 @@ plotOrderedColors = function(
         
   jIndex = nRows;
 
+  colorRectangles = list();
   if (is.null(rowLabels)) rowLabels = c(1:nColorRows);
   C[is.na(C)] = "grey"
   for (j in 1:nColorRows)
@@ -2591,6 +2592,7 @@ plotOrderedColors = function(
     } else {
        rect(xl, yb, xr, yt, col = as.character(C[,j]), border = as.character(C[,j]));
     }
+    colorRectangles[[j]] = list(xl = xl, yb = yb, xr = xr, yt = yt);
     text(rowLabels[j], pos=2, x= -charWidth/2 +xl[1], y= (yBottom[jj] + yTop[jj])/2, 
          cex=cex.rowLabels, xpd = TRUE);
     textRow = match(j, textPositions);
@@ -2618,6 +2620,7 @@ plotOrderedColors = function(
     jIndex = jIndex - 1;
   }
   for (j in 0:(nColorRows + nTextRows)) lines(x=c(0,1), y=c(yBottom[j+1], yBottom[j+1]));
+  invisible(list(colorRectangles = colorRectangles));
 }
 
 #========================================================================================================
@@ -2922,16 +2925,23 @@ checkAdjMat = function(adjMat, min = 0, max = 1)
 # tens of thousands of gene expression data. 
 # If there are many eigengenes (say hundreds) consider decreasing the block size.
 
-signedKME = function(datExpr, datME, outputColumnName="kME",
+signedKME = function(datExpr, datME, 
+                     exprWeights = NULL,
+                     MEWeights = NULL,
+                     outputColumnName="kME",
                      corFnc = "cor", corOptions = "use = 'p'") 
 {
-  datExpr=as.matrix(datExpr)
-  if (is.null(colnames(datExpr))) colnames(datExpr) = spaste("Gene.", 1:ncol(datExpr));
-  if (any(duplicated(colnames(datExpr)))) colnames(datExpr) = make.unique(colnames(datExpr));
-  datME=as.matrix(datME)
-  output=list()
   if (dim(datME)[[1]] != dim(datExpr)[[1]] ) 
      stop("Number of samples (rows) in 'datExpr' and 'datME' must be the same.")
+  datExpr=as.matrix(datExpr)
+  datME=as.matrix(datME)
+  if (is.null(colnames(datExpr))) colnames(datExpr) = spaste("Gene.", 1:ncol(datExpr));
+  if (any(duplicated(colnames(datExpr)))) colnames(datExpr) = make.unique(colnames(datExpr));
+  if (!is.null(exprWeights))
+    exprWeights = .checkAndScaleWeights(exprWeights, datExpr, scaleByMax = FALSE, verbose = 0);
+  if (!is.null(MEWeights))
+    MEWeights = .checkAndScaleWeights(exprWeights, datME, scaleByMax = FALSE, verbose = 0);
+  output=list()
   varianceZeroIndicatordatExpr=colVars(datExpr, na.rm = TRUE)==0
   varianceZeroIndicatordatME =colVars(datME, na.rm = TRUE)==0
   if (sum(varianceZeroIndicatordatExpr,na.rm = TRUE)>0 ) 
@@ -2944,8 +2954,11 @@ signedKME = function(datExpr, datME, outputColumnName="kME",
     warning(paste("Some gene expressions have fewer than 4 observations.\n",
             "    Hint: consider removing genes with too many missing values or collect more arrays."))
 
+  if (!is.null(MEWeights)) corOptions = spaste("weights.y = MEWeights, ", corOptions);
+  if (!is.null(exprWeights)) corOptions = spaste("weights.x = exprWeights, ", corOptions);
+
   #output=data.frame(cor(datExpr, datME, use="p"))
-  corExpr = parse(text = paste("data.frame(", corFnc, "(datExpr, datME ", prepComma(corOptions), "))" ));
+  corExpr = parse(text = paste("data.frame(", corFnc, "(datExpr, datME, ", prepComma(corOptions), "))" ));
   output = eval(corExpr);
 
   output[no.presentdatExpr<..minNSamples, ]=NA
@@ -5062,12 +5075,14 @@ labeledHeatmap = function (
   verticalSeparator.lty = 1,
   verticalSeparator.lwd = 1,
   verticalSeparator.ext = 0,
+  verticalSeparator.interval = 0,
 
   horizontalSeparator.y = NULL,
   horizontalSeparator.col = 1,  
   horizontalSeparator.lty = 1,
   horizontalSeparator.lwd = 1,
   horizontalSeparator.ext = 0,
+  horizontalSeparator.interval = 0,
   # optional restrictions on which rows and columns to actually show
   showRows = NULL,
   showCols = NULL,
@@ -5352,17 +5367,23 @@ labeledHeatmap = function (
       stop("If given. 'verticalSeparator.x' must all be between 0 and the number of columns.");
     shownVertSep = verticalSeparator.x[ verticalSeparator.x %in% showCols.ext];
     verticalSeparator.x.show = .restrictIndex(verticalSeparator.x, showCols.ext)-showCols.shift;
-    rowSepShowIndex = match(shownVertSep, verticalSeparator.x)
-  } else
+    colSepShowIndex = match(shownVertSep, verticalSeparator.x)
+  } else if (verticalSeparator.interval > 0)
+  {
+    verticalSeparator.x.show = verticalSeparator.x = 
+           seq(from = verticalSeparator.interval, by = verticalSeparator.interval,
+                                    length.out = floor(length(showCols)/verticalSeparator.interval));
+    colSepShowIndex = 1:length(verticalSeparator.x);
+  } else 
     verticalSeparator.x.show = NULL;
 
   if (length(verticalSeparator.x.show) > 0)
   {
     nLines = length(verticalSeparator.x);
-    vs.col = .extend(verticalSeparator.col, nLines)[rowSepShowIndex];
-    vs.lty = .extend(verticalSeparator.lty, nLines)[rowSepShowIndex];
-    vs.lwd = .extend(verticalSeparator.lwd, nLines)[rowSepShowIndex];
-    vs.ext = .extend(verticalSeparator.ext, nLines)[rowSepShowIndex];
+    vs.col = .extend(verticalSeparator.col, nLines)[colSepShowIndex];
+    vs.lty = .extend(verticalSeparator.lty, nLines)[colSepShowIndex];
+    vs.lwd = .extend(verticalSeparator.lwd, nLines)[colSepShowIndex];
+    vs.ext = .extend(verticalSeparator.ext, nLines)[colSepShowIndex];
 
     x.lines = ifelse(verticalSeparator.x.show>0, labPos$xRight[verticalSeparator.x.show], labPos$xLeft[1]);
     nLines.show = length(verticalSeparator.x.show);
@@ -5403,6 +5424,12 @@ labeledHeatmap = function (
     shownHorizSep = horizontalSeparator.y[ horizontalSeparator.y %in% showRows.ext];
     horizontalSeparator.y.show = .restrictIndex(horizontalSeparator.y, showRows.ext)-showRows.shift;
     rowSepShowIndex = match(shownHorizSep, horizontalSeparator.y)
+  } else if (horizontalSeparator.interval > 0)
+  {
+    horizontalSeparator.y.show = horizontalSeparator.y = 
+            seq(from = horizontalSeparator.interval, by = horizontalSeparator.interval,
+                                    length.out = floor(length(showRows)/horizontalSeparator.interval));
+    rowSepShowIndex = 1:length(horizontalSeparator.y);
   } else 
     horizontalSeparator.y.show = NULL;
   
@@ -6522,7 +6549,11 @@ goodGenes = function(datExpr, weights = NULL, useSamples = NULL, useGenes = NULL
                        na.rm = TRUE)
   gg = useGenes;
   gg[useGenes][nPresent<minNSamples] = FALSE;
-  var = colWeightedVars(datExpr,
+  if (length(weights)==0)
+  {
+    var = colVars(datExpr, rows = which(useSamples), cols = which(gg), na.rm = TRUE)
+  } else ### !!! colWeightVars uses apply... a disaster for efficiency. Really gives me trouble with large data sets.
+    var = colWeightedVars(datExpr, 
               w = if (length(weights)>0) weights else NULL,
               rows = which(useSamples), cols = which(gg),
               na.rm = TRUE);

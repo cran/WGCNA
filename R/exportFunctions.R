@@ -39,7 +39,7 @@ exportNetworkToVisANT = function(
      to = probes[dstCols[edges]],
      direction = rep(0, nEdges),
      method = rep("M0039", nEdges),
-     weight = if (weighted) adjDst[edges] else rep(1, nEdges),
+     weight = if (weighted) adjDst[edges] else rep(1, nEdges)
      );
 
   if (!is.null(file))

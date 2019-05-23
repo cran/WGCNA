@@ -8,6 +8,7 @@
 modulePreservation(
    multiData,
    multiColor,
+   multiWeights = NULL,
    dataIsExpr = TRUE,
    networkType = "unsigned", 
    corFnc = "cor",
@@ -28,6 +29,7 @@ modulePreservation(
    useInterpolation = FALSE, 
    checkData = TRUE, 
    greyName = NULL, 
+   goldName = NULL,
    savePermutedStatistics = TRUE, 
    loadPermutedStatistics = FALSE, 
    permutedStatisticsFile = if (useInterpolation) "permutedStats-intrModules.RData" 
@@ -40,7 +42,7 @@ modulePreservation(
 }
 \arguments{
   \item{multiData}{  expression data or adjacency data 
-in the multi-set format (see \code{\link{checkSets}}). A vector of
+in multi-set format (see \code{\link{checkSets}}). A vector of
 lists, one per set. Each set must contain a component \code{data} that contains the expression or adjacency
 data.
 If expression data are used,
@@ -52,6 +54,12 @@ named. }
   \item{multiColor}{ a list in which every component is a vector giving the module labels of genes in
 \code{multiExpr}. The components must be named using the same names that are used in \code{multiExpr}; these
 names are used top match labels to expression data sets. See details. }
+
+  \item{multiWeights}{optional weights, only when \code{multiData} contains expression data. 
+If given, must be in the multi-set format (see \code{\link{checkSets}}) and
+weights for each set must have the same dimensions as the corresponding set in \code{multiData}. The weights are used in
+correlation calculations that involve \code{multiData}, and are supplied as argument \code{weights.x} and possibly
+\code{weights.y} (where appropriate) to the correlation function specified by \code{corFnc}.}
 
   \item{dataIsExpr}{ logical: if \code{TRUE}, \code{multiData} will be interpreted as expression data; if
 \code{FALSE}, \code{multiData} will be interpreted as adjacencies. }
@@ -119,6 +127,12 @@ calculated? While these statistics may be interesting, the calculations are also
   \item{greyName}{ label used for unassigned genes. Traditionally such genes are labeled by grey color or
 numeric label 0. These values are the default when \code{multiColor} contains character or numeric vectors,
 respectively. }
+
+  \item{goldName}{ label used for the "module" representing a random sample of the whole network. 
+Traditionally such genes are labeled by gold color or
+numeric label 0.1. These values are the default when \code{greyName} is character and numeric,
+respectively. If these values conflict with the module labels in \code{multiColor}, they should be set to something not present
+in \code{multiColor}.}
 
   \item{savePermutedStatistics}{ logical: should calculated permutation statistics be saved? Saved
 statistics may be re-used if the calculation needs to be repeated.}

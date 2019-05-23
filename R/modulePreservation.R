@@ -114,6 +114,7 @@
 modulePreservation = function(
    multiData,
    multiColor,
+   multiWeights = NULL,
    dataIsExpr = TRUE,
    networkType = "unsigned",
    corFnc = "cor",
@@ -133,6 +134,7 @@ modulePreservation = function(
    useInterpolation = FALSE,
    checkData = TRUE,
    greyName = NULL,
+   goldName = NULL,
    savePermutedStatistics = TRUE,
    loadPermutedStatistics = FALSE,
    permutedStatisticsFile = 
@@ -176,6 +178,14 @@ modulePreservation = function(
      } else {
        .checkAdj(multiData, verbose, indent)
      }
+   }
+
+   if (!is.null(multiWeights))
+   {
+     if (dataIsExpr) {
+       multiWeights = .checkAndScaleMultiWeights(multiWeights, multiData, scaleByMax = FALSE);
+     } else
+       stop("Weights cannot be supplied when 'dataIsExpr' is FALSE.");
    }
 
    # Check for presence of dimnames, assign if none, and make them unique.
@@ -277,14 +287,22 @@ modulePreservation = function(
      if (is.numeric(multiColor[[s]]))  # Caution: need a valid s here.
      {
        greyName = 0
-       goldName = 0.1;
      } else {
        greyName = "grey"
-       goldName = "gold"
      }
    } else  {
-     if (is.numeric(greyName)) goldName = 0.1 else goldName = "gold"
+     if (is.null(goldName)) goldName = if (is.numeric(greyName)) 0.1 else "gold"
    }
+
+   if (is.null(goldName))
+   {
+     if (is.numeric(multiColor[[s]]))  # Caution: need a valid s here.
+     {
+       goldName = 0.1;
+     } else {
+       goldName = "gold"
+     }
+   } 
 
    if (verbose > 2) printFlush(paste("  ..unassigned 'module' name:", greyName, 
                                      "\n  ..all network sample 'module' name:", goldName));
@@ -340,7 +358,7 @@ modulePreservation = function(
    gc();
 
    if (verbose > 0) printFlush(paste(spaces, " ..calculating observed preservation values"))
-   observed = .modulePreservationInternal(multiData, multiColor, dataIsExpr = dataIsExpr,
+   observed = .modulePreservationInternal(multiData, multiColor, multiWeights = multiWeights, dataIsExpr = dataIsExpr,
                      calculatePermutation = FALSE, networkType = networkType,
                      referenceNetworks = referenceNetworks, 
                      testNetworks = testNetworks, 
@@ -353,7 +371,7 @@ modulePreservation = function(
                      ccTupletSize = ccTupletSize,
                      calculateCor.kIMall = calculateCor.kIMall,
                      calculateClusterCoeff = calculateClusterCoeff,
-                     checkData = FALSE, greyName = greyName, 
+                     checkData = FALSE, greyName = greyName, goldName = goldName,
                      verbose = verbose -3, indent = indent + 2);
 
    if (nPermutations==0) return(list(observed = observed))
@@ -429,6 +447,13 @@ modulePreservation = function(
             {
               datRef=multiData[[ref]]$data[ , loc1]
               datTest=multiData[[tnet]]$data[ , loc2]
+              if (!is.null(multiWeights))
+              {
+                weightsRef = multiWeights[[ref]]$data[, loc1];
+                weightsTest = multiWeights[[tnet]]$data[, loc2];
+              } else {
+                weightsRef = weightsTest = NULL;
+              }
             } else {
               datRef=multiData[[ref]]$data[loc1, loc1]
               datTest=multiData[[tnet]]$data[loc2, loc2]
@@ -529,10 +554,12 @@ modulePreservation = function(
                }
             }
             
-            permExpr=list()
-            permExpr[[1]]=list(data=datRef)
-            permExpr[[2]]=list(data=datTest)
+            #permExpr=list()
+            #permExpr[[1]]=list(data=datRef)
+            #permExpr[[2]]=list(data=datTest)
+            permExpr = multiData(datRef, datTest);
             names(permExpr) = setNames[c(ref, tnet)];
+            if (!is.null(multiWeights)) permWeights = multiData(weightsRef, weightsTest) else permWeights = NULL;
             permOut[[iref]][[tnet]]=list(
                       regStats = array(NA, dim = c(nPermMods+2-(!interpolationUsed[tnet, iref]), 
                                                    nRegStats, nPermutations)),
@@ -564,7 +591,8 @@ modulePreservation = function(
                {
                       set.seed(seed + perm + perm^2); 
                       gc();
-                      .modulePreservationInternal(permExpr, permColors, dataIsExpr = dataIsExpr,
+                      .modulePreservationInternal(permExpr, permColors, multiWeights = permWeights,
+                                                  dataIsExpr = dataIsExpr,
                                                   calculatePermutation = TRUE,
                                                   multiColorForAccuracy = permColorsForAcc,
                                                   networkType = networkType,
@@ -578,7 +606,7 @@ modulePreservation = function(
                                                   calculateCor.kIMall = calculateCor.kIMall,
                                                   calculateClusterCoeff = calculateClusterCoeff,
                                                   # calculateQuality = calculateQuality,
-                                                  greyName = greyName,
+                                                  greyName = greyName, goldName = goldName,
                                                   checkData = FALSE,
                                                   verbose = verbose -3, indent = indent + 3)
                }
@@ -603,23 +631,24 @@ modulePreservation = function(
                #    printFlush("WARNING: something's wrong with the RNG... old and new RNG equal.");
                #oldRNG = .Random.seed
                #set.seed(perm*2);
-               datout= .modulePreservationInternal(permExpr, permColors, dataIsExpr = dataIsExpr, 
-                                                  calculatePermutation = TRUE,
-                                                  multiColorForAccuracy = permColorsForAcc, 
-                                                  networkType = networkType,
-                                                  corFnc = corFnc, corOptions = corOptions,
-                                                  referenceNetworks=1, 
-                                                  testNetworks = list(2),
-                                                  densityOnly = useInterpolation,
-                                                  maxGoldModuleSize = maxGoldModuleSize,
-                                                  maxModuleSize = maxModuleSize, quickCor = quickCor,
-                                                  ccTupletSize = ccTupletSize,
-                                                  calculateCor.kIMall = calculateCor.kIMall,
-                                                  calculateClusterCoeff = calculateClusterCoeff,
-                                                  # calculateQuality = calculateQuality,
-                                                  greyName = greyName,
-                                                  checkData = FALSE, 
-                                                  verbose = verbose -3, indent = indent + 3)
+               datout= .modulePreservationInternal(permExpr, permColors, 
+                              multiWeights = permWeights, dataIsExpr = dataIsExpr, 
+                              calculatePermutation = TRUE,
+                              multiColorForAccuracy = permColorsForAcc, 
+                              networkType = networkType,
+                              corFnc = corFnc, corOptions = corOptions,
+                              referenceNetworks=1, 
+                              testNetworks = list(2),
+                              densityOnly = useInterpolation,
+                              maxGoldModuleSize = maxGoldModuleSize,
+                              maxModuleSize = maxModuleSize, quickCor = quickCor,
+                              ccTupletSize = ccTupletSize,
+                              calculateCor.kIMall = calculateCor.kIMall,
+                              calculateClusterCoeff = calculateClusterCoeff,
+                              # calculateQuality = calculateQuality,
+                              greyName = greyName, goldName = goldName,
+                              checkData = FALSE, 
+                              verbose = verbose -3, indent = indent + 3)
                if (!datout[[1]]$netPresent[2])
                   stop(paste("Internal error: no data in permuted set preservation measures. \n",
                              "Please contact the package maintainers. Sorry!"))
@@ -1163,7 +1192,9 @@ modulePreservation = function(
 
 # multiData contains either expression data or adjacencies; which one is indicated in dataIsExpr
 
-.modulePreservationInternal = function(multiData, multiColor, dataIsExpr,
+.modulePreservationInternal = function(multiData, multiColor, 
+                              multiWeights,
+                              dataIsExpr,
                               calculatePermutation,
                               multiColorForAccuracy = NULL,
                               networkType = "signed", 
@@ -1180,6 +1211,7 @@ modulePreservation = function(
                               # calculateQuality = FALSE, 
                               checkData = TRUE,
                               greyName,
+                              goldName,
                               pEpsilon = 1e-200,
                               verbose = 1, indent = 0)
 {
@@ -1207,7 +1239,7 @@ modulePreservation = function(
      color2expr = match(names(multiColor), names(multiData));
      if (any(is.na(color2expr)))
        stop("Entries of 'multiColor' must name-match entries in 'multiData'.");
-     for(s in 1:nNets)
+     for (s in 1:nNets)
      {
         multiData[[s]]$data = as.matrix(multiData[[s]]$data);
         loc = which(names(multiColor) %in% names(multiData)[s])
@@ -1220,8 +1252,6 @@ modulePreservation = function(
      multiColor = multiColor2
      rm(multiColor2);
    }
-
-   if (is.numeric(greyName)) goldName = 0.1 else goldName = "gold"
 
    MEgrey = paste("ME", greyName, sep="");
    MEgold = paste("ME", goldName, sep="");
@@ -1249,6 +1279,7 @@ modulePreservation = function(
           if (dataIsExpr)
           {
              multiData[[s]]$data = multiData[[s]]$data[, keepGenes[[s]]];
+             if (!is.null(multiWeights)) multiWeights[[s]]$data = multiWeights[[s]]$data[, keepGenes[[s]]];
           } else {
              multiData[[s]]$data = multiData[[s]]$data[keepGenes[[s]], keepGenes[[s]]];
           }
@@ -1299,8 +1330,15 @@ modulePreservation = function(
           }
           if (dataIsExpr)
           {
-            datTest=multiData[[tnet]]$data[,loc2]
             datRef=multiData[[ref]]$data[,loc1]
+            datTest=multiData[[tnet]]$data[,loc2]
+            if (!is.null(multiWeights))
+            {
+              weightsRef = multiWeights[[ref]]$data[, loc1];
+              weightsTest = multiWeights[[tnet]]$data[, loc2];
+            } else {
+              weightsRef = weightsTest = NULL;
+            }
           } else {
             datTest=multiData[[tnet]]$data[loc2, loc2]
             datRef=multiData[[ref]]$data[loc1, loc1]
@@ -1364,6 +1402,13 @@ modulePreservation = function(
             goldRef = datRef[, goldModR];
             goldRefP = datRef[, goldModT];
             goldTest = datTest[, goldModT];
+            if (!is.null(multiWeights))
+            {
+              goldRefW = weightsRef[, goldModR];
+              goldRefPW = weightsRef[, goldModT];
+              goldTestW = weightsTest[, goldModT];
+            } else
+              goldRefW = goldRefPW = goldTestW = NULL;
           } else {
             goldRef = datRef[goldModR, goldModR];
             goldRefP = datRef[goldModT, goldModT];
@@ -1392,6 +1437,7 @@ modulePreservation = function(
              if (dataIsExpr)
              {
                 datRef = datRef[, keepGenes]
+                if (!is.null(multiWeights)) weightsRef = weightsRef[, keepGenes] else weightsRef = NULL;
              } else
                 datRef = datRef[keepGenes, keepGenes]
              nRefGenes = length(colorRef);
@@ -1402,6 +1448,10 @@ modulePreservation = function(
                 {
                    datTest = datTest[, keepPerm];
                    datRefP = datRef[, keepPerm];
+                   if (!is.null(multiWeights))  {
+                      weightsTest = weightsTest[, keepPerm];
+                      weightsRefP = weightsRef[, keepPerm];
+                   } else weightsTest = weightsRefP = NULL;
                 } else {
                    datTest = datTest[keepPerm, keepPerm];
                    datRefP = datRef[keepPerm, keepPerm];
@@ -1411,6 +1461,10 @@ modulePreservation = function(
                 {
                   datTest = datTest[, keepGenes];
                   datRefP = datRef;
+                  if (!is.null(multiWeights))  {
+                     weightsTest = weightsTest[, keepGenes];
+                     weightsRefP = weightsRef;
+                  } else weightsTest = weightsRefP = NULL;
                 } else {
                   datTest = datTest[keepGenes, keepGenes];
                   datRefP = datRef;
@@ -1424,12 +1478,17 @@ modulePreservation = function(
                {
                  datRefP = datRef[, perm];
                  datTest = datTest[, perm];
+                 if (!is.null(multiWeights))  {
+                     weightsTest = weightsTest[, perm];
+                     weightsRefP = weightsRef[, perm];
+                 } else weightsTest = weightsRefP = NULL;
                } else {
                  datRefP = datRef[perm, perm];
                  datTest = datTest[perm, perm];
                }
              } else {
                datRefP = datRef;
+               weightsRefP = weightsRef;
              }
           }
           if (dataIsExpr)
@@ -1437,18 +1496,24 @@ modulePreservation = function(
              datRef = cbind(datRef, goldRef)
              datRefP = cbind(datRefP, goldRefP)
              datTest = cbind(datTest, goldTest)
+             if (!is.null(multiWeights))
+             {
+               weightsRef = cbind(weightsRef, goldRefW)
+               weightsRefP = cbind(weightsRefP, goldRefPW)
+               weightsTest = cbind(weightsTest, goldTestW)
+             }
           } else {
              datRef = .combineAdj(datRef, goldRef);
              datRefP = .combineAdj(datRefP, goldRefP);
              datTest = .combineAdj(datTest, goldTest);
-             rownames(datRef) = make.unique(rownames(datRef));
-             rownames(datRefP) = make.unique(rownames(datRefP));
-             rownames(datTest) = make.unique(rownames(datTest));
+             if (!is.null(rownames(datRef))) rownames(datRef) = make.unique(rownames(datRef));
+             if (!is.null(rownames(datRefP))) rownames(datRefP) = make.unique(rownames(datRefP));
+             if (!is.null(rownames(datTest))) rownames(datTest) = make.unique(rownames(datTest));
              gc();
           }
-          colnames(datRef) = make.unique(colnames(datRef));
-          colnames(datRefP) = make.unique(colnames(datRefP));
-          colnames(datTest) = make.unique(colnames(datTest));
+          if (!is.null(colnames(datRef))) colnames(datRef) = make.unique(colnames(datRef));
+          if (!is.null(colnames(datRefP))) colnames(datRefP) = make.unique(colnames(datRefP));
+          if (!is.null(colnames(datTest))) colnames(datTest) = make.unique(colnames(datTest));
              
           gold = rep(goldName, goldModSize)
           colorRef_2 = c(as.character(colorRef),gold)
@@ -1462,7 +1527,8 @@ modulePreservation = function(
              
           if (dataIsExpr)
           {
-            stats = .coreCalcForExpr(datRef, datRefP, datTest, colorRef_2, opt);
+            stats = .coreCalcForExpr(datRef, datRefP, datTest, colorRef_2, 
+                                     weightsRef, weightsRefP, weightsTest, opt);
             interPresNames = spaste(corFnc, c(".kIM", ".kME", ".kMEall", 
                                              spaste(".", corFnc), ".clusterCoeff", ".MAR"));
             measureNames = c("propVarExplained", "meanSignAwareKME", "separability", 
@@ -1603,7 +1669,8 @@ modulePreservation = function(
 #
 #=======================================================================================
 
-.coreCalcForExpr = function(datRef, datRefP, datTest, colors, opt)
+.coreCalcForExpr = function(datRef, datRefP, datTest, colors, 
+                       weightsRef, weightsRefP, weightsTest, opt)
 {
   colorLevels = levels(factor(colors))
   nMods =length(colorLevels)
@@ -1619,21 +1686,21 @@ modulePreservation = function(
   if (!opt$densityOnly)
   {            
      ME[[1]]=moduleEigengenes(datRef, colors)$eigengenes
-     kME[[1]]=as.matrix(signedKME(datRef,ME[[1]], corFnc = opt$corFnc, corOptions = opt$corOptions))
+     kME[[1]]=as.matrix(signedKME(datRef,ME[[1]], exprWeights = weightsRef, corFnc = opt$corFnc, corOptions = opt$corOptions))
   }
    
   if (opt$calculatePermutation | opt$densityOnly)
   {
     #printFlush("Calculating ME[[2]]");
     ME[[2]]=moduleEigengenes(datRefP, colors)$eigengenes
-    kME[[2]]=as.matrix(signedKME(datRefP,ME[[2]], corFnc = opt$corFnc, corOptions = opt$corOptions))
+    kME[[2]]=as.matrix(signedKME(datRefP,ME[[2]], exprWeights = weightsRefP, corFnc = opt$corFnc, corOptions = opt$corOptions))
   } else {
     ME[[2]] = ME[[1]]
     kME[[2]] = kME[[1]]
   }
 
   ME[[3]]=moduleEigengenes(datTest, colors)$eigengenes
-  kME[[3]]=as.matrix(signedKME(datTest,ME[[3]], corFnc = opt$corFnc, corOptions = opt$corOptions))
+  kME[[3]]=as.matrix(signedKME(datTest,ME[[3]], exprWeights = weightsTest, corFnc = opt$corFnc, corOptions = opt$corOptions))
 
   modGenes = list();
   for (m in 1:nMods)
@@ -1651,12 +1718,12 @@ modulePreservation = function(
         names1=substring(colnames(kME[[1]]),4)
         j1=which(names1==colorLevels[j])
         #corkME[j]=cor(kME[[1]][loc,j1],kME[[3]][loc,j1], use = "p")
-        corExpr = parse(text=paste(opt$corFnc, "(kME[[1]][modGenes[[j]],j1],kME[[3]][modGenes[[j]],j1]", 
+        corExpr = parse(text=paste(opt$corFnc, "(kME[[1]][modGenes[[j]],j1], kME[[3]][modGenes[[j]],j1]", 
                                    prepComma(opt$corOptions), ")"));
         corkME[j] = abs(eval(corExpr));
 
         #corkMEall[j]=cor(kME[[1]][,j1],kME[[3]][,j1], use = "p")
-        corExpr = parse(text=paste(opt$corFnc, "(kME[[1]][,j1],kME[[3]][,j1] ", prepComma(opt$corOptions), ")"));
+        corExpr = parse(text=paste(opt$corFnc, "(kME[[1]][,j1], kME[[3]][,j1] ", prepComma(opt$corOptions), ")"));
         corkMEall[j] = abs(eval(corExpr));
    #     covkME[j]=cov(kME[[1]][loc,j1],kME[[3]][loc,j1], use = "p")
    #     meanProductkME[j] = scalarProduct(kME[[1]][loc,j1],kME[[3]][loc,j1])
@@ -1724,21 +1791,24 @@ TRUE))
      {
         #ModuleCorData1=cor(datRef[,modGenes[[j]]],use="p", quick = as.numeric(opt$quickCor))
         corExpr = parse(text=paste(opt$corFnc, "(datRef[,modGenes[[j]]]", prepComma(opt$corOptions), 
-                                           ", quick = as.numeric(opt$quickCor))"));
+                           if (!is.null(weightsRef)) ", weights.x = weightsRef[, modGenes[[j]]]" else "",
+                           ", quick = as.numeric(opt$quickCor))"));
         ModuleCorData1=eval(corExpr);
      }
      if (opt$calculatePermutation | opt$densityOnly)
      {
         #ModuleCorData2=cor(datRefP[,modGenes[[j]]],use="p", quick = as.numeric(opt$quickCor))
         corExpr = parse(text=paste(opt$corFnc, "(datRefP[,modGenes[[j]]]", prepComma(opt$corOptions), 
-                                           ", quick = as.numeric(opt$quickCor))"));
+                        if (!is.null(weightsRefP)) ", weights.x = weightsRefP[, modGenes[[j]]]" else "",
+                        ", quick = as.numeric(opt$quickCor))"));
         ModuleCorData2 = eval(corExpr);
      } else 
         ModuleCorData2 = ModuleCorData1;
 
      #ModuleCorData3=cor(datTest[,modGenes[[j]]],use="p", quick = as.numeric(opt$quickCor))
      corExpr = parse(text=paste(opt$corFnc, "(datTest[,modGenes[[j]]]", prepComma(opt$corOptions),
-                                           ", quick = as.numeric(opt$quickCor))"));
+                        if (!is.null(weightsTest)) ", weights.x = weightsTest[, modGenes[[j]]]" else "",
+                       ", quick = as.numeric(opt$quickCor))"));
      #printFlush(j);
      ModuleCorData3 = try(eval(corExpr));
      if (inherits(ModuleCorData3, "try-error")) browser();

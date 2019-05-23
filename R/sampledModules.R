@@ -241,9 +241,7 @@ sampledHierarchicalConsensusModules = function(
       networkOptions = networkOptions1,
       consensusTree = consensusTree,
 
-      saveConsensusTOM = TRUE,
       consensusTOMFilePattern = runTOMFileBase,
-      saveIndividualTOMs = TRUE,
       individualTOMFileNames = individualTOMFiles1,
                                            
       keepIndividualTOMs = FALSE,

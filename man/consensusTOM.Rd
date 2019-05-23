@@ -19,7 +19,7 @@ consensusTOM(
       maxBlockSize = 5000,
       blockSizePenaltyPower = 5,
       nPreclusteringCenters = NULL,
-      randomSeed = 12345,
+      randomSeed = 54321,
 
       # Network construction arguments: correlation options
 
@@ -158,10 +158,9 @@ caution. }
   \item{replaceMissingAdjacencies}{logical: should missing values in the calculation of adjacency be replaced
 by 0?}
 
-  \item{TOMType}{ one of \code{"none"}, \code{"unsigned"}, \code{"signed"}. If \code{"none"}, adjacency
-will be used for clustering. If \code{"unsigned"}, the standard TOM will be used (more generally, TOM
-function will receive the adjacency as input). If \code{"signed"}, TOM will keep track of the sign of
-correlations between neighbors. }
+  \item{TOMType}{ one of \code{"none"}, \code{"unsigned"}, \code{"signed"}, \code{"signed Nowick"},
+\code{"unsigned 2"}, \code{"signed 2"} and \code{"signed Nowick 2"}. If \code{"none"}, adjacency
+will be used for clustering. See \code{\link{TOMsimilarityFromExpr}} for details.}
 
   \item{TOMDenom}{ a character string specifying the TOM variant to be used. Recognized values are
 \code{"min"} giving the standard TOM described in Zhang and Horvath (2005), and \code{"mean"} in which

@@ -96,7 +96,10 @@ This function provides a way to do so. The calling code should section the scree
 in the upper section and use this function
 to plot color annotation in the order corresponding to the dendrogram in the lower section. 
 }
-\value{ None.
+\value{ A list with the following components
+ \item{colorRectangles}{A list with one component per color row. Each component
+   is a list with 4 elements \code{xl, yb, xr, yt} giving the left, bottom, right and top coordinates of the rectangles in
+that row.}
 }
 \note{ This function replaces \code{plotHclustColors} in package \code{moduleColor}.
 }

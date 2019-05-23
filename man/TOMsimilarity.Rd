@@ -30,10 +30,9 @@ TOMdist(
   \item{adjMat}{ adjacency matrix, that is a square, symmetric matrix with entries between 0 and 1 
 (negative values are allowed if \code{TOMType=="signed"}).  }
 
-  \item{TOMType}{ a character string specifying TOM type to be calculated. One of \code{"unsigned"},
-\code{"signed"} or \code{"signed Nowick"}. If \code{"unsigned"}, the standard TOM will be used (more generally, TOM
-function will receive the adjacency as input). If \code{"signed"}, TOM will keep track of the sign of
-the adjacency between neighbors. If \code{"signed Nowick"}, the signed ajdancecy described in Nowick et al. will be used.}
+  \item{TOMType}{ one of \code{"none"}, \code{"unsigned"}, \code{"signed"}, \code{"signed Nowick"},
+\code{"unsigned 2"}, \code{"signed 2"} and \code{"signed Nowick 2"}. If \code{"none"}, adjacency
+will be used for clustering. See \code{\link{TOMsimilarityFromExpr}} for details.}
 
   \item{TOMDenom}{ a character string specifying the TOM variant to be used. Recognized values are
 \code{"min"} giving the standard TOM described in Zhang and Horvath (2005), and \code{"mean"} in which
@@ -62,12 +61,8 @@ two spaces. }
 overlap (which is a measure of similarity) into a measure of dissimilarity by subtracting it from 1. 
 
   Basic checks on the adjacency matrix are performed and missing entries are replaced by zeros.
-  If \code{TOMType} is \code{"unsigned"}, entries of the adjacency matrix are required to lie between 0 and 1;
-for \code{TOMType} is \code{"signed"} or \code{"signed Nowick"}, they can be between -1 and 1. 
-For \code{"unsigned"} and \code{"signed"} the resulting TOM entries, as
-well as the corresponding dissimilarities, lie between 0 and 1. The \code{"signed Nowick"} version retains the signs of
-the input adjacency matrix throughout the calculation and will typically return negative values for nodes with (sufficiently
-strongly) negative adjacencies.
+
+  See \code{\link{TOMsimilarityFromExpr}} for details on the various TOM types.
 
   The underlying C code assumes that the diagonal of the adjacency matrix equals 1. If this is not the case,
 the diagonal of the input is set to 1 before the calculation begins.

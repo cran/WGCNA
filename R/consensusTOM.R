@@ -176,7 +176,8 @@ newNetworkOptions = function(
     checkPower = TRUE,
 
     # Topological overlap options
-    TOMType = c("signed", "signed Nowick", "unsigned", "none"),
+    TOMType = c("signed", "signed Nowick", "unsigned", "none",
+                "signed 2", "signed Nowick 2", "unsigned 2"),
     TOMDenom = c("mean", "min"),
     suppressTOMForZeroAdjacencies = FALSE,
     suppressNegativeTOM = FALSE,
@@ -571,7 +572,7 @@ individualTOMs = function(
    maxBlockSize = 5000, 
    blockSizePenaltyPower = 5,
    nPreclusteringCenters = NULL,
-   randomSeed = 12345,
+   randomSeed = 54321,
 
    # Network construction options. This can be a single object of class NetworkOptions, or a multiData
    # structure of NetworkOptions objects, one per element of multiExpr.
@@ -677,6 +678,7 @@ individualTOMs = function(
                        preferredSize = maxBlockSize,
                        sizePenaltyPower = blockSizePenaltyPower, checkData = FALSE,
                        nCenters = nPreclusteringCenters,
+                       randomSeed = randomSeed,
                        verbose = verbose-2, indent = indent + 1);
       gBlocks = .orderLabelsBySize(clustering$clusters);
     } else 
@@ -974,7 +976,7 @@ consensusTOM = function(
       maxBlockSize = 5000,
       blockSizePenaltyPower = 5,
       nPreclusteringCenters = NULL,
-      randomSeed = 12345,
+      randomSeed = 54321,
 
       # Network construction arguments: correlation options
 
@@ -1086,7 +1088,7 @@ consensusTOM = function(
                          maxBlockSize = maxBlockSize,
                          blockSizePenaltyPower = blockSizePenaltyPower,
                          nPreclusteringCenters = nPreclusteringCenters,
-                         randomSeed = NULL,
+                         randomSeed = randomSeed,
                          corType = corType,
                          maxPOutliers = maxPOutliers,
                          quickCor = quickCor,

@@ -22,7 +22,7 @@ individualTOMs(
    maxBlockSize = 5000,
    blockSizePenaltyPower = 5,
    nPreclusteringCenters = NULL,
-   randomSeed = 12345,
+   randomSeed = 54321,
 
    # Network construction options
    networkOptions,
