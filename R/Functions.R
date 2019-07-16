@@ -5060,6 +5060,7 @@ labeledHeatmap = function (
   cex.lab = NULL, 
   cex.lab.x = cex.lab,
   cex.lab.y = cex.lab,
+  cex.legend = cex.lab,
   colors.lab.x = 1,
   colors.lab.y = 1,
   font.lab.x = 1,
@@ -5169,7 +5170,7 @@ labeledHeatmap = function (
   if (invertColors) colors = rev(colors);
 
   labPos = .heatmapWithLegend(Matrix[showRows, showCols, drop = FALSE], 
-                              signed = FALSE, colors = colors, naColor = naColor, cex.legend = cex.lab, 
+                              signed = FALSE, colors = colors, naColor = naColor, cex.legend = cex.legend, 
                               plotLegend = plotLegend,  keepLegendSpace = keepLegendSpace, ...)
   plotbox = labPos$box;
   xmin = plotbox[1]; xmax = plotbox[2]; ymin = plotbox[3]; yrange = plotbox[4]-ymin;
