@@ -22,6 +22,7 @@ labeledHeatmap(
   yColorWidth = 2 * strwidth("M"), 
   xColorOffset = strheight("M")/3, 
   yColorOffset = strwidth("M")/3,
+  colorMatrix = NULL,
   colors = NULL, 
   naColor = "grey",
   textMatrix = NULL, 
@@ -107,9 +108,13 @@ Recognized values are (unique abbreviations of) \code{"left", "right"}. }
   \item{xColorOffset}{ gap between the y axis and color labels, in user coordinates.}
   \item{yColorOffset}{ gap between the x axis and color labels, in user coordinates.}
 
-  \item{colors}{ color pallette to be used in the heatmap. Defaults to \code{\link{heat.colors}}. }
+  \item{colorMatrix}{ optional explicit specification for the color of the heatmap cells. If given, overrides values
+specified in \code{colors} and \code{naColor}.}
 
-  \item{naColor}{ color to be used for encoding missing data. }
+  \item{colors}{ color pallette to be used in the heatmap. Defaults to \code{\link{heat.colors}}. Only used if
+\code{colorMatrix} is not given. }
+
+  \item{naColor}{ color to be used for encoding missing data. Only used if \code{colorMatrix} is not used.}
 
   \item{textMatrix}{ optional text entries for each cell. Either a matrix of the same dimensions as
 \code{Matrix} or a vector of the same length as the number of entries in \code{Matrix}. }

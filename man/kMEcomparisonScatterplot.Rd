@@ -68,7 +68,7 @@ The function "pdf", which can be found in the grDevices library, is required to 
 }
 \examples{
 # Example output file ("kME_correlations_between_A_and_B_inMod.pdf") using simulated data.
-
+\dontrun{
 set.seed = 100
 ME=matrix(0,50,5)
 for (i in 1:5) ME[,i]=sample(1:100,50)
@@ -77,6 +77,7 @@ simData1 = simulateDatExpr5Modules(MEturquoise=ME[,1],MEblue=ME[,2],
 simData2 = simulateDatExpr5Modules(MEturquoise=ME[,1],MEblue=ME[,2],
                           MEbrown=ME[,3],MEyellow=ME[,4], MEgreen=ME[,5])
 kMEcomparisonScatterplot(simData1$datExpr,simData2$datExpr,simData1$truemodule)
+}
 
 }
 \keyword{misc}

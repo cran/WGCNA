@@ -86,6 +86,7 @@ hierarchicalConsensusModules = function(
 
     impute = TRUE,
     trapErrors = FALSE,
+    excludeGrey = FALSE,
 
     # Module merging options
 
@@ -222,6 +223,9 @@ hierarchicalConsensusModules = function(
 
     removeConsensusTOMOnExit = FALSE;
   }
+  useSets = consensusTreeInputs(consensusTree)
+  nUseSets = length(useSets)
+
   ## Re-set network options to make them a multiData structure with 1 entry per input set.
   networkOptions = consensusTOMInfo$individualTOMInfo$networkOptions;
   
@@ -239,13 +243,18 @@ hierarchicalConsensusModules = function(
     if (haveWeights) multiWeights = mtd.subset(multiWeights, gsg$goodSamples, gsg$goodGenes);
   }
 
-  hasMissing = unlist(multiData2list(mtd.apply(multiExpr, function(x) { any(is.na(x)) })));
+  hasMissing = unlist(multiData2list(mtd.apply(multiExpr[useSets], function(x) { any(is.na(x)) })));
   # prepare scaled and imputed multiExpr.
   multiExpr.scaled = mtd.apply(multiExpr, scale);
   if (is.null(multiExpr.imputed)) 
+  {
      multiExpr.imputed = mtd.mapply(function(x, doImpute) 
                          { if (doImpute) t(impute.knn(t(x))$data) else x },
-                                   multiExpr.scaled, hasMissing);
+                                   multiExpr.scaled[useSets], hasMissing);
+  } else {
+     if (is.null(names(multiExpr.imputed))) names(multiExpr.imputed) = names(multiExpr)
+     multiExpr.imputed = multiExpr.imputed[useSets];
+  }
 
   nGGenes = sum(gsg$goodGenes);
   nGSamples = sapply(gsg$goodSamples, sum);
@@ -259,7 +268,6 @@ hierarchicalConsensusModules = function(
 
   # reassignThreshold = reassignThresholdPS^nSets;
 
-  consMEs = vector(mode = "list", length = nSets);
   dendros = list();
 
   cutreeLabels = list();
@@ -274,8 +282,8 @@ hierarchicalConsensusModules = function(
     block = c(1:nGGenes)[gBlocks==blockLevels[blockNo]];
     nBlockGenes = length(block);
 
-    selExpr = mtd.subset(multiExpr, , block);
-    if (haveWeights) selWeights = mtd.subset(multiWeights, , block);
+    selExpr = mtd.subset(multiExpr[useSets], , block);
+    if (haveWeights) selWeights = mtd.subset(multiWeights[useSets], , block);
     errorOccurred = FALSE;
     consTomDS = BD.getData(consensusTOMInfo$consensusData, blockNo);
     consTomDS = 1-consTomDS;
@@ -296,7 +304,7 @@ hierarchicalConsensusModules = function(
     if (useBranchEigennodeDissim)
     {
       externalSplitOptions[[e.index]] = list(multiExpr = mtd.subset(multiExpr.imputed,, block),
-               networkOptions = networkOptions,
+               networkOptions = networkOptions[useSets],
                consensusTree = consensusTree);
       e.index = e.index +1;
     }
@@ -351,12 +359,12 @@ hierarchicalConsensusModules = function(
 
   #prune = try(pruneAndMergeConsensusModules(
   prune = pruneAndMergeConsensusModules(
-     multiExpr = multiExpr,
-     multiWeights = multiWeights,
+     multiExpr = multiExpr[useSets],
+     multiWeights = multiWeights[useSets],
      multiExpr.imputed = multiExpr.imputed,
      labels = goodGeneLabels,
 
-     networkOptions = networkOptions,
+     networkOptions = networkOptions[useSets],
      consensusTree = consensusTree,
 
      minModuleSize = minModuleSize,
@@ -377,7 +385,7 @@ hierarchicalConsensusModules = function(
      iterate = iteratePruningAndMerging,
      collectGarbage = collectGarbage,
      getDetails = TRUE,
-     verbose = verbose, indent=indent)#, silent = TRUE);
+     verbose = verbose, indent=indent + 1)#, silent = TRUE);
 
   if (inherits(prune, "try-error"))
   {
@@ -388,10 +396,10 @@ hierarchicalConsensusModules = function(
     mergedLabels = prune$labels;
 
   allLabels[gsg$goodGenes] = goodGeneLabels;
-
-  MEs = try(multiSetMEs(multiExpr, universalColors = mergedLabels,
+  MEs = try(multiSetMEs(multiExpr[useSets], universalColors = mergedLabels,
+                        excludeGrey = excludeGrey, grey = 0,
                             # trapErrors = TRUE, returnValidOnly = TRUE
-                            ), silent = TRUE);
+                        verbose = verbose-1, indent = indent + 1   ), silent = TRUE);
   if (class(MEs)=='try-error')
   {
     warning(paste('blockwiseConsensusModules: ME calculation failed with this message:\n     ',
@@ -405,8 +413,9 @@ hierarchicalConsensusModules = function(
       out[gs] = 1:sum(gs);
       out;
     });
-    allSampleMEs = mtd.subset(MEs, index);
-    for (set in 1:nSets) rownames(allSampleMEs[[set]]$data) = originalSampleNames[[set]]$data;
+    names(index) = names(multiExpr);
+    allSampleMEs = mtd.subset(MEs, index[useSets]);
+    for (set in 1:nUseSets) rownames(allSampleMEs[[set]]$data) = originalSampleNames[[ useSets[set] ]]$data;
   }
 
   if (removeConsensusTOMOnExit) 
@@ -484,14 +493,15 @@ pruneConsensusModules = function(
   oldLabels = labels;
   moduleIndex = sort(unique(labels));
   moduleIndex = moduleIndex[moduleIndex!=0];
+  useInputs = consensusTreeInputs(consensusTree, flatten = TRUE)
   if (is.null(MEs))
   {
     # If multiExpr.imputed were not given, do not impute here, let moduleEigengenes do it since the imputation
     # should be faster there.
     if (is.null(multiExpr.imputed)) multiExpr.imputed = multiExpr
-    MEs = multiSetMEs(multiExpr.imputed, universalColors = labels,
+    MEs = multiSetMEs(multiExpr.imputed[useInputs], universalColors = labels,
                   excludeGrey = TRUE, grey = unassignedLabel, impute = impute,
-                  verbose = verbose-4, indent = indent + 3);
+                  verbose = verbose-1, indent = indent + 1);
   } else {
     meSize = checkSets(MEs);
   }
@@ -518,7 +528,7 @@ pruneConsensusModules = function(
                    netOpt$corOptions));
       if (!grepl("signed", netOpt$networkType)) kme = abs(kme);
       kme;
-    }, multiExpr, multiWeights, MEs, networkOptions, returnList = TRUE);
+    }, multiExpr[useInputs], multiWeights[useInputs], MEs, networkOptions, returnList = TRUE);
 
   consKME = simpleHierarchicalConsensusCalculation(KME, consensusTree);
 
@@ -607,10 +617,11 @@ pruneAndMergeConsensusModules = function(
      return(if (getDetails) list(labels = labels, lastMergeInfo = NULL, details = NULL) else labels);
 
   spaces = indentSpaces(indent);
+  useSets = consensusTreeInputs(consensusTree);
   if (is.null(multiExpr.imputed)) 
-    multiExpr.imputed = mtd.apply(multiExpr, function(x) t(impute.knn(t(scale(x)))$data));
+    multiExpr.imputed = mtd.apply(multiExpr[useSets], function(x) t(impute.knn(t(scale(x)))$data));
 
-  .checkAndScaleMultiWeights(multiWeights, multiExpr, scaleByMax = FALSE);
+  .checkAndScaleMultiWeights(multiWeights[useSets], multiExpr[useSets], scaleByMax = FALSE);
 
   changed = TRUE;
   if (getDetails) details = list(originalLabels = labels);
@@ -618,13 +629,13 @@ pruneAndMergeConsensusModules = function(
   while (changed)
   {
     step = step + 1;
-    if (verbose > 0) printFlush(spaste(spaces, "step ", step));
+    if (verbose > 0) printFlush(spaste(spaces, "prune and merge consensusModules step ", step));
     stepDetails = list();
     oldLabels = labels;
     if (verbose>1) printFlush(paste(spaces, "..pruning genes with low KME.."));
     labels = pruneConsensusModules(
-       multiExpr,
-       multiWeights = multiWeights,
+       multiExpr[useSets],
+       multiWeights = multiWeights[useSets],
        multiExpr.imputed = multiExpr.imputed,
        MEs = NULL,
        labels = labels,
@@ -640,7 +651,7 @@ pruneAndMergeConsensusModules = function(
        impute = impute,
        collectGarbage = collectGarbage,
        checkWeights = FALSE,
-       verbose = verbose -2, indent = indent + 1)
+       verbose = verbose-1, indent = indent + 1)
 
     if (getDetails) stepDetails = c(stepDetails, list(prunedLabels = labels))
     #if (sum(labels>0)==0)
@@ -657,12 +668,12 @@ pruneAndMergeConsensusModules = function(
     {
       if (verbose>1) printFlush(paste(spaces, "..merging consensus modules that are too close.."));
 
-      mergedMods = hierarchicalMergeCloseModules(multiExpr, labels = labels,
+      mergedMods = hierarchicalMergeCloseModules(multiExpr[useSets], labels = labels,
                                 networkOptions = networkOptions, consensusTree = consensusTree,
                                 calibrateMESimilarities = calibrateMergingSimilarities,
                                 cutHeight = mergeCutHeight,
-                                relabel = TRUE,
-                                verbose = verbose-2, indent = indent + 1);
+                                relabel = TRUE, getNewUnassdME = FALSE, getNewMEs = FALSE,
+                                verbose = verbose-1, indent = indent + 1);
       if (getDetails) stepDetails = c(stepDetails, list(mergeInfo = mergedMods));
       labels = mergedMods$labels;
     }

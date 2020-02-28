@@ -11,6 +11,7 @@ usually below the dendrogram or a barplot.
 plotOrderedColors(
    order, 
    colors, 
+   main = "",
    rowLabels = NULL, 
    rowWidths = NULL, 
    rowText = NULL,
@@ -21,6 +22,8 @@ plotOrderedColors(
    cex.rowLabels = 1, 
    cex.rowText = 0.8,
    startAt = 0,
+   align = c("center", "edge"),
+   separatorLine.col = "black",
    ...)
 
 plotColorUnderTree(
@@ -35,6 +38,7 @@ plotColorUnderTree(
    addTextGuide = TRUE,
    cex.rowLabels = 1,
    cex.rowText = 0.8,
+   separatorLine.col = "black",
    ...)
 
 }
@@ -49,6 +53,8 @@ plotColorUnderTree(
 matrix (can also be an array or a data frame)
 with each column giving one color per object. Each column will be plotted as a horizontal row of colors
 under the dendrogram.}
+
+  \item{main}{Optional main title.}
 
   \item{rowLabels}{Labels for the colorings given in \code{colors}. The labels will be printed to the
 left of the color rows in the plot. If the argument is given, it must be a vector of length
@@ -82,6 +88,12 @@ giving the color rows under which the text rows should appear.}
   \item{startAt}{A numeric value indicating where in relationship to the left edge of the plot the center
 of the first rectangle should be. Useful values are 0 if ploting color under a dendrogram, and 0.5 if
 ploting colors under a barplot. }
+
+  \item{align}{Controls the alignment of the color rectangles. \code{"center"} means aligning centers of the rectangles on
+equally spaced values; code{"edge"} means aligning edges of the first and last rectangles on the edges of the plot
+region.}
+
+  \item{separatorLine.col}{Color of the line separating rows of color rectangles. If \code{NA}, no lines will be drawn.} 
 
   \item{\dots}{Other parameters to be passed on to the plotting method (such as \code{main} for the main
 title etc).}

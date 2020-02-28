@@ -76,6 +76,7 @@ hierarchicalConsensusModules(
 
    impute = TRUE,
    trapErrors = FALSE,
+   excludeGrey = FALSE,
 
    # Module merging options
 
@@ -266,6 +267,10 @@ disbanded (its genes are unlabeled and returned to the pool of genes waiting for
 \code{\link{moduleEigengenes}} for more details. }
 
  \item{trapErrors}{ logical: should errors in calculations be trapped? }
+
+ \item{excludeGrey}{ logical: should the returned module eigengenes exclude the eigengene of the "module" that contains
+unassigned genes? }
+
   \item{calibrateMergingSimilarities}{
 Logical: should module eigengene similarities be calibrataed before calculating the consensus? Although
 calibration is in principle desirable, the calibration methods currently available assume large data and do

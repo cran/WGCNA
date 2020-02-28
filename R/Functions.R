@@ -139,7 +139,7 @@ moduleEigengenes = function(expr, colors, impute = TRUE, nPC = 1, align = "along
         # this is the first principal component
         svd1$v[,1]
       }, silent = TRUE);
-    if (class(pc)=='try-error')
+    if (inherits(pc, 'try-error'))
     {
       if ( (!subHubs) && (!trapErrors) ) stop(pc);
       if (subHubs)
@@ -175,7 +175,7 @@ moduleEigengenes = function(expr, colors, impute = TRUE, nPC = 1, align = "along
       }
     }
     
-    if (class(pc)=='try-error')
+    if (inherits(pc, 'try-error'))
     {
       if (!trapErrors) stop(pc);
       if (verbose>0)
@@ -206,7 +206,7 @@ moduleEigengenes = function(expr, colors, impute = TRUE, nPC = 1, align = "along
         }
         0;
       }, silent = TRUE);
-      if (class(ae)=='try-error')
+      if (inherits(ae, 'try-error'))
       {
         if (!trapErrors) stop(ae);
         if (verbose>0)
@@ -220,7 +220,7 @@ moduleEigengenes = function(expr, colors, impute = TRUE, nPC = 1, align = "along
                       "failed with the following error \n     ",
                       ae, "The returned average expression vector will be invalid.\n"));
       }
-      validAEs[i] = !(class(ae)=='try-error');
+      validAEs[i] = !inherits(ae, 'try-error')
     }
   } 
   allOK = (sum(!validMEs)==0)
@@ -848,7 +848,7 @@ moduleNumber = function(dendro, cutHeight = 0.9, minSize = 50)
 fixDataStructure = function(data, verbose = 0, indent = 0)
 {
   spaces = indentSpaces(indent);
-  if ((class(data)!="list") || (class(data[[1]])!="list"))
+  if (!inherits(data, "list"))
   {
     if (verbose>0)
       printFlush(paste(spaces, 
@@ -881,7 +881,7 @@ checkSets = function(data, checkStructure = FALSE, useSets = NULL)
   if (is.null(useSets)) useSets = c(1:nSets);
   if (nSets<=0) stop("No data given.");
   structureOK = TRUE;
-  if ((class(data)!="list") || (class(data[[useSets[1]]])!="list"))
+  if (!inherits(data, "list")) 
   {
     if (checkStructure)
     {
@@ -1308,7 +1308,7 @@ mergeCloseModules = function(
     }
   }, silent = TRUE);
 
-  if (class(ok)=='try-error')
+  if (inherits(ok, 'try-error'))
   {
     if (!trapErrors) stop(ok);
     if (verbose>0)
@@ -1379,6 +1379,8 @@ hierarchicalMergeCloseModules = function(
 
   origColors = labels;
 
+  useSets = consensusTreeInputs(consensusTree);
+
   labels = labels[, drop = TRUE];
 
   if (all(replaceMissing(labels==unassdColor, TRUE)))
@@ -1392,29 +1394,29 @@ hierarchicalMergeCloseModules = function(
   if (verbose>3) printFlush(paste(spaces, 
             "  .. will use unassigned ME label", greyName));
 
-  setsize = checkSets(multiExpr);
-  nSets = setsize$nSets;
+  setsize = checkSets(multiExpr[useSets]);
+  nUseSets = setsize$nSets;
 
   if (is.null(multiExpr.imputed))
   {
     if (impute) {
-      multiExpr.imputed = mtd.apply(multiExpr, imputeByModule,
+      multiExpr.imputed = mtd.apply(multiExpr[useSets], imputeByModule,
            labels = labels, 
            excludeUnassigned = FALSE, unassignedLabel = unassdColor,
            scale = TRUE)
     } else 
-      multiExpr.imputed = multiExpr;
+      multiExpr.imputed = multiExpr[useSets];
   } else
     stopifnot(isTRUE(all.equal(checkSets(multiExpr.imputed), setsize)));
            
   if (!is.null(MEs))
   {
-    checkMEs = checkSets(MEs, checkStructure = TRUE);
+    checkMEs = checkSets(MEs[useSets], checkStructure = TRUE);
     if (checkMEs$structureOK)
     {
-      if (nSets!=checkMEs$nSets)
+      if (nUseSets!=checkMEs$nSets)
         stop("Input error: numbers of sets in multiExpr and MEs differ.")
-      for (set in 1:nSets)
+      for (set in 1:nUseSets)
       {
         if (checkMEs$nSamples[set]!=setsize$nSamples[set])
             stop(paste("Number of samples in MEs is incompatible with subset length for set", set));
@@ -1431,7 +1433,7 @@ hierarchicalMergeCloseModules = function(
   }
 
   if (inherits(networkOptions, "NetworkOptions")) 
-      networkOptions = list2multiData(.listRep(networkOptions, nSets));
+      networkOptions = list2multiData(.listRep(networkOptions, nUseSets));
 
   if (setsize$nGenes!=length(labels))
     stop("Number of genes in multiExpr is different from the length of original labels. They must equal.");
@@ -1920,6 +1922,10 @@ pickSoftThreshold = function (
         } else {
           corx = data[, useGenes];
         }
+        # Set the diagonal elements of corx to exactly 1. Possible small numeric errors can in extreme cases lead to
+        # negative connectivities.
+        ind = cbind(useGenes, 1:length(useGenes));
+        corx[ind] = 1;
         datk.local = matrix(NA, nGenes1, nPowers);
         corxPrev = matrix(1, nrow=nrow(corx), ncol=ncol(corx))
         powerVector1 <- c(0, head(powerVector, -1))
@@ -1944,6 +1950,7 @@ pickSoftThreshold = function (
     for (i in c(1:length(powerVector))) 
     {
         khelp= datk[, i] 
+        if (any(khelp < 0)) browser();
         SFT1=scaleFreeFitIndex(k=khelp,nBreaks=nBreaks,removeFirst=removeFirst)
         datout[i, 2] = SFT1$Rsquared.SFT  
         datout[i, 3] = SFT1$slope.SFT 
@@ -2443,6 +2450,7 @@ plotColorUnderTree = function(
    addTextGuide = TRUE,
    cex.rowLabels = 1,
    cex.rowText = 0.8,
+   separatorLine.col = "black",
    ...)
 {
   plotOrderedColors(
@@ -2458,11 +2466,71 @@ plotColorUnderTree = function(
    cex.rowLabels = cex.rowLabels,
    cex.rowText = cex.rowText,
    startAt = 0,
+   align = "center",
+   separatorLine.col = separatorLine.col,
    ...);
 }
 
 
 plotOrderedColors = function(
+   order, 
+   colors, 
+   main = "",
+   rowLabels = NULL, 
+   rowWidths = NULL,
+   rowText = NULL, 
+   rowTextAlignment = c("left", "center", "right"),
+   rowTextIgnore = NULL,
+   textPositions = NULL, 
+   addTextGuide = TRUE,
+   cex.rowLabels = 1, 
+   cex.rowText = 0.8, 
+   startAt = 0, 
+   align = c("center", "edge"),
+   separatorLine.col = "black",
+   ...) 
+{
+  sAF = options("stringsAsFactors")
+  options(stringsAsFactors = FALSE);
+  on.exit(options(stringsAsFactors = sAF[[1]]), TRUE)
+  barplot(height=1, col = "white", border=FALSE, space=0, axes=FALSE, main = main)
+  align = match.arg(align);
+
+  .plotOrderedColorSubplot(
+    order = order, colors = colors, 
+    rowLabels = rowLabels,
+    rowWidths = rowWidths,
+    rowText = rowText,
+    rowTextAlignment = rowTextAlignment,
+    rowTextIgnore = rowTextIgnore,
+    textPositions = textPositions,
+    addTextGuide = addTextGuide,
+    cex.rowLabels = cex.rowLabels,
+    cex.rowText = cex.rowText,
+    startAt = startAt,
+    horizontal = TRUE,
+    align = align,
+    separatorLine.col = separatorLine.col,
+    ...);
+}
+
+.transformCoordinates = function(x, y, angle, oldBox = c(0, 1, 0, 1), newBox = c(0, 1, 0, 1))
+{
+  xt0 = x * cos(angle) - y * sin(angle);
+  yt0 = x * sin(angle) + y * cos(angle);
+
+  trBox.x = oldBox[c(1, 2)] * cos(angle) - oldBox[c(3,4)] * sin(angle)
+  trBox.y = oldBox[c(1, 2)] * sin(angle) + oldBox[c(3,4)] * cos(angle);
+
+  # the shift calculation basically assumes rotations only in multiples of 90 degrees...
+  scale.x = (newBox[2] - newBox[1])/(trBox.x[2] - trBox.x[1])
+  scale.y = (newBox[4] - newBox[3])/(trBox.y[2] - trBox.y[1]);
+
+  list(x = (xt0 - trBox.x[1]) * scale.x + newBox[1],
+       y = (yt0 - trBox.y[1]) * scale.y + newBox[3]);
+}
+
+.plotOrderedColorSubplot = function(
    order, 
    colors, 
    rowLabels = NULL, 
@@ -2472,30 +2540,55 @@ plotOrderedColors = function(
    rowTextIgnore = NULL,
    textPositions = NULL, 
    addTextGuide = TRUE,
+   textGuide.col = "darkgrey",
+   textGuide.lty = 3,
    cex.rowLabels = 1,
    cex.rowText = 0.8,
    startAt = 0,
+   plotBox = NULL,  # Defaults to user-coordinate limits rotated according to "horizontal"
+   horizontal = TRUE,   
+   rowLabelsAngle = NULL,   ## Defaults to the angle of the colors
+   rowLabelsPosition = "left",
+   align = c("center", "edge"),
+   limExpansionFactor.x = if (align=="center") 0.04 else 0,
+   limExpansionFactor.y = limExpansionFactor.x,
+   separatorLine.col = "black",
    ...)
 {
+  align = match.arg(align);
   colors = as.matrix(colors);
   dimC = dim(colors)
-
   if (is.null(rowLabels) & (length(dimnames(colors)[[2]])==dimC[2])) 
      rowLabels = colnames(colors);
-
-
-  sAF = options("stringsAsFactors")
-  options(stringsAsFactors = FALSE);
-  on.exit(options(stringsAsFactors = sAF[[1]]), TRUE)
-
   nColorRows = dimC[2];
   if (length(order) != dimC[1] ) 
     stop("ERROR: length of colors vector not compatible with number of objects in 'order'.");
   C = colors[order, , drop = FALSE]; 
-  step = 1/(dimC[1]-1 + 2*startAt);
-  #barplot(height=1, col = "white", border=FALSE, space=0, axes=FALSE, ...)
-  barplot(height=1, col = "white", border=FALSE, space=0, axes=FALSE)
-  charWidth = strwidth("W")/2;
+  nColumns = dimC[1];
+
+  # Old plot box. could in principle be anything but the current value allows me to also get scaling of inches to user
+  # coordinates and the character width and height.
+  plotBox.full = par("usr");
+  pin = par("pin");
+  inchToUsr.x = (plotBox.full[2] - plotBox.full[1])/pin[1];
+  inchToUsr.y = (plotBox.full[4] - plotBox.full[3])/pin[2];
+  charWidth = strwidth("W", units = "inches") * (if (horizontal) inchToUsr.x else inchToUsr.y);
+
+  plotBox.contracted = plotBox.full;
+  fullRange.x = plotBox.full[2] - plotBox.full[1];
+  fullRange.y = plotBox.full[4] - plotBox.full[3];
+  limContractionFactor.x = limExpansionFactor.x/(1+2*limExpansionFactor.x);
+  plotBox.contracted[1] = plotBox.contracted[1] + limContractionFactor.x * fullRange.x;
+  plotBox.contracted[2] = plotBox.contracted[2] - limContractionFactor.x * fullRange.x;
+  range.x = plotBox.contracted[2] - plotBox.contracted[1]; 
+  limContractionFactor.y = limExpansionFactor.y/(1+2*limExpansionFactor.y);
+  plotBox.contracted[3] = plotBox.contracted[3] + limContractionFactor.y * fullRange.y;
+  plotBox.contracted[4] = plotBox.contracted[4] - limContractionFactor.y * fullRange.y;
+  range.x = plotBox.contracted[2] - plotBox.contracted[1];
+  range.y = plotBox.contracted[4] - plotBox.contracted[3];
+
+  step = range.x/(dimC[1] - (align=="center") + 2*startAt);   
+
   if (!is.null(rowText))
   {
      if (is.null(textPositions)) textPositions = c(1:nColorRows);
@@ -2504,15 +2597,14 @@ plotOrderedColors = function(
   } else 
      nTextRows = 0;
   nRows = nColorRows + nTextRows;
-  ystep = 1/nRows;
   if (is.null(rowWidths)) 
   { 
+    ystep = range.y/nRows;
     rowWidths = rep(ystep, nColorRows + nTextRows)
-  } else
-  {
+  } else {
     if (length(rowWidths)!=nRows) 
       stop("plotOrderedColors: Length of 'rowWidths' must equal the total number of rows.")
-    rowWidths = rowWidths/sum(rowWidths);
+    rowWidths = range.y * rowWidths/sum(rowWidths);
   }
 
   hasText = rep(0, nColorRows);
@@ -2525,8 +2617,9 @@ plotOrderedColors = function(
 
   physicalTextRow = c(1:nRows)[rowType==2];
 
-  yBottom = c(0, cumsum(rowWidths[nRows:1])) ;  # Has one extra entry but that shouldn't hurt
-  yTop = cumsum(rowWidths[nRows:1]) 
+  yBottom = c(plotBox.contracted[3], plotBox.contracted[3] + cumsum(rowWidths[nRows:1])) ;  
+       ## Has one extra entry but that shouldn't hurt
+  yTop = plotBox.contracted[3] + cumsum(rowWidths[nRows:1]) 
 
   if (!is.null(rowText))
   {
@@ -2537,9 +2630,10 @@ plotOrderedColors = function(
      textLevs = list();
      for (tr in 1:nTextRows) 
      {
-       charHeight = max(strheight(rowText[, tr], cex = cex.rowText));
+       charHeight.in = max(strheight(rowText[, tr], units = "inches", cex = cex.rowText));
+       charHeight.scaled = charHeight.in * (if (horizontal) 1/pin[2] else dimC[1]/pin[1]);
        width1 = rowWidths[ physicalTextRow[tr] ];
-       nCharFit = floor(width1/charHeight/1.7/par("lheight"));
+       nCharFit = floor(width1/charHeight.scaled/1.7/par("lheight"));
        if (nCharFit<1) stop("Rows are too narrow to fit text. Consider decreasing cex.rowText.");
        set = textPositions[tr];
        #colLevs = sort(unique(colors[, set]));
@@ -2575,53 +2669,73 @@ plotOrderedColors = function(
        textPosY[[tr]] = rep(yPos, ceiling(nLevs/nCharFit)+5)[1:nLevs][rank(textPos[[tr]])];
      }
   } 
-        
   jIndex = nRows;
-
   colorRectangles = list();
   if (is.null(rowLabels)) rowLabels = c(1:nColorRows);
   C[is.na(C)] = "grey"
+  if (align=="edge") alignShift = 0 else alignShift = 0.5;
+  if (is.null(plotBox))
+  {
+    plotBox = par("usr");
+    if (!horizontal) plotBox = plotBox[c(3,4,1,2)];
+  }
+  angle.deg = if (horizontal) 0 else 90;
+  angle = angle.deg * pi/180;
+  if (is.null(rowLabelsAngle)) rowLabelsAngle = angle.deg;
   for (j in 1:nColorRows)
   {
     jj = jIndex;
-    ind = (1:dimC[1]);
-    xl = (ind-1.5+startAt) * step; xr = (ind-0.5+startAt) * step; 
+    ind = 1:nColumns;
+    xl = plotBox.contracted[1] + (ind- 1 - alignShift + startAt) * step; xr = xl + step;
+    xl[xl < plotBox.full[1]] = plotBox.full[1];
+    xr[xr > plotBox.full[2]] = plotBox.full[2];
     yb = rep(yBottom[jj], dimC[1]); yt = rep(yTop[jj], dimC[1]);
+    trafo1 = .transformCoordinates(xl, yb, angle = angle, oldBox = plotBox.full, newBox = plotBox)
+    trafo2 = .transformCoordinates(xr, yt, angle = angle, oldBox = plotBox.full, newBox = plotBox)
     if (is.null(dim(C))) {
-       rect(xl, yb, xr, yt, col = as.character(C), border = as.character(C));
+       rect(trafo1$x, trafo1$y, trafo2$x, trafo2$y, col = as.character(C), border = as.character(C), xpd = TRUE);
     } else {
-       rect(xl, yb, xr, yt, col = as.character(C[,j]), border = as.character(C[,j]));
+       rect(trafo1$x, trafo1$y, trafo2$x, trafo2$y, col = as.character(C[,j]), border = as.character(C[,j]), xpd = TRUE);
     }
-    colorRectangles[[j]] = list(xl = xl, yb = yb, xr = xr, yt = yt);
-    text(rowLabels[j], pos=2, x= -charWidth/2 +xl[1], y= (yBottom[jj] + yTop[jj])/2, 
-         cex=cex.rowLabels, xpd = TRUE);
+    colorRectangles[[j]] = list(xl = trafo1$x, yb = trafo1$y, xr = trafo2$x, yt = trafo2$y);
+    rowLabelPos = .transformCoordinates( 
+            x= if (rowLabelsPosition=="left") xl[1] else xr[nColumns],
+            y= (yBottom[jj] + yTop[jj])/2, angle = angle, oldBox = plotBox.full, newBox = plotBox);
+    xs1 = if (horizontal) charWidth/2 else 0;
+    ys1 = if (horizontal) 0 else charWidth/2;
+    if (rowLabelsPosition!="left") { xs1 = -xs1; ys1 = -ys1; }
+    text(rowLabels[j], adj = c(if (rowLabelsPosition=="left") 1 else 0, 0.5), x= rowLabelPos$x-xs1, y= rowLabelPos$y-ys1, 
+         srt = rowLabelsAngle, cex=cex.rowLabels, xpd = TRUE);
     textRow = match(j, textPositions);
     if (is.finite(textRow))
     {
       jIndex = jIndex - 1;
       xt = (textPos[[textRow]] - 1.5) * step;
-      
       xt[xt<par("usr")[1]] = par("usr")[1];
       xt[xt>par("usr")[2]] = par("usr")[2];
-     
-      #printFlush(spaste("jIndex: ", jIndex, ", yBottom: ", yBottom[jIndex],
-      #                  ", yTop: ", yTop[jIndex], ", min(textPosY): ", min(textPosY[[textRow]]),
-      #                  ", max(textPosY): ", max(textPosY[[textRow]])));
       yt = yBottom[jIndex] + (yTop[jIndex]-yBottom[jIndex]) * (textPosY[[textRow]] + 1/(2*nCharFit+2));
       nt = length(textLevs[[textRow]]);
       # Add guide lines
+      trafo1 = .transformCoordinates(xt, yt, angle = angle, oldBox = plotBox.full, newBox = plotBox);
+      trafo2 = .transformCoordinates(xt, yTop[jIndex], angle = angle, oldBox = plotBox.full, newBox = plotBox);
       if (addTextGuide)
-        for (l in 1:nt) lines(c(xt[l], xt[l]), c(yt[l], yTop[jIndex]), col = "darkgrey", lty = 3);
-
+        for (l in 1:nt) 
+          lines(c(trafo1$x[l], trafo2$x[l]), c(trafo1$y[l], trafo2$y[l]), col = textGuide.col, lty = textGuide.lty);
       textAdj = c(0, 0.5, 1)[ match(rowTextAlignment, c("left", "center", "right")) ];
-      text(textLevs[[textRow]], x = xt, y = yt, adj = c(textAdj, 1), xpd = TRUE, cex = cex.rowText)
+      text(textLevs[[textRow]], x = trafo1$x, y = trafo1$y, adj = c(textAdj, 1), xpd = TRUE, cex = cex.rowText)
       # printFlush("ok");
     }
     jIndex = jIndex - 1;
   }
-  for (j in 0:(nColorRows + nTextRows)) lines(x=c(0,1), y=c(yBottom[j+1], yBottom[j+1]));
+  if (!is.na(separatorLine.col))
+  {
+    trafo1 = .transformCoordinates(min(xl), yBottom, angle = angle, oldBox = plotBox.full, newBox = plotBox);
+    trafo2 = .transformCoordinates(max(xr), yBottom, angle = angle, oldBox = plotBox.full, newBox = plotBox);
+    for (j in 1:(nColorRows + nTextRows+1)) 
+      lines(x=c(trafo1$x[j], trafo2$x[j]), y=c(trafo1$y[j], trafo2$y[j]), col = separatorLine.col);
+  }
   invisible(list(colorRectangles = colorRectangles));
-}
+} 
 
 #========================================================================================================
 # This function can be used to create an average linkage hierarchical
@@ -2783,7 +2897,7 @@ plotModuleSignificance = function(geneSignificance, colors, boxplot = FALSE,
   if (no.colors>1) 
   {
     pp=try(kruskal.test(geneSignificance,factor(colors))$p.value)
-    if (class(pp)=='try-error') pp=NA
+    if (inherits(pp, "try-error")) pp=NA
   }
   title = paste(main," p-value=", signif(pp,2), sep = "")
   if (boxplot != TRUE) {
@@ -3158,15 +3272,15 @@ verboseScatterplot = function(x, y,
   corExpr = parse(text = paste(corFnc, "(x, y ", prepComma(corOptions), ")"));
   #cor=signif(cor(x,y,use="p",method=correlationmethod),2)
   cor=signif(eval(corExpr),2)
-  if (abs(cor) < displayAsZero) cor = 0;
+  if (is.finite(cor)) if (abs(cor) < displayAsZero) cor = 0;
   corp = signif(corPvalueStudent(cor, sum(is.finite(x) & is.finite(y))), 2);
   #corpExpr = parse(text = paste("cor.test(x, y, ", corOptions, ")"));
   #corp=signif(cor.test(x,y,use="p",method=correlationmethod)$p.value,2)
   #corp=signif(eval(corpExpr)$p.value,2)
-  if (corp<10^(-200) ) corp="<1e-200" else corp = paste("=", corp, sep="");
+  if (is.finite(corp) && corp<10^(-200) ) corp="<1e-200" else corp = paste("=", corp, sep="");
   if (!is.na(corLabel))
   {
-     mainX = paste(main, " ", corLabel, "=", cor, ", p",corp, sep="");
+     mainX = paste(main, " ", corLabel, "=", cor, if(is.finite(cor)) spaste(", p",corp) else "", sep="");
   } else
      mainX = main;
 
@@ -3784,7 +3898,7 @@ initProgInd = function( leadStr = "..", trailStr = "", quiet = !interactive())
 
 updateProgInd = function(newFrac, progInd, quiet = !interactive())
 {
-  if (class(progInd)!="progressIndicator") 
+  if (!inherits(progInd, "progressIndicator") )
     stop("Parameter progInd is not of class 'progressIndicator'. Use initProgInd() to initialize",
          "it prior to use.");
 
@@ -4944,12 +5058,12 @@ networkScreening = function(
     q.Weighted=try(qvalue(p.Weighted2)$qvalues, silent = TRUE)
     q.Standard=try(qvalue(p.Standard2)$qvalues, silent = TRUE)
   
-    if (class(q.Weighted)=="try-error") 
+    if (inherits(q.Weighted, "try-error") )
     {
       warning("Calculation of weighted q-values failed; the q-values will be returned as NAs.");
       q.Weighted=rep(NA, length(p.Weighted) )
     }
-    if (class(q.Standard)=="try-error")
+    if (inherits(q.Standard, "try-error"))
     {
       warning("Calculation of standard q-values failed; the q-values will be returned as NAs.");
       q.Standard=rep(NA, length(p.Standard) )
@@ -4983,632 +5097,6 @@ networkScreening = function(
 # Selected ones only
 #
 ##############################################################################################
-
-
-#---------------------------------------------------------------------------------------------------------
-# labeledHeatmap.R
-#---------------------------------------------------------------------------------------------------------
-
-#--------------------------------------------------------------------------
-#
-# .reverseRows = function(Matrix)
-#
-#--------------------------------------------------------------------------
-#
-
-
-.reverseRows = function(Matrix)
-{
-  ind = seq(from=dim(Matrix)[1], to=1, by=-1);
-  Matrix[ind,];
-  #Matrix
-}
-
-.extend = function(x, n)
-{
-  nRep = ceiling(n/length(x));
-  rep(x, nRep)[1:n];
-}
-
-# Adapt a numeric index to a subset
-# Aim: if 'index' is a numeric index of special entries of a vector,
-#    create a new index that references 'subset' elements of the vector  
-.restrictIndex = function(index, subset)
-{
-  out = match(index, subset);
-  out[!is.na(out)];
-}
-
-  
-#--------------------------------------------------------------------------
-#
-# labeledHeatmap
-#
-#--------------------------------------------------------------------------
-# This function plots a heatmap of the specified matrix 
-# and labels the x and y axes wit the given labels.
-# It is assumed that the number of entries in xLabels and yLabels is consistent 
-# with the dimensions in.
-# If colorLabels==TRUE, the labels are not printed and instead interpreted as colors --
-#  -- a simple symbol with the appropriate color is printed instead of the label.
-# The x,yLabels are expected to have the form "..color" as in "MEgrey" or "PCturquoise".
-# xSymbol, ySymbols are additional markers that can be placed next to color labels
-
-labeledHeatmap = function (
-  Matrix, 
-  xLabels, yLabels = NULL, 
-  xSymbols = NULL, ySymbols = NULL, 
-  colorLabels = NULL, 
-  xColorLabels = FALSE, yColorLabels = FALSE,
-  checkColorsValid = TRUE,
-  invertColors = FALSE, 
-  setStdMargins = TRUE,
-  xLabelsPosition = "bottom",
-  xLabelsAngle = 45,
-  xLabelsAdj = 1,
-  yLabelsPosition = "left",
-  xColorWidth = 2*strheight("M"),
-  yColorWidth = 2*strwidth("M"),
-  xColorOffset = strheight("M")/3, 
-  yColorOffset = strwidth("M")/3,
-  # Content of heatmap
-  colors = NULL, 
-  naColor = "grey",
-  textMatrix = NULL, cex.text = NULL, 
-  textAdj = c(0.5, 0.5),
-  # labeling of rows and columns
-  cex.lab = NULL, 
-  cex.lab.x = cex.lab,
-  cex.lab.y = cex.lab,
-  colors.lab.x = 1,
-  colors.lab.y = 1,
-  font.lab.x = 1,
-  font.lab.y = 1,
-  bg.lab.x = NULL,
-  bg.lab.y = NULL,
-  x.adj.lab.y = 1,
-  plotLegend = TRUE, 
-  keepLegendSpace = plotLegend,
-  # Separator line specification                   
-  verticalSeparator.x = NULL,
-  verticalSeparator.col = 1,  
-  verticalSeparator.lty = 1,
-  verticalSeparator.lwd = 1,
-  verticalSeparator.ext = 0,
-  verticalSeparator.interval = 0,
-
-  horizontalSeparator.y = NULL,
-  horizontalSeparator.col = 1,  
-  horizontalSeparator.lty = 1,
-  horizontalSeparator.lwd = 1,
-  horizontalSeparator.ext = 0,
-  horizontalSeparator.interval = 0,
-  # optional restrictions on which rows and columns to actually show
-  showRows = NULL,
-  showCols = NULL,
-  # Other arguments...
-  ... ) 
-{
-  textFnc = match.fun("text");
-  if (!is.null(colorLabels)) {xColorLabels = colorLabels; yColorLabels = colorLabels; }
-  
-  if (is.null(yLabels) & (!is.null(xLabels)) & (dim(Matrix)[1]==dim(Matrix)[2])) 
-    yLabels = xLabels; 
-
-  nCols = ncol(Matrix);
-  nRows = nrow(Matrix);
-
-  if (length(xLabels)!=nCols) 
-    stop("Length of 'xLabels' must equal the number of columns in 'Matrix.'");
-
-  if (length(yLabels)!=nRows)
-    stop("Length of 'yLabels' must equal the number of rows in 'Matrix.'");
-
-  if (is.null(showRows)) showRows = c(1:nRows);
-  if (is.null(showCols)) showCols = c(1:nCols);
-
-  nShowCols = length(showCols);
-  nShowRows = length(showRows);
-
-  if (nShowCols==0) stop("'showCols' is empty.");
-  if (nShowRows==0) stop("'showRows' is empty.");
-
-  if (checkColorsValid)
-  {
-    xValidColors = !is.na(match(substring(xLabels, 3), colors()));
-    yValidColors = !is.na(match(substring(yLabels, 3), colors()));
-  } else {
-    xValidColors = rep(TRUE, length(xLabels));
-    yValidColors = rep(TRUE, length(yLabels));
-  }
-
-  if (sum(xValidColors)>0) xColorLabInd = xValidColors[showCols]
-  if (sum(!xValidColors)>0) xTextLabInd = !xValidColors[showCols]
-
-  if (sum(yValidColors)>0) yColorLabInd = yValidColors[showRows]
-  if (sum(!yValidColors)>0) yTextLabInd = !yValidColors[showRows]
-
-  if (setStdMargins)
-  {
-    if (xColorLabels & yColorLabels)
-    {
-      par(mar=c(2,2,3,5)+0.2);
-    } else {
-      par(mar = c(7,7,3,5)+0.2);
-    }
-  }
-
-  xLabels.show = xLabels[showCols];
-  yLabels.show = yLabels[showRows];
-
-  if (!is.null(xSymbols))
-  {
-     if (length(xSymbols)!=nCols)
-       stop("When 'xSymbols' are given, their length must equal the number of columns in 'Matrix.'");
-     xSymbols.show = xSymbols[showCols];
-  } else 
-     xSymbols.show = NULL;
-
-  if (!is.null(ySymbols))
-  {
-     if (length(ySymbols)!=nRows)
-       stop("When 'ySymbols' are given, their length must equal the number of rows in 'Matrix.'");
-     ySymbols.show = ySymbols[showRows];
-  } else 
-     ySymbols.show = NULL;
-
-  xLabPos = charmatch(xLabelsPosition, c("bottom", "top"));
-  if (is.na(xLabPos))
-    stop("Argument 'xLabelsPosition' must be (a unique abbreviation of) 'bottom', 'top'");
-
-  yLabPos = charmatch(yLabelsPosition, c("left", "right"));
-  if (is.na(yLabPos))
-    stop("Argument 'yLabelsPosition' must be (a unique abbreviation of) 'left', 'right'");
-
-  if (is.null(colors)) colors = heat.colors(30);
-  if (invertColors) colors = rev(colors);
-
-  labPos = .heatmapWithLegend(Matrix[showRows, showCols, drop = FALSE], 
-                              signed = FALSE, colors = colors, naColor = naColor, cex.legend = cex.lab, 
-                              plotLegend = plotLegend,  keepLegendSpace = keepLegendSpace, ...)
-  plotbox = labPos$box;
-  xmin = plotbox[1]; xmax = plotbox[2]; ymin = plotbox[3]; yrange = plotbox[4]-ymin;
-  ymax = plotbox[4]; xrange = xmax - xmin;
-  # The positions below are for showCols/showRows-restriceted data
-  xLeft = labPos$xLeft;
-  xRight = labPos$xRight;
-  yTop = labPos$yTop;
-  yBot = labPos$yBot;
-
-  xspacing = labPos$xMid[2] - labPos$xMid[1];
-  yspacing = abs(labPos$yMid[2] - labPos$yMid[1]);
-
-  offsetx = .extend(xColorOffset, nCols)[showCols]
-  offsety = .extend(yColorOffset, nRows)[showRows]
-  xColW = xColorWidth;
-  yColW = yColorWidth;
-
-  # Additional angle-dependent offsets for x axis labels
-  textOffsetY = strheight("M") * cos(xLabelsAngle/180 * pi);
-
-  if (any(xValidColors)) offsetx = offsetx + xColW;
-  if (any(yValidColors)) offsety = offsety + yColW;
-
-  # Create the background for column and row labels.
-
-  extension.left = par("mai")[2] * # left margin width in inches
-                   par("cxy")[1] / par("cin")[1]   # character size in user corrdinates/character size in inches
-
-  extension.right = par("mai")[4] * # right margin width in inches
-                   par("cxy")[1] / par("cin")[1]   # character size in user corrdinates/character size in inches
-
-  extension.bottom = par("mai")[1] * 
-                   par("cxy")[2] / par("cin")[2]- # character size in user corrdinates/character size in inches
-                      offsetx   
-                     
-  extension.top = par("mai")[3] * 
-                   par("cxy")[2] / par("cin")[2]-   # character size in user corrdinates/character size in inches
-                     offsetx
-
-  figureBox = par("usr");
-  figXrange = figureBox[2] - figureBox[1];
-  figYrange = figureBox[4] - figureBox[3];
-  if (!is.null(bg.lab.x))
-  {
-    bg.lab.x = .extend(bg.lab.x, nCols)[showCols];
-    if (xLabPos==1)
-    {
-      y0 = ymin;
-      ext = extension.bottom;
-      sign = 1;
-    } else {
-      y0 = ymax;
-      ext = extension.top;
-      sign = -1;
-    }
-    figureDims = par("pin");
-    angle = xLabelsAngle/180*pi;
-    ratio = figureDims[1]/figureDims[2] * figYrange/figXrange;
-    ext.x = -sign * ext * 1/tan(angle)/ratio;
-    ext.y = sign * ext * sign(sin(angle))
-
-    #offset = (sum(xValidColors)>0) * xColW + offsetx + textOffsetY;
-    offset = offsetx + textOffsetY;
-
-    for (cc in 1:nShowCols)
-       polygon(x = c(xLeft[cc], xLeft[cc], xLeft[cc] + ext.x, xRight[cc] + ext.x, xRight[cc], xRight[cc]),
-               y = c(y0, y0-sign*offset[cc], y0-sign*offset[cc] - ext.y, y0-sign*offset[cc] - ext.y, 
-                     y0-sign*offset[cc], y0), 
-               border = bg.lab.x[cc], col = bg.lab.x[cc], xpd = TRUE);
-  }
-
-  if (!is.null(bg.lab.y))
-  {
-    bg.lab.y = .extend(bg.lab.y, nRows)
-    reverseRows = TRUE;
-    if (reverseRows) bg.lab.y = rev(bg.lab.y);
-    bg.lab.y = bg.lab.y[showRows];
-
-    if (yLabPos==1)
-    {
-      xl = xmin-extension.left;
-      xr = xmin;
-    } else {
-      xl = xmax;
-      xr = xmax + extension.right;
-    }
-    for (r in 1:nShowRows)
-      rect(xl, yBot[r], xr, yTop[r],
-           col = bg.lab.y[r], border = bg.lab.y[r], xpd = TRUE);
-  }
-
-  colors.lab.x = .extend(colors.lab.x, nCols)[showCols];
-  font.lab.x = .extend(font.lab.x, nCols)[showCols];
-  # Write out labels
-  if (sum(!xValidColors)>0)
-  {
-    xLabYPos = if(xLabPos==1) ymin - offsetx- textOffsetY else ymax + offsetx + textOffsetY;
-    if (is.null(cex.lab)) cex.lab = 1;
-    mapply(textFnc, x = labPos$xMid[xTextLabInd], 
-           y = xLabYPos, labels = xLabels.show[xTextLabInd],
-           col = colors.lab.x[xTextLabInd],
-           font = font.lab.x[xTextLabInd],
-           MoreArgs = list(srt = xLabelsAngle, 
-          adj = xLabelsAdj, xpd = TRUE, cex = cex.lab.x));
-  }
-  if (sum(xValidColors)>0)
-  {
-    baseY = if (xLabPos==1) ymin-offsetx else  ymax + offsetx;
-    deltaY = if (xLabPos==1) xColW else -xColW;
-    rect(xleft = labPos$xMid[xColorLabInd] - xspacing/2, ybottom = baseY[xColorLabInd],
-         xright = labPos$xMid[xColorLabInd] + xspacing/2, ytop = baseY[xColorLabInd] + deltaY,
-         density = -1,  col = substring(xLabels.show[xColorLabInd], 3), 
-         border = substring(xLabels.show[xColorLabInd], 3), xpd = TRUE)
-    if (!is.null(xSymbols))
-      mapply(textFnc, x = labPos$xMid[xColorLabInd], 
-             y = baseY[xColorLabInd] -textOffsetY - sign(deltaY)* strwidth("M")/3, 
-             labels = xSymbols.show[xColorLabInd],
-             col = colors.lab.x[xColorLabInd],
-             font = font.lab.x[xColorLabInd],
-              MoreArgs = list( adj = xLabelsAdj, 
-             xpd = TRUE, srt = xLabelsAngle, cex = cex.lab.x));
-  }
-  x.adj.lab.y = .extend(x.adj.lab.y, nRows)[showRows]
-  if (yLabPos==1)
-  {
-    marginWidth = par("mai")[2] / par("pin")[1] * xrange
-  } else {
-    marginWidth = par("mai")[4] / par("pin")[1] * xrange
-  }
-  xSpaceForYLabels = marginWidth-2*strwidth("M")/3 - ifelse(yValidColors[showRows], yColW, 0);
-  xPosOfYLabels.relative = xSpaceForYLabels * (1-x.adj.lab.y) + offsety
-
-  colors.lab.y = .extend(colors.lab.y, nRows)[showRows];
-  font.lab.y = .extend(font.lab.y, nRows)[showRows];
-
-  if (sum(!yValidColors)>0)
-  {
-    if (is.null(cex.lab)) cex.lab = 1;
-    if (yLabPos==1)
-    {
-      x = xmin - strwidth("M")/3 - xPosOfYLabels.relative[yTextLabInd]
-      adj = x.adj.lab.y[yTextLabInd]
-    } else {
-      x = xmax + strwidth("M")/3 + xPosOfYLabels.relative[yTextLabInd];
-      adj = 1-x.adj.lab.y[yTextLabInd];
-    }
-    mapply(textFnc, y = labPos$yMid[yTextLabInd], labels = yLabels.show[yTextLabInd],
-           adj = lapply(adj, c, 0.5),
-           x = x,
-           col = colors.lab.y[yTextLabInd],
-           font = font.lab.y[yTextLabInd],
-           MoreArgs = list(srt = 0, xpd = TRUE, cex = cex.lab.y));
-  } 
-  if (sum(yValidColors)>0)
-  {
-    if (yLabPos==1)
-    {
-      xl = xmin-offsety;
-      xr = xmin-offsety + yColW;
-      xtext = xmin - strwidth("M")/3 - xPosOfYLabels.relative[yColorLabInd];
-      adj = x.adj.lab.y[yColorLabInd]
-    } else {
-      xl = xmax + offsety - yColW;
-      xr = xmax + offsety;
-      xtext = xmin + strwidth("M")/3 + xPosOfYLabels.relative[yColorLabInd]
-      adj = 1-x.adj.lab.y[yColorLabInd];
-    }
-
-    rect(xleft = xl[yColorLabInd], ybottom = rev(labPos$yMid[yColorLabInd]) - yspacing/2,
-         xright = xr[yColorLabInd], ytop = rev(labPos$yMid[yColorLabInd]) + yspacing/2, 
-         density = -1,  col = substring(rev(yLabels.show[yColorLabInd]), 3), 
-         border = substring(rev(yLabels.show[yColorLabInd]), 3), xpd = TRUE)
-    #for (i in yColorLabInd)
-    #{
-    #  lines(c(xmin- offsetx, xmin- offsetx+yColW), y = rep(labPos$yMid[i] - yspacing/2, 2), col = i, xpd = TRUE)
-    #  lines(c(xmin- offsetx, xmin- offsetx+yColW), y = rep(labPos$yMid[i] + yspacing/2, 2), col = i, xpd = TRUE)
-    #}
-    if (!is.null(ySymbols))
-      mapply(textFnc, y = labPos$yMid[yColorLabInd], labels = ySymbols.show[yColorLabInd],
-             adj = lapply(adj, c, 0.5),
-             x = xtext, col = colors.lab.y[yColorLabInd], 
-             font = font.lab.y[yColorLabInd],
-          MoreArgs = list(srt = 0, xpd = TRUE, cex = cex.lab.y));
-  }
-
-  # Draw separator lines, if requested
-
-  showCols.ext = c(if (1 %in% showCols) 0 else NULL, showCols);
-  showCols.shift = if (0 %in% showCols.ext) 1 else 0;
-
-  if (length(verticalSeparator.x) > 0)
-  {
-    if (any(verticalSeparator.x < 0 | verticalSeparator.x > nCols))
-      stop("If given. 'verticalSeparator.x' must all be between 0 and the number of columns.");
-    shownVertSep = verticalSeparator.x[ verticalSeparator.x %in% showCols.ext];
-    verticalSeparator.x.show = .restrictIndex(verticalSeparator.x, showCols.ext)-showCols.shift;
-    colSepShowIndex = match(shownVertSep, verticalSeparator.x)
-  } else if (verticalSeparator.interval > 0)
-  {
-    verticalSeparator.x.show = verticalSeparator.x = 
-           seq(from = verticalSeparator.interval, by = verticalSeparator.interval,
-                                    length.out = floor(length(showCols)/verticalSeparator.interval));
-    colSepShowIndex = 1:length(verticalSeparator.x);
-  } else 
-    verticalSeparator.x.show = NULL;
-
-  if (length(verticalSeparator.x.show) > 0)
-  {
-    nLines = length(verticalSeparator.x);
-    vs.col = .extend(verticalSeparator.col, nLines)[colSepShowIndex];
-    vs.lty = .extend(verticalSeparator.lty, nLines)[colSepShowIndex];
-    vs.lwd = .extend(verticalSeparator.lwd, nLines)[colSepShowIndex];
-    vs.ext = .extend(verticalSeparator.ext, nLines)[colSepShowIndex];
-
-    x.lines = ifelse(verticalSeparator.x.show>0, labPos$xRight[verticalSeparator.x.show], labPos$xLeft[1]);
-    nLines.show = length(verticalSeparator.x.show);
-    for (l in 1:nLines.show)
-      lines(rep(x.lines[l], 2), c(ymin, ymax), col = vs.col[l], lty = vs.lty[l], lwd = vs.lwd[l]);
-
-    angle = xLabelsAngle/180*pi;
-    if (angle==0) angle = pi/2;
-    if (xLabelsPosition =="bottom") 
-    {
-      sign = 1;
-      y0 = ymin;
-      ext = extension.bottom;
-    } else {
-      sign = -1;
-      y0 = ymax;
-      ext = extension.top;
-    }
-    figureDims = par("pin");
-    ratio = figureDims[1]/figureDims[2] * figYrange/figXrange;
-    ext.x = -sign * ext * 1/tan(angle)/ratio;
-    ext.y = sign * ext * sign(sin(angle))
-    #offset = (sum(xValidColors)>0) * xColW + offsetx + textOffsetY;
-    offset = offsetx + textOffsetY;
-    for (l in 1:nLines.show)
-         lines(c(x.lines[l], x.lines[l], x.lines[l] + vs.ext[l] * ext.x[l]), 
-               c(y0, y0-sign*offset[l], y0-sign*offset[l] - vs.ext[l] * ext.y[l]),  
-                 col = vs.col[l], lty = vs.lty[l], lwd = vs.lwd[l], xpd = TRUE);
-  }
-
-  showRows.ext = c(if (1 %in% showRows) 0 else NULL, showRows);
-  showRows.shift = if (0 %in% showRows.ext) 1 else 0;
-
-  if (length(horizontalSeparator.y) >0)
-  {
-    if (any(horizontalSeparator.y < 0 | horizontalSeparator.y > nRows))
-      stop("If given. 'horizontalSeparator.y' must all be between 0 and the number of rows.");
-    shownHorizSep = horizontalSeparator.y[ horizontalSeparator.y %in% showRows.ext];
-    horizontalSeparator.y.show = .restrictIndex(horizontalSeparator.y, showRows.ext)-showRows.shift;
-    rowSepShowIndex = match(shownHorizSep, horizontalSeparator.y)
-  } else if (horizontalSeparator.interval > 0)
-  {
-    horizontalSeparator.y.show = horizontalSeparator.y = 
-            seq(from = horizontalSeparator.interval, by = horizontalSeparator.interval,
-                                    length.out = floor(length(showRows)/horizontalSeparator.interval));
-    rowSepShowIndex = 1:length(horizontalSeparator.y);
-  } else 
-    horizontalSeparator.y.show = NULL;
-  
-  if (length(horizontalSeparator.y.show) > 0)
-  {
-    reverseRows = TRUE;
-    if (reverseRows) 
-    {
-      horizontalSeparator.y.show = nShowRows - horizontalSeparator.y.show+1;
-      y.lines = ifelse( horizontalSeparator.y.show <=nShowRows, 
-                               labPos$yBot[horizontalSeparator.y.show], labPos$yTop[nShowRows]);
-    } else {
-      y.lines = ifelse( horizontalSeparator.y.show > 0, labPos$yBot[horizontalSeparator.y.show], labPos$yTop[1]);
-    }
-    nLines = length(horizontalSeparator.y);
-    vs.col = .extend(horizontalSeparator.col, nLines)[rowSepShowIndex];
-    vs.lty = .extend(horizontalSeparator.lty, nLines)[rowSepShowIndex];
-    vs.lwd = .extend(horizontalSeparator.lwd, nLines)[rowSepShowIndex];
-    vs.ext = .extend(horizontalSeparator.ext, nLines)[rowSepShowIndex];
-    nLines.show = length(horizontalSeparator.y.show);
-    for (l in 1:nLines.show)
-    {
-      if (yLabPos==1)
-      {
-         xl = xmin-vs.ext[l]*extension.left;
-         xr = xmax;
-      } else {
-         xl = xmin;
-         xr = xmax + vs.ext[l]*extension.right;
-      }
-  
-      lines(c(xl, xr), rep(y.lines[l], 2), 
-            col = vs.col[l], lty = vs.lty[l], lwd = vs.lwd[l], xpd = TRUE);
-    }
-  }
-
-  if (!is.null(textMatrix))
-  {
-    if (is.null(cex.text)) cex.text = par("cex");
-    if (is.null(dim(textMatrix)))
-      if (length(textMatrix)==prod(dim(Matrix))) dim(textMatrix)=dim(Matrix);
-    if (!isTRUE(all.equal(dim(textMatrix), dim(Matrix))))
-      stop("labeledHeatmap: textMatrix was given, but has dimensions incompatible with Matrix.");
-    for (rw in 1:nShowRows)
-      for (cl in 1:nShowCols)
-      {
-        text(labPos$xMid[cl], labPos$yMid[rw],
-             as.character(textMatrix[showRows[rw],showCols[cl]]), xpd = TRUE, cex = cex.text, adj = textAdj);
-      }
-  }
-  axis(1, labels = FALSE, tick = FALSE)
-  axis(2, labels = FALSE, tick = FALSE)
-  axis(3, labels = FALSE, tick = FALSE)
-  axis(4, labels = FALSE, tick = FALSE)
-  invisible(labPos)
-}
-
-#===================================================================================================
-#
-# multi-page labeled heatmap
-#
-#===================================================================================================
-
-labeledHeatmap.multiPage = function(
-   # Input data and ornament[s
-   Matrix,
-   xLabels, yLabels = NULL,
-   xSymbols = NULL, ySymbols = NULL,
-   textMatrix = NULL,
-
-   # Paging options
-   rowsPerPage = NULL, maxRowsPerPage = 20,
-   colsPerPage = NULL, maxColsPerPage = 10,
-   addPageNumberToMain = TRUE,
-
-   # Further arguments to labeledHeatmap
-   zlim = NULL,
-   signed = TRUE,
-   main = "",
-
-  verticalSeparator.x = NULL,
-  verticalSeparator.col = 1,
-  verticalSeparator.lty = 1,
-  verticalSeparator.lwd = 1,
-  verticalSeparator.ext = 0,
-
-  horizontalSeparator.y = NULL,
-  horizontalSeparator.col = 1,
-  horizontalSeparator.lty = 1,
-  horizontalSeparator.lwd = 1,
-  horizontalSeparator.ext = 0,
-
-   ...)
-{
-
-  nr = nrow(Matrix);
-  nc = ncol(Matrix);
-
-  if (is.null(rowsPerPage))
-  {
-    nPages.rows = ceiling(nr/maxRowsPerPage);
-    rowsPerPage = allocateJobs(nr, nPages.rows);
-  } else 
-    nPages.rows = length(rowsPerPage);
-
-  if (is.null(colsPerPage))
-  {
-    nPages.cols = ceiling(nc/maxColsPerPage);
-    colsPerPage = allocateJobs(nc, nPages.cols);
-  } else 
-    nPages.cols = length(colsPerPage);
-
-  if (is.null(zlim)) 
-  {
-    zlim = range(Matrix, na.rm = TRUE)
-    if (signed) zlim = c(-max(abs(zlim)), max(abs(zlim)));
-  }
-
-  if (!is.null(verticalSeparator.x))
-  {
-    nvs = length(verticalSeparator.x);
-    verticalSeparator.col= .extend(verticalSeparator.col, nvs);
-    verticalSeparator.lty= .extend(verticalSeparator.lty, nvs);
-    verticalSeparator.lwd= .extend(verticalSeparator.lwd, nvs);
-    verticalSeparator.ext= .extend(verticalSeparator.ext, nvs);
-  }
-  
-  if (!is.null(horizontalSeparator.y))
-  {
-    nhs = length(horizontalSeparator.y);
-    horizontalSeparator.col= .extend(horizontalSeparator.col, nhs);
-    horizontalSeparator.lty= .extend(horizontalSeparator.lty, nhs);
-    horizontalSeparator.lwd= .extend(horizontalSeparator.lwd, nhs);
-    horizontalSeparator.ext= .extend(horizontalSeparator.ext, nhs);
-  }
-  
-
-  page = 1;
-  multiPage = (nPages.cols > 1 | nPages.rows > 1)
-
-  for (page.col in 1:nPages.cols) for (page.row in 1:nPages.rows)
-  {
-    rows = rowsPerPage[[page.row]];
-    cols = colsPerPage[[page.col]];
-    if (!is.null(verticalSeparator.x))
-    {
-      keep.vs = verticalSeparator.x %in% cols;
-    } else 
-      keep.vs = numeric(0);
-    if (!is.null(horizontalSeparator.y))
-    {
-      keep.hs = horizontalSeparator.y %in% rows;
-    } else 
-      keep.hs = numeric(0);
-
-    main.1 = main;
-    if (addPageNumberToMain & multiPage) main.1 = spaste(main, "(page ", page, ")");
-    labeledHeatmap(Matrix = Matrix[rows, cols, drop = FALSE],
-                   xLabels = xLabels[cols], xSymbols = xSymbols[cols],
-                   yLabels = yLabels[rows], ySymbols = ySymbols[rows],
-                   textMatrix = textMatrix[rows, cols, drop = FALSE],
-                   zlim = zlim, main = main.1, 
-                   verticalSeparator.x = verticalSeparator.x[keep.vs] - min(cols) + 1,
-                   verticalSeparator.col= verticalSeparator.col[keep.vs],
-                   verticalSeparator.lty= verticalSeparator.lty[keep.vs],
-                   verticalSeparator.lwd= verticalSeparator.lwd[keep.vs],
-                   verticalSeparator.ext= verticalSeparator.ext[keep.vs],
- 
-                   horizontalSeparator.y = horizontalSeparator.y[keep.hs] - min(rows) + 1,
-                   horizontalSeparator.col= horizontalSeparator.col[keep.hs],
-                   horizontalSeparator.lty= horizontalSeparator.lty[keep.hs],
-                   horizontalSeparator.lwd= horizontalSeparator.lwd[keep.hs],
-                   horizontalSeparator.ext= horizontalSeparator.ext[keep.hs],
-                   ...);
-    page = page + 1;
-  }
-}
-                   
-
 
 
 #--------------------------------------------------------------------------
@@ -6633,11 +6121,19 @@ goodSamples = function(datExpr, weights = NULL, useSamples = NULL, useGenes = NU
 .checkAndScaleMultiWeights = function(multiWeights, multiExpr, scaleByMax = TRUE)
 {
   if (is.null(multiWeights)) return(NULL);
-  wSize = checkSets(multiWeights);
-  eSize = checkSets(multiExpr);
-  if (!isTRUE(all.equal(wSize, eSize)))
-    stop(".checkAndScaleMultiWeights: 'multiWeights' and 'multiExpr' ",
-         "do not have the same sizes across all sets.");
+  if (!isMultiData(multiExpr, strict = FALSE) || !isMultiData(multiWeights, strict = FALSE))
+    stop("Both 'multiWeights' and 'multiExpr' must be 'MultiData'.");
+  wOK = checkSets(multiWeights, checkStructure = TRUE);
+  eOK = checkSets(multiExpr, checkStructure = TRUE);
+  if (wOK$nSets!=eOK$nSets) 
+    stop("'multiWeights' and 'multiExpr' must have the same length (number of data sets).");
+
+  #wSize = mtd.apply(multiWeights, dim);
+  #eSize = mtd.apply(multiExpr, dim)
+  #sameSize = all(mtd.mapply(function(d1, d2) isTRUE(all.equal(d1, d2)), eSize, wSize, mdmaSimplify = TRUE));
+  #if (!sameSize)
+  #  stop(".checkAndScaleMultiWeights: 'multiWeights' and 'multiExpr' ",
+  #       "do not have the same sizes across all sets.");
   mtd.mapply(.checkAndScaleWeights, multiWeights, multiExpr, 
                         MoreArgs = list(scaleByMax = scaleByMax));
 }
@@ -6732,6 +6228,8 @@ goodSamplesMS = function(multiExpr, multiWeights = NULL, useSamples = NULL, useG
     useSamples = list();
     for (set in 1:nSets) useSamples[[set]] = rep(TRUE, dataSize$nSamples[set]);
   }
+
+  names(useSamples) = names(multiExpr);
 
   if (length(useGenes)!= dataSize$nGenes)
     stop("Length of nGenes is not compatible with number of genes in multiExpr.");
@@ -6884,7 +6382,7 @@ goodSamplesGenesMS = function(multiExpr, multiWeights = NULL, minFraction = 1/2,
             ddr <- Rowv
         else {
             hcr <- hclustfun(distfun(x))
-            if (class(hcr)=='hclust')
+            if (inherits(hcr, 'hclust'))
             {
               hcr$height = hcr$height-min(hcr$height) + hang * (max(hcr$height)-min(hcr$height));
             }
@@ -6907,7 +6405,7 @@ goodSamplesGenesMS = function(multiExpr, multiWeights = NULL, minFraction = 1/2,
         }
         else {
             hcc <- hclustfun(distfun(if (symm) x else t(x)))
-            if (class(hcr)=='hclust')
+            if (inherits(hcr, 'hclust'))
             {
               hcc$height = hcc$height-min(hcc$height) + hang * (max(hcc$height)-min(hcc$height));
             }
@@ -7057,7 +6555,8 @@ scaleFreeFitIndex=function(k,nBreaks=10, removeFirst = FALSE)
             log.dk = log.dk[-1]
         }
        log.p.dk= as.numeric(log10(p.dk + 1e-09))
-        lm1 = lm(log.p.dk ~ log.dk)
+        lm1 = try(lm(log.p.dk ~ log.dk));
+        if (inherits(lm1, "try-error")) browser();
         lm2 = lm(log.p.dk ~ log.dk + I(10^log.dk))
    datout=data.frame(Rsquared.SFT=summary(lm1)$r.squared,
                      slope.SFT=summary(lm1)$coefficients[2, 1], 
@@ -8236,7 +7735,7 @@ metaAnalysis = function(multiExpr, multiTrait,
   # Find the columns from which to do meta-analysis
   statCols = grep(spaste("^", metaStat), colnames(comb));
   if (length(statCols)==0) stop("Internal error: no columns for meta-analysis found. Sorry!");
-  setStats = comb[, statCols];
+  setStats = comb[, statCols, drop = FALSE];
 
   if (trafo)
   {
@@ -8244,7 +7743,7 @@ metaAnalysis = function(multiExpr, multiTrait,
     # Find the pvalue columns
     pCols = grep(spaste("^", metaP), colnames(comb));
     if (length(pCols)==0) stop("Internal error: no columns for meta-analysis found. Sorry!");
-    setP = comb[, pCols];
+    setP = comb[, pCols, drop = FALSE];
     # Caution: I assume here that the returned p-values are two-sided.
     setZ = sign(setStats) * qnorm(setP/2, lower.tail = FALSE);
   } else {
@@ -8253,7 +7752,7 @@ metaAnalysis = function(multiExpr, multiTrait,
 
   colnames(setZ) = spaste("Z.", setNames);
   nObsCols = grep("nPresentSamples", colnames(comb));
-  nObs = comb[, nObsCols];
+  nObs = comb[, nObsCols, drop = FALSE];
 
   powers = c(0, 0.5, 1);
   nPowers = 3;
@@ -8371,16 +7870,18 @@ multiIntersect = function(setList)
 
 prependZeros = function(x, width = max(nchar(x)))
 {
-  lengths = nchar(x);
+  if (is.numeric(x)) xr = round(x) else xr = x;
+  lengths = nchar(xr);
   if (width < max(lengths)) stop("Some entries of 'x' are too long.");
   out = as.character(x);
   n = length(x);
   for (i in 1:n) if (lengths[i] < width)
-    out[i] = paste0( paste(rep("0", width-lengths[i]), collapse = ""),
+    out[i] = spaste( paste(rep("0", width-lengths[i]), collapse = ""),
                      x[i]);
 
   out;
 }
+
 
 #===========================================================================================================
 #
@@ -9040,7 +8541,8 @@ binarizeCategoricalColumns.forPlots = function(data, maxOrdinalLevels = 3,
                                       levelOrder = NULL,
                                       val1 = 0, val2 = 1,
                                       includePrefix = TRUE,
-                                      prefixSep = ".")
+                                      prefixSep = ".", 
+                                      checkNames = TRUE)
 {
   binarizeCategoricalColumns(data,
            maxOrdinalLevels = maxOrdinalLevels,
@@ -9054,7 +8556,8 @@ binarizeCategoricalColumns.forPlots = function(data, maxOrdinalLevels = 3,
            dropUninformative = TRUE,
            includePrefix = includePrefix,
            includeLevelInformation = FALSE,
-           prefixSep = prefixSep, nameForAll = "");
+           prefixSep = prefixSep, nameForAll = "",
+           checkNames = checkNames);
 }
 
 binarizeCategoricalColumns.pairwise = function(data, maxOrdinalLevels = 3,

@@ -176,7 +176,7 @@ userListEnrichment <- function (geneR, labelR, fnIn = NULL, catNmIn = fnIn, name
        rSig = rSig[rSig$NumGenes>=minGenesInCategory,]
        if(!outputGenes) rSig = rSig[,1:4]
        results$sigOverlaps = rSig
-       write.csv(results$sigOverlaps, file = nameOut, row.names = FALSE)
+       if (length(nameOut) > 0) write.csv(results$sigOverlaps, file = nameOut, row.names = FALSE)
     }
 
     write(paste(length(namesOv), "comparisons were successfully performed."), 

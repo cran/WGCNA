@@ -34,7 +34,8 @@ A vector of file names containing user-defined lists.  These files must be in on
 A vector of category names corresponding to each fnIn.  This name will be appended to each overlap corresponding to that filename.  The default sets the category names as the corresponding file names.
 }
   \item{nameOut}{
-Name of the file where the output enrichment information will be written.  (Note that this file includes only a subset of what is returned by the function.)
+Name of the file where the output enrichment information will be written.  (Note that this file includes only a subset of
+what is returned by the function.) If \code{NULL} (or zero-length), no output will be written out.
 }
   \item{useBrainLists}{
 If TRUE, a pre-made set of brain-derived enrichment lists will be added to any user-defined lists for enrichment comparison.  The default is FALSE.  See references section for related references.
@@ -253,17 +254,19 @@ set.seed(100)
 geneR = sort(sample(listGenes,2000))
 categories = sort(rep(standardColors(10),200))
 categories[sample(1:2000,200)] = "grey"
-write(c("TESTLIST1",geneR[300:400], sep="\n"),"TESTLIST1.txt")
-write(c("TESTLIST2",geneR[800:1000],sep="\n"),"TESTLIST2.txt")
+file1 = tempfile();
+file2 = tempfile();
+write(c("TESTLIST1",geneR[300:400], sep="\n"), file1)
+write(c("TESTLIST2",geneR[800:1000],sep="\n"), file2)
 
 # Now run the function!
-testResults = userListEnrichment(geneR, labelR=categories, 
-                                 fnIn=c("TESTLIST1.txt","TESTLIST2.txt"), 
-                                 catNmIn=c("TEST1","TEST2"), 
-nameOut = "testEnrichment.csv",useBrainLists=TRUE, omitCategories ="grey")
+testResults = userListEnrichment(
+   geneR, labelR=categories, 
+   fnIn=c(file1, file2),
+   catNmIn=c("TEST1","TEST2"), 
+   nameOut = NULL, useBrainLists=TRUE, omitCategories ="grey")
 
-# To see a list of all significant enrichments, either open 
-# the file "testEnrichments.csv" in the current directory, or type:
+# To see a list of all significant enrichments type:
 testResults$sigOverlaps
 
 # To see all of the overlapping genes between two categories 
@@ -275,6 +278,10 @@ testResults$ovGenes$"red -- salmon_M12_Ribosome__HumanMeta"
 
 # More detailed overlap information is in the pValue output.  For example:
 head(testResults$pValue)
+
+# Clean up the temporary files
+unlink(file1);
+unlink(file2)
 }
 
 \keyword{misc}

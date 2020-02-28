@@ -7,6 +7,7 @@ overlapTable = function(labels1, labels2, na.rm = TRUE, ignore = NULL,
 {
   labels1 = as.vector(labels1);
   labels2 = as.vector(labels2);
+  if (length(labels1)!=length(labels2)) stop("Lengths of 'labels1' and 'labels2' must be the same.")
   if (na.rm)
   {
     keep = !is.na(labels1) & !is.na(labels2);
@@ -27,17 +28,22 @@ overlapTable = function(labels1, labels2, na.rm = TRUE, ignore = NULL,
   n2 = length(levels2);
   countMat = matrix(0, n1, n2);
   pMat = matrix(0, n1, n2);
+  nAll = length(labels1);
 
   for (m1 in 1:n1)
     for (m2 in 1:n2)
     {
       m1Members = (labels1 == levels1[m1]);
       m2Members = (labels2 == levels2[m2]);
-      tab = .table2.allLevels(m1Members, m2Members, levels.x = c(FALSE, TRUE), levels.y = c(FALSE, TRUE));
+      .n1 = sum(m1Members);
+      .n2 = sum(m2Members);
+      .n12 = sum(m1Members & m2Members);
+      #tab = .table2.allLevels(m1Members, m2Members, levels.x = c(FALSE, TRUE), levels.y = c(FALSE, TRUE));
       #print(paste("table for levels", levels1[m1], levels2[m2]));
       #print(table(m1Members, m2Members));
-      pMat[m1, m2] = fisher.test(tab, alternative = "greater")$p.value;
-      countMat[m1, m2] = sum(labels1 == levels1[m1] & labels2 == levels2[m2])
+      #pMat[m1, m2] = fisher.test(tab, alternative = "greater")$p.value;
+      pMat[m1, m2] = if (.n12 > 0) phyper(.n12-1, .n1, nAll - .n1, .n2, lower.tail = FALSE) else 1
+      countMat[m1, m2] = .n12;
     }
 
  dimnames(pMat) = list(levels1, levels2);

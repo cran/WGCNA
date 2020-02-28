@@ -34,7 +34,7 @@ empiricalBayesLM(
   tol = 1e-4, maxIterations = 1000,
   garbageCollectInterval = 50000,
 
-  scaleMeanToSamples = NULL,
+  scaleMeanToSamples = fitToSamples,
   getOLSAdjustedData = TRUE,
   getResiduals = TRUE,
   getFittedValues = TRUE,
@@ -71,8 +71,8 @@ suitable functions.}
   \item{initialFitOptions}{
 Optional specifications of extra arguments for \code{initialFitFunction}, apart from \code{formula} and
 \code{data} or \code{x} and \code{y}. 
-Defaults are provided for functions \code{\link[MASS]{rlm}} and \code{\link[robust]{lmRob}},
-i.e., if either of these two functions are used as \code{initialFitFunction}, suitable initial fit options
+Defaults are provided for function \code{\link[MASS]{rlm}}, 
+i.e., if this function is used as \code{initialFitFunction}, suitable initial fit options
 will be chosen automatically.}
 
   \item{initialFitRequiresFormula}{
@@ -82,8 +82,7 @@ arguments \code{x} and \code{y}.}
 
   \item{initialFit.returnWeightName}{
 Name of the component of the return value of \code{initialFitFunction} that contains the weights used in the
-fit. Suitable default value will be chosen automatically for \code{\link[MASS]{rlm}} and
-\code{\link[robust]{lmRob}}.
+fit. Suitable default value will be chosen automatically for \code{\link[MASS]{rlm}}.
 }
   \item{fitToSamples}{
 Optional index of samples from which the linear model fits should be calculated. Defaults to all samples. If given, the

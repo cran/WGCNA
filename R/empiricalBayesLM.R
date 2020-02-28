@@ -53,8 +53,7 @@
 .initialFit.defaultOptions = function(fitFnc)
 {
   defOpt = list(
-       rlm = list(),
-       lmrob = list(model = FALSE, x = FALSE, y = FALSE, control = lmRob.control()));
+       rlm = list())
   if (fitFnc %in% names(defOpt)) return(defOpt[[ match(fitFnc, names(defOpt))]]);
   list();
 }
@@ -90,7 +89,7 @@ empiricalBayesLM = function(
   tol = 1e-4, maxIterations = 1000,
   garbageCollectInterval = 50000,
 
-  scaleMeanToSamples = NULL,
+  scaleMeanToSamples = fitToSamples,
   getOLSAdjustedData = TRUE,
   getResiduals = TRUE,
   getFittedValues = TRUE,
@@ -203,12 +202,16 @@ empiricalBayesLM = function(
   nc = ncol(designMat);
 
   if (verbose > 0) printFlush(paste(spaces, "..standardizing responses.."));
-  if (is.null(scaleMeanToSamples)) scaleMeanToSamples = c(1:nSamples);
-  if (is.null(fitToSamples)) fitToSamples = c(1:nSamples);
+  if (length(scaleMeanToSamples)==0) scaleMeanToSamples = c(1:nSamples);
+  if (length(fitToSamples)==0) fitToSamples = c(1:nSamples);
 
   mean.y.target = .colWeightedMeans.x(y[scaleMeanToSamples, ], weights[scaleMeanToSamples, ], na.rm = TRUE);
 
   if (is.logical(fitToSamples)) fitToSamples = which(fitToSamples);
+
+  if (length(fitToSamples) < 3) 
+    stop("'fitToSamples' must specify at least 3 samples for the fit.");
+
   nRefSamples = length(fitToSamples);
   yFinite.refSamples = yFinite[fitToSamples, ];
   weights.refSamples = weights[fitToSamples, ];

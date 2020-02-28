@@ -14,7 +14,6 @@ importFrom(Hmisc, rcorr.cens, errbar)
 importFrom(impute, impute.knn)
 importFrom(splines, ns)
 importFrom(preprocessCore, normalize.quantiles)
-importFrom(robust, lmRob.control, lmRob)
 
 # Imports of previously automatically available functions...
 

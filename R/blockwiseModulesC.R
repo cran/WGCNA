@@ -3230,6 +3230,9 @@ sizeRestrictedClusterMerge = function(
     indent = 0)
 {
 
+  if (ncol(datExpr)!=length(clusters))
+    stop("Number of variables (columns) in 'datExpr' and length of 'clusters' are not the same.");
+
   spaces = indentSpaces(indent);
   intNetworkType = charmatch(networkType, .networkTypes);
   if (is.null(clusterSizes))
@@ -3250,7 +3253,11 @@ sizeRestrictedClusterMerge = function(
       {
          centers[, i] = .alignedFirstPC(datExpr[, clusters==i], verbose = verbose-2,
                                           indent = indent+2)
-      } else centers[, i] = scale(datExpr[, clusters==i])/(sum(is.finite(datExpr[, i]))-1)
+      } else {
+        #xx = try({centers[, i] = scale(datExpr[, clusters==i, drop = FALSE])/(sum(is.finite(datExpr[, clusters==i]))-1)});
+        #if (inherits(xx, "try-error")) browser();
+        centers[, i] = scale(datExpr[, clusters==i, drop = FALSE])/(sum(is.finite(datExpr[, clusters==i]))-1);
+      }
     }
   }
       

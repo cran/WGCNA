@@ -65,7 +65,8 @@ binarizeCategoricalColumns.forPlots(
    levelOrder = NULL,
    val1 = 0, val2 = 1,
    includePrefix = TRUE,
-   prefixSep = ".")
+   prefixSep = ".",
+   checkNames = TRUE)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{

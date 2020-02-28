@@ -84,8 +84,81 @@
       lines(c(xmin, xmax, xmax, xmin, xmin), c(ymin, ymin, ymax, ymax, ymin), xpd = TRUE );
 }
 
+.boxDimensionsForHeatmapWithLegend = function(
+                     data,
+                     plotLegend = TRUE,
+                     keepLegendSpace = plotLegend,
+                     cex.legend = 1,
+                     legendShrink = 0.94,
+                     ## The following arguments are now in inches
+                     legendSpace = 0.5,
+                     legendWidth = 0.13,
+                     legendGap = 0.09, 
+                     startTempPlot = TRUE,
+                     plotDevice = "pdf",
+                     plotDeviceOptions = list(),
+                     width = 7, height = 7,...)
+{
+  data = as.matrix(data); nCols = ncol(data); nRows = nrow(data);
 
-.heatmapWithLegend = function(data, signed, colors, naColor = "grey", zlim = NULL, 
+  if (startTempPlot)
+  {
+    if (!is.null(plotDevice))
+    {
+      if (plotDevice == "x11") 
+      {
+        do.call(match.fun(plotDevice), c(list(width = width, height = height), plotDeviceOptions));
+        on.exit(dev.off());
+      } else {
+        file = tempfile();
+        do.call(match.fun(plotDevice), c(list(file = file, width = width, height = height), plotDeviceOptions))
+        on.exit({ dev.off(); unlink(file)});
+      }
+      par(mar = par("mar"));
+    }
+    barplot(1, col = "white", border = "white", axisnames = FALSE,
+                  axes = FALSE, ...);
+  }
+  pin = par("pin");
+  box = par("usr");
+  xminAll = box[1];
+  xmaxAll = box[2];
+  yminAll = box[3];
+  ymaxAll = box[4];
+
+  legendSpace.usr = legendSpace/pin[1] * (xmaxAll-xminAll);
+  legendWidth.usr = legendWidth/pin[1] * (xmaxAll-xminAll);
+  legendGap.usr = legendGap/pin[1] * (xmaxAll-xminAll);
+
+  if (!keepLegendSpace && !plotLegend)
+  {
+     legendSpace.usr = 0;
+     legendWidth.usr = 0;
+     legendGap.usr = 0;
+  }
+
+  ymin = yminAll;
+  ymax = ymaxAll;
+  xmin = xminAll;
+  xmax = xmaxAll - legendSpace.usr;
+  if (xmax < xmin) stop("'legendSpace is too large, not enough space for the heatmap.");
+  xStep = (xmax - xmin)/nCols;
+  xLeft = xmin + c(0:(nCols-1)) * xStep;
+  xRight = xLeft + xStep;
+  xMid = (xLeft + xRight)/2;
+
+  yStep = (ymax - ymin)/nRows; yBot  = ymin + c(0:(nRows-1)) * yStep;
+  yTop  = yBot + yStep; yMid = c(yTop+ yBot)/2;
+
+  list(xMin = xmin, xMax = xmax, yMin = ymin, yMax = ymax,
+       xLeft = xLeft, xRight = xMid, xMid = xMid,
+       yTop = yTop, yMid = yMid, yBottom = yBot);
+}
+
+
+.heatmapWithLegend = function(data, signed, 
+                     colorMatrix = NULL,
+                     colors, naColor = "grey", zlim = NULL, 
                      reverseRows = TRUE,
                      plotLegend = TRUE,
                      keepLegendSpace = plotLegend,
@@ -99,6 +172,8 @@
                      frameTicks = FALSE, tickLen = 0.09,
                      ...)
 {
+ 
+  if (length(naColor)==0) naColor = 0;  ### Means transparent (as opposed to white) color.
   data = as.matrix(data); nCols = ncol(data); nRows = nrow(data);
   if (is.null(zlim)) 
   {
@@ -142,20 +217,21 @@
   yStep = (ymax - ymin)/nRows; yBot  = ymin + c(0:(nRows-1)) * yStep;
   yTop  = yBot + yStep; yMid = c(yTop+ yBot)/2;
 
+  
+  if (is.null(colorMatrix))
+    colorMatrix = numbers2colors(data, signed, colors = colors, lim = zlim, naColor = naColor)
+  dim(colorMatrix) = dim(data);
   if (reverseRows)
-  {
-    colorMat = numbers2colors(.reverseRows(data), signed, colors = colors, lim = zlim,
-                              naColor = naColor)
-  } else
-    colorMat = numbers2colors(data, signed, colors = colors, lim = zlim, naColor = naColor)
-
-  dim(colorMat) = dim(data);
-
+    colorMatrix = .reverseRows(colorMatrix);
   for (c in 1:nCols)
   {
     rect(xleft = rep(xLeft[c], nRows), xright = rep(xRight[c], nRows),
-         ybottom = yBot, ytop = yTop, col = colorMat[, c], border = colorMat[, c]);
+         ybottom = yBot, ytop = yTop, col = ifelse(colorMatrix[, c]==0, 0, colorMatrix[, c]), 
+                border = ifelse(colorMatrix[, c]==0, 0, colorMatrix[, c]));
+    ## Note: the ifelse seems superfluous here but it essentially converts a potentially character "0" to the number 0
+    ## which the plotting system should understand as transparent color.
   }
+
   if (frame) lines( c(xmin, xmax, xmax, xmin, xmin), c(ymin, ymin, ymax, ymax, ymin) );
 
   if (plotLegend)
