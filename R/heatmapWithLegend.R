@@ -3,6 +3,7 @@
 .autoTicks = function(min, max, maxTicks = 6 , tickPos = c(1,2,5))
 {
   range = max - min;
+  if (range==0) return(max);
   tick0 = range/maxTicks;
   maxTick = max(tickPos);
   # Ticks can only be multiples of tickPos
@@ -33,7 +34,9 @@
                             tickGap = 0.04,
                             minBarWidth = 0.09,
                             maxBarWidth = Inf,
-                            mar = c(0.5, 0.2, 0.5, 0.1))
+                            mar = c(0.5, 0.2, 0.5, 0.1),
+                            lab = "",
+                            ...)
 {
   par(mar = mar);
   plot(c(0, 1), c(0, 1), type = "n", axes = FALSE, xlab = "", ylab = "");
@@ -48,41 +51,131 @@
   maxTickWidth = max(strwidth(tickVal));
   if (maxTickWidth + tickLen.usr + tickGap.usr > box[2]-box[1]-minBarWidth.usr) 
      warning("Some tick labels will be truncated.");
-  xMax = max(box[2]-maxTickWidth - tickLen.usr - tickGap.usr, box[1] + minBarWidth.usr);
+  haveLab = length(lab) > 0
+  if (haveLab && is.character(lab)) haveLab = lab!="";
+  xMax = max(box[2]-maxTickWidth - tickLen.usr - tickGap.usr- haveLab * 3*strwidth("M"), box[1] + minBarWidth.usr);
+
   if (xMax - box[1] > maxBarWidth.usr) xMax = box[1] + maxBarWidth.usr;
   .plotColorLegend(box[1], xMax,
                    box[3], box[4], 
                    colors = colors,
                    lim = lim,
                    tickLen.usr = tickLen.usr,
-                   tickGap.usr = tickGap.usr);
+                   tickGap.usr = tickGap.usr, lab = lab, ...);
+}
+
+if (FALSE)
+{
+   source("~/Work/RLibs/WGCNA/R/heatmapWithLegend.R")
+   .plotStandaloneLegend(colors = blueWhiteRed(10), lim = c(-25, 25))
+   d = matrix(rnorm(100), 10, 10);
+   par(mar = c(2,2,2,0));
+   
+   .heatmapWithLegend(d,
+                     signed = TRUE,
+                     colors = blueWhiteRed(20), 
+                     plotLegend = TRUE,
+                     cex.legendAxis = 1,
+                     legendShrink = 0.94,
+                     legendLabel = "",
+                     cex.legendLabel = 1)
+                     ## The following arguments are now in inches
+                     #legendSpace = 0.5 + (legendLabel!="") * 1.5*strheight("M",units = "inch", cex = cex.legendLabel),
+                     #legendWidth = 0.13,
+                     #legendGap = 0.09,
+                     #frame = TRUE,
+                     #frameTicks = FALSE, tickLen = 0.09);
+
 }
 
 .plotColorLegend = function(xmin, xmax, ymin, ymax,
+                            # colors can be a vector or a matrix (in which case a matrix of colors will be plotted)
                             colors,
-                            tickLen.usr = 0.7* strwidth("M"),
-                            tickGap.usr = 0.3 * strwidth("M"),
-                            lim, cex.legend = 1)
+                            horizontal = FALSE,
+### FIXME: it would be good if these could respect settings in par("mgp")
+                            tickLen.usr = 0.7* (if (horizontal) strheight("M") else strwidth("M")),
+                            tickGap.usr = 0.3 * (if (horizontal) strheight("M") else strwidth("M")),
+                            lim, cex.axis = 1, tickLabelAngle = if (horizontal) 0 else -90,
+                            lab = "", cex.lab = 1, labAngle = 0, 
+                            labGap = 0.3 * (if (horizontal) strheight("M") else strwidth("M"))
+                            )
 {
-      tickVal = .autoTicks(lim[1], lim[2]);
-      tickY = (tickVal - lim[1]) / (lim[2] - lim[1]) * (ymax - ymin) + ymin;
-      nTicks = length(tickVal);
+  tickVal = .autoTicks(lim[1], lim[2]);
+  nTicks = length(tickVal);
 
-      # Ticks:
-      for (t in 1:nTicks)
-        lines(c(xmax, xmax + tickLen.usr), c(tickY[t], tickY[t]), xpd = TRUE);
-      text(rep(xmax + tickLen.usr + tickGap.usr), tickY, tickVal, adj = c(0, 0.5), cex = cex.legend,
-           xpd = TRUE);
-
-      # Fill with color:
-      nColors = length(colors);
-      ybl = (ymax-ymin)/nColors * (0:(nColors-1)) + ymin;
-      ytl = (ymax-ymin)/nColors * (1:nColors) + ymin;
-      rect(xleft = rep(xmin, nColors), xright = rep(xmax, nColors),
-           ybottom = ybl, ytop = ytl, col = colors, border = colors, xpd = TRUE);
-
-      lines(c(xmin, xmax, xmax, xmin, xmin), c(ymin, ymin, ymax, ymax, ymin), xpd = TRUE );
+  if (horizontal) {
+    lmin = xmin; lmax = xmax; 
+    tmin = ymin; tmax = ymax;
+  } else {
+    tmin = xmin; tmax = xmax; 
+    lmin = ymin; lmax = ymax;
+  }
+  tickPos = (tickVal - lim[1]) / (lim[2] - lim[1]) * (lmax - lmin) + lmin;
+  pin = par("pin");
+  box = par("usr");
+  asp = pin[2]/pin[1] * ( box[2]-box[1])/(box[4] - box[3]);
+  # Ticks:
+  if (horizontal) {
+    angle0 = 0;
+    angle = angle0 + tickLabelAngle;
+    if (angle==0) adj = c(0.5, 1) else adj = c(1, 0.5);
+    for (t in 1:nTicks) 
+      lines(c(tickPos[t], tickPos[t]), c(ymin, ymin - tickLen.usr), xpd = TRUE);
+    text(tickPos, rep(ymin - tickLen.usr - tickGap.usr), tickVal, adj = adj, cex = cex.axis,
+           xpd = TRUE, srt = angle);
+    tickLabelWidth = if (angle==0) max(strheight(tickVal)) else max(strwidth(tickVal))/asp;
+  } else {
+    angle0 = 90;
+    angle = angle0 + tickLabelAngle;
+    if (angle==0) adj = c(0, 0.5) else adj = c(0.5, 1);
+    for (t in 1:nTicks) 
+      lines(c(xmax, xmax + tickLen.usr), c(tickPos[t], tickPos[t]), xpd = TRUE);
+    text(rep(xmax + tickLen.usr + tickGap.usr), tickPos, tickVal, adj = adj, cex = cex.axis,
+         xpd = TRUE, srt = angle);
+    tickLabelWidth = if (angle==0) max(strwidth(tickVal)) else max(strheight(tickVal)) * asp;
+  }
+  # Fill with color:
+  colors = as.matrix(colors);
+  nColumns = ncol(colors);
+  nColors = nrow(colors);
+  bl = (lmax-lmin)/nColors * (0:(nColors-1)) + lmin;
+  tl = (lmax-lmin)/nColors * (1:nColors) + lmin;
+  wi.all = tmax - tmin;
+  wi1 = wi.all/nColumns
+  if (horizontal) {
+    for (col in 1:nColumns)
+      rect(xleft = bl, xright = tl,
+         ybottom = rep(tmin + (col-1) * wi1, nColors), ytop = rep(tmin + wi1*col, nColors), 
+            col = colors[, col], border = colors[, col], xpd = TRUE);
+  } else {
+    for (col in 1:nColumns)
+       rect(xleft = rep(tmin + (col-1) * wi1, nColors), xright = rep(tmin + wi1*col, nColors),
+          ybottom = bl, ytop = tl, col = colors[, col], border = colors[, col], xpd = TRUE);
+  }
+  # frame for the legend
+  lines(c(xmin, xmax, xmax, xmin, xmin), c(ymin, ymin, ymax, ymax, ymin), xpd = TRUE );
+  if (nColumns > 1) for (col in 2:nColumns) 
+    if (horizontal) lines(c(xmin, xmax), c(tmin + (col-1) * wi1, tmin + (col-1) * wi1)) else 
+                    lines(c(tmin + (col-1) * wi1, tmin + (col-1) * wi1), c(ymin, ymax));
+  # Axis label
+  if (length(lab)>0 && as.character(lab) != "")
+  {
+    if (horizontal)
+    {
+      y = ymin - tickLen.usr - tickGap.usr - tickLabelWidth - labGap;
+      x = (box[1] + box[2])/2;
+      adj = if (labAngle==0) c(0.5, 1) else c(1, 0.5)
+      text(x, y, lab, cex = cex.lab, srt = labAngle, xpd = TRUE, adj = adj);
+    } else {
+      y = (box[4] + box[3])/2;
+      x = xmax + tickLen.usr + tickGap.usr + tickLabelWidth + labGap;
+      adj = if (labAngle==0) c(0.5, 1) else c(0, 0.5);
+      text(x, y, lab, cex = cex.lab, srt = labAngle+90, xpd = TRUE, adj = adj);
+    }
+  }
 }
+
+
 
 .boxDimensionsForHeatmapWithLegend = function(
                      data,
@@ -162,10 +255,13 @@
                      reverseRows = TRUE,
                      plotLegend = TRUE,
                      keepLegendSpace = plotLegend,
-                     cex.legend = 1, 
+                     cex.legendAxis = 1, 
                      legendShrink = 0.94,
                      ## The following arguments are now in inches
-                     legendSpace = 0.5,   
+                     legendLabel = "",
+                     cex.legendLabel = 1,
+                     legendSpace = 0.5 + (as.character(legendLabel)!="") * 1.5*
+                            strheight("M",units = "inch", cex = cex.legendLabel),   
                      legendWidth = 0.13,
                      legendGap = 0.09,
                      frame = TRUE,
@@ -244,7 +340,10 @@
                        lim = zlim,
                        colors = colors,
                        tickLen.usr = tickLen.usr,
-                       cex.legend = cex.legend);
+                       cex.axis = cex.legendAxis,
+                       lab = legendLabel,
+                       cex.lab = cex.legendLabel,
+                       );
     
   }
 

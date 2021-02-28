@@ -119,7 +119,8 @@ effect for Pearson correlation. See \code{\link{bicor}}.}
   \item{cosineCorrelation}{logical: should the cosine version of the correlation calculation be used? The
 cosine calculation differs from the standard one in that it does not subtract the mean. }
 
-  \item{power}{ soft-thresholding power for netwoek construction. }
+  \item{power}{ soft-thresholding power for network construction. Either a single number or a vector of the same length as
+the number of sets, with one power for each set.}
 
   \item{networkType}{ network type. Allowed values are (unique abbreviations of) \code{"unsigned"},
 \code{"signed"}, \code{"signed hybrid"}. See \code{\link{adjacency}}. }

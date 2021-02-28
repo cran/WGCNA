@@ -13,7 +13,7 @@
 .reverseRows = function(Matrix)
 {
   ind = seq(from=dim(Matrix)[1], to=1, by=-1);
-  Matrix[ind,];
+  Matrix[ind,, drop = FALSE];
   #Matrix
 }
 
@@ -83,6 +83,8 @@ labeledHeatmap = function (
   x.adj.lab.y = 1,
   plotLegend = TRUE, 
   keepLegendSpace = plotLegend,
+  legendLabel = "",
+  cex.legendLabel = 1,
   # Separator line specification                   
   verticalSeparator.x = NULL,
   verticalSeparator.col = 1,  
@@ -184,7 +186,8 @@ labeledHeatmap = function (
 
   labPos = .heatmapWithLegend(Matrix[showRows, showCols, drop = FALSE], 
               signed = FALSE, colorMatrix = colorMatrix, colors = colors, naColor = naColor, 
-              cex.legend = cex.lab, plotLegend = plotLegend,  keepLegendSpace = keepLegendSpace, ...)
+              cex.legendAxis = cex.lab, plotLegend = plotLegend,  keepLegendSpace = keepLegendSpace, 
+              legendLabel = legendLabel, cex.legendLabel = cex.legendLabel, ...)
   plotbox = labPos$box;
   xmin = plotbox[1]; xmax = plotbox[2]; ymin = plotbox[3]; yrange = plotbox[4]-ymin;
   ymax = plotbox[4]; xrange = xmax - xmin;
@@ -522,18 +525,6 @@ labeledHeatmap.multiPage = function(
    signed = TRUE,
    main = "",
 
-  verticalSeparator.x = NULL,
-  verticalSeparator.col = 1,
-  verticalSeparator.lty = 1,
-  verticalSeparator.lwd = 1,
-  verticalSeparator.ext = 0,
-
-  horizontalSeparator.y = NULL,
-  horizontalSeparator.col = 1,
-  horizontalSeparator.lty = 1,
-  horizontalSeparator.lwd = 1,
-  horizontalSeparator.ext = 0,
-
    ...)
 {
 
@@ -560,25 +551,6 @@ labeledHeatmap.multiPage = function(
     if (signed) zlim = c(-max(abs(zlim)), max(abs(zlim)));
   }
 
-  if (!is.null(verticalSeparator.x))
-  {
-    nvs = length(verticalSeparator.x);
-    verticalSeparator.col= .extend(verticalSeparator.col, nvs);
-    verticalSeparator.lty= .extend(verticalSeparator.lty, nvs);
-    verticalSeparator.lwd= .extend(verticalSeparator.lwd, nvs);
-    verticalSeparator.ext= .extend(verticalSeparator.ext, nvs);
-  }
-  
-  if (!is.null(horizontalSeparator.y))
-  {
-    nhs = length(horizontalSeparator.y);
-    horizontalSeparator.col= .extend(horizontalSeparator.col, nhs);
-    horizontalSeparator.lty= .extend(horizontalSeparator.lty, nhs);
-    horizontalSeparator.lwd= .extend(horizontalSeparator.lwd, nhs);
-    horizontalSeparator.ext= .extend(horizontalSeparator.ext, nhs);
-  }
-  
-
   page = 1;
   multiPage = (nPages.cols > 1 | nPages.rows > 1)
 
@@ -586,35 +558,14 @@ labeledHeatmap.multiPage = function(
   {
     rows = rowsPerPage[[page.row]];
     cols = colsPerPage[[page.col]];
-    if (!is.null(verticalSeparator.x))
-    {
-      keep.vs = verticalSeparator.x %in% cols;
-    } else 
-      keep.vs = numeric(0);
-    if (!is.null(horizontalSeparator.y))
-    {
-      keep.hs = horizontalSeparator.y %in% rows;
-    } else 
-      keep.hs = numeric(0);
-
     main.1 = main;
     if (addPageNumberToMain & multiPage) main.1 = spaste(main, "(page ", page, ")");
-    labeledHeatmap(Matrix = Matrix[rows, cols, drop = FALSE],
-                   xLabels = xLabels[cols], xSymbols = xSymbols[cols],
-                   yLabels = yLabels[rows], ySymbols = ySymbols[rows],
-                   textMatrix = textMatrix[rows, cols, drop = FALSE],
+    labeledHeatmap(Matrix = Matrix,
+                   xLabels = xLabels, xSymbols = xSymbols,
+                   yLabels = yLabels, ySymbols = ySymbols,
+                   textMatrix = textMatrix,
                    zlim = zlim, main = main.1, 
-                   verticalSeparator.x = verticalSeparator.x[keep.vs] - min(cols) + 1,
-                   verticalSeparator.col= verticalSeparator.col[keep.vs],
-                   verticalSeparator.lty= verticalSeparator.lty[keep.vs],
-                   verticalSeparator.lwd= verticalSeparator.lwd[keep.vs],
-                   verticalSeparator.ext= verticalSeparator.ext[keep.vs],
- 
-                   horizontalSeparator.y = horizontalSeparator.y[keep.hs] - min(rows) + 1,
-                   horizontalSeparator.col= horizontalSeparator.col[keep.hs],
-                   horizontalSeparator.lty= horizontalSeparator.lty[keep.hs],
-                   horizontalSeparator.lwd= horizontalSeparator.lwd[keep.hs],
-                   horizontalSeparator.ext= horizontalSeparator.ext[keep.hs],
+                   showRows = rows, showCols = cols, 
                    ...);
     page = page + 1;
   }

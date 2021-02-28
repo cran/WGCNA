@@ -329,7 +329,9 @@ blockwiseModules = function(
   allLabelIndex = NULL;
 
   originalSampleNames = rownames(datExpr);
+  if (is.null(originalSampleNames)) originalSampleNames = spaste("Row.", 1:nrow(datExpr));
   originalGeneNames = colnames(datExpr);
+  if (is.null(originalGeneNames)) originalGeneNames = spaste("Column.", 1:ncol(datExpr));
 
   #if (maxBlockSize >= floor(sqrt(2^31)) )
   #  stop("'maxBlockSize must be less than ", floor(sqrt(2^31)), ". Please decrease it and try again.")
@@ -853,14 +855,14 @@ blockwiseModules = function(
       allSampleMEs = as.data.frame(matrix(NA, nrow = nSamples, ncol = ncol(MEs)));
       allSampleMEs[gsg$goodSamples, ] = MEs[,];
       names(allSampleMEs) = names(MEs);
-      rownames(allSampleMEs) = originalSampleNames;
+      rownames(allSampleMEs) = make.unique(originalSampleNames)
     }
   } else {
     mergedAllColors[gsg$goodGenes] = mergedMods$colors;
     allSampleMEs = as.data.frame(matrix(NA, nrow = nSamples, ncol = ncol(mergedMods$newMEs)));
     allSampleMEs[gsg$goodSamples, ] = mergedMods$newMEs[,];
     names(allSampleMEs) = names(mergedMods$newMEs);
-    rownames(allSampleMEs) = originalSampleNames;
+    rownames(allSampleMEs) = make.unique(originalSampleNames);
   }
 
   if (seedSaved) .Random.seed <<- savedSeed;
@@ -962,7 +964,9 @@ recutBlockwiseTrees = function(datExpr,
   allLabelIndex = NULL;
 
   originalSampleNames = rownames(datExpr);
+  if (is.null(originalSampleNames)) originalSampleNames = spaste("Row.", 1:nrow(datExpr));
   originalGeneNames = colnames(datExpr);
+  if (is.null(originalGeneNames)) originalGeneNames = spaste("Column.", 1:ncol(datExpr));
 
   if (length(blocks)!=nGenes)
     stop("Input error: the length of 'geneRank' does not equal the number of genes in given 'datExpr'.");
@@ -1313,7 +1317,7 @@ recutBlockwiseTrees = function(datExpr,
     allSampleMEs = as.data.frame(matrix(NA, nrow = nSamples, ncol = ncol(mergedMods$newMEs)));
     allSampleMEs[gsg$goodSamples, ] = mergedMods$newMEs[,];
     names(allSampleMEs) = names(mergedMods$newMEs);
-    rownames(allSampleMEs) = originalSampleNames;
+    rownames(allSampleMEs) = make.unique(originalSampleNames);
   }
 
   names(colors) = originalGeneNames;
@@ -1839,7 +1843,14 @@ blockwiseConsensusModules = function(
                       "block-wise from all genes"));
 
   originalGeneNames = mtd.colnames(multiExpr);
-  originalSampleNames = mtd.apply(multiExpr, rownames);
+  if (is.null(originalGeneNames)) originalGeneNames = spaste("Column.", 1:nGenes)
+
+  originalSampleNames = mtd.apply(multiExpr, function(x)
+  {
+    out = rownames(x);
+    if (is.null(out)) out = spaste("Row.", 1:nrow(x));
+    out;
+  });
 
   branchSplitFnc = NULL;
   minBranchDissimilarities = numeric(0);
@@ -2420,7 +2431,7 @@ blockwiseConsensusModules = function(
            list(data = as.data.frame(matrix(NA, nrow = nSamples[set], ncol = ncol(MEs[[set]]$data))));
         allSampleMEs[[set]]$data[gsg$goodSamples[[set]], ] = MEs[[set]]$data[,];
         names(allSampleMEs[[set]]$data) = names(MEs[[set]]$data);
-        rownames(allSampleMEs[[set]]$data) = originalSampleNames[[set]]$data;
+        rownames(allSampleMEs[[set]]$data) = make.unique(originalSampleNames[[set]]$data)
       }
     }
   } else {
@@ -2434,7 +2445,7 @@ blockwiseConsensusModules = function(
                                           ncol = ncol(mergedMods$newMEs[[1]]$data))));
       allSampleMEs[[set]]$data[gsg$goodSamples[[set]], ] = mergedMods$newMEs[[set]]$data[,];
       names(allSampleMEs[[set]]$data) = names(mergedMods$newMEs[[set]]$data);
-      rownames(allSampleMEs[[set]]$data) = originalSampleNames[[set]]$data;
+      rownames(allSampleMEs[[set]]$data) = make.unique(originalSampleNames[[set]]$data);
     }
   }
 
@@ -2519,7 +2530,14 @@ recutConsensusTrees = function(multiExpr,
   nSamples = dataSize$nSamples;
 
   originalGeneNames = mtd.colnames(multiExpr);
-  originalSampleNames = mtd.apply(multiExpr, rownames);
+  if (is.null(originalGeneNames)) originalGeneNames = spaste("Column.", 1:nGenes);
+
+  originalSampleNames = mtd.apply(multiExpr, function(x)
+  {
+    out = rownames(x);
+    if (is.null(out)) out = spaste("Row.", 1:nrow(x));
+    out;
+  });
 
   if (length(blocks)!=nGenes)
     stop("Input error: length of 'blocks' must equal number of genes in 'multiExpr'.");
@@ -2930,7 +2948,7 @@ recutConsensusTrees = function(multiExpr,
            list(data = as.data.frame(matrix(NA, nrow = nSamples[set], ncol = ncol(MEs[[set]]$data))));
         allSampleMEs[[set]]$data[gsg$goodSamples[[set]], ] = MEs[[set]]$data[,];
         names(allSampleMEs[[set]]$data) = names(MEs[[set]]$data);
-        rownames(allSampleMEs[[set]]$data) = originalSampleNames[[set]]$data;
+        rownames(allSampleMEs[[set]]$data) = make.unique(originalSampleNames[[set]]$data);
       }
     }
   } else {
@@ -2944,7 +2962,7 @@ recutConsensusTrees = function(multiExpr,
                                           ncol = ncol(mergedMods$newMEs[[1]]$data))));
       allSampleMEs[[set]]$data[gsg$goodSamples[[set]], ] = mergedMods$newMEs[[set]]$data[,];
       names(allSampleMEs[[set]]$data) = names(mergedMods$newMEs[[set]]$data);
-      rownames(allSampleMEs[[set]]$data) = originalSampleNames[[set]]$data;
+      rownames(allSampleMEs[[set]]$data) = make.unique(originalSampleNames[[set]]$data);
     }
   }
 

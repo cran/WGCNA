@@ -49,7 +49,7 @@ probe names, the second to their corresponding gene names that will be used in t
 also written into a file specified by \code{file}, if given. 
 }
 
-\references{ VisANT software is available from http://visant.bu.edu/. }
+\references{ VisANT software is available from http://www.visantnet.org/visantnet.html/. }
 
 \author{ Peter Langfelder }
 

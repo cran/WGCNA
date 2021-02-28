@@ -11,6 +11,7 @@ citEntry("Article",
          number  = "1",
          pages = "559", 
          PubMedID = "19114008",
+         url      = "https://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-9-559",
 
          textVersion = 
          paste("Langfelder P and Horvath S,\n", 
@@ -30,7 +31,7 @@ citEntry(entry = "Article",
   volume       = "46",
   number       = "11",
   pages        = "1--17",
-  url          = "http://www.jstatsoft.org/v46/i11/",
+  url          = "https://www.jstatsoft.org/v46/i11/",
 
   textVersion  =
   paste("Peter Langfelder, Steve Horvath (2012).",

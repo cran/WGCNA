@@ -1,5 +1,58 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
+2021/02/17: 1.70-3:
+
+	. Bugfixes of bugs introduced in 1.70-2
+
+2021/02/13: 1.70-2:
+
+	. Fixed problem in moduleEigengenes with argument 'expr' not having
+	  'rownames'.
+
+2021/02/13: 1.70-1:
+
+	. Fixed several old web links in help files
+
+2021/02/10: 1.69-86, 1.70
+
+	. Internal code for generating axis ticks now works when the limits
+	  have zero range.
+
+	. Help files for blockwiseIndividualTOMs and blockwiseConsensusModules
+	  updated.
+
+2020/12/18: 1.69-85
+
+	. Internal code for plotting legends for heatmaps expanded to be able
+	  to plot several color columns per legend.
+
+2020/11/03: 1.69-84
+
+	. Internal code for plotting color scale/axis for heatmaps can now add
+	  an axis label.
+	. Corrected help files.
+
+2020/07/12: 1.69-83:
+
+	. Code for labeledHeatmap.multipage was simplified by taking advantage
+	  of arguments showRows and showCols to labeledHeatmap. This also
+	  solves incorrect font size and colors for the row and column labels.
+
+2020/05/08: 1.69-82:
+
+	. blockwiseConsensusModules and friends now use make.unique before
+	  assigning rownames, to guard against duplicate rownames errors.
+
+2020/04/30: 1.69-81
+
+	. Bugfix in internal code fixes failure of labeledHeatmap with only
+	  one column or row.
+
+2020/03/03: 1.69-80
+
+	. Minor enhancements in internal code (function
+	  .plotOrderedColorSubplot).
+
 2020/02/28: 1.68-86, 1.69
 
 	. Argument nameOut to userListEnrichment now accepts value NULL to
@@ -17,26 +70,26 @@ Note: as of 2009/03/10, changes that lead to different calculational results are
 	  transparent as color for missing data.
 
 	. Bugfix in internal function used in plotColorUnderTree and
-	  plotOrderedColor
+	  plotOrderedColor.
 
 2020/02/08: 1.68-84
 
-	. Further bugfixes in plotOrderedColor
+	. Further bugfixes in plotOrderedColor.
 
 2020/02/06: 1.68-83
 
 
 	. plotOrderedColors, plotColorUnderTree and plotDendroAndColors gain argument
 	  separatorLine.col to set (or omit) separator lines between color
-	  rows
+	  rows.
 
 	. plotOrderedColors also gains argument align to provide some degree
-	  of control over alignment of color rectangles
+	  of control over alignment of color rectangles.
 
 2020/02/03: 1.68-82
 
 	. Bugfixes in prependZeros and internal code
-	  (.boxDimensionsForHeatmapWithLegend)
+	  (.boxDimensionsForHeatmapWithLegend).
 
 	. Internal change: plotOrderedColor is now split into user-facing
 	  wrapper and the workhorse internal function that can be called from
@@ -57,7 +110,7 @@ Note: as of 2009/03/10, changes that lead to different calculational results are
 	. Bugfix in labeledHeatmap and related functions; showing two
 	  separators at the same position now works.
 
-	. metaAnalysis now works with a single data set
+	. metaAnalysis now works with a single data set.
 
 	. Example for chooseTopHubInEachModule has been simplified.
 

@@ -42,6 +42,8 @@ labeledHeatmap(
 
   plotLegend = TRUE, 
   keepLegendSpace = plotLegend,
+  legendLabel = "",
+  cex.legendLabel = 1,
 
   # Separator line specification                   
   verticalSeparator.x = NULL,
@@ -151,6 +153,9 @@ above. }
   \item{plotLegend}{ logical: should a color legend be plotted? }
   \item{keepLegendSpace}{ logical: if the color legend is not drawn, should the space be left empty
 (\code{TRUE}), or should the heatmap fill the space (\code{FALSE})?}
+
+  \item{legendLabel}{character string to be shown next to the label analogous to an axis label.}
+  \item{cex.legendLabel}{character expansion factor for the legend label.}
 
   \item{verticalSeparator.x}{indices of columns in input \code{Matrix} after 
       which separator lines (vertical lines between columns) 

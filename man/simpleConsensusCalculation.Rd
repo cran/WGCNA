@@ -42,7 +42,7 @@ A numeric vector or array of the same dimensions as each element of \code{indivi
 Consensus network analysis was originally described in
 Langfelder P, Horvath S. Eigengene networks for studying the relationships
 between co-expression modules. BMC Systems Biology 2007, 1:54
-http://www.biomedcentral.com/1752-0509/1/54
+https://bmcsystbiol.biomedcentral.com/articles/10.1186/1752-0509-1-54
 }
 \author{
 Peter Langfelder

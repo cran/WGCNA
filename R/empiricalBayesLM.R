@@ -153,7 +153,7 @@ empiricalBayesLM = function(
   if (any(!is.finite(y.original))) 
   {
     warning(immediate. = TRUE,
-            "Found missing and non-finite data. These will be removed.");
+            "Found missing and/or non-finite data. These will be removed.");
   }
     
   if (is.null(weights))
@@ -479,6 +479,7 @@ empiricalBayesLM = function(
         beta.old = beta.new;
         sigma.old = sigma.new;
         iteration = iteration + 1;
+        #if (any(is.na(c(difference, iteration)))) browser();
       }
       if (iteration > maxIterations) warning(immediate. = TRUE, 
                                              "Exceeded maximum number of iterations for variable ", i, ".");

@@ -97,7 +97,7 @@ moduleEigengenes = function(expr, colors, impute = TRUE, nPC = 1, align = "along
   validColors = colors;
   names(PrinComps)=paste(moduleColor.getMEprefix(), modlevels, sep="")
   names(averExpr)=paste("AE",modlevels,sep="")
-  rownames(PrinComps) = rownames(averExpr) = rownames(expr);
+  if (!is.null(rownames(expr))) rownames(PrinComps) = rownames(averExpr) = make.unique(rownames(expr))
   for(i in c(1:length(modlevels)) )
   {
     if (verbose>1) 
@@ -511,7 +511,7 @@ consensusMEDissimilarity = function(MEs, useAbs = FALSE, useSets = NULL, method 
 
   ConsDiss = as.data.frame(ConsDiss);
   names(ConsDiss) = names(MEs[[useSets[1]]]$data);
-  rownames(ConsDiss) = names(MEs[[useSets[1]]]$data);
+  rownames(ConsDiss) = make.unique(names(MEs[[useSets[1]]]$data));
 
   ConsDiss;
 }
@@ -617,7 +617,7 @@ hierarchicalConsensusMEDissimilarity = function(MEs, networkOptions, consensusTr
   }
  
   ConsDiss = apply(MEDiss, c(1:2), quantile, probs = 1-consensusQuantile, names = FALSE, na.rm = TRUE);
-  colnames(ConsDiss) = rownames(ConsDiss) = useNames;
+  colnames(ConsDiss) = rownames(ConsDiss) = make.unique(useNames);
   ConsDiss;
 }
      
@@ -670,7 +670,7 @@ hierarchicalConsensusMEDissimilarity = function(MEs, networkOptions, consensusTr
   } else
      cons = simpleHierarchicalConsensusCalculation(MEDiss, consensusTree)
   consDiss = 1-cons;
-  colnames(consDiss) = rownames(consDiss) = useNames;
+  colnames(consDiss) = rownames(consDiss) = make.unique(useNames);
   consDiss;
 }
      
@@ -2553,6 +2553,7 @@ plotOrderedColors = function(
    limExpansionFactor.x = if (align=="center") 0.04 else 0,
    limExpansionFactor.y = limExpansionFactor.x,
    separatorLine.col = "black",
+   checkOrderLength = TRUE,
    ...)
 {
   align = match.arg(align);
@@ -2561,8 +2562,8 @@ plotOrderedColors = function(
   if (is.null(rowLabels) & (length(dimnames(colors)[[2]])==dimC[2])) 
      rowLabels = colnames(colors);
   nColorRows = dimC[2];
-  if (length(order) != dimC[1] ) 
-    stop("ERROR: length of colors vector not compatible with number of objects in 'order'.");
+  if (checkOrderLength && (length(order) != dimC[1]) ) 
+    stop("Length of colors vector not compatible with number of objects in 'order'.");
   C = colors[order, , drop = FALSE]; 
   nColumns = dimC[1];
 
@@ -2588,6 +2589,12 @@ plotOrderedColors = function(
   range.y = plotBox.contracted[4] - plotBox.contracted[3];
 
   step = range.x/(dimC[1] - (align=="center") + 2*startAt);   
+
+  if (is.null(plotBox))
+  {
+    plotBox = par("usr");
+    if (!horizontal) plotBox = plotBox[c(3,4,1,2)];
+  }
 
   if (!is.null(rowText))
   {
@@ -2631,7 +2638,9 @@ plotOrderedColors = function(
      for (tr in 1:nTextRows) 
      {
        charHeight.in = max(strheight(rowText[, tr], units = "inches", cex = cex.rowText));
-       charHeight.scaled = charHeight.in * (if (horizontal) 1/pin[2] else dimC[1]/pin[1]);
+       charHeight.scaled = charHeight.in * (if (horizontal) 1/pin[2] else dimC[1]/pin[1])
+       charHeight.scaled = charHeight.scaled * ( if (horizontal) range.y / abs(plotBox[4] - plotBox[3]) else
+                                        range.x / abs(plotBox[2] - plotBox[1]));
        width1 = rowWidths[ physicalTextRow[tr] ];
        nCharFit = floor(width1/charHeight.scaled/1.7/par("lheight"));
        if (nCharFit<1) stop("Rows are too narrow to fit text. Consider decreasing cex.rowText.");
@@ -2674,11 +2683,6 @@ plotOrderedColors = function(
   if (is.null(rowLabels)) rowLabels = c(1:nColorRows);
   C[is.na(C)] = "grey"
   if (align=="edge") alignShift = 0 else alignShift = 0.5;
-  if (is.null(plotBox))
-  {
-    plotBox = par("usr");
-    if (!horizontal) plotBox = plotBox[c(3,4,1,2)];
-  }
   angle.deg = if (horizontal) 0 else 90;
   angle = angle.deg * pi/180;
   if (is.null(rowLabelsAngle)) rowLabelsAngle = angle.deg;
@@ -2710,9 +2714,9 @@ plotOrderedColors = function(
     if (is.finite(textRow))
     {
       jIndex = jIndex - 1;
-      xt = (textPos[[textRow]] - 1.5) * step;
-      xt[xt<par("usr")[1]] = par("usr")[1];
-      xt[xt>par("usr")[2]] = par("usr")[2];
+      xt = (textPos[[textRow]] - 1 - alignShift + startAt) * step + plotBox.contracted[1];
+      xt[xt<plotBox.full[1]] = plotBox.full[1];
+      xt[xt>plotBox.full[2]] = plotBox.full[2];
       yt = yBottom[jIndex] + (yTop[jIndex]-yBottom[jIndex]) * (textPosY[[textRow]] + 1/(2*nCharFit+2));
       nt = length(textLevs[[textRow]]);
       # Add guide lines
@@ -3077,7 +3081,7 @@ signedKME = function(datExpr, datME,
 
   output[no.presentdatExpr<..minNSamples, ]=NA
   names(output)=paste(outputColumnName, substring(colnames(datME), first=3), sep="")  
-  rownames(output) = colnames(datExpr) 
+  rownames(output) = make.unique(colnames(datExpr));
   output
 } # end of function signedKME
  
@@ -5376,7 +5380,7 @@ correlationPreservation = function(multiME, setLabels, excludeGrey = TRUE, greyL
     }
   CPx = as.data.frame(CP);
   names(CPx) = CPNames;
-  rownames(CPx) = Names[Use];
+  rownames(CPx) = make.unique(Names[Use]);
   CPx;
 }
 
@@ -5426,7 +5430,7 @@ setCorrelationPreservation = function(multiME, setLabels, excludeGrey = TRUE, gr
     }
   SCPx = as.data.frame(SCP);
   names(SCPx) = setLabels;
-  rownames(SCPx) = setLabels;
+  rownames(SCPx) = make.unique(setLabels);
   SCPx;
 }
 

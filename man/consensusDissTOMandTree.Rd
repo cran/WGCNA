@@ -3,7 +3,7 @@
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{ Consensus clustering based on topological overlap and hierarchical clustering }
 \description{
-This function makes a consensus network using all of the default values in the WGCNA library.  Details regarding how consensus modules are formed can be found here: http://www.genetics.ucla.edu/labs/horvath/CoexpressionNetwork/Rpackages/WGCNA/Tutorials/Consensus-NetworkConstruction-man.pdf
+This function makes a consensus network using all of the default values in the WGCNA library.  Details regarding how consensus modules are formed can be found here: http://horvath.genetics.ucla.edu/html/CoexpressionNetwork/Rpackages/WGCNA/Tutorials/Consensus-NetworkConstruction-man.pdf
 }
 \usage{
 consensusDissTOMandTree(multiExpr, softPower, TOM = NULL)

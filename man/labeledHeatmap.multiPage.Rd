@@ -25,20 +25,6 @@ labeledHeatmap.multiPage(
    zlim = NULL,
    signed = TRUE, 
    main = "", 
-
-   # Separator line specification                   
-   verticalSeparator.x = NULL,
-   verticalSeparator.col = 1,
-   verticalSeparator.lty = 1,
-   verticalSeparator.lwd = 1,
-   verticalSeparator.ext = 0,
-
-   horizontalSeparator.y = NULL,
-   horizontalSeparator.col = 1,
-   horizontalSeparator.lty = 1,
-   horizontalSeparator.lwd = 1,
-   horizontalSeparator.ext = 0,
-
    ...)
 }
 %- maybe also 'usage' for other objects documented here.
@@ -78,30 +64,12 @@ logical: should plot/page number be added to the \code{main} title of each plot?
 Optional specification of the extreme values for the color scale. If not given, will be determined from the
 input \code{Matrix}.
 }
-  \item{main}{
-Main title for each plot/page, optionally with the plot/page number added.
-}
   \item{signed}{
 logical: should the input \code{Matrix} be converted to colors using a scale centered at zero?
 }
-  \item{verticalSeparator.x}{indices of columns after which separator lines (vertical lines between columns)
-      should be drawn. \code{NULL} means no lines will be drawn.}
-  \item{verticalSeparator.col}{color(s) of the vertical separator lines. Recycled if need be. }
-  \item{verticalSeparator.lty}{line type of the vertical separator lines. Recycled if need be. }
-  \item{verticalSeparator.lwd}{line width of the vertical separator lines. Recycled if need be. }
-  \item{verticalSeparator.ext}{number giving the extension of the separator line into the margin as a fraction
-of the margin width. 0 means no extension, 1 means extend all the way through the margin. }
-
-  \item{horizontalSeparator.y}{indices of columns after which separator lines (horizontal lines between
-columns)
-      should be drawn. \code{NULL} means no lines will be drawn.}
-  \item{horizontalSeparator.col}{ color(s) of the horizontal separator lines. Recycled if need be. }
-  \item{horizontalSeparator.lty}{line type of the horizontal separator lines. Recycled if need be. }
-  \item{horizontalSeparator.lwd}{line width of the horizontal separator lines. Recycled if need be. }
-  \item{horizontalSeparator.ext}{number giving the extension of the separator line into the margin as a
-fraction
-of the margin width. 0 means no extension, 1 means extend all the way through the margin. }
-
+  \item{main}{
+Main title for each plot/page, optionally with the plot/page number added.
+}
   \item{\dots}{
 other arguments to function \code{\link{labeledHeatmap}}.
 }

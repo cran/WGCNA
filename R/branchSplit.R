@@ -573,3 +573,17 @@ branchSplitFromStabilityLabels.individualFraction= function(
   dissim
 }
 
+
+#==================================================================================================================
+#
+# Criteria for calling a branch a cluster when a basic (non-composite) brach ends at cut height
+#
+#==================================================================================================================
+
+# very simple criterion: count the proportion of grey genes on the branch
+
+.branchCritFromStabilityLabels = function(branch, stabilityLabels, unassignedLabel = 0, ...)
+{
+  lab1 = stabilityLabels[branch, ];
+  mean(lab1==unassignedLabel, na.rm = TRUE)  
+}

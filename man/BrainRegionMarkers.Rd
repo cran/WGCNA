@@ -3,7 +3,7 @@
 \docType{data}
 \title{Gene Markers for Regions of the Human Brain}
 \description{
-This matrix gives a predefined set of marker genes for many regions of the human brain, using data from the Allen Human Brain Atlas (http://human.brain-map.org/) as reported in: Hawrylycz MJ, Lein ES, Guillozet-Bongaarts AL, Shen EH, Ng L, Miller JA, et al. (2012) An Anatomically Comprehensive Atlas of the Adult Human Brain Transcriptome. Nature (in press).  It is used with userListEnrichment to search user-defined gene lists for enrichment.
+This matrix gives a predefined set of marker genes for many regions of the human brain, using data from the Allen Human Brain Atlas (https://human.brain-map.org/) as reported in: Hawrylycz MJ, Lein ES, Guillozet-Bongaarts AL, Shen EH, Ng L, Miller JA, et al. (2012) An Anatomically Comprehensive Atlas of the Adult Human Brain Transcriptome. Nature (in press).  It is used with userListEnrichment to search user-defined gene lists for enrichment.
 }
 \usage{data(BrainRegionMarkers)}
 \format{

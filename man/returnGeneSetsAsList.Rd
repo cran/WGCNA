@@ -32,7 +32,7 @@ If TRUE, a pre-made set of blood-derived enrichment lists will be added to any u
 If TRUE, a pre-made set of stem cell (SC)-derived enrichment lists will be added to any user-defined lists for enrichment comparison.  The default is FALSE.  See references section for related references.
 }
   \item{useBrainRegionMarkers}{
-If TRUE, a pre-made set of enrichment lists for human brain regions will be added to any user-defined lists for enrichment comparison.  The default is FALSE.  These lists are derived from data from the Allen Human Brain Atlas (http://human.brain-map.org/).  See references section for more details.
+If TRUE, a pre-made set of enrichment lists for human brain regions will be added to any user-defined lists for enrichment comparison.  The default is FALSE.  These lists are derived from data from the Allen Human Brain Atlas (https://human.brain-map.org/).  See references section for more details.
 }
   \item{useImmunePathwayLists}{
 If TRUE, a pre-made set of enrichment lists for immune system pathways will be added to any user-defined lists for enrichment comparison.  The default is FALSE.  These lists are derived from the lab of Daniel R Saloman.  See references section for more details.

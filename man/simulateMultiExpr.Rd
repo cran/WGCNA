@@ -118,7 +118,7 @@ Langfelder P, Horvath S (2007) Eigengene networks for studying the relationships
 modules. BMC Systems Biology 2007, 1:54.
 
 The material is posted at
-http://www.genetics.ucla.edu/labs/horvath/CoexpressionNetwork/EigengeneNetwork/SupplementSimulations.pdf.
+http://horvath.genetics.ucla.edu/html/CoexpressionNetwork/EigengeneNetwork/SupplementSimulations.pdf.
 
 }
 \author{ Peter Langfelder}

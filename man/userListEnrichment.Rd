@@ -59,7 +59,7 @@ If TRUE, will output a list of all genes in each returned category, as well as a
 Will omit all significant categories with fewer than minGenesInCategory genes (default is 1).
 }
   \item{useBrainRegionMarkers}{
-If TRUE, a pre-made set of enrichment lists for human brain regions will be added to any user-defined lists for enrichment comparison.  The default is FALSE.  These lists are derived from data from the Allen Human Brain Atlas (http://human.brain-map.org/).  See references section for more details.
+If TRUE, a pre-made set of enrichment lists for human brain regions will be added to any user-defined lists for enrichment comparison.  The default is FALSE.  These lists are derived from data from the Allen Human Brain Atlas (https://human.brain-map.org/).  See references section for more details.
 }
   \item{useImmunePathwayLists}{
 If TRUE, a pre-made set of enrichment lists for immune system pathways will be added to any user-defined lists for enrichment comparison.  The default is FALSE.  These lists are derived from the lab of Daniel R Saloman.  See references section for more details.

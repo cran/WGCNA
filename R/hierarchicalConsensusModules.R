@@ -106,7 +106,15 @@ hierarchicalConsensusModules = function(
   # nSamples = dataSize$nSamples;
 
   originalGeneNames = mtd.colnames(multiExpr);
-  originalSampleNames = mtd.apply(multiExpr, rownames);
+  if (is.null(originalGeneNames)) originalGeneNames = spaste("Column.", 1:nGenes);
+
+  originalSampleNames = mtd.apply(multiExpr, function(x)
+  {
+    out = rownames(x);
+    if (is.null(out)) out = spaste("Row.", 1:nrow(x));
+    out;
+  });
+
 
   haveWeights = !is.null(multiWeights);
   .checkAndScaleMultiWeights(multiWeights, multiExpr, scaleByMax = FALSE);
@@ -415,7 +423,7 @@ hierarchicalConsensusModules = function(
     });
     names(index) = names(multiExpr);
     allSampleMEs = mtd.subset(MEs, index[useSets]);
-    for (set in 1:nUseSets) rownames(allSampleMEs[[set]]$data) = originalSampleNames[[ useSets[set] ]]$data;
+    for (set in 1:nUseSets) rownames(allSampleMEs[[set]]$data) = make.unique(originalSampleNames[[ useSets[set] ]]$data);
   }
 
   if (removeConsensusTOMOnExit) 
