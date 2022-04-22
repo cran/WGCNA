@@ -35,6 +35,7 @@ empiricalBayesLM(
   garbageCollectInterval = 50000,
 
   scaleMeanToSamples = fitToSamples,
+  scaleMeanOfSamples = NULL,
   getOLSAdjustedData = TRUE,
   getResiduals = TRUE,
   getFittedValues = TRUE,
@@ -141,8 +142,13 @@ Number of variables after which to call garbage collection.
 
   \item{scaleMeanToSamples}{
 Optional specification of samples (given as a vector of indices) to whose means the resulting adjusted data
-should be scaled (more precisely, shifted). If not given, the mean of all samples will be used.
+should be scaled (more precisely, shifted). 
 }
+  \item{scaleMeanOfSamples}{
+Optional specification of samples (given as a vector of indices) that will be used in calculating the shift. Specifically,
+the shift is such that the mean of samples given in \code{scaleMeanOfSamples} will equal the mean of samples given in
+\code{scaleMeanToSamples}. Defaults to all samples.}
+
   \item{getOLSAdjustedData}{Logical: should data adjusted by ordinary least squares or by
 \code{initialFitFunction}, if specified, be returned?} 
 

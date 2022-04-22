@@ -21,6 +21,7 @@ abline = FALSE,
 abline.color = 1, 
 abline.lty = 1, 
 corLabel = corFnc,
+showMSE = TRUE,
 ...) 
 {	
 	if (is.na(xlab))         
@@ -48,8 +49,8 @@ corLabel = corFnc,
 	 resid=lm(y~x)$residuals
 	MSE=round(mean(resid^2),2)
 	if (!is.na(corLabel)) {        
-		mainX = paste(main, " ", corLabel, "=", cor, " MSE = ", MSE,sep = "")        }    
-	else mainX = main        
+		mainX = paste(main, " ", corLabel, "=", cor, if (showMSE) paste0(" MSE = ", MSE) else "", sep = "")        
+        } else mainX = main        
 
 	if (!is.null(sample)) {        
 		if (length(sample) == 1) {            

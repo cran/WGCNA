@@ -13,7 +13,7 @@ sampledBlockwiseModules = function(
   datExpr, 
   nRuns, 
   startRunIndex = 1,
-  endRunIndex = startRunIndex + nRuns -1,
+  endRunIndex = startRunIndex + nRuns - skipUnsampledCalculation,
   replace = FALSE, 
   fraction = if (replace) 1.0 else 0.63,
   randomSeed = 12345,
@@ -48,8 +48,8 @@ sampledBlockwiseModules = function(
   {
     if (exists(".Random.seed"))
     {
-       seedSaved = TRUE;
        savedSeed = .Random.seed
+       on.exit(.Random.seed <<- savedSeed)
     }
     set.seed(randomSeed);
   }
@@ -65,7 +65,7 @@ sampledBlockwiseModules = function(
   
   for (run in startRunIndex:endRunIndex)
   {
-    set.seed(randomSeed + 2*run + 1);
+    if (!is.null(randomSeed)) set.seed(randomSeed + 2*run + 1);
     if (verbose > 0) printFlush(paste(spaces, "...working on run", run, ".."));
     if (saveTOMs) 
       runTOMFileBase = paste(saveTOMFileBase, "-run-", run, sep = "");
@@ -106,8 +106,6 @@ sampledBlockwiseModules = function(
    
     result[[run]] = list(mods = mods, samples = useSamples, powers = samPowers)
   }
-
-  if (seedSaved) .Random.seed <<- savedSeed;
 
   result;
 }

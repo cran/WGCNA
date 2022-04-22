@@ -352,7 +352,7 @@ hierarchicalConsensusModules = function(
     {
        cutreeLabels[[blockNo]] = blockLabels;
     }
-    if (class(blockLabels)=='try-error')
+    if (inherits(blockLabels, 'try-error'))
     {
       (if (verbose>0) printFlush else warning)
            (paste(spaces, "blockwiseConsensusModules: cutreeDynamic failed:\n    ", spaces, 
@@ -408,7 +408,7 @@ hierarchicalConsensusModules = function(
                         excludeGrey = excludeGrey, grey = 0,
                             # trapErrors = TRUE, returnValidOnly = TRUE
                         verbose = verbose-1, indent = indent + 1   ), silent = TRUE);
-  if (class(MEs)=='try-error')
+  if (inherits(MEs, 'try-error'))
   {
     warning(paste('blockwiseConsensusModules: ME calculation failed with this message:\n     ',
           MEs, '---> returning empty module eigengenes'));

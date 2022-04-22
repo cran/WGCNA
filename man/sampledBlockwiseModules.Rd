@@ -13,7 +13,7 @@ sampledBlockwiseModules(
   datExpr,
   nRuns,
   startRunIndex = 1,
-  endRunIndex = startRunIndex + nRuns -1,
+  endRunIndex = startRunIndex + nRuns - skipUnsampledCalculation,
   replace = FALSE,
   fraction = if (replace) 1.0 else 0.63,
   randomSeed = 12345,
@@ -35,11 +35,12 @@ sampledBlockwiseModules(
 data frame in which columns are genes and rows ar samples. 
 }
   \item{nRuns}{
-Number of network construction and module identification runs.
+Number of sampled network construction and module identification runs. If \code{skipUnsampledCalculation} is \code{FALSE},
+one extra calculation (the first) will contain the unsampled calculation.
 }
   \item{startRunIndex}{
-Number to be assigned to the start run. The run number or index is used to make saved files unique; it has no
-effect on the actual results of the run.
+Number to be assigned to the start run. The run number or index is used to make saved files unique. It is also used in
+setting the seed for each run to allow the runs to be replicated in smaller or larger batches.
 }
   \item{endRunIndex}{
 Number (index) of the last run. If given, \code{nRuns} is ignored.
@@ -52,8 +53,8 @@ Fraction of samples to sample for each run.
 }
   \item{randomSeed}{
 Integer specifying the random seed. If non-NULL, the random number generator state is saved before the seed is set
-and restored at the end of the function. If \code{NULL}, the random number generator state is not changed nor
-saved at the start, and not restored at the end.
+and restored at the end of the function. If \code{NULL}, the random number generator state is not saved nor
+changed at the start, and not restored at the end.
 }
   \item{checkSoftPower}{
 Logical: should the soft-tresholding power be adjusted to approximately match the connectivity distribution

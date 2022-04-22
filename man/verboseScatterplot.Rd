@@ -17,6 +17,7 @@ verboseScatterplot(x, y,
                    col = 1, bg = 0, pch = 1,
                    lmFnc = lm,
                    plotPriority = NULL,
+                   showPValue = TRUE,
                    ...)
 }
 %- maybe also 'usage' for other objects documented here.
@@ -74,6 +75,8 @@ zero. This can result in a more intuitive display (for example, cor=0 instead of
 
   \item{plotPriority}{Optional numeric vector of same length as \code{x}. Points with higher plot priority
 will be plotted later, making them more visible if points overlap.}
+
+  \item{showPValue}{Logical: should the p-value corresponding to the correlation be added to the title?}
 
   \item{\dots}{ other arguments to the function \code{\link{plot}}. }
 }

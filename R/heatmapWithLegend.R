@@ -36,31 +36,34 @@
                             maxBarWidth = Inf,
                             mar = c(0.5, 0.2, 0.5, 0.1),
                             lab = "",
+                            horizontal = FALSE,
                             ...)
 {
   par(mar = mar);
   plot(c(0, 1), c(0, 1), type = "n", axes = FALSE, xlab = "", ylab = "");
   box = par("usr");
+  if (horizontal) box.eff = box[c(3,4,1,2)] else box.eff = box;
   tickVal = .autoTicks(lim[1], lim[2]);
   pin = par("pin");
-  xrange = box[2] - box[1];
-  tickLen.usr = tickLen/pin[1] * xrange
-  tickGap.usr = tickGap/pin[1] * xrange
-  minBarWidth.usr = minBarWidth/pin[1] * xrange
-  maxBarWidth.usr = maxBarWidth/pin[1] * xrange
-  maxTickWidth = max(strwidth(tickVal));
-  if (maxTickWidth + tickLen.usr + tickGap.usr > box[2]-box[1]-minBarWidth.usr) 
+  pin.eff = if (horizontal) pin[c(2,1)] else pin;
+  wrange = box.eff[2] - box.eff[1];
+  tickLen.usr = tickLen/pin.eff[1] * wrange
+  tickGap.usr = tickGap/pin.eff[1] * wrange
+  minBarWidth.usr = minBarWidth/pin.eff[1] * wrange
+  maxBarWidth.usr = maxBarWidth/pin.eff[1] * wrange
+  sizeFnc = if (horizontal) strheight else strwidth;
+  maxTickWidth = max(sizeFnc(tickVal));
+  if (maxTickWidth + tickLen.usr + tickGap.usr > box.eff[2]-box.eff[1]-minBarWidth.usr) 
      warning("Some tick labels will be truncated.");
   haveLab = length(lab) > 0
   if (haveLab && is.character(lab)) haveLab = lab!="";
-  xMax = max(box[2]-maxTickWidth - tickLen.usr - tickGap.usr- haveLab * 3*strwidth("M"), box[1] + minBarWidth.usr);
-
-  if (xMax - box[1] > maxBarWidth.usr) xMax = box[1] + maxBarWidth.usr;
-  .plotColorLegend(box[1], xMax,
-                   box[3], box[4], 
+  width = max(box.eff[2]-box.eff[1]-maxTickWidth - tickLen.usr - tickGap.usr- haveLab * 3*sizeFnc("M"), minBarWidth.usr);
+  if (width > maxBarWidth.usr) width = maxBarWidth.usr;
+  .plotColorLegend(box[1], if (horizontal) box[2] else box[1] + width,
+                   if (horizontal) box[4]-width else box[3], box[4], 
                    colors = colors,
                    lim = lim,
-                   tickLen.usr = tickLen.usr,
+                   tickLen.usr = tickLen.usr, horizontal = horizontal,
                    tickGap.usr = tickGap.usr, lab = lab, ...);
 }
 
@@ -163,11 +166,11 @@ if (FALSE)
     if (horizontal)
     {
       y = ymin - tickLen.usr - tickGap.usr - tickLabelWidth - labGap;
-      x = (box[1] + box[2])/2;
+      x = (xmin + xmax)/2;
       adj = if (labAngle==0) c(0.5, 1) else c(1, 0.5)
       text(x, y, lab, cex = cex.lab, srt = labAngle, xpd = TRUE, adj = adj);
     } else {
-      y = (box[4] + box[3])/2;
+      y = (ymin + ymax)/2;
       x = xmax + tickLen.usr + tickGap.usr + tickLabelWidth + labGap;
       adj = if (labAngle==0) c(0.5, 1) else c(0, 0.5);
       text(x, y, lab, cex = cex.lab, srt = labAngle+90, xpd = TRUE, adj = adj);

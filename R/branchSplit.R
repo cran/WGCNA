@@ -534,7 +534,7 @@ branchSplitFromStabilityLabels.prediction = function(
 
 branchSplitFromStabilityLabels.individualFraction= function(
             branch1, branch2,
-            stabilityLabels, ignoreLabels = 0, ...)
+            stabilityLabels, ignoreLabels = 0, verbose = 1, indent = 0, ...)
 {
   nLabels = ncol(stabilityLabels);
   n1 = length(branch1);
@@ -568,7 +568,11 @@ branchSplitFromStabilityLabels.individualFraction= function(
   distinctness1 = 2*s1/(n1 * nLabels) -1
   distinctenss2 = 2*s2/(n2 * nLabels)-1;
   dissim = min(distinctness1, distinctenss2)
-  printFlush(spaste("branchSplitFromStabilityLabels.individualFraction: returning ", dissim))
+  if (verbose > 0)
+  {
+    spaces = indentSpaces(indent);
+    printFlush(spaste(spaces, "branchSplitFromStabilityLabels.individualFraction: returning ", dissim))
+  }
 
   dissim
 }

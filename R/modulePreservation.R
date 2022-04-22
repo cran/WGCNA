@@ -86,7 +86,7 @@
         for (col in range)
         {
           xx = try(qvalue(10^pp[,col]), silent = TRUE)
-          if (class(xx)=="try-error" || length(xx)==1)
+          if (inherits(xx, "try-error") || length(xx)==1)
           {
             q[[ref]][[test]][, col] = rep(NA, nrow);
             printFlush(paste("Warning in modulePreservation: qvalue calculation failed for",
@@ -383,7 +383,7 @@ modulePreservation = function(
    {
      cat(paste(spaces, "..attempting to load permutation statistics.."));
      x = try(load(file=permutedStatisticsFile), silent = TRUE);
-     if (class(x)=="try-error")
+     if (inherits(x, "try-error"))
      {
        printFlush(paste("failed. Error message returned by system:\n", x));
      } else {
@@ -720,7 +720,7 @@ modulePreservation = function(
             SD=try( c(apply(permOut[[iref]][[tnet]]$regStats[NotGold, stat, , drop = FALSE], c(1:2), 
                          sd, na.rm = TRUE)),
                     silent = TRUE);
-            if (class(SD)=='try-error') SD = NA;
+            if (inherits(SD, 'try-error')) SD = NA;
             if (any(is.na(c(means, SD))) )
             {
                meanLM[[iref]][[tnet]][[stat]] = NA;

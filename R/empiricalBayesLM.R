@@ -16,7 +16,7 @@
   means;
 }
 
-.weightedScale = function(data, weights)
+.weightedScale = function(data, weights, replaceZeroScale = FALSE)
 {
   weightSums = colSums(weights);
   means = .colWeightedMeans.x(data, weights, na.rm = TRUE);
@@ -24,7 +24,7 @@
   V2 = colSums(weights^2);
   centered = data - matrix(means, nrow(data), ncol(data), byrow = TRUE);
   scale = sqrt( colSums(centered^2* weights, na.rm = TRUE) / ( V1 - V2/V1));
-
+  if (replaceZeroScale) scale[scale == 0] = 1;
   scaled = centered/ matrix(scale,  nrow(data), ncol(data), byrow = TRUE);
 
   attr(scaled, "scaled:center") = means;
@@ -90,6 +90,7 @@ empiricalBayesLM = function(
   garbageCollectInterval = 50000,
 
   scaleMeanToSamples = fitToSamples,
+  scaleMeanOfSamples = NULL,
   getOLSAdjustedData = TRUE,
   getResiduals = TRUE,
   getFittedValues = TRUE,
@@ -203,6 +204,7 @@ empiricalBayesLM = function(
 
   if (verbose > 0) printFlush(paste(spaces, "..standardizing responses.."));
   if (length(scaleMeanToSamples)==0) scaleMeanToSamples = c(1:nSamples);
+  if (length(scaleMeanOfSamples)==0) scaleMeanOfSamples = c(1:nSamples);
   if (length(fitToSamples)==0) fitToSamples = c(1:nSamples);
 
   mean.y.target = .colWeightedMeans.x(y[scaleMeanToSamples, ], weights[scaleMeanToSamples, ], na.rm = TRUE);
@@ -218,7 +220,8 @@ empiricalBayesLM = function(
 
   # Scale y to mean zero and variance 1. This is needed for the prior to make sense.
 
-  y.refSamples = .weightedScale(y[fitToSamples, ], weights.refSamples);
+  y.refSamples = .weightedScale(y[fitToSamples, ], weights.refSamples, replaceZeroScale = FALSE);
+     ### Do not replace zero scale; at this point I would rather have the regression fail for these samples.
   mean.y = attr(y.refSamples, "scaled:center");
   scale.y = attr(y.refSamples, "scaled:scale");
   y.refSamples[!yFinite.refSamples] = 0;
@@ -237,7 +240,7 @@ empiricalBayesLM = function(
          " entering the desing matrix have all values present.");
 
   if (verbose > 0) printFlush(paste(spaces, "..initial model fitting.."));
-  # Prepaer ordinary regression to get starting points for beta and sigma
+  # Prepare ordinary regression to get starting points for beta and sigma
   beta.OLS = matrix(NA, nc, N);
   betaValid = matrix(TRUE, nc, N);
   sigma.OLS = rep(NA, N);
@@ -280,11 +283,14 @@ empiricalBayesLM = function(
         oldWeights = w1;
         # The following is really (xtxInv %*% xy1), where xy1 = t(centeredDM) %*% (y[,i]*weights[,i])
         beta.OLS[keepDM, i] = colSums(xtxInv * colSums(centeredDM.keep * y1 * w1));
+           ## Caution here: ceause of the scaling based only on fitToSamples samples, y1 could be invalid.
         betaValid[!keepDM, i] = FALSE;
+        betaValid[keepDM, i] = is.finite(beta.OLS[keepDM, i]);
+        if (!any(betaValid[, i])) regressionValid[i] = FALSE;
         y.pred = centeredDM.keep %*% beta.OLS[keepDM, i, drop = FALSE];
         if (weightType=="apriori")
         {
-          # Standard calculation of sigma^2 in weighted refression
+          # Standard calculation of sigma^2 in weighted regression
           sigma.OLS[i] = sum((w1>0) * (y1 - y.pred)^2)/(sum(w1>0)-nc-1);
         } else {
           xtxw2 =  t(centeredDM.keep) %*% (centeredDM.keep *w1^2);
@@ -391,7 +397,7 @@ empiricalBayesLM = function(
     if (verbose > 0) printFlush(spaste(spaces, "..calculating priors.."));
     if (robustPriors)
     {
-      if (is.na(beta.OLS[, regressionValid]))
+      if (any(is.na(beta.OLS[, regressionValid])))
         stop("Some of OLS coefficients are missing. Please use non-robust priors.");
       prior.means = rowMedians(beta.OLS[, regressionValid, drop = FALSE], na.rm = TRUE);
       prior.covar = .bicov(t(beta.OLS[, regressionValid, drop = FALSE]));
@@ -475,11 +481,16 @@ empiricalBayesLM = function(
   
         difference = max( abs(sigma.new-sigma.old)/(sigma.new + sigma.old),
                           abs(beta.new-beta.old)/(beta.new + beta.old));
+        #if (!is.finite(difference))
+        #{
+        #   printFlush("Invalid 'difference' in empiricalBayesLM. Dropping into browser.");
+        #   browser();
+        #}
   
         beta.old = beta.new;
         sigma.old = sigma.new;
         iteration = iteration + 1;
-        #if (any(is.na(c(difference, iteration)))) browser();
+        if (any(is.na(c(difference, iteration)))) browser("Have non-finite difference or iteration.");
       }
       if (iteration > maxIterations) warning(immediate. = TRUE, 
                                              "Exceeded maximum number of iterations for variable ", i, ".");
@@ -516,9 +527,12 @@ empiricalBayesLM = function(
       #browser()
       
       residuals = (y.scaled - fitted.removed) * scale.y.mat;
-      # Residuals now have weighted column means equal zero.
+      # Residuals now have weighted column means of fitted-to samples equal zero.
 
-      meanShift =  matrix(mean.y.target, nSamples, N, byrow = TRUE)
+      residualMeans.scaleMeansOfSamples = .colWeightedMeans.x(residuals[scaleMeanOfSamples, ], weights[scaleMeanOfSamples, ], na.rm = TRUE);
+
+      meanShift =  matrix(mean.y.target, nSamples, N, byrow = TRUE) - 
+                    matrix(residualMeans.scaleMeansOfSamples, nSamples, N, byrow = TRUE);
 
       if (getFittedValues) 
       {

@@ -16,7 +16,7 @@ matrixToNetwork = function(mat,
 
   nd = 0
   x = try({nd = dim(mat)});
-  if ( (class(x)=='try-error') | (nd!=2) )
+  if ( inherits(x, 'try-error') | (nd!=2) )
     stop("'mat' appears to have incorrect type; must be a 2-dimensional square matrix.");
 
   if (ncol(mat)!=nrow(mat))

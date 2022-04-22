@@ -33,9 +33,15 @@ Some notes on handling of zero MAD:
 
 #include <sys/time.h>
 
+#define USE_FC_LEN_T
+#include <Rconfig.h>
+#include <R_ext/BLAS.h>
+#ifndef FCONE
+# define FCONE
+#endif
+
 #include <R.h>
 #include <Rinternals.h>
-#include <R_ext/BLAS.h>
 #include <R_ext/libextern.h>
 
 #include "pivot.h"
@@ -236,7 +242,7 @@ void cor1Fast(double * x, int * nrow, int * ncol,
   // The main loop is actually a matrix multiplication
 
   double alpha = 1.0, beta = 0.0;
-  F77_NAME(dsyrk)("L", "T", ncol, nrow, & alpha, multMat, nrow, & beta, result, ncol);
+  F77_NAME(dsyrk)("L", "T", ncol, nrow, & alpha, multMat, nrow, & beta, result, ncol FCONE FCONE);
 
   size_t nSlow = 0;
 
@@ -520,7 +526,7 @@ void bicor1Fast(double * x, int * nrow, int * ncol, double * maxPOutliers,
 
   double alpha = 1.0, beta = 0.0;
   // Rprintf("alpha: %f\n", alpha);
-  F77_NAME(dsyrk)("L", "T", ncol, nrow, & alpha, multMat, nrow, & beta, result, ncol);
+  F77_NAME(dsyrk)("L", "T", ncol, nrow, & alpha, multMat, nrow, & beta, result, ncol FCONE FCONE);
 
   // Here I need to recalculate results that have NA's in them.
 
@@ -931,7 +937,7 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
   // The main calculation: matrix multiplication
   
   double alpha = 1.0, beta = 0.0;
-  F77_NAME(dgemm)("T", "N", ncolx, ncoly, nrow, & alpha, multMatX, nrow, multMatY, nrow, & beta, result, ncolx);
+  F77_NAME(dgemm)("T", "N", ncolx, ncoly, nrow, & alpha, multMatX, nrow, multMatY, nrow, & beta, result, ncolx FCONE FCONE);
 
   // Rprintf("matrix multiplication result:\n");
   // for (int i=0; i<ncx; i++)
@@ -1266,7 +1272,7 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
   // The main calculation: matrix multiplication
   
   double alpha = 1.0, beta = 0.0;
-  F77_NAME(dgemm)("T", "N", ncolx, ncoly, nrow, & alpha, multMatX, nrow, multMatY, nrow, & beta, result, ncolx);
+  F77_NAME(dgemm)("T", "N", ncolx, ncoly, nrow, & alpha, multMatX, nrow, multMatY, nrow, & beta, result, ncolx FCONE FCONE);
 
   // Remedial calculations
 

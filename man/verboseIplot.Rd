@@ -17,7 +17,7 @@ verboseIplot(
              main = "", xlab = NA, ylab = NA, cex = 1, 
              cex.axis = 1.5, cex.lab = 1.5, cex.main = 1.5, 
              abline = FALSE, abline.color = 1, abline.lty = 1, 
-             corLabel = corFnc, ...)
+             corLabel = corFnc, showMSE = TRUE, ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -88,6 +88,9 @@ line type for the fit line.
   \item{corLabel}{
 character string to be used as the label for the correlation value printed in the main title.
 }
+  \item{showMSE}{
+logical: should the MSE be added to the main title?}
+
   \item{\dots}{
 other arguments to the function plot.
 }

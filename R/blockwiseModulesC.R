@@ -585,7 +585,7 @@ blockwiseModules = function(
         plotDendroAndColors(dendros[[blockNo]], labels2colors(allLabels), dendroLabels = FALSE, 
            main = paste("Block", blockNo));
     }
-    if (class(blockLabels)=='try-error')
+    if (inherits(blockLabels, 'try-error'))
     {
       if (verbose>0) 
       {
@@ -614,7 +614,7 @@ blockwiseModules = function(
     MEs = try(moduleEigengenes(selExpr[, blockLabels!=0], blockLabels[blockLabels!=0], impute = impute,
                            # subHubs = TRUE, trapErrors = FALSE,
                            verbose = verbose - 3, indent = indent + 2), silent = TRUE);
-    if (class(MEs)=='try-error')
+    if (inherits(MEs, 'try-error'))
     {
       if (trapErrors)
       {
@@ -826,14 +826,14 @@ blockwiseModules = function(
                                  corFnc = corFnc, corOptions = corOptions,
                                  impute = impute, 
                                  verbose = verbose-2, indent = indent + 2), silent = TRUE);
-  if (class(mergedMods)=='try-error')
+  if (inherits(mergedMods, 'try-error'))
   {
     warning(paste("blockwiseModules: mergeCloseModules failed with the following error message:\n    ",
                   mergedMods, "\n--> returning unmerged colors.\n"));
     MEs = try(moduleEigengenes(datExpr, colors[gsg$goodGenes], # subHubs = TRUE, trapErrors = FALSE, 
                                impute = impute,
                                verbose = verbose-3, indent = indent+3), silent = TRUE);
-    if (class(MEs) == 'try-error')
+    if (inherits(MEs, 'try-error'))
     {
       if (!trapErrors) stop(MEs);
       if (verbose>0)
@@ -1041,7 +1041,7 @@ recutBlockwiseTrees = function(datExpr,
     TOM = NULL;	# Will be loaded below; this gets rid of warnings form Rcheck.
 
     xx = try(load(TOMFiles[blockNo]), silent = TRUE);
-    if (class(xx)=='try-error')
+    if (inherits(xx, 'try-error'))
     {
       printFlush(paste("************\n File name", TOMFiles[blockNo], 
                        "appears invalid: the load function returned the following error:\n     ",
@@ -1051,7 +1051,7 @@ recutBlockwiseTrees = function(datExpr,
     if (xx!='TOM')
       stop(paste("The file", TOMFiles[blockNo], "does not contain the appopriate variable."));
 
-    if (class(TOM)!="dist")
+    if (!inherits(TOM, "dist"))
       stop(paste("The file", TOMFiles[blockNo], "does not contain the appopriate distance structure."));
 
     dissTom = as.matrix(1-TOM);
@@ -1082,7 +1082,7 @@ recutBlockwiseTrees = function(datExpr,
     collectGarbage();
     cutreeLabels[[blockNo]] = blockLabels;
 
-    if (class(blockLabels)=='try-error')
+    if (inherits(blockLabels, 'try-error'))
     {
       if (verbose>0) 
       {
@@ -1111,7 +1111,7 @@ recutBlockwiseTrees = function(datExpr,
     MEs = try(moduleEigengenes(selExpr[, blockLabels!=0], blockLabels[blockLabels!=0], impute = impute,
                            # subHubs = TRUE, trapErrors = FALSE,
                            verbose = verbose - 3, indent = indent + 2), silent = TRUE);
-    if (class(MEs)=='try-error')
+    if (inherits(MEs, 'try-error'))
     {
       if (trapErrors)
       {
@@ -1282,14 +1282,14 @@ recutBlockwiseTrees = function(datExpr,
                                  relabel = TRUE, # trapErrors = FALSE, 
                                  impute = impute, 
                                  verbose = verbose-2, indent = indent + 2), silent = TRUE);
-  if (class(mergedMods)=='try-error')
+  if (inherits(mergedMods, 'try-error'))
   {
     warning(paste("blockwiseModules: mergeCloseModules failed with the following error message:\n    ",
                   mergedMods, "\n--> returning unmerged colors.\n"));
     MEs = try(moduleEigengenes(datExpr, colors[gsg$goodGenes], # subHubs = TRUE, trapErrors = FALSE, 
                                impute = impute,
                                verbose = verbose-3, indent = indent+3), silent = TRUE);
-    if (class(MEs) == 'try-error')
+    if (inherits(MEs, 'try-error'))
     {
       if (!trapErrors) stop(MEs);
       if (verbose>0)
@@ -1642,7 +1642,7 @@ blockwiseIndividualTOMs = function(
 
 lowerTri2matrix = function(x, diag = 1)
 {
-  if (class(x)=="dist")
+  if (inherits(x, "dist"))
   {
     mat = as.matrix(x)
   } else {
@@ -2151,7 +2151,7 @@ blockwiseConsensusModules = function(
         plotDendroAndColors(dendros[[blockNo]], labels2colors(blockLabels), dendroLabels = FALSE, 
            main = paste("Block", blockNo));
     }
-    if (class(blockLabels)=='try-error')
+    if (inherits(blockLabels, 'try-error'))
     {
       (if (verbose>0) printFlush else warning)
            (paste(spaces, "blockwiseConsensusModules: cutreeDynamic failed:\n    ", spaces, 
@@ -2181,7 +2181,7 @@ blockwiseConsensusModules = function(
                                    excludeGrey = TRUE, grey = 0, impute = impute,
                                    # trapErrors = TRUE, returnValidOnly = TRUE, 
                                    verbose = verbose-4, indent = indent + 3), silent = TRUE);
-    if (class(blockConsMEs)=='try-error')
+    if (inherits(blockConsMEs, 'try-error'))
     {
       if (verbose>0)
       {
@@ -2404,7 +2404,7 @@ blockwiseConsensusModules = function(
                                      cutHeight = mergeCutHeight, 
                                      relabel = TRUE, impute = impute,
                                      verbose = verbose-2, indent = indent + 2), silent = TRUE);
-  if (class(mergedMods)=='try-error')
+  if (inherits(mergedMods, 'try-error'))
   {
     if (verbose>0) 
     {
@@ -2416,7 +2416,7 @@ blockwiseConsensusModules = function(
     MEs = try(multiSetMEs(multiExpr, universalColors = colors[gsg$goodGenes]
                           # trapErrors = TRUE, returnValidOnly = TRUE
                           ), silent = TRUE);
-    if (class(MEs)=='try-error')
+    if (inherits(MEs, 'try-error'))
     {
       warning(paste('blockwiseConsensusModules: ME calculation failed with this message:\n     ',
             MEs, '---> returning empty module eigengenes'));
@@ -2630,7 +2630,7 @@ recutConsensusTrees = function(multiExpr,
     #collectGarbage();
 
     xx = try(load(TOMFiles[blockNo]), silent = TRUE);
-    if (class(xx)=='try-error')
+    if (inherits(xx, 'try-error'))
     {
       printFlush(paste("************\n File name", TOMFiles[blockNo],
                        "appears invalid: the load function returned the following error:\n     ",
@@ -2640,7 +2640,7 @@ recutConsensusTrees = function(multiExpr,
     if (xx!='consTomDS')
       stop(paste("The file", TOMFiles[blockNo], "does not contain the appopriate variable."));
 
-    if (class(consTomDS)!="dist")
+    if (!inherits(consTomDS, "dist"))
       stop(paste("The file", TOMFiles[blockNo], "does not contain the appopriate distance structure."));
 
     consTomDS = 1-consTomDS;
@@ -2669,7 +2669,7 @@ recutConsensusTrees = function(multiExpr,
                     pamStage = pamStage, pamRespectsDendro = pamRespectsDendro,
                     distM = as.matrix(consTomDS), 
                     verbose = verbose-3, indent = indent + 2), silent = TRUE);
-    if (class(blockLabels)=='try-error')
+    if (inherits(blockLabels, 'try-error'))
     {
       (if (verbose>0) printFlush else warning)
            (paste(spaces, "blockwiseConsensusModules: cutreeDynamic failed:\n    ", 
@@ -2698,7 +2698,7 @@ recutConsensusTrees = function(multiExpr,
                                    excludeGrey = TRUE, grey = 0, impute = impute,
                                    # trapErrors = TRUE, returnValidOnly = TRUE, 
                                    verbose = verbose-4, indent = indent + 3), silent = TRUE);
-    if (class(blockConsMEs)=='try-error')
+    if (inherits(blockConsMEs, 'try-error'))
     {
       if (verbose>0)
       {
@@ -2921,7 +2921,7 @@ recutConsensusTrees = function(multiExpr,
                                      cutHeight = mergeCutHeight, 
                                      relabel = TRUE, impute = impute,
                                      verbose = verbose-2, indent = indent + 2), silent = TRUE);
-  if (class(mergedMods)=='try-error')
+  if (inherits(mergedMods, 'try-error'))
   {
     if (verbose>0) 
     {
@@ -2933,7 +2933,7 @@ recutConsensusTrees = function(multiExpr,
     MEs = try(multiSetMEs(multiExpr, universalColors = colors[gsg$goodGenes]
                           # trapErrors = TRUE, returnValidOnly = TRUE
                           ), silent = TRUE);
-    if (class(MEs)=='try-error')
+    if (inherits(MEs, 'try-error'))
     {
       warning(paste('blockwiseConsensusModules: ME calculation failed with this message:\n     ',
             MEs, '---> returning empty module eigengenes'));

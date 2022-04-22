@@ -24,7 +24,8 @@ branchSplitFromStabilityLabels.prediction(
 
 branchSplitFromStabilityLabels.individualFraction(
             branch1, branch2,
-            stabilityLabels, ignoreLabels = 0, ...)
+            stabilityLabels, ignoreLabels = 0, 
+            verbose = 1, indent = 0,...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -42,6 +43,12 @@ indices \code{branch1} and \code{branch2} refer to).
 Label or labels that do not constitute proper clusters in \code{stabilityLabels}, for example because they
 label unassigned objects. 
 }
+  \item{verbose}{ integer level of verbosity. Zero means silent, higher values make the output
+progressively more and more verbose. }
+
+  \item{indent}{ indentation for diagnostic messages. Zero means no indentation, each unit adds
+two spaces. }
+
   \item{\dots}{
 Ignored.
 }

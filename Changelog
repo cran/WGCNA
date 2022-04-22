@@ -1,5 +1,47 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
+
+2022/04/22: 1.71
+
+	. Version bumb for release
+
+2022/04/08: 1.70-80
+
+	. Bugfix in blueWhiteRed and greenWhiteRed that makes the pallettes
+	  symmetric for small odd values of n.
+
+	. Function sampleModules now runs nRuns sampled calculations (and
+	  optionally also the unsampled calculation) rather than always
+	  running precisely nRuns calculations. 
+
+	. Function blueWhiteRed now accepts arguments giving the blue end, red
+	  end and middle colors.
+
+	. Fixed bug in positioning color legend label for labeledHeatmap and
+	  related functions.
+
+	. verboseIplot now accepts argument showMSE that can supress printing
+	  of MSE in the title of the plot.
+
+	. verboseScatterplot now accepts argument showPValue that can suppress
+	  printing of the p-value in the title of the plot.
+
+	. addGrid now accepts arguments linesPerTick.horiz and
+	  linesPerTick.vert allowing the user to set the number of lines per
+	  tick separately for the vertical and horizontal lines
+
+	. empiricalBayesLM now accepts argument scaleMeansOfSamples that works
+	  in conjunction with scaleMeansToSamples to fine tune how the
+	  adjustment is applied.
+
+2021/03/01: 1.70-4
+
+	. plotColorUnderTree and plotDendroAndColor now work also when there
+	  the 'colors' argument has length zero, producing an empty color
+	  plot.
+
+	. Improvements in internal code plotting legends for labeledHeatmap.
+
 2021/02/17: 1.70-3:
 
 	. Bugfixes of bugs introduced in 1.70-2

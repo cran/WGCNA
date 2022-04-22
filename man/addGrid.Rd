@@ -7,11 +7,22 @@
 aligned with tick marks.
 }
 \usage{
-addGrid(linesPerTick = NULL, horiz = TRUE, vert = FALSE, col = "grey30", lty = 3)
+addGrid(
+  linesPerTick = NULL, 
+  linesPerTick.horiz = linesPerTick,
+  linesPerTick.vert = linesPerTick,
+  horiz = TRUE, 
+  vert = FALSE, 
+  col = "grey30", 
+  lty = 3)
 }
 \arguments{
   \item{linesPerTick}{ Number of lines between successive tick marks (including the line on the
-tickmarks themselves) }
+tickmarks themselves). }
+  \item{linesPerTick.horiz}{ Number of horizontal lines between successive tick marks (including the line on the
+tickmarks themselves). }
+  \item{linesPerTick.vert}{ Number of vertical lines between successive tick marks (including the line on the
+tickmarks themselves). }
   \item{horiz}{ Draw horizontal grid lines? }
   \item{vert}{ Draw vertical tick lines? }
   \item{col}{ Specifies color of the grid lines }

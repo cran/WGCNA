@@ -2495,7 +2495,6 @@ plotOrderedColors = function(
   on.exit(options(stringsAsFactors = sAF[[1]]), TRUE)
   barplot(height=1, col = "white", border=FALSE, space=0, axes=FALSE, main = main)
   align = match.arg(align);
-
   .plotOrderedColorSubplot(
     order = order, colors = colors, 
     rowLabels = rowLabels,
@@ -2556,6 +2555,7 @@ plotOrderedColors = function(
    checkOrderLength = TRUE,
    ...)
 {
+  if (length(colors)==0) return(NULL);
   align = match.arg(align);
   colors = as.matrix(colors);
   dimC = dim(colors)
@@ -3267,6 +3267,7 @@ verboseScatterplot = function(x, y,
                              col = 1, bg = 0, pch = 1,
                              lmFnc = lm,
                              plotPriority = NULL,
+                             showPValue = TRUE,
                              ...) 
 {
   if ( is.na(xlab) ) xlab= as.character(match.call(expand.dots = FALSE)$x)
@@ -3284,7 +3285,7 @@ verboseScatterplot = function(x, y,
   if (is.finite(corp) && corp<10^(-200) ) corp="<1e-200" else corp = paste("=", corp, sep="");
   if (!is.na(corLabel))
   {
-     mainX = paste(main, " ", corLabel, "=", cor, if(is.finite(cor)) spaste(", p",corp) else "", sep="");
+     mainX = paste(main, " ", corLabel, "=", cor, if(is.finite(cor) && showPValue) spaste(", p",corp) else "", sep="");
   } else
      mainX = main;
 
@@ -3588,18 +3589,19 @@ propVarExplained = function(datExpr, colors, MEs, corFnc = "cor", corOptions = "
 #===================================================================================
 # This function adds a horizontal grid to a plot 
 
-addGrid = function(linesPerTick = NULL, horiz = TRUE, vert = FALSE, col = "grey30", lty = 3)
+addGrid = function(linesPerTick = NULL, linesPerTick.horiz = linesPerTick,
+                   linesPerTick.vert = linesPerTick, horiz = TRUE, vert = FALSE, col = "grey30", lty = 3)
 {
   box = par("usr");
   if (horiz)
   {
     ticks = par("yaxp");
     nTicks = ticks[3];
-    if (is.null(linesPerTick))
+    if (is.null(linesPerTick.horiz))
     {
-       if (nTicks < 6) linesPerTick = 5 else linesPerTick = 2;
+       if (nTicks < 6) linesPerTick.horiz = 5 else linesPerTick.horiz = 2;
     }
-    spacing = (ticks[2]-ticks[1])/(linesPerTick*nTicks);
+    spacing = (ticks[2]-ticks[1])/(linesPerTick.horiz*nTicks);
     first = ceiling((box[3] - ticks[1])/spacing);
     last = floor((box[4] - ticks[1])/spacing);
     #print(paste("addGrid: first=", first, ", last =", last, "box = ", paste(signif(box,2), collapse = ", "), 
@@ -3612,11 +3614,11 @@ addGrid = function(linesPerTick = NULL, horiz = TRUE, vert = FALSE, col = "grey3
   {
     ticks = par("xaxp");
     nTicks = ticks[3];
-    if (is.null(linesPerTick))
+    if (is.null(linesPerTick.vert))
     {
-       if (nTicks < 6) linesPerTick = 5 else linesPerTick = 2;
+       if (nTicks < 6) linesPerTick.vert = 5 else linesPerTick.vert = 2;
     }
-    spacing = (ticks[2]-ticks[1])/(linesPerTick*ticks[3]);
+    spacing = (ticks[2]-ticks[1])/(linesPerTick.vert*ticks[3]);
     first = ceiling((box[1] - ticks[1])/spacing);
     last = floor((box[2] - ticks[1])/spacing);
     #print(paste("addGrid: first=", first, ", last =", last, "box = ", paste(signif(box,2), collapse = ", "), 
@@ -3948,7 +3950,7 @@ plotDendroAndColors = function(dendro, colors, groupLabels = NULL, rowText = NUL
   if (!is.null(dim(colors)))
   {
     nRows = dim(colors)[2];
-  } else nRows = 1;
+  } else nRows = as.numeric(length(colors) > 0);
   if (!is.null(rowText)) nRows = nRows + if (is.null(textPositions)) nRows else length(textPositions);
   if (autoColorHeight) colorHeight = colorHeightBase + (colorHeightMax - colorHeightBase) * (1-exp(-(nRows-1)/6))
   if (setLayout) layout(matrix(c(1:2), 2, 1), heights = c(1-colorHeight, colorHeight));
@@ -3959,9 +3961,9 @@ plotDendroAndColors = function(dendro, colors, groupLabels = NULL, rowText = NUL
   if (!is.null(abHeight)) abline(h=abHeight, col = abCol);
   par(mar = c(marAll[1], marAll[2], 0, marAll[4]));
   plotColorUnderTree(dendro, colors, groupLabels, cex.rowLabels = cex.colorLabels, rowText = rowText,
-                     rowTextAlignment = rowTextAlignment, rowTextIgnore = rowTextIgnore,
-                     textPositions = textPositions, cex.rowText = cex.rowText, rowWidths = rowWidths,
-                     addTextGuide = addTextGuide)
+                       rowTextAlignment = rowTextAlignment, rowTextIgnore = rowTextIgnore,
+                       textPositions = textPositions, cex.rowText = cex.rowText, rowWidths = rowWidths,
+                       addTextGuide = addTextGuide)
   if (saveMar) par(mar = oldMar);
 }
 
@@ -5245,14 +5247,12 @@ redWhiteGreen = function(n, gamma = 1)
 #
 #======================================================================================================
 
-blueWhiteRed = function(n, gamma = 1, endSaturation = 1)
+blueWhiteRed = function(n, gamma = 1, endSaturation = 1,
+                        blueEnd = c(0.05 + (1-endSaturation) * 0.45 , 0.55 + (1-endSaturation) * 0.25, 1.00),
+                        redEnd = c(1.0, 0.2 + (1-endSaturation) * 0.6, 0.6*(1-endSaturation)),
+                        middle = c(1,1,1) )
 {
   if (endSaturation >1  | endSaturation < 0) stop("'endSaturation' must be between 0 and 1.");
-  es = 1-endSaturation;
-  blueEnd = c(0.05 + es * 0.45 , 0.55 + es * 0.25, 1.00);
-  redEnd = c(1.0, 0.2 + es * 0.6, 0.6*es);
-  middle = c(1,1,1);
-
   half = as.integer(n/2);
   if (n%%2 == 0)
   {
@@ -5264,7 +5264,7 @@ blueWhiteRed = function(n, gamma = 1, endSaturation = 1)
     index1 = c(1:(half + 1))
     index2 = c(1:half) + half + 1
     frac1 = (c(0:half)/half)^(1/gamma);
-    frac2 = rev((c(1:half)/half)^(1/gamma));
+    frac2 = rev((c(0:(half-1))/half)^(1/gamma));
   }
   cols = matrix(0, n, 3);
   for (c in 1:3)
