@@ -7874,7 +7874,7 @@ multiIntersect = function(setList)
 
 prependZeros = function(x, width = max(nchar(x)))
 {
-  if (is.numeric(x)) xr = round(x) else xr = x;
+  if (is.numeric(x)) xr = as.integer(x) else xr = x;
   lengths = nchar(xr);
   if (width < max(lengths)) stop("Some entries of 'x' are too long.");
   out = as.character(x);
@@ -7885,6 +7885,22 @@ prependZeros = function(x, width = max(nchar(x)))
 
   out;
 }
+
+prependZeros.int = function(x, width = max(nchar(as.integer(x))))
+{
+  if (!is.numeric(x)) stop("This function needs numeric, preferrably integer input.");
+  xr = as.integer(x);
+  lengths = nchar(as.integer(xr));
+  if (width < max(lengths)) stop("Some entries of 'x' are too long.");
+  out = as.character(xr);
+  n = length(x);
+  for (i in 1:n) if (lengths[i] < width)
+    out[i] = spaste( paste(rep("0", width-lengths[i]), collapse = ""),
+                     xr[i]);
+
+  out;
+}
+
 
 
 #===========================================================================================================
@@ -8259,7 +8275,7 @@ imputeByModule = function(
   for (ll in labelLevels)
   {
     inMod = labels==ll;
-    data[, inMod] = t(impute.knn(t(data[, inMod]), ...)$data);
+    if (any(is.na(data[, inMod]))) data[, inMod] = t(impute.knn(t(data[, inMod]), ...)$data);
   }
   data;
 }

@@ -29,7 +29,7 @@ importFrom("stats", "anova", "as.dendrogram", "as.dist", "as.hclust", "coef",
            "na.exclude", "order.dendrogram", "pchisq", "phyper",
            "pnorm", "predict", "pt", "qnorm", "quantile", "reorder",
            "residuals", "rexp", "rnorm", "runif", "sd",
-           "smooth.spline", "t.test", "var", "weighted.mean", "p.adjust")
+           "smooth.spline", "t.test", "var", "weighted.mean", "p.adjust", "setNames")
 importFrom("utils", "data", "flush.console", "read.csv", "write.csv",
            "write.table", "object.size")
 

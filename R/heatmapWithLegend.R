@@ -1,6 +1,6 @@
 # Replacement for the function image.plot
 
-.autoTicks = function(min, max, maxTicks = 6 , tickPos = c(1,2,5))
+.autoTicks = function(min, max, maxTicks = 6, tickPos = c(1,2,5))
 {
   range = max - min;
   if (range==0) return(max);
@@ -96,11 +96,11 @@ if (FALSE)
                             colors,
                             horizontal = FALSE,
 ### FIXME: it would be good if these could respect settings in par("mgp")
-                            tickLen.usr = 0.7* (if (horizontal) strheight("M") else strwidth("M")),
-                            tickGap.usr = 0.3 * (if (horizontal) strheight("M") else strwidth("M")),
+                            tickLen.usr = 0.5* (if (horizontal) strheight("M") else strwidth("M")),
+                            tickGap.usr = 0.5 * (if (horizontal) strheight("M") else strwidth("M")),
                             lim, cex.axis = 1, tickLabelAngle = if (horizontal) 0 else -90,
                             lab = "", cex.lab = 1, labAngle = 0, 
-                            labGap = 0.3 * (if (horizontal) strheight("M") else strwidth("M"))
+                            labGap = 0.6 * (if (horizontal) strheight("M") else strwidth("M"))
                             )
 {
   tickVal = .autoTicks(lim[1], lim[2]);
@@ -176,6 +176,7 @@ if (FALSE)
       text(x, y, lab, cex = cex.lab, srt = labAngle+90, xpd = TRUE, adj = adj);
     }
   }
+  list(bar = list(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax));
 }
 
 
@@ -260,15 +261,19 @@ if (FALSE)
                      keepLegendSpace = plotLegend,
                      cex.legendAxis = 1, 
                      legendShrink = 0.94,
-                     ## The following arguments are now in inches
+                     legendPosition = 0.5, ## center; 1 means at the top, 0 means at the bottom
                      legendLabel = "",
                      cex.legendLabel = 1,
+                     ## The following arguments are now in inches
                      legendSpace = 0.5 + (as.character(legendLabel)!="") * 1.5*
                             strheight("M",units = "inch", cex = cex.legendLabel),   
                      legendWidth = 0.13,
                      legendGap = 0.09,
+                     maxLegendSize = 4,
+                     legendLengthGap = 0.15,
                      frame = TRUE,
                      frameTicks = FALSE, tickLen = 0.09,
+                     tickLabelAngle = 0,
                      ...)
 {
  
@@ -294,6 +299,8 @@ if (FALSE)
   legendWidth.usr = legendWidth/pin[1] * (xmaxAll-xminAll);
   legendGap.usr = legendGap/pin[1] * (xmaxAll-xminAll);
   tickLen.usr = tickLen/pin[1] * (xmaxAll-xminAll);
+  maxLegendSize.usr = maxLegendSize/pin[2] * (ymaxAll-yminAll);
+  legendLengthGap.usr = legendLengthGap/pin[2] * (ymaxAll-yminAll)
 
   if (!keepLegendSpace && !plotLegend)
   {
@@ -336,23 +343,35 @@ if (FALSE)
   if (plotLegend)
   {
       # Now plot the legend.
-      .plotColorLegend(xmin = xmaxAll - (legendSpace.usr - legendGap.usr),
+      legendSize.usr = legendShrink * (ymaxAll - yminAll);
+      if (legendSize.usr > maxLegendSize.usr) legendSize.usr = maxLegendSize.usr
+      if (legendLengthGap.usr > 0.5*(ymaxAll - yminAll)*(1-legendShrink)) 
+          legendLengthGap.usr = 0.5*(ymaxAll - yminAll)*(1-legendShrink);
+      y0 = yminAll + legendLengthGap.usr;
+      y1 = ymaxAll - legendLengthGap.usr;
+      movementRange = (y1-y0 - legendSize.usr);
+      if (movementRange < -1e-10) {browser(".heatmapWithLegend: movementRange is negative."); movementRange = 0;}
+      ymin.leg = y0 + legendPosition * movementRange;
+      ymax.leg = y0 + legendPosition * movementRange + legendSize.usr
+      legendPosition = .plotColorLegend(xmin = xmaxAll - (legendSpace.usr - legendGap.usr),
                        xmax = xmaxAll - (legendSpace.usr - legendGap.usr - legendWidth.usr),
-                       ymin = yminAll + (1-legendShrink) * (ymaxAll - yminAll),
-                       ymax =  ymaxAll - (1-legendShrink) * (ymaxAll - yminAll),
+                       ymin = ymin.leg,
+                       ymax =  ymax.leg,
                        lim = zlim,
                        colors = colors,
                        tickLen.usr = tickLen.usr,
                        cex.axis = cex.legendAxis,
                        lab = legendLabel,
                        cex.lab = cex.legendLabel,
+                       tickLabelAngle = tickLabelAngle
                        );
     
-  }
+  } else legendPosition = NULL
 
-  list(xMid = xMid, yMid = if (reverseRows) rev(yMid) else yMid, 
+  invisible(list(xMid = xMid, yMid = if (reverseRows) rev(yMid) else yMid, 
        box = c(xmin, xmax, ymin, ymax), xLeft = xLeft, xRight = xRight,
-       yTop = yTop, yBot = yBot);
+       yTop = yTop, yBot = yBot,
+       legendPosition = legendPosition));
   
 }
 

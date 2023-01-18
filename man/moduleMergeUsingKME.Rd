@@ -74,8 +74,8 @@ MEgreen     = c(MEyellow[1:30], sample(1:100,20))
 MEred	    = c(MEbrown [1:20], sample(1:100,30))
 #MEblack	    = c(MEblue  [1:25], sample(1:100,25))
 ME   = data.frame(MEturquoise, MEblue, MEbrown, MEyellow, MEgreen, MEred)#, MEblack)
-dat1 = simulateDatExpr(ME, 400, c(0.15,0.13,0.12,0.10,0.09,0.09,0.1), signed=TRUE)
-TOM1  = TOMsimilarityFromExpr(dat1$datExpr, networkType="signed")
+dat1 = simulateDatExpr(ME, 300, c(0.15,0.13,0.12,0.10,0.09,0.09,0.1), signed=TRUE)
+TOM1  = TOMsimilarityFromExpr(dat1$datExpr, networkType="signed", nThreads = 1)
 tree1 = fastcluster::hclust(as.dist(1-TOM1),method="average")
 
 ## Here is an example using different mergePercentages, 

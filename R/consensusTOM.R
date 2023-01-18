@@ -606,18 +606,18 @@ individualTOMs = function(
 
   .checkAndScaleMultiWeights(multiWeights, multiExpr, scaleByMax = FALSE);
 
+  if (is.null(names(multiExpr)))
+    names(multiExpr) = spaste("Set", 1:nSets);
+
   if (inherits(networkOptions, "NetworkOptions"))
   {
-    networkOptions = list2multiData(.listRep(networkOptions, nSets));
+    networkOptions = setNames(list2multiData(.listRep(networkOptions, nSets)), names(multiExpr));
   } else {
     if (!all(mtd.apply(networkOptions, inherits, "NetworkOptions", mdaSimplify = TRUE)))
        stop("'networkOptions' must be of class 'NetworkOptions' or a multiData structure\n",
             "   of objects of the class.\n",
             "   See newNetworkOptions for creating valid network options.");
   }
-
-  if (is.null(names(multiExpr)))
-    names(multiExpr) = spaste("Set", 1:nSets);
 
   if (!is.null(randomSeed))
   {

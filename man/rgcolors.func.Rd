@@ -24,7 +24,7 @@ rgcolors.func(n=50)
 }
 \value{a character vector of color names. Colors are specified
 directly in terms of their RGB components with a string of the form
-"\#RRGGBB", where each of the pairs RR, GG, BB consist of two
+"#RRGGBB", where each of the pairs RR, GG, BB consist of two
 hexadecimal digits giving a value in the range 00 to FF. 
  }
 
@@ -39,8 +39,6 @@ hexadecimal digits giving a value in the range 00 to FF.
 
 \examples{
 rgcolors.func(n=5)
-## The following vector is returned:
-## "#00FF00" "#40BF00" "#808000" "#BF4000" "#FF0000"
 }
 
 \keyword{color}

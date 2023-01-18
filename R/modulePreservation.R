@@ -245,13 +245,13 @@ modulePreservation = function(
 
    for (ref in 1:nRefNets)
    {
-     if (any(testNetworks[[ref]] < 1 || testNetworks[[ref]] > nNets))
+     if (any(testNetworks[[ref]] < 1 | testNetworks[[ref]] > nNets))
        stop("Some entries of testNetworks[[", ref, "]] are out of range.");
    }
    
    # Check multiColor
 
-   if (class(multiColor)!="list")
+   if (!inherits(multiColor, "list"))
    {
        stop("multiColor does not appear to have the correct format.")
    }
@@ -1433,7 +1433,7 @@ modulePreservation = function(
           # Create the permuted data sets
           if (sum(keepGenes) < nRefGenes)
           {
-            colorRef = colorRef[keepGenes]
+             colorRef = colorRef[keepGenes]
              if (dataIsExpr)
              {
                 datRef = datRef[, keepGenes]

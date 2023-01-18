@@ -33,7 +33,7 @@ string NumberToString(int n)
 {
   char          s[100];
   string        ss;
-  sprintf(s, "%d", n);
+  snprintf(s, 100, "%d", n);
   ss = s;
   return ss;
 } 

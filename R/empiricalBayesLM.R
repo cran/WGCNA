@@ -254,6 +254,7 @@ empiricalBayesLM = function(
   on.exit(printFlush(spaste("Error occurred at i = ", i)));
   #on.exit(browser());
   pindStep = max(1, floor(N/100));
+  lastInvalidFitError = "(no error, just a placeholder)";
   if (is.null(initialFitFunction))
   {
     # Ordinary weighted least squares, in two varieties.
@@ -299,6 +300,7 @@ empiricalBayesLM = function(
       } else {
         regressionValid[i] = FALSE;
         betaValid[, i] = FALSE;
+        lastInvalidFitError = xtxInv;
       }
       if (i%%garbageCollectInterval ==0) gc();
       if (verbose > 1 && i%%pindStep==0) pind = updateProgInd(i/N, pind);
@@ -357,6 +359,7 @@ empiricalBayesLM = function(
       } else {
         regressionValid[i] = FALSE;
         betaValid[, i] = FALSE;
+        lastInvalidFitError = fit;
       }
       if (i%%garbageCollectInterval ==0) gc();
       if (verbose > 1 && i%%pindStep==0) pind = updateProgInd(i/N, pind);
@@ -366,12 +369,15 @@ empiricalBayesLM = function(
 
   if (any(!regressionValid))
      warning(immediate. = TRUE,
-             "empiricalBayesLM: initial regression failed in ", sum(!regressionValid), " variables.");
+             "empiricalBayesLM: initial regression failed in ", sum(!regressionValid), " variables.\n",
+             "Last failed model returned the following error:\n\n",
+          lastInvalidFitError,
+          "\n\nPlease check that the model is correctly specified.");
 
   if (all(!regressionValid))
      stop("Initial regression model failed for all columns in 'data'.\n",
           "Last model returned the following error:\n\n",
-          if (is.null(initialFitFunction)) xtx else fit,
+          lastInvalidFitError,
           "\n\nPlease check that the model is correctly specified.");
 
   # beta.OLS has columns corresponding to variables in data, and rows corresponding to columns in x.

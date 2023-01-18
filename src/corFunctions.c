@@ -56,7 +56,7 @@ Some notes on handling of zero MAD:
  * =======================================================================
  */
 
-int nProcessors()
+int nProcessors(void)
 {
 #ifdef WITH_THREADS
 #ifdef _SC_NPROCESSORS_CONF

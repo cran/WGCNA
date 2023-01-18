@@ -1,5 +1,57 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
+2023/01/07: 1.72
+
+	. Version bump for release
+
+2022/12/29: 1.71-7
+
+	. Small changes in default position of legend label in labeledHeatmap
+	. C code reorganized to conform to the requirement of declaring all
+	  function prototypes before definition
+	. Fixed version numbers in changelog.
+
+2022/11/01: 1.71-6
+
+	. Bugfix in modulePreservation fixes checking for testNetworks out of
+	  range. The bug made no difference for valid inputs.
+
+2022/10/24: 1.71-5
+
+	. Function overlapTable nwo also returns a matrix of expected overlap
+	  counts and a matrix of ratios of observed and expected overlap
+	  counts.
+
+	. Bugfix in individualTOMs that fixes a crash in
+	  hierarchicalConsensusModules when networkOptions are given as a
+	  single object of class networkOptions.
+
+	. Internal functions for creating heatmaps with legend are improved.
+
+2022/09/14: 1.71-4
+
+	. Function overlapTable now optionally returns logarithms of the
+	  overlap p-values.
+
+2022/07/03: 1.71-3
+
+	. Function prependZeros now gets the number of characters correctly
+	  even for numbers like 100000 which were previously formatted to
+	  1e05.
+
+
+2022/07/02: 1.71-2
+
+	. Functions matchLabels and overlapTable now work also in the case
+	  where one set of labels consists entirely of ignored labels.
+
+	. Function imputeByModule only imputes data in those modules that
+	  actually contain missing data.
+
+2022/05/22: 1.71-1
+
+	. empiricalBayesLM is a bit informative about failed initial
+	  regressions.
 
 2022/04/22: 1.71
 

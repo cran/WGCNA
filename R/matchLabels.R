@@ -3,7 +3,7 @@
 
 
 overlapTable = function(labels1, labels2, na.rm = TRUE, ignore = NULL,
-                        levels1 = NULL, levels2 = NULL)
+                        levels1 = NULL, levels2 = NULL, log.p = FALSE)
 {
   labels1 = as.vector(labels1);
   labels2 = as.vector(labels2);
@@ -28,9 +28,9 @@ overlapTable = function(labels1, labels2, na.rm = TRUE, ignore = NULL,
   n2 = length(levels2);
   countMat = matrix(0, n1, n2);
   pMat = matrix(0, n1, n2);
+  expected = matrix(0, n1, n2);
   nAll = length(labels1);
-
-  for (m1 in 1:n1)
+  if (n1 > 0 && n2 > 0) for (m1 in 1:n1)
     for (m2 in 1:n2)
     {
       m1Members = (labels1 == levels1[m1]);
@@ -42,16 +42,16 @@ overlapTable = function(labels1, labels2, na.rm = TRUE, ignore = NULL,
       #print(paste("table for levels", levels1[m1], levels2[m2]));
       #print(table(m1Members, m2Members));
       #pMat[m1, m2] = fisher.test(tab, alternative = "greater")$p.value;
-      pMat[m1, m2] = if (.n12 > 0) phyper(.n12-1, .n1, nAll - .n1, .n2, lower.tail = FALSE) else 1
+      pMat[m1, m2] = if (.n12 > 0) phyper(.n12-1, .n1, nAll - .n1, .n2, lower.tail = FALSE, log.p = log.p) else 1-log.p;
       countMat[m1, m2] = .n12;
+      expected[m1, m2] = .n1 * .n2/nAll
     }
-
- dimnames(pMat) = list(levels1, levels2);
- dimnames(countMat) = list(levels1, levels2);
-
+ dimnames(pMat) = dimnames(countMat) = dimnames(expected) = list(levels1, levels2);
+ fraction = countMat/expected;
+ fraction[expected==0] = 0;
  pMat[is.na(pMat)] = 1;
 
- list(countTable = countMat, pTable = pMat)
+ list(countTable = countMat, pTable = pMat, expected = expected, fraction = fraction);
 }
  
 
@@ -59,7 +59,6 @@ matchLabels = function(source, reference, pThreshold = 5e-2, na.rm = TRUE,
                        ignoreLabels = if (is.numeric(reference)) 0 else "grey", 
                        extraLabels = if (is.numeric(reference)) c(1:1000) else standardColors())
 {
-
   source = as.matrix(source);
   if (nrow(source)!=length(reference))
     stop("Number of rows of 'source' must equal the length of 'reference'.");
@@ -71,6 +70,11 @@ matchLabels = function(source, reference, pThreshold = 5e-2, na.rm = TRUE,
   {
     src = source[, col]
     tab = overlapTable(src, reference, na.rm = na.rm, ignore = ignoreLabels);
+    if (any(dim(tab$countTable)==0))
+    {
+      result[, col] = src;
+      next;
+    }
     pTab = tab$pTable;
     pOrder = apply(pTab, 2, order);
     bestOrder = order(apply(pTab, 2, min));

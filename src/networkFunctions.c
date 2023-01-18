@@ -18,24 +18,7 @@
 
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-
-#include <sys/time.h>
-
-#include <R.h>
-#include <Rinternals.h>
-#include <R_ext/BLAS.h>
-#include <R_ext/libextern.h>
-#include <R_ext/Rdynload.h>
-
-#define LDOUBLE 	long double
-
-#include "parallelQuantile_stdC.h"
-#include "pivot_declarations.h"
-#include "corFunctions-utils.h"
-#include "corFunctions.h"
-#include "myMatrixMultiplication.h"
+#include "networkFunctions.h"
 
 /* =============================================================================================
  *
@@ -179,7 +162,7 @@ void testAdjacency(double * expr, double * weights, int * nSamples, int * nGenes
  *
  ********************************************************************************************/
 
-size_t checkAvailableMemory()
+size_t checkAvailableMemory(void)
 {
   size_t guess;
   if ( sizeof (size_t)==4 ) 

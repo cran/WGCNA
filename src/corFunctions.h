@@ -28,6 +28,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <Rinternals.h>
 
 
+int nProcessors(void);
 
 void cor1Fast(double * x, int * nrow, int * ncol, double * weights, double * quick, 
           int * cosine,
