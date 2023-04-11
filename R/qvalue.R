@@ -87,6 +87,7 @@ qvalue <- function(p, lambda=seq(0,0.90,0.05), pi0.method="smoother", fdr.level=
     if(!is.null(fdr.level) && (fdr.level<=0 || fdr.level>1))  ## change by Alan:  check for valid fdr.level
         stop("qvalue:: 'fdr.level' must be within (0, 1].")
 #The estimated q-values calculated here
+    p <- as.numeric(p)
     u <- order(p)
 
     # change by Alan
