@@ -46,8 +46,6 @@ RcppExport SEXP parallelQuantile(SEXP data_s, SEXP prob_s)
 
   double * vec = new double[nSets];
 
-  int err = 0;
-
   for (size_t i=0; i<nElements; i++)
   {
     for (size_t set=0; set<nSets; set++)

@@ -2,42 +2,27 @@ citHeader("To cite WGCNA in publications use:")
 citFooter("We have invested a lot of time and effort in creating the package,",
           "please cite it when using it for data analysis.")
 
-citEntry("Article",
-         author = personList(as.person("Peter Langfelder"),
-                         as.person("Steve Horvath")),
-         title  = "WGCNA: an R package for weighted correlation network analysis",
-         journal = "BMC Bioinformatics",
-         year    = "2008",
-         number  = "1",
-         pages = "559", 
-         PubMedID = "19114008",
-         url      = "https://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-9-559",
-
-         textVersion = 
-         paste("Langfelder P and Horvath S,\n", 
-               "WGCNA: an R package for weighted correlation network analysis.\n",
-               "BMC Bioinformatics 2008, 9:559 doi:10.1186/1471-2105-9-559\n",
-               sep=""),
-               
-        )
+bibentry(bibtype = "Article",
+  author = c(as.person("Peter Langfelder"), as.person("Steve Horvath")),
+  title  = "WGCNA: an R package for weighted correlation network analysis",
+  journal = "BMC Bioinformatics",
+  year    = "2008",
+  number  = "1",
+  pages = "559", 
+  PubMedID = "19114008",
+  url      = "https://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-9-559"
+)
 
 
-citEntry(entry = "Article",
+bibentry(bibtype = "Article",
   title        = "Fast {R} Functions for Robust Correlations and Hierarchical Clustering",
-  author       = personList(as.person("Peter Langfelder"),
-                   as.person("Steve Horvath")),
+  author       = c(as.person("Peter Langfelder"), as.person("Steve Horvath")),
   journal      = "Journal of Statistical Software",
   year         = "2012",
   volume       = "46",
   number       = "11",
   pages        = "1--17",
-  url          = "https://www.jstatsoft.org/v46/i11/",
-
-  textVersion  =
-  paste("Peter Langfelder, Steve Horvath (2012).",
-        "Fast R Functions for Robust Correlations and Hierarchical Clustering.",
-        "Journal of Statistical Software, 46(11), 1-17.",
-        "URL http://www.jstatsoft.org/v46/i11/.")
+  url          = "https://www.jstatsoft.org/v46/i11/"
 )
 
 

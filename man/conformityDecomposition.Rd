@@ -4,7 +4,8 @@
 Conformity and module based decomposition of a network adjacency matrix.
 }
 \description{
-The function calculates the conformity based approximation \code{A.CF} of an adjacency matrix and a factorizability measure code{Factorizability}. If a module assignment \code{Cl} is provided, it also estimates a corresponding intermodular adjacency matrix. In this case, function automatically carries out the module- and conformity based decomposition of the adjacency matrix described in chapter 2 of (Horvath 2011). }
+The function calculates the conformity based approximation \code{A.CF} of an adjacency matrix and a factorizability
+measure \code{Factorizability}. If a module assignment \code{Cl} is provided, it also estimates a corresponding intermodular adjacency matrix. In this case, function automatically carries out the module- and conformity based decomposition of the adjacency matrix described in chapter 2 of (Horvath 2011). }
 \usage{
 conformityDecomposition(adj, Cl = NULL)
 }
@@ -27,7 +28,7 @@ Currently, the function only implements a heuristic algorithm for optimizing the
 }
 \value{
 \item{A.CF}{a symmetric matrix that approximates the input matrix \code{adj}. Roughly speaking, the i,j-the element of the matrix equals \code{Conformity[i]*Conformity[j]*IntermodularAdjacency[module.index[i],module.index[j]]} where \code{module.index[i]} is the row of the matrix \code{IntermodularAdjacency} that corresponds to the module assigned to node i. } 
-\item{Conformity}{a numeric vector whose entries correspond to the rows of code{adj}. If \code{Cl=NULL} then \code{Conformity[i]} is the conformity.
+\item{Conformity}{a numeric vector whose entries correspond to the rows of \code{adj}. If \code{Cl=NULL} then \code{Conformity[i]} is the conformity.
 If \code{Cl} is not NULL then \code{Conformity[i]} is the intramodular conformity with respect to the module that node i belongs to.
 }
 \item{IntermodularAdjacency}{ a symmetric matrix (data frame) whose rows and columns correspond to the number of modules specified in \code{Cl}. Interpretation: it measures the similarity (adjacency) between the modules. In this case, the rows (and columns) of \code{IntermodularAdjacency} correspond to the entries of \code{Cl.level}. }

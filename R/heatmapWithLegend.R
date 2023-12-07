@@ -2,9 +2,10 @@
 
 .autoTicks = function(min, max, maxTicks = 6, tickPos = c(1,2,5))
 {
+  if (max < min) { x = max; max = min; min = x }
   range = max - min;
   if (range==0) return(max);
-  tick0 = range/maxTicks;
+  tick0 = range/(maxTicks+1-1e-6)
   maxTick = max(tickPos);
   # Ticks can only be multiples of tickPos
   mult = 1;
@@ -118,6 +119,7 @@ if (FALSE)
   box = par("usr");
   asp = pin[2]/pin[1] * ( box[2]-box[1])/(box[4] - box[3]);
   # Ticks:
+  
   if (horizontal) {
     angle0 = 0;
     angle = angle0 + tickLabelAngle;
@@ -157,6 +159,7 @@ if (FALSE)
   }
   # frame for the legend
   lines(c(xmin, xmax, xmax, xmin, xmin), c(ymin, ymin, ymax, ymax, ymin), xpd = TRUE );
+
   if (nColumns > 1) for (col in 2:nColumns) 
     if (horizontal) lines(c(xmin, xmax), c(tmin + (col-1) * wi1, tmin + (col-1) * wi1)) else 
                     lines(c(tmin + (col-1) * wi1, tmin + (col-1) * wi1), c(ymin, ymax));
@@ -168,15 +171,26 @@ if (FALSE)
       y = ymin - tickLen.usr - tickGap.usr - tickLabelWidth - labGap;
       x = (xmin + xmax)/2;
       adj = if (labAngle==0) c(0.5, 1) else c(1, 0.5)
+      angle = labAngle;
       text(x, y, lab, cex = cex.lab, srt = labAngle, xpd = TRUE, adj = adj);
     } else {
       y = (ymin + ymax)/2;
       x = xmax + tickLen.usr + tickGap.usr + tickLabelWidth + labGap;
       adj = if (labAngle==0) c(0.5, 1) else c(0, 0.5);
+      angle = labAngle+90;
       text(x, y, lab, cex = cex.lab, srt = labAngle+90, xpd = TRUE, adj = adj);
     }
-  }
-  list(bar = list(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax));
+    height = strheight(lab);
+    if (!horizontal) height = height * asp;
+    labelInfo = list(x = x, y = y, angle = angle, adj = adj,
+                     space.usr = height, gap.usr = labGap);
+  } else labelInfo = list(space.usr = 0, gap.usr = 0);
+  #### FIXME: also include a component named box that gives the outer coordinates of the area used by the legend, to the
+  ###best approximation. Maybe include the padding around the color bar.
+  invisible(list(bar = list(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax, 
+                            space.usr = tmax - tmin),
+       ticks = list(length.usr = tickLen.usr, gap.usr = tickGap.usr, labelSpace.usr = tickLabelWidth),
+       label = labelInfo));
 }
 
 

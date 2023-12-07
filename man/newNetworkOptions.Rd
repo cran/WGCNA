@@ -58,7 +58,7 @@ set to zero as well?}
  \item{suppressNegativeTOM}{Logical: should the result be set to zero when negative? Negative TOM values can occur when
 \code{TOMType} is \code{"signed Nowick"}.}
 
-
+newNetworkOptions
   \item{useInternalMatrixAlgebra}{logical: should internal implementation of matrix multiplication be used
 instead of R-provided BLAS? The internal implementation is slow and this option should only be used if one
 suspects a bug in R-provided BLAS.}
@@ -72,6 +72,6 @@ Peter Langfelder
 }
 
 \seealso{
-code{\link{newCorrelationOptions}}
+\code{\link{newCorrelationOptions}}
 }
 \keyword{misc}

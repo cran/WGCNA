@@ -69,8 +69,8 @@ Pattern from which file names for saving the final consensus are determined. The
 \code{\%a} and \code{\%b} will be replaced by analysis name and block number,
 respectively.}
   \item{getCalibrationSamples}{
-When calibration method in the \code{consensusOptions} component of \code{ConsensusTree} is \code{"single
-quantile"}, this logical argument determines whether the calibration samples should be retuned within the
+When calibration method in the \code{consensusOptions} component of \code{ConsensusTree} is 
+\code{"single quantile"}, this logical argument determines whether the calibration samples should be retuned within the
 return value.
 }
   \item{useDiskCache}{
@@ -122,9 +122,9 @@ A list with the following components:
    a list in which each component is a \code{\link{BlockwiseData}} structure containing the calibrated
 individual data for the corresponding input individual data set.}
 \item{calibrationSamples}{If \code{consensusOptions$calibration} is \code{"single quantile"} and 
-\code{getCalibrationSamples} is \code{TRUE}, a list in which eahc component contains the calibration samples
+\code{getCalibrationSamples} is \code{TRUE}, a list in which each component contains the calibration samples
 for the corresponding input individual data set.}
-\code{originCount}{A vector of length \code{nSets} that
+\item{originCount}{A vector of length \code{nSets} that
 contains, for each set, the number of (calibrated) elements that were less than or equal the consensus for that element.}
 }
 \references{

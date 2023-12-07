@@ -324,7 +324,7 @@ for each block, stored as a distance structure.}
 each block, in which the TOM for the corresponding block is stored. TOM is saved as a distance structure to
 save space.}
 
-\item{saveConsensusTOMs}{a copy of the input{saveConsensusTOMs}.}
+\item{saveConsensusTOMs}{a copy of the input \code{saveConsensusTOMs}.}
 
 \item{individualTOMInfo}{information about individual set TOMs. A copy of the input \code{individualTOMInfo}
 if given; otherwise the result of calling \code{blockwiseIndividualTOMs}. See \code{blockwiseIndividualTOMs} for

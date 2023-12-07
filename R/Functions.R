@@ -5822,7 +5822,7 @@ plotEigengeneNetworks = function(
         } else { 
           printMtx = NULL; 
         }
-        if ( (sum( (1-abs(dispd))<zlimPreservation[1]) || ((1-abs(dispd))>zlimPreservation[2])) >0)
+        if (sum( ((1-abs(dispd))<zlimPreservation[1]) | ((1-abs(dispd))>zlimPreservation[2]))>0)
           warning("plotEigengeneNetworks: Correlation preservation data out of zlim range.");
         labeledHeatmap(1-abs(dispd), names(multiME[[i.col]]$data), names(multiME[[i.col]]$data), 
                        main = main, invertColors=FALSE,

@@ -81,17 +81,18 @@ of the sampled data set and the full data set?
 Number of genes to be sampled from the full data set to calculate connectivity and match soft-tresholding
 powers.
 }
-  \item{individualTOMFilePattern}{Pattern for file names for files holding individual TOMs. The tags \code{"\%r, \%a,
-\%b"} are replaced by run number, analysis name and block number, respectively. The TOM files are usually
+  \item{individualTOMFilePattern}{Pattern for file names for files holding individual TOMs. The tags 
+\code{"\%r, \%a, \%b"} are replaced by run number, analysis name and block number, respectively. The TOM files are usually
 temporary but can be retained, see \code{keepConsensusTOM} below.}
 
   \item{keepConsensusTOMs}{
 Logical: should the (final) consensus TOMs of each sampled calculation be retained after the run ends? Note
 that for large data sets (tens of thousands of nodes) the TOM files are rather large.
 }
-  \item{consensusTOMFilePattern}{
+  \item{consensusTOMFilePattern}{Pattern for file names for files holding consensus TOMs. The tags 
+\code{"\%r, \%a, \%b"} are replaced by run number, analysis name and block number, respectively. The TOM files are usually
+temporary but can be retained, see \code{keepConsensusTOM} above.}
 
-}
   \item{skipUnsampledCalculation}{
 Logical: should a calculation on original (not resampled) data be skipped?
 }

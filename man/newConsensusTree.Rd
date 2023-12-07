@@ -35,9 +35,9 @@ Consensus trees specify a "recipe" for the calculation of hierarchical consensus
 }
 \value{
 A list with class set to \code{"ConsensusTree"} with these components:
-\code{consensusOptions}{A copy of the input \code{consensusOptions}.}
-\code{inputs}{A copy of the input \code{inputs}.}
-\code{analysisName}{A copy of the input \code{analysisName}.}
+\item{consensusOptions}{A copy of the input \code{consensusOptions}.}
+\item{inputs}{A copy of the input \code{inputs}.}
+\item{analysisName}{A copy of the input \code{analysisName}.}
 }
 \author{
 Peter Langfelder

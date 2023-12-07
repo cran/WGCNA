@@ -887,9 +887,6 @@ void * threadSlowCalcCor(void * par)
   size_t * nNAentries = td->x->nNAentries;
   progressCounter * pci = td->pci, * pcj = td->pcj;
 
-  double *xx, *yy;
-  double vx, vy;
-
   size_t maxDiffNA = (size_t) (td->x->quick * nr);
 
   // Rprintf("quick:%f\n", td->x->quick);
@@ -1194,7 +1191,6 @@ void * threadSlowCalcCor2(void * par)
   size_t maxDiffNA = (size_t) (td->x->x->quick * nr);
 
   progressCounter * pci = td->pci, * pcj = td->pcj;
-  double * xx, * yy;
 
   // Rprintf("Will tolerate %d additional NAs\n",  maxDiffNA);
   // Rprintf("Checking %d rows and %d columns\n", nc1, nc);
@@ -1371,9 +1367,6 @@ void * threadSlowCalcCor2_weighted(void * par)
   size_t maxDiffNA = (size_t) (td->x->x->quick * nr);
 
   progressCounter * pci = td->pci, * pcj = td->pcj;
-
-  double * xx, * yy;
-  double vx = 0, vy = 0;
 
   while (pci->i < ncx)
   {

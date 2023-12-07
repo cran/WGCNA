@@ -1,5 +1,30 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
+2023/12/06: 1.72-5
+
+	. Minor fixes in code and help files
+
+2023/12/06: 1.72-4
+
+	. Minor fixes in code and help files
+
+2023/11/27: 1.72-3
+
+	. Several minor fixes in help files.
+	. Minor changes in internal code for labeledHeatmap
+	. Fixes in internal code to remove compile warnings and use of
+	  deprecated functions 
+
+
+2023/08/14: 1.72-2
+
+	. Bugfix in function plotEigengeneNetworks reported by Ramón Fallon
+	. Minor changes in internal code for labeledHeatmap
+
+2023/01/18: 1.72-1
+
+	. Minor changes to compy with CRAN requirements
+
 2023/01/07: 1.72
 
 	. Version bump for release

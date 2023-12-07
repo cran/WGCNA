@@ -319,7 +319,8 @@ void tomSimilarityFromAdj(double * adj, int * nGenes,
             *(tom + ng*i + j) = *tom2;
             if (*tom2 > 1) 
             {
-              Rprintf("TOM greater than 1: actual value: %f, i: %d, j: %d\n", *tom2, i, j);
+              Rprintf("TOM greater than 1: actual value: %f, i: %lu, j: %lu\n", *tom2, 
+                  (long unsigned int) i, (long unsigned int) j);
               nAbove1++;
             }
           } else {
@@ -363,7 +364,8 @@ void tomSimilarityFromAdj(double * adj, int * nGenes,
             *(tom + ng*i + j) = *tom2;
             if (fabs(*tom2) > 1)
             {
-              Rprintf("TOM greater than 1: actual value: %f, i: %d, j: %d\n", *tom2, i, j);
+              Rprintf("TOM greater than 1: actual value: %f, i: %lu, j: %lu\n", *tom2, 
+                               (long unsigned int) i, (long unsigned int) j);
               nAbove1++;
             }
           } else {
@@ -381,14 +383,14 @@ void tomSimilarityFromAdj(double * adj, int * nGenes,
 
   if (nSuppressed > 0)
     Rprintf("%s.. %lu TOM elements were set to zero because of zero adjacencies.\n", spaces, 
-             (unsigned long) nSuppressed); 
+             (long unsigned int) nSuppressed); 
   
   // Set the diagonal of tom to 1
   for (size_t i=0; i<ng; i++)
     *(tom + ng*i + i) = 1;
 
   if (nAbove1 > 0)
-    Rprintf("problem: %d TOM entries are larger than 1.\n", nAbove1);
+    Rprintf("problem: %lu TOM entries are larger than 1.\n", (long unsigned int) nAbove1);
 
   free(conn);
   if (*verbose > 0) Rprintf("%s..done.\n", spaces);
@@ -458,7 +460,7 @@ void tomSimilarity(double * expr, double * weights, int * nSamples, int * nGenes
     adjacency(expr, weights, ns, ng, *corType, *adjType, *power, *maxPOutliers, *quick, *fallback, *cosine, 
               *replaceMissing, tom, &err, warn, nThreads, *verbose, *indent);
     if (*verbose > 0) Rprintf("\n");
-    if (err) error(AdjErrors[err]);
+    if (err) error("%s\n", AdjErrors[err]);
     return;
   }
     
@@ -481,7 +483,7 @@ void tomSimilarity(double * expr, double * weights, int * nSamples, int * nGenes
   {
      Rprintf("TOM: exit because 'adjacency' reported an error.\n");
      free(adj);
-     error(AdjErrors[err]);
+     error("%s\n", AdjErrors[err]);
   } else {
     tomSimilarityFromAdj(adj, nGenes, tomType, denomType, suppressTOMForZeroAdj, suppressNegativeTOM,
                          useInternalMatrixAlgebra, 
@@ -584,7 +586,7 @@ SEXP tomSimilarityFromAdj_call(SEXP adj_s,
   int *nGenes, *verbose, *indent;
   int *tomType, *denomType, *suppressTOMForZeroAdj, *suppressNegativeTOM, *useInternalMatrixAlgebra;
 
-  double *adj, *tom, *maxPOutliers;
+  double *adj, *tom;
   // Rprintf("Step 2\n");
 
   /* Get dimensions of 'expr'. */

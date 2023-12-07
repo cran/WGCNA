@@ -163,7 +163,7 @@ void cor1Fast(double * x, int * nrow, int * ncol,
     if (nt > 1)
       Rprintf("%s..will use %d parallel threads.\n", spaces, nt);
     else
-      Rprintf("%s..will not use multithreading.\n", spaces, nt);
+      Rprintf("%s..will not use multithreading.\n", spaces);
   }
 
   // double * aux[MxThreads];
@@ -407,7 +407,7 @@ void bicor1Fast(double * x, int * nrow, int * ncol, double * maxPOutliers,
     if (nt > 1)
       Rprintf("%s..will use %d parallel threads.\n", spaces, nt);
     else
-      Rprintf("%s..will not use multithreading.\n", spaces, nt);
+      Rprintf("%s..will not use multithreading.\n", spaces);
   }
 
   double * aux[MxThreads];
@@ -724,7 +724,7 @@ void bicorFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
     if (nt > 1)
       Rprintf("%s..will use %d parallel threads.\n", spaces, nt);
     else
-      Rprintf("%s..will not use multithreading.\n", spaces, nt);
+      Rprintf("%s..will not use multithreading.\n", spaces);
   }
 
   double * aux[MxThreads];
@@ -1149,7 +1149,7 @@ void corFast(double * x, int * nrow, int * ncolx, double * y, int * ncoly,
     if (nt > 1)
       Rprintf("%s..will use %d parallel threads.\n", spaces, nt);
     else
-      Rprintf("%s..will not use multithreading.\n", spaces, nt);
+      Rprintf("%s..will not use multithreading.\n", spaces);
   }
 
   cor1ThreadData thrdInfoX[MxThreads];

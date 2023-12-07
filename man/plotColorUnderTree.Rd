@@ -90,7 +90,7 @@ of the first rectangle should be. Useful values are 0 if ploting color under a d
 ploting colors under a barplot. }
 
   \item{align}{Controls the alignment of the color rectangles. \code{"center"} means aligning centers of the rectangles on
-equally spaced values; code{"edge"} means aligning edges of the first and last rectangles on the edges of the plot
+equally spaced values; \code{"edge"} means aligning edges of the first and last rectangles on the edges of the plot
 region.}
 
   \item{separatorLine.col}{Color of the line separating rows of color rectangles. If \code{NA}, no lines will be drawn.} 

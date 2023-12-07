@@ -60,7 +60,7 @@ argument \code{Strata}. In this case, the estimation focuses on one stratum at a
 \item{datEstimates}{is a data frame whose columns corresponds to estimates of the true underlying trait. The number of rows equals the number of observations, i.e. the length of \code{y}.
 The first column \code{y.true1} is the average value of standardized columns of \code{datX} where standardization subtracts out the intercept term and divides by the slope of the linear regression model lm(marker~y). Since this estimate ignores the fact that the surrogate markers have different correlations with \code{y}, it is typically inferior to \code{y.true2}. 
 The second column \code{y.true2} equals the weighted average value of standardized columns of \code{datX}. The standardization is described in section 2.4 of Klemera et al. The weights are proportional to r^2/(1+r^2) where r denotes the correlation between the surrogate marker and \code{y}. Since this estimate does not include \code{y} as additional surrogate marker, it may be slightly inferior to \code{y.true3}. Having said this, the difference between \code{y.true2} and \code{y.true3} is often negligible. 
-An additional column called \code{y.lm} is added if code{addLinearModel=TRUE}. In this case, \code{y.lm} reports the linear model predictions.
+An additional column called \code{y.lm} is added if \code{addLinearModel=TRUE}. In this case, \code{y.lm} reports the linear model predictions.
 Finally, the column \code{y.true3} is very similar to \code{y.true2} but it includes \code{y} as additional surrogate marker. It is expected to be the best estimate of the underlying true trait (see Klemera et al 2006).
 }
 
@@ -68,7 +68,7 @@ Finally, the column \code{y.true3} is very similar to \code{y.true2} but it incl
 \code{datXtest}. In this case, it contains a data frame with columns \code{ytrue1} and \code{ytrue2}. The
 number of rows equals the number of test set observations, i.e the number of rows of \code{datXtest}. Since
 the value of \code{y} is not known in case of a test data set, one cannot calculate \code{y.true3}. An
-additional column with linear model predictions \code{y.lm} is added if code{addLinearModel=TRUE}.  }
+additional column with linear model predictions \code{y.lm} is added if \code{addLinearModel=TRUE}.  }
 
 
 \item{datEstimates.LeaveOneOut.CV}{is output only if the argument \code{LeaveOneOut.CV} has been set to \code{TRUE}.
