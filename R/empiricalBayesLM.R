@@ -948,3 +948,77 @@ bicovWeightsFromFactors = function(u, defaultWeight = 0)
 }
 
 
+modifiedBisquareWeights = function(
+  x,
+  removedCovariates = NULL,
+  pearsonFallback = TRUE,
+  maxPOutliers = 0.05,
+  outlierReferenceWeight = 0.1,
+  groupsForMinWeightRestriction = NULL,
+  minWeightInGroups = 0,
+  maxPropUnderMinWeight = 1,
+  defaultWeight = 1,
+  getFactors = FALSE)
+{
+  if (is.data.frame(x)) x = as.matrix(x);
+  defaultFactor = sqrt(1-sqrt(defaultWeight));
+  maxFactorInGroups = sqrt(1-sqrt(minWeightInGroups))
+  if (length(removedCovariates)==0)
+  {  
+    res = x;
+  } else {
+    if (length(dim(removedCovariates)) == 0) removedCovariates = as.matrix(removedCovariates);
+    if (nrow(removedCovariates)!=nrow(x)) 
+     stop("If given, number of rows in 'removedCovariates' must equal the number of rows in 'x'.");
+    nLevels = apply(removedCovariates, 2, function(x) length(unique(x[!is.na(x)])));
+    removedCovariates = removedCovariates[, nLevels > 1, drop = FALSE];
+    if (ncol(removedCovariates) > 0) {
+      res = empiricalBayesLM(x, removedCovariates = removedCovariates, automaticWeights = "none",
+             getOLSAdjustedData = FALSE,
+             getFittedValues = FALSE,
+             getEBadjustedData = FALSE)$residuals.OLS;
+      dimnames(res) = dimnames(x);
+    } else 
+      res = x;
+  }  
+  factors = bicovWeightFactors(res, pearsonFallback = pearsonFallback, 
+            maxPOutliers = maxPOutliers, outlierReferenceWeight = outlierReferenceWeight,
+            defaultFactor = 1-defaultWeight);
+
+  factors = abs(factors)
+
+  # If groupsForMinWeightRestriction is a data frame or matrix (assumed to be 1-column), turn it into a vector
+  if (!is.null(groupsForMinWeightRestriction)) 
+     groupsForMinWeightRestriction = c(unlist(groupsForMinWeightRestriction));
+
+  if (length(groupsForMinWeightRestriction)>0)
+  {
+     if (length(groupsForMinWeightRestriction)!=nrow(x)) 
+       stop("'groupsForMinWeightRestriction' must be a vector of length equal the number of rows in 'x'.");
+  }
+
+  if (length(groupsForMinWeightRestriction)>0 && minWeightInGroups > 0)
+  {
+     fixCols = rep(FALSE, ncol(factors));
+     refFactor = rep(maxFactorInGroups, ncol(factors))
+     for (g in sort(unique(groupsForMinWeightRestriction)))
+     {
+       # Check that appropriate quantile of factor for each group is not below minWeightInGroups
+       factorQuant = colQuantileC(factors[groupsForMinWeightRestriction==g, ], p = 1-maxPropUnderMinWeight)
+       fix = factorQuant > maxFactorInGroups;
+       fixCols[fix] = TRUE;
+       refFactor[fix] = pmax(factorQuant[fix],  refFactor[fix]);
+     }
+     refFactorMat = matrix(refFactor, nrow(factors), ncol(factors), byrow = TRUE);
+     factors = factors/refFactorMat * maxFactorInGroups;
+     weights = bicovWeightsFromFactors(factors, defaultWeight = defaultWeight);
+     attr(weights, "scaledColumnsToMeetMinWeight") = which(fixCols);
+     attr(weights, "scaleFactorsToMeetMinWeights") = maxFactorInGroups/refFactorMat
+  } else {
+     weights = bicovWeightsFromFactors(factors, defaultWeight = defaultWeight)
+  }
+  
+  if (getFactors) list(weights = weights, factors = factors) else weights;
+}
+
+  

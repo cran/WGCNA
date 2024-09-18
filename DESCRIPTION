@@ -1,8 +1,7 @@
 Package: WGCNA
-Version: 1.72-5
-Date: 2023-12-06
+Version: 1.73
+Date: 2024-09-18
 Title: Weighted Correlation Network Analysis
-Author: Peter Langfelder <Peter.Langfelder@gmail.com> and Steve Horvath <SHorvath@mednet.ucla.edu> with contributions by Chaochao Cai, Jun Dong, Jeremy Miller, Lin Song, Andy Yip, and Bin Zhang
 Maintainer: Peter Langfelder <Peter.Langfelder@gmail.com>
 Depends: R (>= 3.0), dynamicTreeCut (>= 1.62), fastcluster
 Imports: stats, grDevices, utils, matrixStats (>= 0.8.1), Hmisc,
@@ -12,10 +11,41 @@ Suggests: org.Hs.eg.db, org.Mm.eg.db, infotheo, entropy, minet
 LinkingTo: Rcpp
 ZipData: no
 License: GPL (>= 2)
+Authors@R: c(person(given = "Peter",
+                    family = "Langfelder",
+                    role = c("aut", "cre"),
+                    email = "Peter.Langfelder@gmail.com"),
+             person(given = "Steve", 
+                    family = "Horvath", 
+                    role = "aut"),
+             person(given = "Chaochao",
+                    family = "Cai",
+                    role = "aut"),
+             person(given = "Jun",
+                    family = "Dong",
+                    role = "aut"),
+             person(given = "Jeremy",
+                    family = "Miller",
+                    role = "aut"),
+             person(given = "Lin",
+                    family = "Song",
+                    role = "aut"),
+             person(given = "Andy",
+                    family = "Yip",
+                    role = "aut"),
+             person(given = "Bin",
+                    family = "Zhang",
+                    role = "aut"))
 Description: Functions necessary to perform Weighted Correlation Network Analysis on high-dimensional data as originally described in Horvath and Zhang (2005) <doi:10.2202/1544-6115.1128> and Langfelder and Horvath (2008) <doi:10.1186/1471-2105-9-559>. Includes functions for rudimentary data cleaning, construction of correlation networks, module identification, summarization, and relating of variables and modules to sample traits. Also includes a number of utility functions for data manipulation and visualization.
-URL:
-        http://horvath.genetics.ucla.edu/html/CoexpressionNetwork/Rpackages/WGCNA/
 NeedsCompilation: yes
-Packaged: 2023-12-06 06:23:22 UTC; plangfelder
+Packaged: 2024-09-18 12:43:22 UTC; plangfelder
+Author: Peter Langfelder [aut, cre],
+  Steve Horvath [aut],
+  Chaochao Cai [aut],
+  Jun Dong [aut],
+  Jeremy Miller [aut],
+  Lin Song [aut],
+  Andy Yip [aut],
+  Bin Zhang [aut]
 Repository: CRAN
-Date/Publication: 2023-12-07 15:40:03 UTC
+Date/Publication: 2024-09-18 15:20:02 UTC

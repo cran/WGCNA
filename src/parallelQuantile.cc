@@ -78,7 +78,7 @@ RcppExport SEXP parallelMean(SEXP data_s, SEXP weight_s)
   NumericVector weight = NumericVector(weight_s);
 
   size_t nSets = data_lst.size();
-  if (nSets!=weight.length())
+  if (nSets!=(size_t) weight.length())
      throw "Compiled parallelMean: Length of 'weights' must equal length of 'data'.";
 
   // cout << "nSets: " << nSets << endl;

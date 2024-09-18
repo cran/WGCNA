@@ -108,7 +108,7 @@ Consensus is defined as the element-wise (also known as "parallel") quantile of 
 probability given by the \code{consensusQuantile} element of \code{consensusOptions}. Depending on the value
 of component \code{calibration} of \code{consensusOptions}, the individual data are first calibrated. For
 \code{consensusOptions$calibration="full quantile"}, the individual data are quantile normalized using
-\code{\link{normalize.quantiles}}. For
+\code{\link[preprocessCore]{normalize.quantiles}}. For
 \code{consensusOptions$calibration="single quantile"}, the individual data are raised to a power such that
 the quantiles at probability \code{consensusOptions$calibrationQuantile} are the same. 
 For \code{consensusOptions$calibration="none"}, the individual data are not calibrated.

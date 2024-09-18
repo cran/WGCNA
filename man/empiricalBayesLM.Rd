@@ -66,7 +66,7 @@ fitting. The function must take arguments \code{formula} and \code{data} or \cod
  plus possibly additional arguments.
 The return value must be a list with component \code{coefficients}, either \code{scale} or
 \code{residuals}, and weights must be returned in component specified by \code{initialFit.returnWeightName}. 
-See \code{\link{lm}}, \code{\link{rlm}} and other standard fit functions for examples of
+See \code{\link{lm}}, \code{\link[MASS]{rlm}} and other standard fit functions for examples of
 suitable functions.}
 
   \item{initialFitOptions}{

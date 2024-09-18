@@ -122,9 +122,6 @@ Fast R Functions for Robust Correlations and Hierarchical Clustering.
 Journal of Statistical Software, 46(11), 1-17.
 \url{https://www.jstatsoft.org/v46/i11/}
 
-"Dealing with Outliers in Bivariate Data: Robust Correlation", Rich Herrington, 
-http://www.unt.edu/benchmarks/archives/2001/december01/rss.htm
-
 "Introduction to Robust Estimation and Hypothesis Testing", Rand Wilcox, Academic Press, 1997.
 
 "Data Analysis and Regression: A Second Course in Statistics", Mosteller and Tukey, Addison-Wesley,

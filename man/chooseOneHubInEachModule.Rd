@@ -3,7 +3,8 @@
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{ Chooses a single hub gene in each module }
 \description{
-chooseOneHubInEachModule returns one gene in each module with high connectivity, given a number of randomly selected genes to test.
+chooseOneHubInEachModule returns one gene in each module with high connectivity, 
+given a number of randomly selected genes to test.
 }
 \usage{
 chooseOneHubInEachModule(
@@ -21,7 +22,7 @@ chooseOneHubInEachModule(
 Gene expression data with rows as samples and columns as genes.
 }
   \item{colorh}{
-The module assignments (color vectors) corresponding to the rows in datExpr.
+The module assignments (color vectors) corresponding to the columns in datExpr.
 }
   \item{numGenes}{
 Th number of random genes to select per module.  Higher number of genes increases the accuracy of hub selection but slows down the function.

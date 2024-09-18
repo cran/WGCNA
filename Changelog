@@ -1,5 +1,19 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
+
+2024/09/18: 1.73
+
+	. Version bumb for release
+
+2024/09/03: 1.72-90
+
+	. New function modifiedBisquareWeights for calculating bisquare weights for
+	  columns in a matrix
+	. Typos in documentation (help files) of chooseTopHubInEachModule and
+	  chooseOneHubInEachModule fixed. Thanks to Dominic Owens for
+	  reporting these.
+	. Minor changes in compiled C code to comply with R's updated API
+
 2023/12/06: 1.72-5
 
 	. Minor fixes in code and help files

@@ -1,5 +1,5 @@
-fef10a986c9c58a0de8c1a91d8f31b55 *Changelog
-b28c8505fa8b2c0809d7bf292487410c *DESCRIPTION
+38e93ffda442445800e1a0640c7a1da2 *Changelog
+7d75aaa6826b0c238b797fd0c3d02709 *DESCRIPTION
 d2b6fd915680eb5af195de145344e193 *NAMESPACE
 2640fb7286cab45b6de425c01109f80e *R/AFcorMI.R
 35609243f0e3ea642a162a0d737b60e7 *R/Functions-fromSimilarity.R
@@ -25,7 +25,7 @@ e7454fc0b69cec7a1e8b7eff45dff948 *R/consensusCalculations.R
 ae38c4a3af8cf6f039c093f158c8be75 *R/corFunctions.R
 f5dfb236765806a3eb39bd028bff071b *R/coxRegressionResiduals.R
 aa9c7ff1a228742079e2cbd4a1f4c28e *R/dendrogramAdjustmentFunctions.R
-b032a688f65d1b394d085d813d3d3d96 *R/empiricalBayesLM.R
+28f6dd6709cd85e3359c6eb2fbaaa9e4 *R/empiricalBayesLM.R
 51e3134584bb27345f534fb55be4ebab *R/exportFunctions.R
 c6befb2db32212367a81356658135a2b *R/heatmapWithLegend.R
 2b5d78677c5e881ad05280b28b287632 *R/hierarchicalConsensusModules.R
@@ -57,6 +57,7 @@ f20cae9009e6bca9e4f19328f17a229f *R/stratifiedBarplot.R
 3aae1993670b9e78f0d03398091ffebf *R/verboseIplot.R
 9fb8ae431795a46628ae79049344a17d *R/votingLinearPredictor.R
 9ca7256d86ad4bb124368a831d9f66ae *R/zzz.R
+e23903adc990d9515ba1ebd23e3bff59 *build/partial.rdb
 f403f840e0fc7f8a0c352107793e0b46 *data/BloodLists.rda
 51c2c6e860d1506d66e9b65c524453be *data/BrainLists.rda
 7bdbaf29df66b5302497c33719d384ae *data/BrainRegionMarkers.rda
@@ -91,7 +92,7 @@ f73c92a0f512782324e4b56eed5cbe65 *man/allocateJobs.Rd
 b7ea7d2217d2af07fb52698036093d99 *man/allowWGCNAThreads.Rd
 f0af93e682c1e4f9ed671d5dc26b5c47 *man/automaticNetworkScreening.Rd
 37f7ceee377056bc41dfc56146e44c22 *man/automaticNetworkScreeningGS.Rd
-a9da33955ac4fde6be926698bbddff43 *man/bicor.Rd
+29dc88d5f37dff098532b14b6b43bbc9 *man/bicor.Rd
 eb2b6b1088d8ac9f4d3d584633730c09 *man/bicorAndPvalue.Rd
 d3e975d3323a46bfaba290ebf3958e52 *man/bicovWeights.Rd
 70d15038c9a7316d4e05d0098fa5d763 *man/binarizeCategoricalColumns.Rd
@@ -107,8 +108,8 @@ bffaf7af5a6432a63c4d5513d71aef5d *man/branchSplit.Rd
 6b66247bf96b0179e9f96b2e36e08b76 *man/branchSplitFromStabilityLabels.Rd
 a670b576a031c5f51483aedd991e2cb3 *man/checkAdjMat.Rd
 77c7d5fb58a8ec83f99ffbd83d4481dd *man/checkSets.Rd
-277982294fa31dbbdf5945da95b5da25 *man/chooseOneHubInEachModule.Rd
-f7b40a531d6730ada23640f6a32a4057 *man/chooseTopHubInEachModule.Rd
+a86af95333958160c5a6f1e95a73162b *man/chooseOneHubInEachModule.Rd
+dfac4810548b3f2fd176be22cc08e3a3 *man/chooseTopHubInEachModule.Rd
 5e958f0875508a71d357444f14b6179e *man/clusterCoef.Rd
 a4dee3d59f71f9271fef45dbc884e50c *man/coClustering.Rd
 39432228084e0ab40e2bdfba1971ef2d *man/coClustering.permutationTest.Rd
@@ -118,7 +119,7 @@ a4dee3d59f71f9271fef45dbc884e50c *man/coClustering.Rd
 e3f8541b1a35d25d0767fca0ecd2a2b3 *man/collectGarbage.Rd
 161399055c32a9010d1311b4987249b8 *man/conformityBasedNetworkConcepts.Rd
 9fa74e5ac5a227d887bb262b936b2e78 *man/conformityDecomposition.Rd
-50cb445598a9bfde1adfc190a8e5dc1e *man/consensusCalculation.Rd
+27be3fca8fefe9cd6912bdf03d271791 *man/consensusCalculation.Rd
 9f16701b048bd097c7b3702d4cadd15c *man/consensusDissTOMandTree.Rd
 bdb934e0d83055b9761c0241ca0180cd *man/consensusKME.Rd
 4ceee9e0b3e10f94f427290042ec11e5 *man/consensusMEDissimilarity.Rd
@@ -139,7 +140,7 @@ ebd1b5154444b4b1ddb110a91453596d *man/cutreeStatic.Rd
 76d1215fee27707480cb5b2bb4436754 *man/cutreeStaticColor.Rd
 aa9a53d1eeea331b86022a2f85238b9d *man/displayColors.Rd
 ec2017b186d25a4707f66d4069f3f18c *man/dynamicMergeCut.Rd
-fe5eb0a3958f75060c8539790791ca60 *man/empiricalBayesLM.Rd
+9b870611471adefdde87a8a7a6a5caec *man/empiricalBayesLM.Rd
 46e29dcd87c583e3d449493600141016 *man/exportNetworkToCytoscape.Rd
 b2f81e61e7ab3417929b10dac119c86a *man/exportNetworkToVisANT.Rd
 65e62fed0cdf47bc3d30d014841cd5a9 *man/factorizeNonNumericColumns.Rd
@@ -181,6 +182,7 @@ db4368efdc27de132013ce1c5ee8a952 *man/mergeCloseModules.Rd
 50529471afd7336184fa7963507eaa5f *man/metaAnalysis.Rd
 ffd97d40240349925bc44f5b1906d3e5 *man/metaZfunction.Rd
 9282f0ac4a84e49c5e30f2cea1648eec *man/minWhichMin.Rd
+9073bb0dae1e815032222b1b00619cbb *man/modifiedBisquareWeights.Rd
 7edcdce8f159ca0dfa75c6381c252900 *man/moduleColor.getMEprefix.Rd
 5fe15072f66d4ca7175539b748f46396 *man/moduleEigengenes.Rd
 b991b62e1ec4036a42ef5aa27713c17f *man/moduleMergeUsingKME.Rd
@@ -312,9 +314,9 @@ db35a97d45c6268d49c6a3a7b8e396ac *src/corFunctions-utils.h
 364e2ccaa651126865bafa7177613cf6 *src/myMatrixMultiplication.h
 88a529f1a6ec577d8a9f5525f4eba15c *src/networkFunctions.c
 785bb06185332922ef0d0c3ed1b919a1 *src/networkFunctions.h
-7bd38e787ac38322b97dc2136a5e2b56 *src/parallelQuantile.cc
+2c64d1f22ee1dcac8ed74bb29566d52c *src/parallelQuantile.cc
 73219e59ee796dc44d848434cfb818c4 *src/parallelQuantile.h
 7d69c97a3259a124c1b80b1b452dba29 *src/parallelQuantile_stdC.h
-cb134bcac11d1931fb28492bcedaa7ce *src/pivot.c
+c6bbf2c6f3fb39cf93e2091713c573f0 *src/pivot.c
 203d262a31d418e6a688df4eb1b4abc1 *src/pivot.h
 c6601848ab159000caeda22b81aa92cd *src/pivot_declarations.h

@@ -20,7 +20,7 @@ chooseTopHubInEachModule(
 Gene expression data with rows as samples and columns as genes.
 }
   \item{colorh}{
-The module assignments (color vectors) corresponding to the rows in datExpr.
+The module assignments (color vectors) corresponding to the columns in datExpr.
 }
   \item{omitColors}{
 All colors in this character vector (default is "grey") are ignored by this function.

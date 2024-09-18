@@ -282,7 +282,7 @@ SEXP qorder(SEXP data)
 
   double * x = REAL(data);
 
-  orderStructure * os = Calloc((size_t) n, orderStructure);
+  orderStructure * os = R_Calloc((size_t) n, orderStructure);
 
   qorder_internal(x, (size_t) n, os);
 
@@ -299,7 +299,7 @@ SEXP qorder(SEXP data)
     double * ansp = REAL(ans);
     for (R_xlen_t i = 0; i<n; i++) ansp[i] = (double) ((os+i)->index+1);
   }
-  Free(os);
+  R_Free(os);
   UNPROTECT(1);
   return ans;
 }
