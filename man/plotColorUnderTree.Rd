@@ -20,6 +20,8 @@ plotOrderedColors(
    textPositions = NULL, 
    addTextGuide = TRUE,
    cex.rowLabels = 1, 
+   col.rowLabels = 1,
+   font.rowLabels = 1,
    cex.rowText = 0.8,
    startAt = 0,
    align = c("center", "edge"),
@@ -37,6 +39,8 @@ plotColorUnderTree(
    textPositions = NULL,
    addTextGuide = TRUE,
    cex.rowLabels = 1,
+   col.rowLabels = 1,
+   font.rowLabels = 1,
    cex.rowText = 0.8,
    separatorLine.col = "black",
    ...)
@@ -82,6 +86,10 @@ giving the color rows under which the text rows should appear.}
   \item{addTextGuide}{ logical: should guide lines be added for the text rows (if given)? }
 
   \item{cex.rowLabels}{Font size scale factor for the row labels. See \code{\link[graphics]{par}}.}
+
+  \item{col.rowLabels}{Font color for the row labels.}
+
+  \item{font.rowLabels}{Font for the row labels. 1 means regular, 2 bold, 3 italicized. }
 
   \item{cex.rowText}{ character expansion factor for text rows (if given). }
 

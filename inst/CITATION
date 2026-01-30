@@ -10,7 +10,7 @@ bibentry(bibtype = "Article",
   number  = "1",
   pages = "559", 
   PubMedID = "19114008",
-  url      = "https://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-9-559"
+  url      = "https://link.springer.com/article/10.1186/1471-2105-9-559"
 )
 
 
@@ -22,6 +22,7 @@ bibentry(bibtype = "Article",
   volume       = "46",
   number       = "11",
   pages        = "1--17",
+  PubMedID     = "23050260",
   url          = "https://www.jstatsoft.org/v46/i11/"
 )
 

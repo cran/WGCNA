@@ -30,6 +30,8 @@
 .plotStandaloneLegend = function(
                             colors,
                             lim,
+                            tickValues = NULL,
+                            tickValueFnc = function(x) x,
                             ## These dimensions are in inches
                             tickLen = 0.09,
                             tickGap = 0.04,
@@ -44,7 +46,8 @@
   plot(c(0, 1), c(0, 1), type = "n", axes = FALSE, xlab = "", ylab = "");
   box = par("usr");
   if (horizontal) box.eff = box[c(3,4,1,2)] else box.eff = box;
-  tickVal = .autoTicks(lim[1], lim[2]);
+  if (is.null(tickValues)) tickValues = .autoTicks(lim[1], lim[2]);
+  tickDisplayedValues = tickValueFnc(tickValues);
   pin = par("pin");
   pin.eff = if (horizontal) pin[c(2,1)] else pin;
   wrange = box.eff[2] - box.eff[1];
@@ -53,7 +56,7 @@
   minBarWidth.usr = minBarWidth/pin.eff[1] * wrange
   maxBarWidth.usr = maxBarWidth/pin.eff[1] * wrange
   sizeFnc = if (horizontal) strheight else strwidth;
-  maxTickWidth = max(sizeFnc(tickVal));
+  maxTickWidth = max(sizeFnc(tickDisplayedValues));
   if (maxTickWidth + tickLen.usr + tickGap.usr > box.eff[2]-box.eff[1]-minBarWidth.usr) 
      warning("Some tick labels will be truncated.");
   haveLab = length(lab) > 0
@@ -64,6 +67,7 @@
                    if (horizontal) box[4]-width else box[3], box[4], 
                    colors = colors,
                    lim = lim,
+                   tickValues = tickValues, tickValueFnc = tickValueFnc, 
                    tickLen.usr = tickLen.usr, horizontal = horizontal,
                    tickGap.usr = tickGap.usr, lab = lab, ...);
 }
@@ -96,6 +100,8 @@ if (FALSE)
                             # colors can be a vector or a matrix (in which case a matrix of colors will be plotted)
                             colors,
                             horizontal = FALSE,
+                            tickValues = NULL,
+                            tickValueFnc = function(x) x,
 ### FIXME: it would be good if these could respect settings in par("mgp")
                             tickLen.usr = 0.5* (if (horizontal) strheight("M") else strwidth("M")),
                             tickGap.usr = 0.5 * (if (horizontal) strheight("M") else strwidth("M")),
@@ -104,8 +110,8 @@ if (FALSE)
                             labGap = 0.6 * (if (horizontal) strheight("M") else strwidth("M"))
                             )
 {
-  tickVal = .autoTicks(lim[1], lim[2]);
-  nTicks = length(tickVal);
+  if (is.null(tickValues)) tickValues = .autoTicks(lim[1], lim[2]);
+  nTicks = length(tickValues);
 
   if (horizontal) {
     lmin = xmin; lmax = xmax; 
@@ -114,30 +120,31 @@ if (FALSE)
     tmin = xmin; tmax = xmax; 
     lmin = ymin; lmax = ymax;
   }
-  tickPos = (tickVal - lim[1]) / (lim[2] - lim[1]) * (lmax - lmin) + lmin;
+  tickPos = (tickValues - lim[1]) / (lim[2] - lim[1]) * (lmax - lmin) + lmin;
   pin = par("pin");
   box = par("usr");
   asp = pin[2]/pin[1] * ( box[2]-box[1])/(box[4] - box[3]);
   # Ticks:
   
+  tickValues.print = tickValueFnc(tickValues);
   if (horizontal) {
     angle0 = 0;
     angle = angle0 + tickLabelAngle;
     if (angle==0) adj = c(0.5, 1) else adj = c(1, 0.5);
     for (t in 1:nTicks) 
       lines(c(tickPos[t], tickPos[t]), c(ymin, ymin - tickLen.usr), xpd = TRUE);
-    text(tickPos, rep(ymin - tickLen.usr - tickGap.usr), tickVal, adj = adj, cex = cex.axis,
+    text(tickPos, rep(ymin - tickLen.usr - tickGap.usr), tickValues.print, adj = adj, cex = cex.axis,
            xpd = TRUE, srt = angle);
-    tickLabelWidth = if (angle==0) max(strheight(tickVal)) else max(strwidth(tickVal))/asp;
+    tickLabelWidth = if (angle==0) max(strheight(tickValues.print)) else max(strwidth(tickValues.print))/asp;
   } else {
     angle0 = 90;
     angle = angle0 + tickLabelAngle;
     if (angle==0) adj = c(0, 0.5) else adj = c(0.5, 1);
     for (t in 1:nTicks) 
       lines(c(xmax, xmax + tickLen.usr), c(tickPos[t], tickPos[t]), xpd = TRUE);
-    text(rep(xmax + tickLen.usr + tickGap.usr), tickPos, tickVal, adj = adj, cex = cex.axis,
+    text(rep(xmax + tickLen.usr + tickGap.usr), tickPos, tickValues.print, adj = adj, cex = cex.axis,
          xpd = TRUE, srt = angle);
-    tickLabelWidth = if (angle==0) max(strwidth(tickVal)) else max(strheight(tickVal)) * asp;
+    tickLabelWidth = if (angle==0) max(strwidth(tickValues.print)) else max(strheight(tickValues.print)) * asp;
   }
   # Fill with color:
   colors = as.matrix(colors);
@@ -284,7 +291,11 @@ if (FALSE)
                      legendWidth = 0.13,
                      legendGap = 0.09,
                      maxLegendSize = 4,
+                     minLegendSize = 0,  #### FIXME: for now this is ignored because taking it properly into account 
+## needs some work especially when the minLegendSize is bigger than heatmap size (legend can extend into the bottom
+## margin)
                      legendLengthGap = 0.15,
+                     otherLegendArgs = list(),
                      frame = TRUE,
                      frameTicks = FALSE, tickLen = 0.09,
                      tickLabelAngle = 0,
@@ -314,6 +325,7 @@ if (FALSE)
   legendGap.usr = legendGap/pin[1] * (xmaxAll-xminAll);
   tickLen.usr = tickLen/pin[1] * (xmaxAll-xminAll);
   maxLegendSize.usr = maxLegendSize/pin[2] * (ymaxAll-yminAll);
+  minLegendSize.usr = minLegendSize/pin[2] * (ymaxAll-yminAll);
   legendLengthGap.usr = legendLengthGap/pin[2] * (ymaxAll-yminAll)
 
   if (!keepLegendSpace && !plotLegend)
@@ -336,7 +348,6 @@ if (FALSE)
 
   yStep = (ymax - ymin)/nRows; yBot  = ymin + c(0:(nRows-1)) * yStep;
   yTop  = yBot + yStep; yMid = c(yTop+ yBot)/2;
-
   
   if (is.null(colorMatrix))
     colorMatrix = numbers2colors(data, signed, colors = colors, lim = zlim, naColor = naColor)
@@ -345,6 +356,7 @@ if (FALSE)
     colorMatrix = .reverseRows(colorMatrix);
   for (c in 1:nCols)
   {
+    #tryCatch(colorMatrix[, c], error = function(...) browser("colorMatrix has incorrect dimensions."));
     rect(xleft = rep(xLeft[c], nRows), xright = rep(xRight[c], nRows),
          ybottom = yBot, ytop = yTop, col = ifelse(colorMatrix[, c]==0, 0, colorMatrix[, c]), 
                 border = ifelse(colorMatrix[, c]==0, 0, colorMatrix[, c]));
@@ -358,7 +370,9 @@ if (FALSE)
   {
       # Now plot the legend.
       legendSize.usr = legendShrink * (ymaxAll - yminAll);
-      if (legendSize.usr > maxLegendSize.usr) legendSize.usr = maxLegendSize.usr
+      if (legendSize.usr > maxLegendSize.usr) legendSize.usr = maxLegendSize.usr;
+      #if (legendSize.usr < minLegendSize.usr) legendSize.usr = minLegendSize.usr;
+
       if (legendLengthGap.usr > 0.5*(ymaxAll - yminAll)*(1-legendShrink)) 
           legendLengthGap.usr = 0.5*(ymaxAll - yminAll)*(1-legendShrink);
       y0 = yminAll + legendLengthGap.usr;
@@ -367,24 +381,26 @@ if (FALSE)
       if (movementRange < -1e-10) {browser(".heatmapWithLegend: movementRange is negative."); movementRange = 0;}
       ymin.leg = y0 + legendPosition * movementRange;
       ymax.leg = y0 + legendPosition * movementRange + legendSize.usr
-      legendPosition = .plotColorLegend(xmin = xmaxAll - (legendSpace.usr - legendGap.usr),
-                       xmax = xmaxAll - (legendSpace.usr - legendGap.usr - legendWidth.usr),
-                       ymin = ymin.leg,
-                       ymax =  ymax.leg,
-                       lim = zlim,
-                       colors = colors,
-                       tickLen.usr = tickLen.usr,
-                       cex.axis = cex.legendAxis,
-                       lab = legendLabel,
-                       cex.lab = cex.legendLabel,
-                       tickLabelAngle = tickLabelAngle
-                       );
+      legendPosition = do.call(.plotColorLegend,
+          c(list(xmin = xmaxAll - (legendSpace.usr - legendGap.usr),
+                 xmax = xmaxAll - (legendSpace.usr - legendGap.usr - legendWidth.usr),
+                 ymin = ymin.leg,
+                 ymax =  ymax.leg,
+                 lim = zlim,
+                 colors = colors,
+                 tickLen.usr = tickLen.usr,
+                 cex.axis = cex.legendAxis,
+                 lab = legendLabel,
+                 cex.lab = cex.legendLabel,
+                 tickLabelAngle = tickLabelAngle),
+             otherLegendArgs));
     
   } else legendPosition = NULL
 
   invisible(list(xMid = xMid, yMid = if (reverseRows) rev(yMid) else yMid, 
        box = c(xmin, xmax, ymin, ymax), xLeft = xLeft, xRight = xRight,
        yTop = yTop, yBot = yBot,
+       colorMatrix = colorMatrix,
        legendPosition = legendPosition));
   
 }

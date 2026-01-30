@@ -2449,6 +2449,8 @@ plotColorUnderTree = function(
    textPositions = NULL,
    addTextGuide = TRUE,
    cex.rowLabels = 1,
+   col.rowLabels = 1,
+   font.rowLabels = 1,
    cex.rowText = 0.8,
    separatorLine.col = "black",
    ...)
@@ -2464,6 +2466,8 @@ plotColorUnderTree = function(
    textPositions = textPositions,
    addTextGuide = addTextGuide,
    cex.rowLabels = cex.rowLabels,
+   col.rowLabels = col.rowLabels,
+   font.rowLabels = font.rowLabels,
    cex.rowText = cex.rowText,
    startAt = 0,
    align = "center",
@@ -2484,6 +2488,8 @@ plotOrderedColors = function(
    textPositions = NULL, 
    addTextGuide = TRUE,
    cex.rowLabels = 1, 
+   col.rowLabels = 1,
+   font.rowLabels = 1,
    cex.rowText = 0.8, 
    startAt = 0, 
    align = c("center", "edge"),
@@ -2505,6 +2511,8 @@ plotOrderedColors = function(
     textPositions = textPositions,
     addTextGuide = addTextGuide,
     cex.rowLabels = cex.rowLabels,
+    col.rowLabels = col.rowLabels,
+    font.rowLabels = font.rowLabels,
     cex.rowText = cex.rowText,
     startAt = startAt,
     horizontal = TRUE,
@@ -2543,6 +2551,8 @@ plotOrderedColors = function(
    textGuide.lty = 3,
    cex.rowLabels = 1,
    cex.rowText = 0.8,
+   col.rowLabels = 1,
+   font.rowLabels = 1,
    startAt = 0,
    plotBox = NULL,  # Defaults to user-coordinate limits rotated according to "horizontal"
    horizontal = TRUE,   
@@ -2566,6 +2576,10 @@ plotOrderedColors = function(
     stop("Length of colors vector not compatible with number of objects in 'order'.");
   C = colors[order, , drop = FALSE]; 
   nColumns = dimC[1];
+
+  cex.rowLabels = .extend(cex.rowLabels, nColorRows);
+  col.rowLabels = .extend(col.rowLabels, nColorRows);
+  font.rowLabels = .extend(font.rowLabels, nColorRows);
 
   # Old plot box. could in principle be anything but the current value allows me to also get scaling of inches to user
   # coordinates and the character width and height.
@@ -2709,7 +2723,7 @@ plotOrderedColors = function(
     ys1 = if (horizontal) 0 else charWidth/2;
     if (rowLabelsPosition!="left") { xs1 = -xs1; ys1 = -ys1; }
     text(rowLabels[j], adj = c(if (rowLabelsPosition=="left") 1 else 0, 0.5), x= rowLabelPos$x-xs1, y= rowLabelPos$y-ys1, 
-         srt = rowLabelsAngle, cex=cex.rowLabels, xpd = TRUE);
+         srt = rowLabelsAngle, cex=cex.rowLabels[j], xpd = TRUE, col = col.rowLabels[j], font = font.rowLabels[j]);
     textRow = match(j, textPositions);
     if (is.finite(textRow))
     {
@@ -7917,6 +7931,7 @@ prependZeros.int = function(x, width = max(nchar(as.integer(x))))
 
 formatLabels = function(labels, 
         maxCharPerLine = 14, 
+        minCharPerLine = 1,
         maxWidth = NULL, 
         maxLines = Inf,
         cex = 1,
@@ -7925,6 +7940,8 @@ formatLabels = function(labels,
         keepSplitAtEOL = TRUE, capitalMultiplier = 1.4,
         eol = "\n", ellipsis = "...")
 {
+  if (minCharPerLine > maxCharPerLine)
+    stop("'minCharPerLine' cannot be bigger than 'maxCharPerLine'.");
   n = length(labels);
   labels2 = strsplit(labels, split = eol, fixed = TRUE);
   index = unlist(mapply(function(l, i) rep(i, length(l)), labels2, 1:n));
@@ -7945,9 +7962,9 @@ formatLabels = function(labels,
       cond = if (is.null(maxWidth)) {
         newLen <= maxCharPerLine - (maxLines==nLines) * (width.newsplit + 2)
       } else
-        strwidth(spaste(line, newsplit, splitX [[l]] [s]), cex = cex) <= 
-             maxWidth - (maxLines==nLines) * (width.newsplit + strwidth(ellipsis, cex = cex));
-      if (nchar(line) < 5 | cond)
+        strwidth(spaste(line, newsplit, splitX [[l]] [s]), cex = cex, font = font) <= 
+             maxWidth - (maxLines==nLines) * (width.newsplit + strwidth(ellipsis, cex = cex, font = font));
+      if (nchar(line) <= minCharPerLine | cond)
       {
         nl = paste(nl, splitX[[l]] [s], sep = newsplit)
         line = paste(line, splitX[[l]] [s], sep = newsplit);

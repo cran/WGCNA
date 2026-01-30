@@ -12,6 +12,7 @@ a newline character.
 formatLabels(
    labels, 
    maxCharPerLine = 14, 
+   minCharPerLine = 1,
    maxWidth = NULL,
    maxLines = Inf,
    cex = 1,
@@ -30,6 +31,11 @@ formatLabels(
 }
   \item{maxCharPerLine}{
 Integer giving the maximum number of characters per line.
+}
+
+  \item{minCharPerLine}{
+Integer giving the minimum number of characters per line. Each line will contain at least this many characters even if the
+characters exceed the maximum width given in \code{maxWidth} (if supplied).
 }
 
   \item{maxWidth}{Maximum width in user coordinates. If given, overrides \code{maxCharPerLine} above and

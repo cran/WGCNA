@@ -1,6 +1,30 @@
 Note: as of 2009/03/10, changes that lead to different calculational results are marked as DIFF.
 
 
+2026/01/27: 1.74
+
+	. The (deprecated) function GOenrichmentAnalysis has been removed.
+	  Please use replacement functionality provided by R package anRichment
+	  (https://github.com/plangfelder/anRichment) or any number of other
+	  packages providing enrichment analysis. 
+
+2024/11/23: 1.73-3
+
+	. Functions plotColorUnderTree and plorOrderedColors now accept
+	  arguments col.rowLabels and font.rowlabels controlling color and
+	  font type for row labels.
+
+2024/11/22: 1.73-2
+
+	. Minor changes in internal code to enhance interoperability of
+	  heatmap functions
+
+2024/11/14: 1.73-1
+
+	. Function formatLabels now respects argument font
+	. Minor enhancements in internal plotting code for color legends in
+	  heatmap plots
+
 2024/09/18: 1.73
 
 	. Version bumb for release

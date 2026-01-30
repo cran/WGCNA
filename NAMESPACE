@@ -3,10 +3,9 @@ useDynLib(WGCNA)
 exportPattern("^[^\\.]")
 
 importFrom(Rcpp, evalCpp)
-import(foreach, doParallel, dynamicTreeCut, fastcluster, GO.db, AnnotationDbi, matrixStats)
+import(foreach, doParallel, dynamicTreeCut, fastcluster, matrixStats)
 importFrom(survival, is.Surv, coxph, Surv)
 importFrom(parallel, stopCluster)
-#importFrom(AnnotationDbi, mappedkeys)
 importFrom(grDevices, dev.new)
 importFrom(utils, packageVersion, compareVersion)
 importFrom(parallel, detectCores)
@@ -31,5 +30,5 @@ importFrom("stats", "anova", "as.dendrogram", "as.dist", "as.hclust", "coef",
            "residuals", "rexp", "rnorm", "runif", "sd",
            "smooth.spline", "t.test", "var", "weighted.mean", "p.adjust", "setNames")
 importFrom("utils", "data", "flush.console", "read.csv", "write.csv",
-           "write.table", "object.size")
+           "write.table", "object.size", "head")
 

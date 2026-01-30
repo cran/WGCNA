@@ -1535,7 +1535,7 @@ modulePreservation = function(
                              "meanSignAwareCorDat", "meanAdj", "meanClusterCoeff", "meanMAR");
  
           } else {
-            stats = .coreCalcForAdj(datRef, datRefP, datTest, colorRef_2, opt);
+            stats = .coreCalcForAdj(datRef, datRefP, datTest, colorRef_2, opt = opt);
             interPresNames = spaste(corFnc, c(".kIM", ".kME", ".kIMall", ".adj", ".clusterCoeff", ".MAR"));
             measureNames = c("propVarExplained", "meanKIM", "separability", 
                              "meanSignAwareCorDat", "meanAdj", "meanClusterCoeff", "meanMAR");
@@ -1827,13 +1827,10 @@ TRUE))
      MeanSignAwareCorDat[j,2]=mean(as.dist(SignedModuleCorData3),na.rm = TRUE)
      if (!opt$densityOnly)
      {
-        #ICORdat[j]=cor(c(as.dist(ModuleCorData1)),c(as.dist(ModuleCorData3)),use="p")
         corExpr = parse(text=paste(opt$corFnc,
                                    "(c(as.dist(ModuleCorData1)),c(as.dist(ModuleCorData3))",
                                    prepComma(opt$corOptions), ")"));
         ICORdat[j] = eval(corExpr);
-  #      ICOVdat[j]=cov(c(as.dist(ModuleCorData1)),c(as.dist(ModuleCorData3)),use="p")
-  #      spdat[j]=scalarProduct(c(as.dist(ModuleCorData1)),c(as.dist(ModuleCorData3)))
      }
 
      if (opt$nType==1)

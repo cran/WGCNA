@@ -1,13 +1,13 @@
 Package: WGCNA
-Version: 1.73
-Date: 2024-09-18
+Version: 1.74
+Date: 2026-01-27
 Title: Weighted Correlation Network Analysis
 Maintainer: Peter Langfelder <Peter.Langfelder@gmail.com>
 Depends: R (>= 3.0), dynamicTreeCut (>= 1.62), fastcluster
 Imports: stats, grDevices, utils, matrixStats (>= 0.8.1), Hmisc,
         impute, splines, foreach, doParallel, preprocessCore, survival,
-        parallel, GO.db, AnnotationDbi, Rcpp (>= 0.11.0)
-Suggests: org.Hs.eg.db, org.Mm.eg.db, infotheo, entropy, minet
+        parallel, Rcpp (>= 0.11.0)
+Suggests: infotheo, entropy, minet
 LinkingTo: Rcpp
 ZipData: no
 License: GPL (>= 2)
@@ -38,7 +38,7 @@ Authors@R: c(person(given = "Peter",
                     role = "aut"))
 Description: Functions necessary to perform Weighted Correlation Network Analysis on high-dimensional data as originally described in Horvath and Zhang (2005) <doi:10.2202/1544-6115.1128> and Langfelder and Horvath (2008) <doi:10.1186/1471-2105-9-559>. Includes functions for rudimentary data cleaning, construction of correlation networks, module identification, summarization, and relating of variables and modules to sample traits. Also includes a number of utility functions for data manipulation and visualization.
 NeedsCompilation: yes
-Packaged: 2024-09-18 12:43:22 UTC; plangfelder
+Packaged: 2026-01-27 16:47:33 UTC; plangfelder
 Author: Peter Langfelder [aut, cre],
   Steve Horvath [aut],
   Chaochao Cai [aut],
@@ -48,4 +48,4 @@ Author: Peter Langfelder [aut, cre],
   Andy Yip [aut],
   Bin Zhang [aut]
 Repository: CRAN
-Date/Publication: 2024-09-18 15:20:02 UTC
+Date/Publication: 2026-01-30 06:10:44 UTC
